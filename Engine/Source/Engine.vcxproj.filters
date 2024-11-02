@@ -1,0 +1,253 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\Renderer">
+      <UniqueIdentifier>{06a3b962-13cc-455f-8eb9-727dc8145ab4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Common">
+      <UniqueIdentifier>{db2e8a43-870d-4711-986e-167d4d05846f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders">
+      <UniqueIdentifier>{237526dc-0d0e-4768-98d7-6ec5741915b1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Primitives">
+      <UniqueIdentifier>{5b0434a6-11ce-46ef-9f1d-08133e705044}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\2D">
+      <UniqueIdentifier>{145dfd6e-6d22-4250-ae28-c09053934951}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Lights">
+      <UniqueIdentifier>{75fc00dc-2049-4ed2-83a8-344eecf5d204}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders\Constants">
+      <UniqueIdentifier>{81671f56-b8e7-40ff-9b67-2b44d949e9db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shaders\Compiler">
+      <UniqueIdentifier>{1a8cd92a-3b92-4ef9-8b01-4d25b2adda6c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\3D">
+      <UniqueIdentifier>{b90e3106-5ec8-46d2-abb0-1ec03d971076}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{31a7973f-b5e6-4f9a-bc03-8f524e2e5798}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Renderer.h">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils.h">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\DirectXHelper.h">
+      <Filter>Source Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\VertexFormats.h">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Cube.h">
+      <Filter>Source Files\Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="2D\FPSText.h">
+      <Filter>Source Files\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="2D\KeyboardButton.h">
+      <Filter>Source Files\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="2D\Label.h">
+      <Filter>Source Files\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="2D\XBoxOneButton.h">
+      <Filter>Source Files\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="2D\XBoxOneViewButton.h">
+      <Filter>Source Files\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\StepTimer.h">
+      <Filter>Source Files\Common</Filter>
+    </ClInclude>
+    <ClInclude Include="2D\XBoxOneBumper.h">
+      <Filter>Source Files\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="2D\XBoxOneTrigger.h">
+      <Filter>Source Files\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Lights\AmbientLight.h">
+      <Filter>Source Files\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="Lights\DirectionalLight.h">
+      <Filter>Source Files\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="Lights\PointLight.h">
+      <Filter>Source Files\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="Lights\SpotLight.h">
+      <Filter>Source Files\Lights</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Floor.h">
+      <Filter>Source Files\Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Pyramid.h">
+      <Filter>Source Files\Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Constants\LightingShaderConstants.h">
+      <Filter>Source Files\Shaders\Constants</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compiler\ShaderCompiler.h">
+      <Filter>Source Files\Shaders\Compiler</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Constants\ShadowMapAlphaCutShaderConstants.h">
+      <Filter>Source Files\Shaders\Constants</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Render3D.h">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\AssetsUtils.h">
+      <Filter>Source Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\AssimpSkinning.h">
+      <Filter>Source Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="2D\XBoxOneDPad.h">
+      <Filter>Source Files\2D</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Constants\SkinningShaderConstants.h">
+      <Filter>Source Files\Shaders\Constants</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Constants\SkinningShadowMapAlphaCutShaderConstants.h">
+      <Filter>Source Files\Shaders\Constants</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\AnimatedQuad.h">
+      <Filter>Source Files\Primitives</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Constants\AnimatedQuadShaderConstants.h">
+      <Filter>Source Files\Shaders\Constants</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Constants\SkinningPBRShaderConstants.h">
+      <Filter>Source Files\Shaders\Constants</Filter>
+    </ClInclude>
+    <ClInclude Include="3D\Animated3DModel.h">
+      <Filter>Source Files\3D</Filter>
+    </ClInclude>
+    <ClInclude Include="3D\Static3DModel.h">
+      <Filter>Source Files\3D</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Engine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Renderer.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils.cpp">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="Primitives\Cube.cpp">
+      <Filter>Source Files\Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="2D\FPSText.cpp">
+      <Filter>Source Files\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="2D\KeyboardButton.cpp">
+      <Filter>Source Files\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="2D\Label.cpp">
+      <Filter>Source Files\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="2D\XBoxOneButton.cpp">
+      <Filter>Source Files\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="2D\XBoxOneViewButton.cpp">
+      <Filter>Source Files\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="2D\XBoxOneBumper.cpp">
+      <Filter>Source Files\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="2D\XBoxOneTrigger.cpp">
+      <Filter>Source Files\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Lights\AmbientLight.cpp">
+      <Filter>Source Files\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="Lights\DirectionalLight.cpp">
+      <Filter>Source Files\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="Lights\PointLight.cpp">
+      <Filter>Source Files\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="Lights\SpotLight.cpp">
+      <Filter>Source Files\Lights</Filter>
+    </ClCompile>
+    <ClCompile Include="Primitives\Floor.cpp">
+      <Filter>Source Files\Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="Primitives\Pyramid.cpp">
+      <Filter>Source Files\Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Compiler\ShaderCompiler.cpp">
+      <Filter>Source Files\Shaders\Compiler</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\AssetsUtils.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils\AssimpSkinning.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="2D\XBoxOneDPad.cpp">
+      <Filter>Source Files\2D</Filter>
+    </ClCompile>
+    <ClCompile Include="Primitives\AnimatedQuad.cpp">
+      <Filter>Source Files\Primitives</Filter>
+    </ClCompile>
+    <ClCompile Include="3D\Animated3DModel.cpp">
+      <Filter>Source Files\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="3D\Static3DModel.cpp">
+      <Filter>Source Files\3D</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="WindowsProject2.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="small.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="WindowsProject2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+</Project>

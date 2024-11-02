@@ -1,0 +1,13 @@
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/CMakeFiles/uninstall.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/CMakeFiles/UpdateAssimpLibsDebugSymbolsAndDLLs.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/CMakeFiles/INSTALL.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/contrib/zlib/CMakeFiles/zlibstatic.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/contrib/zlib/CMakeFiles/INSTALL.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/contrib/zlib/CMakeFiles/ALL_BUILD.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/code/CMakeFiles/assimp.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/code/CMakeFiles/INSTALL.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/test/CMakeFiles/unit.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/test/CMakeFiles/INSTALL.dir
+C:/Users/vicen/source/repos/SDKs/assimp/assimp-5.4.3/build/test/headercheck/CMakeFiles/INSTALL.dir
