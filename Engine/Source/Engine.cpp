@@ -16,15 +16,6 @@
 #include "2D/FPSText.h"
 #include "2D/Label.h"
 
-/*
-#include "2D/XBoxOneButton.h"
-#include "2D/XBoxOneViewButton.h"
-#include "2D/XBoxOneTrigger.h"
-#include "2D/XBoxOneBumper.h"
-#include "2D/XBoxOneDPad.h"
-#include "2D/KeyboardButton.h"
-*/
-
 using Microsoft::WRL::ComPtr;
 using namespace Templates::Shader;
 using namespace Templates::Material;
@@ -61,76 +52,17 @@ DirectX::Keyboard::KeyboardStateTracker keys;
 std::unique_ptr<DirectX::GamePad> gamePad;
 DirectX::GamePad::ButtonStateTracker buttons;
 
-/*
-std::shared_ptr<XBoxOneButton> xboxOneButtonA;
-std::shared_ptr<XBoxOneButton> xboxOneButtonB;
-std::shared_ptr<XBoxOneButton> xboxOneButtonX;
-std::shared_ptr<XBoxOneButton> xboxOneButtonY;
-std::shared_ptr<XBoxOneViewButton> xboxOneViewButton;
-std::shared_ptr<XBoxOneTrigger> xboxOneButtonLT;
-std::shared_ptr<XBoxOneTrigger> xboxOneButtonRT;
-std::shared_ptr<XBoxOneBumper> xboxOneButtonLB;
-std::shared_ptr<XBoxOneBumper> xboxOneButtonRB;
-*/
-
-/*
-std::shared_ptr<KeyboardButton> keyboardButtonA;
-std::shared_ptr<KeyboardButton> keyboardButtonS;
-std::shared_ptr<KeyboardButton> keyboardButtonD;
-std::shared_ptr<KeyboardButton> keyboardButtonP;
-std::shared_ptr<KeyboardButton> keyboardButtonL;
-std::shared_ptr<KeyboardButton> keyboardButtonM;
-std::shared_ptr<KeyboardButton> keyboardButtonN;
-std::shared_ptr<KeyboardButton> keyboardButtonPU;
-std::shared_ptr<KeyboardButton> keyboardButtonPD;
-std::shared_ptr<KeyboardButton> keyboardButtonPlus;
-std::shared_ptr<KeyboardButton> keyboardButtonMinus;
-
-//Light status labels
-std::shared_ptr<Label> ambientLightLabel;
-std::shared_ptr<Label> directionalLightLabel;
-std::shared_ptr<Label> spotLightLabel;
-std::shared_ptr<Label> pointLightLabel;
-std::shared_ptr<Label> lightModelLabelCentered;
-std::shared_ptr<Label> lightModelLabelLeft;
-std::shared_ptr<Label> shadowMapsLabel;
-std::shared_ptr<Label> normalMappingLabel;
-
-//camera selection
-*/
 INT currentCamera = 0;
-std::shared_ptr<Label> perspectiveSelectionLabel;
+std::shared_ptr<Label> currentCameraText;
 
-/*
-std::shared_ptr<Label> perspectiveSelectionLabelPrevious;
-std::shared_ptr<Label> perspectiveSelectionLabelNext;
-*/
 //animation
 std::shared_ptr<Label> animationLabel;
-/*
-std::shared_ptr<Label> nextAnimationLabel;
-std::shared_ptr<Label> previousAnimationLabel;
-std::shared_ptr<XBoxOneDPad> xboxOneDPad;
-*/
+
 //camera properties
 //propiedades de la camara
 float cameraSpeed = 0.05f;
 XMFLOAT2 mouseCameraRotationSensitivity = { 0.001f, 0.001f };
 XMFLOAT2 gamePadCameraRotationSensitivity = { 0.02f, -0.02f };
-
-
-//Audio
-/*
-std::unique_ptr<AudioEngine> audio;
-
-std::unique_ptr<SoundEffect> fireplaceSound;
-
-std::unique_ptr<SoundEffectInstance> fireplaceSoundInstance;
-AudioEmitter fireplaceSoundEmitter;
-
-std::unique_ptr<SoundEffect> musicSound;
-std::unique_ptr<SoundEffectInstance> musicSoundInstance;
-*/
 
 RenderablePtr knight = nullptr;
 
@@ -262,104 +194,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   //inicializar objetos 2D
   fpsText = std::make_shared<FPSText>();
   fpsText->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory);
-  /*
-  //initialize the labels
-  //inicializar los labels
-  ambientLightLabel = std::make_shared<Label>(); ambientLightLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-  directionalLightLabel = std::make_shared<Label>(); directionalLightLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-  spotLightLabel = std::make_shared<Label>(); spotLightLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-  pointLightLabel = std::make_shared<Label>(); pointLightLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-  lightModelLabelCentered = std::make_shared<Label>(); lightModelLabelCentered->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_CENTER, DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
-  lightModelLabelLeft = std::make_shared<Label>(); lightModelLabelLeft->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-  shadowMapsLabel = std::make_shared<Label>(); shadowMapsLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-  normalMappingLabel = std::make_shared<Label>(); normalMappingLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
-  */
-  perspectiveSelectionLabel = std::make_shared<Label>(); perspectiveSelectionLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 32, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
-  /*
-  perspectiveSelectionLabelPrevious = std::make_shared<Label>(); perspectiveSelectionLabelPrevious->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
-  perspectiveSelectionLabelNext = std::make_shared<Label>(); perspectiveSelectionLabelNext->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
-  */
+  
+  currentCameraText = std::make_shared<Label>(); currentCameraText->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 32, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
+ 
   animationLabel = std::make_shared<Label>(); animationLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 22, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
-  /*
-  nextAnimationLabel = std::make_shared<Label>(); nextAnimationLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
-  previousAnimationLabel = std::make_shared<Label>(); previousAnimationLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 10, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
-
-  //initialize the keyboard buttons
-  //inicializar los botones del teclado
-  keyboardButtonA = std::make_shared<KeyboardButton>(); keyboardButtonA->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"A", D2D1::ColorF(0xffffff));
-  keyboardButtonS = std::make_shared<KeyboardButton>(); keyboardButtonS->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"S", D2D1::ColorF(0xffffff));
-  keyboardButtonD = std::make_shared<KeyboardButton>(); keyboardButtonD->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"D", D2D1::ColorF(0xffffff));
-  keyboardButtonP = std::make_shared<KeyboardButton>(); keyboardButtonP->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"P", D2D1::ColorF(0xffffff));
-  keyboardButtonL = std::make_shared<KeyboardButton>(); keyboardButtonL->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"L", D2D1::ColorF(0xffffff));
-  keyboardButtonM = std::make_shared<KeyboardButton>(); keyboardButtonM->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"M", D2D1::ColorF(0xffffff));
-  keyboardButtonPU = std::make_shared<KeyboardButton>(); keyboardButtonPU->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"Page Up", D2D1::ColorF(0xffffff), 10.0f);
-  keyboardButtonPD = std::make_shared<KeyboardButton>(); keyboardButtonPD->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"Page Down", D2D1::ColorF(0xffffff), 10.0f);
-  keyboardButtonN = std::make_shared<KeyboardButton>(); keyboardButtonN->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"N", D2D1::ColorF(0xffffff));
-  keyboardButtonPlus = std::make_shared<KeyboardButton>(); keyboardButtonPlus->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"+", D2D1::ColorF(0xffffff), 10.0f);
-  keyboardButtonMinus = std::make_shared<KeyboardButton>(); keyboardButtonMinus->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"-", D2D1::ColorF(0xffffff), 10.0f);
-
-  //initialize the xbox buttons
-  //inicializar los botones de xbox
-  xboxOneButtonA = std::make_shared<XBoxOneButton>(); xboxOneButtonA->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"A", D2D1::ColorF(0x3cdb4e));
-  xboxOneButtonB = std::make_shared<XBoxOneButton>(); xboxOneButtonB->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"B", D2D1::ColorF(0xd04242));
-  xboxOneButtonX = std::make_shared<XBoxOneButton>(); xboxOneButtonX->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"X", D2D1::ColorF(0x40ccd0));
-  xboxOneButtonY = std::make_shared<XBoxOneButton>(); xboxOneButtonY->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, L"Y", D2D1::ColorF(0xecdb33));
-  xboxOneViewButton = std::make_shared<XBoxOneViewButton>(); xboxOneViewButton->Initialize(renderer->d2d1DeviceContext, renderer->d2d1Factory);
-  xboxOneButtonLT = std::make_shared<XBoxOneTrigger>(); xboxOneButtonLT->Initialize(renderer->d2d1DeviceContext, renderer->d2d1Factory, renderer->dWriteFactory, L"LT", D2D1::ColorF::White);
-  xboxOneButtonLB = std::make_shared<XBoxOneBumper>(); xboxOneButtonLB->Initialize(renderer->d2d1DeviceContext, renderer->d2d1Factory, renderer->dWriteFactory, L"LB", D2D1::ColorF::White);
-  xboxOneButtonRB = std::make_shared<XBoxOneBumper>(); xboxOneButtonRB->Initialize(renderer->d2d1DeviceContext, renderer->d2d1Factory, renderer->dWriteFactory, L"RB", D2D1::ColorF::White);
-  xboxOneButtonRT = std::make_shared<XBoxOneTrigger>(); xboxOneButtonRT->Initialize(renderer->d2d1DeviceContext, renderer->d2d1Factory, renderer->dWriteFactory, L"RT", D2D1::ColorF::White);
-  xboxOneDPad = std::make_shared<XBoxOneDPad>(); xboxOneDPad->Initialize(renderer->d2d1DeviceContext, renderer->d2d1Factory);
-
-  //initialize DirectXTK Audio Engine
-  //inicializar el Audio Engine de DirectXTK
-  AUDIO_ENGINE_FLAGS audioFlags = AudioEngine_Default;
-  #ifdef _DEBUG
-  audioFlags = audioFlags | AudioEngine_Debug;
-  #endif
-  audio = std::make_unique<AudioEngine>(audioFlags);
-
-  //create the music and play and loop it
-  //creamos la musica y la dejamos en loop
-  musicSound = std::make_unique<SoundEffect>(audio.get(), L"Assets/sounds/music.wav");
-  musicSoundInstance = musicSound->CreateInstance();
-  musicSoundInstance->SetVolume(0.2f);
-  musicSoundInstance->Play(true);
-
-  //create the fireplace sound and loop it
-  //creamos el sonido del fuego y lo dejamos en loop
-  fireplaceSound = std::make_unique<SoundEffect>(audio.get(), L"Assets/sounds/fireplace.wav");
-  fireplaceSoundInstance = fireplaceSound->CreateInstance(SoundEffectInstance_Use3D);
-  fireplaceSoundInstance->SetVolume(2.0f);
-  fireplaceSoundInstance->Play(true);
-
-  //adjusts the position of the sound source
-  //ajustamos la posicion de la fuente del sonido
-  fireplaceSoundEmitter.SetPosition({ -2.2f, 0.7f, 7.1f, 0.0f });
-
-  //adjust the listener position based on the camera properties
-  //ajustamos la posicion del oyente basado en las propiedades de la camara
-  AudioListener listener;
-  listener.SetPosition(cameraPos);
-  listener.SetOrientation(cameraFw(), up);
-  fireplaceSoundInstance->Apply3D(listener, fireplaceSoundEmitter);
-  */
-
+  
   //execute the commands on the GPU and wait for it's completion
-  //ejecuta los comandos de la GPU y esperar a que termine
   renderer->CloseCommandsAndFlush();
     
-  /*
-  scene->DestroyUploadResources();
-  //knight->DestroyUploadResources();
-    
-  for (auto f : fire) {
-      f->DestroyUploadResources();
-  }
-  for (auto f : candleFlame) {
-      f->DestroyUploadResources();
-  }
-  */
   return TRUE;
 }
 
@@ -880,84 +722,15 @@ void RenderLoop()
         //PIXBeginEvent(renderer->commandQueue.Get(), 0, L"Render UI");
         {
             //switch to 2d mode
-            //cambiar a modo 2D
             renderer->Set2DRenderTarget();
 
             //draw the framerate
-            //dibujar el framerate
             fpsText->Render(renderer->d2d1DeviceContext, timer.GetFramesPerSecond());
 
-            perspectiveSelectionLabel->Render(renderer->d2d1DeviceContext, 200, 10, 500, 300, camera->name.c_str());
-
-            /*
-            FLOAT WinWidth = (FLOAT)(hWndRect.right - hWndRect.left);
-            FLOAT WinHeight = (FLOAT)(hWndRect.bottom - hWndRect.top);
-            if (gamePadState.IsConnected()) {
-                //draw the XBoxOne buttons
-                //dibujar los botones de la XBoxOne
-                const D2D1_POINT_2F gamePadOffsets[] = {
-                    D2D1::Point2F(100.0f, 40.0f),
-                    D2D1::Point2F( 60.0f, 80.0f),
-                    D2D1::Point2F(140.0f, 80.0f),
-                    D2D1::Point2F(100.0f,120.0f),
-                    D2D1::Point2F(200.0f,120.0f),
-                    D2D1::Point2F(200.0f, 45.0f),
-                    D2D1::Point2F(400.0f, 45.0f),
-                    D2D1::Point2F( 40.0f,230.0f),
-                    D2D1::Point2F( 40.0f,230.0f)
-                };
-                xboxOneButtonA->Render(renderer->d2d1DeviceContext, WinWidth - gamePadOffsets[0].x, WinHeight - gamePadOffsets[0].y, buttons.a == GamePad::ButtonStateTracker::HELD);
-                xboxOneButtonB->Render(renderer->d2d1DeviceContext, WinWidth - gamePadOffsets[1].x, WinHeight - gamePadOffsets[1].y, buttons.b == GamePad::ButtonStateTracker::HELD);
-                xboxOneButtonX->Render(renderer->d2d1DeviceContext, WinWidth - gamePadOffsets[2].x, WinHeight - gamePadOffsets[2].y, buttons.x == GamePad::ButtonStateTracker::HELD);
-                xboxOneButtonY->Render(renderer->d2d1DeviceContext, WinWidth - gamePadOffsets[3].x, WinHeight - gamePadOffsets[3].y, buttons.y == GamePad::ButtonStateTracker::HELD);
-                xboxOneViewButton->Render(renderer->d2d1DeviceContext, WinWidth - gamePadOffsets[4].x, WinHeight - gamePadOffsets[4].y, buttons.view == GamePad::ButtonStateTracker::HELD);
-                xboxOneButtonLB->Render(renderer->d2d1DeviceContext, gamePadOffsets[5].x, gamePadOffsets[5].y, buttons.leftShoulder == GamePad::ButtonStateTracker::HELD, TRUE);
-                xboxOneButtonRB->Render(renderer->d2d1DeviceContext, gamePadOffsets[6].x, gamePadOffsets[6].y, buttons.rightShoulder == GamePad::ButtonStateTracker::HELD, FALSE);
-                xboxOneButtonLT->Render(renderer->d2d1DeviceContext, gamePadOffsets[7].x, WinHeight - gamePadOffsets[7].y, buttons.leftTrigger == GamePad::ButtonStateTracker::HELD, FALSE);
-                xboxOneButtonRT->Render(renderer->d2d1DeviceContext, WinWidth - gamePadOffsets[8].x, WinHeight - gamePadOffsets[8].y, buttons.rightTrigger == GamePad::ButtonStateTracker::HELD, TRUE);
-
-                ambientLightLabel->Render(renderer->d2d1DeviceContext, WinWidth - 130, WinHeight - 20, 100.0f, 20.0f, lightsEnabled[0] ? L"Ambient:ON" : L"Ambient:OFF");
-                directionalLightLabel->Render(renderer->d2d1DeviceContext, WinWidth - 80, WinHeight - 60, 100.0f, 20.0f, lightsEnabled[1] ? L"Directional:ON" : L"Directional:OFF");
-                spotLightLabel->Render(renderer->d2d1DeviceContext, WinWidth - 170, WinHeight - 60, 100.0f, 20.0f, lightsEnabled[2] ? L"Spot:ON" : L"Spot:OFF");
-                pointLightLabel->Render(renderer->d2d1DeviceContext, WinWidth - 125, WinHeight - 155, 100.0f, 20.0f, lightsEnabled[3] ? L"Point:ON" : L"Point:OFF");
-                lightModelLabelCentered->Render(renderer->d2d1DeviceContext, WinWidth - 250, WinHeight - 110, 100.0f, 20.0f, useBlinnPhong ? L"Blinn-Phong" : L"Phong");
-                shadowMapsLabel->Render(renderer->d2d1DeviceContext, 10, WinHeight - 190, 100.0f, 20.0f, shadowMapsEnabled ? L"Shadow Maps:ON" : L"Shadow Maps:OFF");
-                perspectiveSelectionLabelPrevious->Render(renderer->d2d1DeviceContext, 200, 70, 100.0f, 20.0f, ((currentPerspective % 4) == 0) ? perspectiveSelection[3] : perspectiveSelection[((currentPerspective - 1) % 4)]);
-                perspectiveSelectionLabelNext->Render(renderer->d2d1DeviceContext, 360, 70, 100.0f, 20.0f, ((currentPerspective % 4) == 3) ? perspectiveSelection[0] : perspectiveSelection[((currentPerspective + 1) % 4)]);
-                normalMappingLabel->Render(renderer->d2d1DeviceContext, WinWidth - 100, WinHeight - 190, 100.0f, 20.0f, normalMappingEnabled ? L"Normal Maps:ON" : L"Normal Maps:OFF");
-                xboxOneDPad->Render(renderer->d2d1DeviceContext, 5, WinHeight - 140, 0.4f, buttons.dpadUp == GamePad::ButtonStateTracker::HELD, buttons.dpadDown == GamePad::ButtonStateTracker::HELD, buttons.dpadLeft == GamePad::ButtonStateTracker::HELD, buttons.dpadRight == GamePad::ButtonStateTracker::HELD);
-            }
-            else {
-                //draw the keyboard buttons (S<->D swapped because it looks better)
-                //dibujar los botones del teclado (S<->D cambiados por que se ve mejor)
-                keyboardButtonA->Render(renderer->d2d1DeviceContext, WinWidth * (1.0f / 8.0f), WinHeight - 40.0f, keyboardState.A);
-                keyboardButtonD->Render(renderer->d2d1DeviceContext, WinWidth * (3.0f / 8.0f), WinHeight - 40.0f, keyboardState.D);
-                keyboardButtonS->Render(renderer->d2d1DeviceContext, WinWidth * (2.0f / 8.0f), WinHeight - 40.0f, keyboardState.S);
-                keyboardButtonP->Render(renderer->d2d1DeviceContext, WinWidth * (4.0f / 8.0f), WinHeight - 40.0f, keyboardState.P);
-                keyboardButtonL->Render(renderer->d2d1DeviceContext, WinWidth * (5.0f / 8.0f), WinHeight - 40.0f, keyboardState.L);
-                keyboardButtonM->Render(renderer->d2d1DeviceContext, WinWidth * (6.0f / 8.0f), WinHeight - 40.0f, keyboardState.M);
-                keyboardButtonN->Render(renderer->d2d1DeviceContext, WinWidth * (7.0f / 8.0f), WinHeight - 40.0f, keyboardState.N);
-                keyboardButtonPU->Render(renderer->d2d1DeviceContext, 200, 65, keyboardState.PageUp);
-                keyboardButtonPD->Render(renderer->d2d1DeviceContext, 400, 65, keyboardState.PageDown);
-                keyboardButtonPlus->Render(renderer->d2d1DeviceContext, 30, WinHeight - 125, keyboardState.OemPlus);
-                keyboardButtonMinus->Render(renderer->d2d1DeviceContext, 30, WinHeight - 80, keyboardState.OemMinus);
-
-                ambientLightLabel->Render(renderer->d2d1DeviceContext, WinWidth * (1.0f / 8.0f) - 30.0f, WinHeight - 20, 100.0f, 20.0f, lightsEnabled[0] ? L"Ambient:ON" : L"Ambient:OFF");
-                directionalLightLabel->Render(renderer->d2d1DeviceContext, WinWidth * (3.0f / 8.0f) - 30.0f, WinHeight - 20, 100.0f, 20.0f, lightsEnabled[1] ? L"Directional:ON" : L"Directional:OFF");
-                spotLightLabel->Render(renderer->d2d1DeviceContext, WinWidth * (2.0f / 8.0f) - 20.0f, WinHeight - 20, 100.0f, 20.0f, lightsEnabled[2] ? L"Spot:ON" : L"Spot:OFF");
-                pointLightLabel->Render(renderer->d2d1DeviceContext, WinWidth * (4.0f / 8.0f) - 20.0f, WinHeight - 20, 100.0f, 20.0f, lightsEnabled[3] ? L"Point:ON" : L"Point:OFF");
-                lightModelLabelLeft->Render(renderer->d2d1DeviceContext, WinWidth * (5.0f / 8.0f) - 20.0f, WinHeight - 20, 100.0f, 20.0f, useBlinnPhong ? L"Blinn-Phong" : L"Phong");
-                shadowMapsLabel->Render(renderer->d2d1DeviceContext, WinWidth* (6.0f / 8.0f) - 40.0f, WinHeight - 20, 100.0f, 20.0f, shadowMapsEnabled ? L"Shadow Maps:ON" : L"Shadow Maps:OFF");
-                normalMappingLabel->Render(renderer->d2d1DeviceContext, WinWidth* (7.0f / 8.0f) - 40.0f, WinHeight - 20, 100.0f, 20.0f, normalMappingEnabled ? L"Normal Maps:ON" : L"Normal Maps:OFF");
-                perspectiveSelectionLabelPrevious->Render(renderer->d2d1DeviceContext, 180, 85, 100.0f, 20.0f, ((currentPerspective % 4) == 0) ? perspectiveSelection[3] : perspectiveSelection[((currentPerspective - 1) % 4)]);
-                perspectiveSelectionLabelNext->Render(renderer->d2d1DeviceContext, 380, 85, 100.0f, 20.0f, ((currentPerspective % 4) == 3) ? perspectiveSelection[0] : perspectiveSelection[((currentPerspective + 1) % 4)]);
-            }
-            */
-
-            /*
-            nextAnimationLabel->Render(renderer->d2d1DeviceContext, 10, WinHeight - 160, 100.0f, 20.0f, L"Next Animation");
-            previousAnimationLabel->Render(renderer->d2d1DeviceContext, 10, WinHeight - 60, 100.0f, 20.0f, L"Prev Animation");
-            */
+            //draw the current camera
+            currentCameraText->Render(renderer->d2d1DeviceContext, 200, 10, 500, 300, camera->name.c_str());
+            
+            //draw the current animation of the knight
             FLOAT WinHeight = static_cast<FLOAT>(hWndRect.bottom - hWndRect.top);
             std::wstring animStr = L"Animation:" + knight->currentAnimation;
             animationLabel->Render(renderer->d2d1DeviceContext, 60, WinHeight - 90, 500, 30, animStr);
@@ -978,64 +751,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             Flush(renderer->commandQueue, renderer->fence, renderer->fenceValue, renderer->fenceEvent);
 
-            /*
-
-            knight->Destroy();
-            knight = nullptr;
-
-            for (auto &f : fire) {
-                f->Destroy();
-                f = nullptr;
-            }
-            for (auto &f : candleFlame) {
-                f->Destroy();
-                f = nullptr;
-            }
-            
-            fpsText->Destroy();
-            fpsText = nullptr;
-            */
-
             gamePad.reset();
             keyboard.reset();
-            /*
-            xboxOneButtonA->Destroy();
-            xboxOneButtonA = nullptr;
-            xboxOneButtonB->Destroy();
-            xboxOneButtonB = nullptr;
-            xboxOneButtonX->Destroy();
-            xboxOneButtonX = nullptr;
-            xboxOneButtonY->Destroy();
-            xboxOneButtonY = nullptr;
-            xboxOneViewButton->Destroy();
-            xboxOneViewButton = nullptr;
-            //xboxOneDPad->Destroy();
-            xboxOneDPad = nullptr;
-
-            keyboardButtonA->Destroy();
-            keyboardButtonA = nullptr;
-            keyboardButtonS->Destroy();
-            keyboardButtonS = nullptr;
-            keyboardButtonD->Destroy();
-            keyboardButtonD = nullptr;
-            keyboardButtonP->Destroy();
-            keyboardButtonP = nullptr;
-            keyboardButtonL->Destroy();
-            keyboardButtonL = nullptr;
-
-            ambientLightLabel->Destroy();
-            ambientLightLabel = nullptr;
-            directionalLightLabel->Destroy();
-            directionalLightLabel = nullptr;
-            spotLightLabel->Destroy();
-            spotLightLabel = nullptr;
-            pointLightLabel->Destroy();
-            pointLightLabel = nullptr;
-            lightModelLabelCentered->Destroy();
-            lightModelLabelCentered = nullptr;
-            lightModelLabelLeft->Destroy();
-            lightModelLabelLeft = nullptr;
-            */
 
             renderer->Destroy();
             renderer = nullptr;

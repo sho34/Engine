@@ -1,6 +1,6 @@
 #include "Utils/Gamma.h"
 #include "Camera/Camera.h"
-#include "Light2/BlinnPhong/SceneLighting.h"
+#include "Lighting/BlinnPhong/SceneLighting.h"
 
 struct VertexShaderInput
 {

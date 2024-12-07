@@ -1,7 +1,7 @@
 #include "Utils/Gamma.h"
 #include "Utils/TangentSpace.h"
 #include "Camera/Camera.h"
-#include "Light2/PBR/SceneLighting.h"
+#include "Lighting/PBR/SceneLighting.h"
 #include "Animation/Animated3D.h"
 
 struct VertexShaderInput
