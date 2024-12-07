@@ -1,18 +1,13 @@
 #pragma once
-#include "../framework.h"
-#include <DirectXMath.h>
 
 using namespace Microsoft::WRL;
-//using namespace Windows::UI::Core;
-//using namespace Windows::Foundation;
-//using namespace Windows::Graphics::Display;
-//using namespace Platform;
 using namespace DirectX;
 
-struct Renderer
+struct Renderer: public std::enable_shared_from_this<Renderer>
 {
 	~Renderer() {}
-	static const UINT frameCount = 3;
+	static std::shared_ptr<Renderer> GetPtr();
+	static const UINT numFrames = 3;
 	static const constexpr float fovAngleY = (70.0f * XM_PI / 180.0f);
 
 	//app window reference
@@ -23,10 +18,15 @@ struct Renderer
 	ComPtr<ID3D12Device2>                   d3dDevice;
 	ComPtr<ID3D12CommandQueue>              commandQueue;
 	ComPtr<IDXGISwapChain4>                 swapChain;
-	ComPtr<ID3D12DescriptorHeap>            rtvDescriptorHeap;
+
+	//d3d12 descriptor heaps
 	UINT                                    rtvDescriptorSize;
+	ComPtr<ID3D12DescriptorHeap>            rtvDescriptorHeap;
+	
 	ComPtr<ID3D12DescriptorHeap>            dsvDescriptorHeap;
-	ComPtr<ID3D12CommandAllocator>          commandAllocators[frameCount];
+	UINT																		dsvDescriptorSize;
+
+	ComPtr<ID3D12CommandAllocator>          commandAllocators[numFrames];
 	ComPtr<ID3D12GraphicsCommandList2>      commandList;
 
 	//d3d11on12 resources to allow dwrite&d2d1 interop
@@ -34,13 +34,13 @@ struct Renderer
 	ComPtr<ID3D11On12Device>                d3d11on12Device;
 	ComPtr<ID3D11DeviceContext>             d3d11DeviceContext;
 	ComPtr<IDXGIDevice>                     dxgiDevice;
-	ComPtr<ID3D11Resource>                  wrappedBackBuffers[frameCount];
+	ComPtr<ID3D11Resource>                  wrappedBackBuffers[numFrames];
 
 	//d2d1 resources
 	ComPtr<ID2D1Factory6>                   d2d1Factory;
 	ComPtr<ID2D1Device5>                    d2d1Device;
 	ComPtr<ID2D1DeviceContext5>             d2d1DeviceContext;
-	ComPtr<ID2D1Bitmap1>                    d2dRenderTargets[frameCount];
+	ComPtr<ID2D1Bitmap1>                    d2dRenderTargets[numFrames];
 
 	//dwrite resources
 	ComPtr<IDWriteFactory>                  dWriteFactory;
@@ -48,7 +48,7 @@ struct Renderer
 	//GPU <-> CPU synchronization 
 	ComPtr<ID3D12Fence>                     fence;
 	UINT64                                  fenceValue = 0;
-	UINT64                                  frameFenceValues[frameCount] = {};
+	UINT64                                  frameFenceValues[numFrames] = {};
 	HANDLE                                  fenceEvent;
 
 	//window based values
@@ -56,23 +56,21 @@ struct Renderer
 	D3D12_RECT                              scissorRect;
 
 	//back buffer and depth stencil targets
-	ComPtr<ID3D12Resource>                  renderTargets[frameCount];
+	ComPtr<ID3D12Resource>                  renderTargets[numFrames];
 	ComPtr<ID3D12Resource>                  depthStencil;
 	UINT                                    backBufferIndex;
 
 	//matrices
 	XMMATRIX                                perspectiveMatrix;
 
-	/*
-	void Initialize(CoreWindow^ coreWindow);
-	*/
 	void Initialize(HWND hwnd);
 	void Destroy();
 	void UpdateViewportPerspective();
 	void Resize(UINT width, UINT height);
 	void ResetCommands();
+	void SetCSUDescriptorHeap();
 	void CloseCommandsAndFlush();
-	void SetShadowMapTarget(ComPtr<ID3D12Resource> shadowMap, ComPtr<ID3D12DescriptorHeap> shadowMapDSVDescriptorHeap, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport);
+	void SetShadowMapTarget(ComPtr<ID3D12Resource> shadowMap, D3D12_CPU_DESCRIPTOR_HANDLE shadowMapCpuHandle, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport);
 	void SetRenderTargets();
 	void Set2DRenderTarget();
 	void ExecuteCommands();

@@ -1,4 +1,4 @@
-#include "../framework.h"
+#include "pch.h"
 #include "FPSText.h"
 #include "../Common/DirectXHelper.h"
 

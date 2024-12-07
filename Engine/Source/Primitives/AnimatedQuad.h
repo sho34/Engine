@@ -1,4 +1,5 @@
 #pragma once
+
 #include "../Renderer/VertexFormats.h"
 #include "../Renderer/DeviceUtils.h"
 #include "../Shaders/Constants/AnimatedQuadShaderConstants.h"
@@ -39,8 +40,8 @@ struct AnimatedQuad {
   FLOAT                     alphaCut;
 
   //shaders
-  ShaderByteCodeRef					vertexShader;
-  ShaderByteCodeRef					pixelShader;
+  ShaderByteCodePtr					vertexShader;
+  ShaderByteCodePtr					pixelShader;
   mutable std::mutex                shaderMutex;
 
   //pipeline state

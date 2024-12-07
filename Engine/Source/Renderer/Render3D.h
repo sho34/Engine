@@ -1,23 +1,22 @@
 #pragma once
-
-template<typename T>
-void Render3DPrimitive(ComPtr<ID3D12GraphicsCommandList2> commandList, UINT backBufferIndex, T& obj3D) {
+/*
+void Render3DPrimitive(ComPtr<ID3D12GraphicsCommandList2> commandList, UINT backBufferIndex, auto& obj3D) {
     if (!obj3D.loadingComplete) return;
 
     commandList->SetGraphicsRootSignature(obj3D.rootSignature.Get());
-    ID3D12DescriptorHeap* ppHeaps[] = { obj3D.cbvData.cbvsrvHeap.Get() };
+    ID3D12DescriptorHeap* ppHeaps[] = { obj3D.cbvData.cbvsrvHeap.Get(), obj3D.cbvColor.cbvsrvHeap.Get() };
     commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
     commandList->SetPipelineState(obj3D.pipelineState.Get());
 
     CD3DX12_GPU_DESCRIPTOR_HANDLE cbvGpuHandle(obj3D.cbvData.cbvsrvHeap->GetGPUDescriptorHandleForHeapStart(), backBufferIndex, obj3D.cbvData.cbvDescriptorSize);
-    CD3DX12_GPU_DESCRIPTOR_HANDLE texGpuHandle(obj3D.cbvData.cbvsrvHeap->GetGPUDescriptorHandleForHeapStart(), 3, obj3D.cbvData.cbvDescriptorSize);
+    //CD3DX12_GPU_DESCRIPTOR_HANDLE texGpuHandle(obj3D.cbvData.cbvsrvHeap->GetGPUDescriptorHandleForHeapStart(), 3, obj3D.cbvData.cbvDescriptorSize);
     commandList->SetGraphicsRootDescriptorTable(0, cbvGpuHandle);
-    commandList->SetGraphicsRootDescriptorTable(1, texGpuHandle);
+    //commandList->SetGraphicsRootDescriptorTable(1, texGpuHandle);
 
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     commandList->IASetVertexBuffers(0, 1, &obj3D.vbvData.vertexBufferView);
     commandList->IASetIndexBuffer(&obj3D.ibvData.indexBufferView);
-    commandList->DrawIndexedInstanced(_countof(T::indices), 1, 0, 0, 0);
+    commandList->DrawIndexedInstanced(obj3D.ibvData.indexBufferView.SizeInBytes/sizeof(UINT32), 1, 0, 0, 0);
 }
 
 template<typename T>
@@ -79,3 +78,4 @@ void Render3DMeshShadowMap(ComPtr<ID3D12GraphicsCommandList2> commandList, UINT 
     commandList->IASetIndexBuffer(&ibv.indexBufferView);
     commandList->DrawIndexedInstanced(ibv.indexBufferView.SizeInBytes / sizeof(UINT16), 1, 0, 0, 0);
 }
+*/

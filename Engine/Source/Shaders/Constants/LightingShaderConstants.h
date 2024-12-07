@@ -1,4 +1,5 @@
 #pragma once
+using namespace DirectX;
 
 struct LightingShaderConstants {
   UINT numTextures;
@@ -12,15 +13,19 @@ struct LightingShaderConstants {
   FLOAT alphaCut;
   XMMATRIX worldViewProjection;
   XMMATRIX world;
+
   XMMATRIX directionalLightShadowMapProjection;
-  XMMATRIX spotLightShadowMapProjection;
-  XMMATRIX pointLightShadowMapProjection[6];
   FLOAT directionalLightShadowMapZBias;
   XMFLOAT2 directionalLightShadowMapTexelInvSize;
+
+  XMMATRIX spotLightShadowMapProjection;
   FLOAT spotLightShadowMapZBias;
   XMFLOAT2 spotLightShadowMapTexelInvSize;
+
+  XMMATRIX pointLightShadowMapProjection[6];
   FLOAT pointLightShadowMapZBias;
   FLOAT pointLightShadowMapPartialDerivativeScale;
+
   XMVECTOR eyePos;
   XMVECTOR ambientLightColor;
   XMVECTOR directionalLightDirection;

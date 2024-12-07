@@ -1,4 +1,4 @@
-#include "../framework.h"
+#include "pch.h"
 #include "Animated3DModel.h"
 #include "../Common/DirectXHelper.h"
 #include "../Renderer/DeviceUtils.h"
@@ -255,9 +255,9 @@ void Animated3DModel::Initialize(UINT numFrames, ComPtr<ID3D12Device2>	d3dDevice
 	//no hay mas necesidad del importer, asi que liberamos la escena
 	importer.FreeScene();
 
-	InitializeRootSignature(d3dDevice, rootSignature, 1, 6);
+	CreateRootSignature(d3dDevice, rootSignature, 1, 6);
 	InitializeShadowMapRootSignature(d3dDevice, shadowMapRootSignature);
-	InitializeRootSignature(d3dDevice, shadowMapAlphaCutRootSignature, 1, 1);
+	CreateRootSignature(d3dDevice, shadowMapAlphaCutRootSignature, 1, 1);
 
 	auto shaderTasks = {
 		ShaderCompiler::Bind(d3dDevice, this, vertexShader, Load3DModelPipeline<Animated3DModel>, L"SkinningPBR_vs", L"main", L"vs_6_1"),

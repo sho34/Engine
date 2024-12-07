@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "../framework.h"
 #include <ppltasks.h>	// Para create_task
 
 using namespace Microsoft::WRL;
@@ -95,6 +94,33 @@ namespace DX
 	}
 #endif
 
+	inline void MatrixDump(DirectX::XMMATRIX& wvp)
+	{
+		std::wstring row1 = L"[" +
+			std::to_wstring(wvp.r[0].m128_f32[0]) + L"," +
+			std::to_wstring(wvp.r[0].m128_f32[1]) + L"," +
+			std::to_wstring(wvp.r[0].m128_f32[2]) + L"," +
+			std::to_wstring(wvp.r[0].m128_f32[3]) + L"]";
+		std::wstring row2 = L"[" +
+			std::to_wstring(wvp.r[1].m128_f32[0]) + L"," +
+			std::to_wstring(wvp.r[1].m128_f32[1]) + L"," +
+			std::to_wstring(wvp.r[1].m128_f32[2]) + L"," +
+			std::to_wstring(wvp.r[1].m128_f32[3]) + L"]";
+		std::wstring row3 = L"[" +
+			std::to_wstring(wvp.r[2].m128_f32[0]) + L"," +
+			std::to_wstring(wvp.r[2].m128_f32[1]) + L"," +
+			std::to_wstring(wvp.r[2].m128_f32[2]) + L"," +
+			std::to_wstring(wvp.r[2].m128_f32[3]) + L"]";
+		std::wstring row4 = L"[" +
+			std::to_wstring(wvp.r[3].m128_f32[0]) + L"," +
+			std::to_wstring(wvp.r[3].m128_f32[1]) + L"," +
+			std::to_wstring(wvp.r[3].m128_f32[2]) + L"," +
+			std::to_wstring(wvp.r[3].m128_f32[3]) + L"]";
+		std::wstring matrixDump = row1 + L"\n" + row2 + L"\n" + row3 + L"\n" + row4 + L"\n";
+
+		OutputDebugStringW(L"Matrix\n");
+		OutputDebugStringW(matrixDump.c_str());
+	}
 }
 
 // Nombrar función del asistente para ComPtr<T>.

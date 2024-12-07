@@ -43,15 +43,15 @@
     <Filter Include="Source Files\Utils">
       <UniqueIdentifier>{31a7973f-b5e6-4f9a-bc03-8f524e2e5798}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Templates">
+      <UniqueIdentifier>{19e99977-8809-4607-a1a2-5d417fc45f09}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\FileSystem">
+      <UniqueIdentifier>{adb4d0b5-8a68-4e68-9619-c4bd2d5911f7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="framework.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="targetver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Resource.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="d3dx12.h">
@@ -68,12 +68,6 @@
     </ClInclude>
     <ClInclude Include="Renderer\VertexFormats.h">
       <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Primitives\Cube.h">
-      <Filter>Source Files\Primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="2D\FPSText.h">
       <Filter>Source Files\2D</Filter>
@@ -99,22 +93,7 @@
     <ClInclude Include="2D\XBoxOneTrigger.h">
       <Filter>Source Files\2D</Filter>
     </ClInclude>
-    <ClInclude Include="Lights\AmbientLight.h">
-      <Filter>Source Files\Lights</Filter>
-    </ClInclude>
-    <ClInclude Include="Lights\DirectionalLight.h">
-      <Filter>Source Files\Lights</Filter>
-    </ClInclude>
-    <ClInclude Include="Lights\PointLight.h">
-      <Filter>Source Files\Lights</Filter>
-    </ClInclude>
-    <ClInclude Include="Lights\SpotLight.h">
-      <Filter>Source Files\Lights</Filter>
-    </ClInclude>
     <ClInclude Include="Primitives\Floor.h">
-      <Filter>Source Files\Primitives</Filter>
-    </ClInclude>
-    <ClInclude Include="Primitives\Pyramid.h">
       <Filter>Source Files\Primitives</Filter>
     </ClInclude>
     <ClInclude Include="Shaders\Constants\LightingShaderConstants.h">
@@ -132,7 +111,7 @@
     <ClInclude Include="Utils\AssetsUtils.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\AssimpSkinning.h">
+    <ClInclude Include="Animation\Animation3D.h">
       <Filter>Source Files\Utils</Filter>
     </ClInclude>
     <ClInclude Include="2D\XBoxOneDPad.h">
@@ -159,6 +138,144 @@
     <ClInclude Include="3D\Static3DModel.h">
       <Filter>Source Files\3D</Filter>
     </ClInclude>
+    <ClInclude Include="Templates\Mesh.h">
+      <Filter>Source Files\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material.h">
+      <Filter>Source Files\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Sound.h">
+      <Filter>Source Files\Templates</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem\FileSystem.h">
+      <Filter>Source Files\FileSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\d3dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Pentahedron.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Cube.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Primivites.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compiler\ShaderCompilerOutput.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\Renderable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\D3D12Device\Builder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\D3D12Device\Interop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\VertexBuffer\VertexBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\Resources\Resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\IndexBuffer\IndexBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\ConstantsBuffer\ConstantsBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\RootSignature\RootSignature.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\PipelineState\PipelineState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\UtahTeapot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Projections\Perspective.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Projections\Orthographic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Projections\Fisheye.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Projections\Ultrawide.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Projections\Omnimax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Projections\Panoramic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Projections\Cylindrical.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\Projections\Spherical.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Lights\Lights.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Lights\AmbientLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Lights\DirectionalLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Lights\SpotLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Lights\PointLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Model3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation\Animated.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Decal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation\Effects\Effects.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation\Effects\DecalLoop.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation\Effects\LightOscilation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Audio.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -169,9 +286,6 @@
     </ClCompile>
     <ClCompile Include="Renderer\DeviceUtils.cpp">
       <Filter>Source Files\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Primitives\Cube.cpp">
-      <Filter>Source Files\Primitives</Filter>
     </ClCompile>
     <ClCompile Include="2D\FPSText.cpp">
       <Filter>Source Files\2D</Filter>
@@ -194,31 +308,13 @@
     <ClCompile Include="2D\XBoxOneTrigger.cpp">
       <Filter>Source Files\2D</Filter>
     </ClCompile>
-    <ClCompile Include="Lights\AmbientLight.cpp">
-      <Filter>Source Files\Lights</Filter>
-    </ClCompile>
-    <ClCompile Include="Lights\DirectionalLight.cpp">
-      <Filter>Source Files\Lights</Filter>
-    </ClCompile>
-    <ClCompile Include="Lights\PointLight.cpp">
-      <Filter>Source Files\Lights</Filter>
-    </ClCompile>
-    <ClCompile Include="Lights\SpotLight.cpp">
-      <Filter>Source Files\Lights</Filter>
-    </ClCompile>
-    <ClCompile Include="Primitives\Floor.cpp">
-      <Filter>Source Files\Primitives</Filter>
-    </ClCompile>
-    <ClCompile Include="Primitives\Pyramid.cpp">
-      <Filter>Source Files\Primitives</Filter>
-    </ClCompile>
     <ClCompile Include="Shaders\Compiler\ShaderCompiler.cpp">
       <Filter>Source Files\Shaders\Compiler</Filter>
     </ClCompile>
     <ClCompile Include="Utils\AssetsUtils.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="Utils\AssimpSkinning.cpp">
+    <ClCompile Include="Animation\Animation3D.cpp">
       <Filter>Source Files\Utils</Filter>
     </ClCompile>
     <ClCompile Include="2D\XBoxOneDPad.cpp">
@@ -232,6 +328,78 @@
     </ClCompile>
     <ClCompile Include="3D\Static3DModel.cpp">
       <Filter>Source Files\3D</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Sound.cpp">
+      <Filter>Source Files\Templates</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Mesh.cpp">
+      <Filter>Source Files\Templates</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Material.cpp">
+      <Filter>Source Files\Templates</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystem\FileSystem.cpp">
+      <Filter>Source Files\FileSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="pch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\Renderable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\D3D12Device\Builder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\D3D12Device\Interop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\VertexBuffer\VertexBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\Resources\Resources.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\IndexBuffer\IndexBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\ConstantsBuffer\ConstantsBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\RootSignature\RootSignature.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\PipelineState\PipelineState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Camera\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Lights\Lights.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Model3D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\Animated.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\Effects\Effects.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\Effects\DecalLoop.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\Effects\LightOscilation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Audio.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

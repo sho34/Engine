@@ -1,6 +1,15 @@
 #pragma once
 
-#include "../../framework.h"
+#include <wrl.h>
+#include <map>
+#include <unordered_set>
+#include <string>
+#include <ppltasks.h>
+#include <dxcapi.h>
+#include <d3d12.h>
+#include "ShaderCompilerOutput.h"
+#include "../../Templates/Shader.h"
+#include "../../Types.h"
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -9,16 +18,30 @@ using namespace Concurrency;
 struct Renderer;
 
 namespace ShaderCompiler {
+	
+	//shader compilation source (shaderName + it's shader type)
+	struct Source {
+		const std::wstring shaderName;
+		ShaderType shaderType;
+		bool operator<(const Source& other) const {
+			return std::tie(shaderName, shaderType) < std::tie(other.shaderName, other.shaderType);
+		}
+	};
+	
+
+	//Dependencies of hlsl+shaderType(Source) file to many .h files
+	typedef std::unordered_set<std::wstring> ShaderDependencies;
+
+	//a custom handler to manage include files
 	struct CustomIncludeHandler : IDxcIncludeHandler {
 
-		std::wstring shaderName;
-		std::wstring ShaderRootFolder;
+		std::wstring shaderRootFolder;
 		ComPtr<IDxcUtils> pUtils;
-		std::unordered_set<std::wstring> IncludedFiles;
 
-		CustomIncludeHandler(std::wstring shaderName, std::wstring ShaderRootFolder, ComPtr<IDxcUtils> pUtils) {
-			this->shaderName = shaderName;
-			this->ShaderRootFolder = ShaderRootFolder;
+		ShaderDependencies& includedFiles;
+
+		CustomIncludeHandler(ShaderDependencies& includedFiles, std::wstring shaderRootFolder, ComPtr<IDxcUtils> pUtils):includedFiles(includedFiles) {
+			this->shaderRootFolder = shaderRootFolder;
 			this->pUtils = pUtils;
 		};
 
@@ -28,40 +51,10 @@ namespace ShaderCompiler {
 		ULONG STDMETHODCALLTYPE Release(void) override { return 0; }
 	};
 
-	typedef std::vector<byte> ShaderByteCode;
-	typedef std::shared_ptr<ShaderByteCode> ShaderByteCodeRef;
-
-	struct ShaderParameters {
-		const std::wstring entryPoint;
-		const std::wstring target;
-		bool operator<(const ShaderParameters& other) const {
-			return std::tie(entryPoint, target) < std::tie(other.entryPoint, other.target);
-		}
-	};
-
-	typedef Concurrency::task<void> LoadShaderFn(void*, ComPtr<ID3D12Device2>);
-	struct CompilerTarget {
-		void* renderable;
-		LoadShaderFn* loadShaderFn;
-	};
-	typedef std::vector<CompilerTarget> ShaderTargets;
-
-	typedef std::map<ShaderParameters, ShaderTargets> ShaderParameterTargets;
-	typedef std::map<const std::wstring, ShaderParameterTargets> ShadersInstances;
-	static ShadersInstances instances;
-
-	typedef std::map<ShaderParameters, std::shared_ptr<ShaderByteCode>> ShaderParameterByteCode;
-	typedef std::map<const std::wstring, ShaderParameterByteCode> ShadersByteCodes;
-	static ShadersByteCodes shaderByteCodes;
-
-	typedef std::unordered_set<std::wstring> ShaderDependencies;
-	typedef std::map<const std::wstring, ShaderDependencies> ShaderIncludesDependencies;
-	static ShaderIncludesDependencies dependencies;
-
-	ShaderByteCode& GetByteCode(const std::wstring& shaderName, const std::wstring& entryPoint, const std::wstring& target);
-	Concurrency::task<ShaderByteCode> Compile(const std::wstring& shaderName, const std::wstring& entryPoint, const std::wstring& target);
-	Concurrency::task<void> Bind(ComPtr<ID3D12Device2> d3dDevice, void* renderable, ShaderByteCodeRef& byteCodeRef, LoadShaderFn* loadShaderFn, const std::wstring& shaderName, const std::wstring& entryPoint, const std::wstring& target);
-
+	Concurrency::task<ShaderCompilerOutputPtr> Compile(Source& params);
+	Concurrency::task<void> Bind(const std::wstring& shaderName, ShaderType shaderType, void* target, NotificationCallbacks callbacks);
+	
+	//compile queue definition
 	struct CompileQueue
 	{
 		CompileQueue(){
@@ -94,5 +87,9 @@ namespace ShaderCompiler {
 		mutable std::mutex mutex;
 	};
 	
-	void MonitorChanges(std::wstring folder, std::shared_ptr<Renderer> renderer);
+	//compiler and utils
+	static ComPtr<IDxcCompiler3> pCompiler;
+	static ComPtr<IDxcUtils> pUtils;
+	void BuildCompiler();
+	void MonitorChanges(std::wstring folder);
 };

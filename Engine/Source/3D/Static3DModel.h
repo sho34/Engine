@@ -1,5 +1,4 @@
 #pragma once
-#include "../framework.h"
 #include "../Renderer/VertexFormats.h"
 #include "../Renderer/DeviceUtils.h"
 #include "../Shaders/Constants/LightingShaderConstants.h"
@@ -39,12 +38,12 @@ struct Static3DModel {
   std::vector<ConstantsBufferViewData<ShadowMapAlphaCutShaderConstants>> pointLightShadowMapCbvData[6];
 
   //shaders
-  ShaderByteCodeRef         vertexShader;
-  ShaderByteCodeRef         pixelShader;
-  ShaderByteCodeRef         shadowMapVertexShader;
-  ShaderByteCodeRef         shadowMapPixelShader;
-  ShaderByteCodeRef         shadowMapAlphaCutVertexShader;
-  ShaderByteCodeRef         shadowMapAlphaCutPixelShader;
+  ShaderByteCodePtr         vertexShader;
+  ShaderByteCodePtr         pixelShader;
+  ShaderByteCodePtr         shadowMapVertexShader;
+  ShaderByteCodePtr         shadowMapPixelShader;
+  ShaderByteCodePtr         shadowMapAlphaCutVertexShader;
+  ShaderByteCodePtr         shadowMapAlphaCutPixelShader;
   mutable std::mutex        shaderMutex;
 
   //pipeline state

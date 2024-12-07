@@ -1,4 +1,4 @@
-#include "../framework.h"
+#include "pch.h"
 #include "AnimatedQuad.h"
 #include "../Renderer/Render3D.h"
 #include "../Common/DirectXHelper.h"
@@ -28,7 +28,7 @@ void AnimatedQuad::Initialize(UINT numFrames, ComPtr<ID3D12Device2>	d3dDevice, C
 	timePerFrames = timeBetweenFrames;
 	alphaCut = alphaThreshold;
 
-	InitializeRootSignature(d3dDevice, rootSignature, 1, 1);
+	CreateRootSignature(d3dDevice, rootSignature, 1, 1);
 
 	auto shaderTasks = {
 		ShaderCompiler::Bind(d3dDevice, this, vertexShader, LoadPipeline<AnimatedQuad>, L"AnimatedQuad_vs", L"main", L"vs_6_1"),

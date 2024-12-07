@@ -1,4 +1,4 @@
-#include "../framework.h"
+#include "pch.h"
 #include "AssetsUtils.h"
 
 std::wstring assetTexturePath(std::string path, std::string relativeTexturePath, std::string folderSeparator) {

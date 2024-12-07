@@ -1,4 +1,4 @@
-#include "../framework.h"
+#include "pch.h"
 #include "XBoxOneTrigger.h"
 #include "../Common/DirectXHelper.h"
 

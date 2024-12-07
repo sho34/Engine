@@ -1,5 +1,4 @@
 #pragma once
-#include "../framework.h"
 #include "../Renderer/VertexFormats.h"
 #include "../Renderer/DeviceUtils.h"
 #include "../Shaders/Constants/SkinningPBRShaderConstants.h"
@@ -51,12 +50,12 @@ struct Animated3DModel {
   HierarchyNode                                           rootHierarchy;
   std::queue<multiplyCmd>                                 multiplyNavigator;
   //shaders
-  ShaderByteCodeRef         vertexShader;
-  ShaderByteCodeRef         pixelShader;
-  ShaderByteCodeRef         shadowMapVertexShader;
-  ShaderByteCodeRef         shadowMapPixelShader;
-  ShaderByteCodeRef         shadowMapAlphaCutVertexShader;
-  ShaderByteCodeRef         shadowMapAlphaCutPixelShader;
+  ShaderByteCodePtr         vertexShader;
+  ShaderByteCodePtr         pixelShader;
+  ShaderByteCodePtr         shadowMapVertexShader;
+  ShaderByteCodePtr         shadowMapPixelShader;
+  ShaderByteCodePtr         shadowMapAlphaCutVertexShader;
+  ShaderByteCodePtr         shadowMapAlphaCutPixelShader;
   mutable std::mutex        shaderMutex;
 
   //pipeline state

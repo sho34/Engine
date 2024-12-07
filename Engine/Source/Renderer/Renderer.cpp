@@ -1,15 +1,20 @@
+#include "pch.h"
 #include "Renderer.h"
-#include "../Common/DirectXHelper.h"
 #include "DeviceUtils.h"
-/*
-using namespace Windows::Graphics::Display;
-*/
+#include "../Common/DirectXHelper.h"
+#include "DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 
-/*
-void Renderer::Initialize(CoreWindow^ coreWindow) {
-	window = coreWindow;
-*/
+std::mutex rendererMutex;
+
+static std::shared_ptr<Renderer> renderer = nullptr;
+std::shared_ptr<Renderer> Renderer::GetPtr() { return renderer; }
+
 void Renderer::Initialize(HWND coreHwnd){
+	renderer = shared_from_this();
+	using namespace DeviceUtils::D3D12Device;
+	using namespace DeviceUtils::RenderTarget;
+	using namespace DeviceUtils::ConstantsBuffer;
+
 	hwnd = coreHwnd;
 
 #if defined(_DEBUG)
@@ -25,25 +30,27 @@ void Renderer::Initialize(HWND coreHwnd){
 	ComPtr<IDXGIAdapter4> dxgiAdapter4 = GetAdapter();
 	d3dDevice = CreateDevice(dxgiAdapter4);
 	commandQueue = CreateCommandQueue(d3dDevice);
-	swapChain = CreateSwapChain(hwnd, commandQueue, frameCount);
+	swapChain = CreateSwapChain(hwnd, commandQueue, numFrames);
 	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-	rtvDescriptorHeap = CreateDescriptorHeap(d3dDevice, frameCount);
+	rtvDescriptorHeap = CreateDescriptorHeap(d3dDevice, numFrames);
 	rtvDescriptorSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	dsvDescriptorHeap = CreateDescriptorHeap(d3dDevice, 1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-	
+
 	NAME_D3D12_OBJECT(d3dDevice);
 	NAME_D3D12_OBJECT(commandQueue);
 	NAME_D3D12_OBJECT(rtvDescriptorHeap);
 	NAME_D3D12_OBJECT(dsvDescriptorHeap);
+
+	CreateCSUDescriptorHeap(d3dDevice, numFrames);
 	
-	UpdateRenderTargetViews(d3dDevice, swapChain, rtvDescriptorHeap, renderTargets, frameCount);
+	UpdateRenderTargetViews(d3dDevice, swapChain, rtvDescriptorHeap, renderTargets, numFrames);
 	RECT rect;
 	GetWindowRect(hwnd, &rect);
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
 	UpdateDepthStencilView(d3dDevice, dsvDescriptorHeap, depthStencil, width, height);
 	
-	for (int i = 0; i < frameCount; ++i) {
+	for (int i = 0; i < numFrames; ++i) {
 		commandAllocators[i] = CreateCommandAllocator(d3dDevice);
 		commandAllocators[i]->SetName((L"commandAllocator[" + std::to_wstring(i) + L"]").c_str());
 	}
@@ -61,7 +68,7 @@ void Renderer::Initialize(HWND coreHwnd){
 	//D2D1
 	CreateD2D1Device(dxgiDevice, d2d1Factory, d2d1Device, d2d1DeviceContext);
 	DX::ThrowIfFailed(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), &dWriteFactory));
-	UpdateD2D1RenderTargets(d3d11on12Device, d2d1DeviceContext, renderTargets, wrappedBackBuffers, d2dRenderTargets);
+	UpdateD2D1RenderTargets(d3d11on12Device, d2d1DeviceContext, renderTargets, wrappedBackBuffers, d2dRenderTargets, numFrames);
 }
 
 void Renderer::Destroy() {
@@ -70,13 +77,13 @@ void Renderer::Destroy() {
 	//release d2d
 	//liberar d2d
 	dWriteFactory = nullptr;//->Release();
-	for (int i = 0; i < frameCount; i++) {
+	for (int i = 0; i < numFrames; i++) {
 		d2dRenderTargets[i] = nullptr;// ->Release();
 	}
 	d2d1DeviceContext = nullptr;//->Release();
 	d2d1Device = nullptr;//->Release();
 	d2d1Factory = nullptr;//->Release();
-	for (int i = 0; i < frameCount; i++) {
+	for (int i = 0; i < numFrames; i++) {
 		wrappedBackBuffers[i] = nullptr;// ->Release();
 	}
 	dxgiDevice = nullptr;//->Release();
@@ -90,14 +97,14 @@ void Renderer::Destroy() {
 	//for (auto commandAllocator : commandAllocators) {
 	//	commandAllocator->Release();
 	//}
-	for (int i = 0; i < frameCount; i++) {
+	for (int i = 0; i < numFrames; i++) {
 		commandAllocators[i] = nullptr;// ->Release();
 	}
 	depthStencil = nullptr;// ->Release();
 	//for (auto renderTarget : renderTargets) {
 	//	renderTarget->Release();
 	//}
-	for (int i = 0; i < frameCount; i++) {
+	for (int i = 0; i < numFrames; i++) {
 		renderTargets[i] = nullptr;// ->Release();
 	}
 	dsvDescriptorHeap = nullptr;// ->Release();
@@ -120,9 +127,12 @@ void Renderer::UpdateViewportPerspective() {
 }
 
 void Renderer::Resize(UINT width, UINT height) {
+	using namespace DeviceUtils::D3D12Device;
+	using namespace DeviceUtils::RenderTarget;
+
 	Flush(commandQueue, fence, fenceValue, fenceEvent);
 
-	for (UINT i = 0; i < frameCount; ++i)
+	for (UINT i = 0; i < numFrames; ++i)
 	{
 		renderTargets[i].Reset();
 		frameFenceValues[i] = frameFenceValues[backBufferIndex];
@@ -130,7 +140,7 @@ void Renderer::Resize(UINT width, UINT height) {
 	depthStencil.Reset();
 
 	//free d3d11on12 & d2d resources
-	for (UINT i = 0; i < frameCount; ++i)
+	for (UINT i = 0; i < numFrames; ++i)
 	{
 		wrappedBackBuffers[i].Reset();
 		d2dRenderTargets[i].Reset();
@@ -140,17 +150,17 @@ void Renderer::Resize(UINT width, UINT height) {
 
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 	DX::ThrowIfFailed(swapChain->GetDesc(&swapChainDesc));
-	DX::ThrowIfFailed(swapChain->ResizeBuffers(frameCount, width, height,
+	DX::ThrowIfFailed(swapChain->ResizeBuffers(numFrames, width, height,
 		swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
 
 	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
-	UpdateRenderTargetViews(d3dDevice, swapChain, rtvDescriptorHeap, renderTargets, frameCount);
+	UpdateRenderTargetViews(d3dDevice, swapChain, rtvDescriptorHeap, renderTargets, numFrames);
 	UpdateDepthStencilView(d3dDevice, dsvDescriptorHeap, depthStencil, width, height);
 	UpdateViewportPerspective();
 
 	//d2d1 render targets
-	UpdateD2D1RenderTargets(d3d11on12Device, d2d1DeviceContext, renderTargets, wrappedBackBuffers, d2dRenderTargets);
+	UpdateD2D1RenderTargets(d3d11on12Device, d2d1DeviceContext, renderTargets, wrappedBackBuffers, d2dRenderTargets, numFrames);
 }
 
 void Renderer::ResetCommands() {
@@ -159,14 +169,17 @@ void Renderer::ResetCommands() {
 	commandList->Reset(commandAllocator.Get(), nullptr);
 }
 
-void Renderer::SetShadowMapTarget(ComPtr<ID3D12Resource> shadowMap, ComPtr<ID3D12DescriptorHeap> shadowMapDSVDescriptorHeap, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport) {
+void Renderer::SetCSUDescriptorHeap() {
+	using namespace DeviceUtils::ConstantsBuffer;
+	ID3D12DescriptorHeap* ppHeaps[] = { GetCSUDescriptorHeap().Get()};
+	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+}
+
+void Renderer::SetShadowMapTarget(ComPtr<ID3D12Resource> shadowMap, D3D12_CPU_DESCRIPTOR_HANDLE shadowMapCpuHandle, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport) {
 	commandList->RSSetViewports(1, &shadowMapViewport);
 	commandList->RSSetScissorRects(1, &shadowMapScissorRect);
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE dsv(shadowMapDSVDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-	commandList->OMSetRenderTargets(0, NULL, false, &dsv);
+	commandList->ClearDepthStencilView(shadowMapCpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	commandList->OMSetRenderTargets(0, NULL, false, &shadowMapCpuHandle);
 }
 
 void Renderer::SetRenderTargets() {
@@ -205,6 +218,8 @@ void Renderer::Set2DRenderTarget() {
 }
 
 void Renderer::Present() {
+	using namespace DeviceUtils::D3D12Device;
+
 	//flush d3d11on12
 	d3d11on12Device->ReleaseWrappedResources(wrappedBackBuffers[backBufferIndex].GetAddressOf(), 1);
 	d3d11DeviceContext->Flush();
@@ -220,6 +235,8 @@ void Renderer::Present() {
 }
 
 void Renderer::CloseCommandsAndFlush() {
+	using namespace DeviceUtils::D3D12Device;
+
 	commandList->Close();
 	ID3D12CommandList* const commandLists[] = { commandList.Get() };
 	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
