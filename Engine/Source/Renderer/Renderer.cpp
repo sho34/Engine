@@ -1,8 +1,12 @@
 #include "pch.h"
 #include "Renderer.h"
-#include "DeviceUtils.h"
 #include "../Common/DirectXHelper.h"
 #include "DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
+#include "DeviceUtils/D3D12Device/Builder.h"
+#include "DeviceUtils/D3D12Device/Interop.h"
+#include "DeviceUtils/RootSignature/RootSignature.h"
+#include "DeviceUtils/PipelineState/PipelineState.h"
+#include "DeviceUtils/RenderTarget/RenderTarget.h"
 
 std::mutex rendererMutex;
 
@@ -112,6 +116,8 @@ void Renderer::Destroy() {
 	swapChain = nullptr;// ->Release();
 	commandQueue = nullptr;// ->Release();
 	d3dDevice = nullptr;//->Release();
+
+	renderer = nullptr;
 }
 
 void Renderer::UpdateViewportPerspective() {

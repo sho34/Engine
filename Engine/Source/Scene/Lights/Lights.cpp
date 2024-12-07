@@ -4,6 +4,10 @@
 #include "../../Common/DirectXHelper.h"
 #include "../../Renderer/Renderer.h"
 #include "../Camera/Camera.h"
+#include "../../Renderer/DeviceUtils/D3D12Device/Builder.h"
+#include "../../Renderer/DeviceUtils/D3D12Device/Interop.h"
+#include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
+#include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
 
 namespace Scene::Lights {
 
@@ -184,6 +188,20 @@ namespace Scene::Lights {
 	}
 
 	std::vector<std::shared_ptr<Light>> GetLights() { return lights; }
+
+	void DestroyLights()
+	{
+		auto renderer = Renderer::GetPtr();
+
+		for (auto& l : lights) {
+			if (!l->hasShadowMaps) continue;
+			//l->shadowMap->Release();
+			l->shadowMap = nullptr;
+			l->shadowMapDsvDescriptorHeap = nullptr;
+		}
+
+		lights.clear();
+	}
 
 	void CreateDirectionalLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, DirectionalLightShadowMapParams params) {
 		light->directionalShadowMap.creation_params = params;

@@ -2,11 +2,11 @@
 #include "Animated.h"
 #include <assimp/scene.h>
 #include "../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
-#include "../Renderer/Renderable.h"
+#include "../Scene/Renderable/Renderable.h"
 
 namespace Animation {
 
-  static std::map<std::shared_ptr<Renderable::Renderable>, ConstantsBufferViewDataPtr> animationsCBV;
+  static std::map<RenderablePtr, ConstantsBufferViewDataPtr> animationsCBV;
 
 	void BuildBonesOffsets(const aiScene* aiModel, BonesTransformations& bonesOffsets) {
 
@@ -108,7 +108,7 @@ namespace Animation {
 		return animated;
   }
 
-	void AttachAnimation(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Renderable::Renderable>& renderable, std::shared_ptr<Animated>& animated)
+	void AttachAnimation(const std::shared_ptr<Renderer>& renderer, RenderablePtr& renderable, std::shared_ptr<Animated>& animated)
 	{
 		using namespace DeviceUtils::ConstantsBuffer;
 
@@ -118,12 +118,12 @@ namespace Animation {
 		renderable->bonesTransformation = animated->bonesOffsets;
 	}
 
-	ConstantsBufferViewDataPtr GetAnimatedConstantBufferView(std::shared_ptr<Renderable::Renderable>& renderable)
+	ConstantsBufferViewDataPtr GetAnimatedConstantBufferView(RenderablePtr& renderable)
 	{
 		return animationsCBV[renderable];
 	}
 
-	void WriteBoneTransformationsToConstantsBuffer(std::shared_ptr<Renderable::Renderable>& renderable, BonesTransformations& bonesTransformation, UINT backbufferIndex)
+	void WriteBoneTransformationsToConstantsBuffer(RenderablePtr& renderable, BonesTransformations& bonesTransformation, UINT backbufferIndex)
 	{
 		auto bonesCbv = GetAnimatedConstantBufferView(renderable);
 

@@ -182,7 +182,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Renderer\Renderable.h" />
+    <ClInclude Include="Scene\Renderable\Renderable.h" />
     <ClInclude Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.h" />
     <ClInclude Include="Renderer\DeviceUtils\Resources\Resources.h" />
     <ClInclude Include="Renderer\DeviceUtils\RootSignature\RootSignature.h" />
@@ -214,14 +214,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Renderer\DeviceUtils.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Renderer\Render3D.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="Renderer\Renderer.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
@@ -235,37 +227,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Shaders\Constants\AnimatedQuadShaderConstants.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\LightingShaderConstants.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\ShadowMapAlphaCutShaderConstants.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\SkinningPBRShaderConstants.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\SkinningShaderConstants.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\SkinningShadowMapAlphaCutShaderConstants.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Primitives\UtahTeapot.h" />
-    <ClInclude Include="Animation\Animation3D.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="Renderer\DeviceUtils\VertexBuffer\VertexBuffer.h" />
     <ClInclude Include="Animation\Effects\LightOscilation.h" />
   </ItemGroup>
@@ -301,7 +266,7 @@
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Renderer\Renderable.cpp" />
+    <ClCompile Include="Scene\Renderable\Renderable.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\Resources\Resources.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\RootSignature\RootSignature.cpp" />
@@ -318,10 +283,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Renderer\DeviceUtils.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="Renderer\Renderer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
@@ -330,9 +291,6 @@
     <ClCompile Include="Shaders\Compiler\ShaderCompiler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Animation\Animation3D.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Renderer\DeviceUtils\VertexBuffer\VertexBuffer.cpp" />
     <ClCompile Include="Animation\Effects\LightOscilation.cpp" />

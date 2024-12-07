@@ -4,8 +4,6 @@
 
 #include "Shaders/Compiler/ShaderCompiler.h"
 #include "Renderer/Renderer.h"
-#include "Renderer/DeviceUtils.h"
-#include "Renderer/Renderable.h"
 #include "Audio/Audio.h"
 #include "Templates/Shader.h"
 #include "Templates/Material.h"

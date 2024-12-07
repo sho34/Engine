@@ -1,6 +1,7 @@
 #pragma once
 
-namespace Renderable { struct Renderable; };
+namespace Scene::Renderable { struct Renderable; };
+typedef std::shared_ptr<Scene::Renderable::Renderable> RenderablePtr;
 namespace Animation::Effects {
 
 	struct DecalLoop
@@ -11,7 +12,7 @@ namespace Animation::Effects {
 		UINT currentFrame = 0;
 	};
 
-	void CreateDecalLoop(std::shared_ptr<Renderable::Renderable>, void* constructionData);
+	void CreateDecalLoop(RenderablePtr&, void* constructionData);
 	void StepDecalLoop(FLOAT delta);
 	void WriteDecalLoopConstantsBuffers(UINT backbufferIndex);
 }

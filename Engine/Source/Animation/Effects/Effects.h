@@ -3,13 +3,15 @@
 #include "DecalLoop.h"
 #include "LightOscilation.h"
 
-namespace Renderable { struct Renderable; };
+namespace Scene::Renderable { struct Renderable; };
+typedef std::shared_ptr<Scene::Renderable::Renderable> RenderablePtr;
 namespace Scene::Lights { struct Light; };
+typedef std::shared_ptr<Scene::Lights::Light> LightPtr;
 namespace Animation::Effects {
 
 	//creation
-	typedef void (*CreateRenderableEffectPtr)(std::shared_ptr<Renderable::Renderable> renderable, void* constructionData);
-	typedef void (*CreateLightEffectPtr)(std::shared_ptr<Scene::Lights::Light> light, void* constructionData);
+	typedef void (*CreateRenderableEffectPtr)(RenderablePtr& renderable, void* constructionData);
+	typedef void (*CreateLightEffectPtr)(LightPtr& light, void* constructionData);
 
 	//step
 	typedef void (*StepEffectPtr)(FLOAT delta);

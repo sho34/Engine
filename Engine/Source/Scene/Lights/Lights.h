@@ -5,7 +5,7 @@
 #include "DirectionalLight.h"
 #include "SpotLight.h"
 #include "PointLight.h"
-#include "../../Renderer/Renderable.h"
+#include "../Renderable/Renderable.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 #include <widemath.h>
 
@@ -120,6 +120,7 @@ namespace Scene::Lights {
 
 	std::shared_ptr<Light> CreateLight(const std::shared_ptr<Renderer>& renderer, const LightDefinition& lightParam, LoadLightFn loadFn = nullptr);
 	std::vector<std::shared_ptr<Light>> GetLights();
+	void DestroyLights();
 	
 	void CreateDirectionalLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, DirectionalLightShadowMapParams params);
 	void CreateSpotLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, SpotLightShadowMapParams params);

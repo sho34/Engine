@@ -2,16 +2,20 @@
 #include <ppltasks.h>
 #include <vector>
 #include "Renderable.h"
-#include "../Common/d3dx12.h"
-#include "../Common/DirectXHelper.h"
-#include "../Scene/Camera/Camera.h"
-#include "../Scene/Lights/Lights.h"
-#include "../Templates/Model3D.h"
-#include "../Animation/Animated.h"
+#include "../../Common/d3dx12.h"
+#include "../../Common/DirectXHelper.h"
+#include "../Camera/Camera.h"
+#include "../Lights/Lights.h"
+#include "../../Templates/Model3D.h"
+#include "../../Animation/Animated.h"
+#include "../../Renderer/DeviceUtils/D3D12Device/Builder.h"
+#include "../../Renderer/DeviceUtils/D3D12Device/Interop.h"
+#include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
+#include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
 #include <DirectXMath.h>
 
 extern std::mutex rendererMutex;
-namespace Renderable {
+namespace Scene::Renderable {
 
   std::map<std::wstring, std::shared_ptr<Renderable>> renderables;
   std::map<std::wstring, std::shared_ptr<Renderable>> animables;
@@ -300,9 +304,10 @@ namespace Renderable {
     }
   }
 
-  void Renderable::SetCurrentAnimation(std::wstring animation)
+  void Renderable::SetCurrentAnimation(std::wstring animation, float animationTime)
   {
-
+    currentAnimation = animation;
+    currentAnimationTime = animationTime;
   }
 
   void Renderable::StepAnimation(double elapsedSeconds)

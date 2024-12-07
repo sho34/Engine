@@ -15,12 +15,22 @@ namespace Templates::Audio {
 			SoundPtr sound = std::make_shared<SoundT>();
 			sound->sound = std::make_unique<SoundEffect>(GetAudio().get(), assetPath.c_str());
 
-			soundTemplates[soundName] = sound;
+			soundTemplates.insert_or_assign(soundName,sound);
 		});
 	}
 
-	std::shared_ptr<Sound> GetSoundTemplate(std::wstring soundName) {
+	std::shared_ptr<Sound>& GetSoundTemplate(std::wstring soundName) {
+		assert(soundTemplates.contains(soundName));
+
 		return soundTemplates[soundName];
+	}
+
+	void ReleaseSoundTemplates()
+	{
+		for (auto& [name, sound] : soundTemplates) {
+			sound->sound = nullptr;
+		}
+		soundTemplates.clear();
 	}
 
 }

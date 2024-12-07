@@ -21,6 +21,11 @@ namespace Audio {
 
 	}
 
+  void ShutdownAudio()
+  {
+    audio = nullptr;
+  }
+
   void UpdateAudio() { GetAudio()->Update(); }
 
   void UpdateListener(XMFLOAT3 position, XMFLOAT3 forward, XMFLOAT3 up) {
@@ -55,6 +60,16 @@ namespace Audio {
     }
 
     return ins;
+  }
+
+  void DestroySounds()
+  {
+    for (auto& [name, ins] : soundsInstances) {
+      ins->soundInstance = nullptr;
+    }
+
+    soundsInstances.clear();
+    sounds3DInstances.clear();
   }
 
 }

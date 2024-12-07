@@ -2,9 +2,10 @@
 
 #include "../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 
-namespace Renderable { struct Renderable; };
+namespace Scene::Renderable { struct Renderable; };
 namespace Templates::Model3D { struct Model3D; };
 struct aiScene;
+typedef std::shared_ptr<Scene::Renderable::Renderable> RenderablePtr;
 namespace Animation {
 
 	static const std::wstring AnimationConstantBufferName = L"animation";
@@ -52,9 +53,9 @@ namespace Animation {
 
 	std::shared_ptr<Animated> CreateAnimatedFromAssimp(const aiScene* aiModel);
 
-	void AttachAnimation(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Renderable::Renderable>& renderable, std::shared_ptr<Animated>& animated);
-	ConstantsBufferViewDataPtr GetAnimatedConstantBufferView(std::shared_ptr<Renderable::Renderable>& renderable);
-	void WriteBoneTransformationsToConstantsBuffer(std::shared_ptr<Renderable::Renderable>& renderable, BonesTransformations& bonesTransformation, UINT backbufferIndex);
+	void AttachAnimation(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Scene::Renderable::Renderable>& renderable, std::shared_ptr<Animated>& animated);
+	ConstantsBufferViewDataPtr GetAnimatedConstantBufferView(std::shared_ptr<Scene::Renderable::Renderable>& renderable);
+	void WriteBoneTransformationsToConstantsBuffer(std::shared_ptr<Scene::Renderable::Renderable>& renderable, BonesTransformations& bonesTransformation, UINT backbufferIndex);
 	
 	void TraverseMultiplycationQueue(FLOAT time, MultiplyCmdQueue& cmds, BonesKeysMap& boneKeys, BonesTransformations& bonesTransformation, BonesTransformations& bonesOffsets, XMMATRIX& rootNodeInverseTransform, XMMATRIX parentTransformation);
 }

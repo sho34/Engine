@@ -2,6 +2,7 @@
 
 using namespace DirectX;
 namespace Scene::Lights { struct Light; };
+typedef std::shared_ptr<Scene::Lights::Light> LightPtr;
 namespace Animation::Effects {
 
 	struct LightOscilation
@@ -14,9 +15,7 @@ namespace Animation::Effects {
 		FLOAT currentTime = 0.0f;
 	};
 
-	//float flameLightScale = 0.9f + 0.1f * cosf(static_cast<FLOAT>(timer.GetTotalSeconds()) * 45.0f);
-
-	void CreateLightOscilation(std::shared_ptr<Scene::Lights::Light>, void* constructionData);
+	void CreateLightOscilation(LightPtr&, void* constructionData);
 	void StepLightOscilation(FLOAT delta);
 }
 

@@ -1,12 +1,12 @@
 #include "pch.h"
 #include "DecalLoop.h"
-#include "../../Renderer/Renderable.h"
+#include "../../Scene/Renderable/Renderable.h"
 
 std::map<RenderablePtr, DecalLoopPtr> decalLoopEffects;
 
 namespace Animation::Effects {
 
-	void CreateDecalLoop(std::shared_ptr<Renderable::Renderable> renderable, void* constructionData)
+	void CreateDecalLoop(RenderablePtr& renderable, void* constructionData)
 	{
 
 		DecalLoopT* decaldata = (DecalLoopT*)constructionData;

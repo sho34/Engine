@@ -60,9 +60,6 @@
     <ClInclude Include="Renderer\Renderer.h">
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\DeviceUtils.h">
-      <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Common\DirectXHelper.h">
       <Filter>Source Files\Common</Filter>
     </ClInclude>
@@ -81,32 +78,8 @@
     <ClInclude Include="Primitives\Floor.h">
       <Filter>Source Files\Primitives</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Constants\LightingShaderConstants.h">
-      <Filter>Source Files\Shaders\Constants</Filter>
-    </ClInclude>
     <ClInclude Include="Shaders\Compiler\ShaderCompiler.h">
       <Filter>Source Files\Shaders\Compiler</Filter>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\ShadowMapAlphaCutShaderConstants.h">
-      <Filter>Source Files\Shaders\Constants</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Render3D.h">
-      <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Animation\Animation3D.h">
-      <Filter>Source Files\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\SkinningShaderConstants.h">
-      <Filter>Source Files\Shaders\Constants</Filter>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\SkinningShadowMapAlphaCutShaderConstants.h">
-      <Filter>Source Files\Shaders\Constants</Filter>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\AnimatedQuadShaderConstants.h">
-      <Filter>Source Files\Shaders\Constants</Filter>
-    </ClInclude>
-    <ClInclude Include="Shaders\Constants\SkinningPBRShaderConstants.h">
-      <Filter>Source Files\Shaders\Constants</Filter>
     </ClInclude>
     <ClInclude Include="Templates\Mesh.h">
       <Filter>Source Files\Templates</Filter>
@@ -147,7 +120,7 @@
     <ClInclude Include="Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\Renderable.h">
+    <ClInclude Include="Scene\Renderable\Renderable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\DeviceUtils\D3D12Device\Builder.h">
@@ -251,9 +224,6 @@
     <ClCompile Include="Renderer\Renderer.cpp">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\DeviceUtils.cpp">
-      <Filter>Source Files\Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="2D\FPSText.cpp">
       <Filter>Source Files\2D</Filter>
     </ClCompile>
@@ -262,9 +232,6 @@
     </ClCompile>
     <ClCompile Include="Shaders\Compiler\ShaderCompiler.cpp">
       <Filter>Source Files\Shaders\Compiler</Filter>
-    </ClCompile>
-    <ClCompile Include="Animation\Animation3D.cpp">
-      <Filter>Source Files\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Templates\Sound.cpp">
       <Filter>Source Files\Templates</Filter>
@@ -281,7 +248,7 @@
     <ClCompile Include="Templates\Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\Renderable.cpp">
+    <ClCompile Include="Scene\Renderable\Renderable.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\DeviceUtils\D3D12Device\Builder.cpp">

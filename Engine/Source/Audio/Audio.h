@@ -24,12 +24,15 @@ namespace Audio {
 	};
 
 	void InitAudio();
+	void ShutdownAudio();
 	void UpdateAudio();
 	void UpdateListener(XMFLOAT3 position, XMFLOAT3 forward, XMFLOAT3 up);
 	
 	std::unique_ptr<AudioEngine>& GetAudio();
 
 	std::shared_ptr<SoundInstance> CreateInstance(std::wstring soundName, std::wstring soundInstanceName, SoundInstanceDefinition def = {} );
+
+	void DestroySounds();
 	
 }
 

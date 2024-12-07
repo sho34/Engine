@@ -8,6 +8,7 @@
 #include "Primitives/UtahTeapot.h"
 #include "Primitives/Floor.h"
 #include "Primitives/Decal.h"
+#include "Scene/Renderable/Renderable.h"
 #include "Scene/Camera/Camera.h"
 #include "Scene/Lights/Lights.h"
 #include "Animation/Effects/Effects.h"
@@ -15,6 +16,7 @@
 #include "Animation/Effects/LightOscilation.h"
 #include "2D/FPSText.h"
 #include "2D/Label.h"
+#include "Renderer/DeviceUtils/D3D12Device/Interop.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace Templates::Shader;
@@ -78,6 +80,9 @@ void InputLoop();
 void AnimableStep(double elapsedSeconds);
 void AudioStep();
 void RenderLoop();
+void DestroySceneObjects();
+void ReleaseTemplates();
+
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
@@ -439,7 +444,7 @@ void CreateLights(std::shared_ptr<Renderer>& renderer) {
 
 void CreateRenderables(std::shared_ptr<Renderer>& renderer) {
 
-  using namespace Renderable;
+  using namespace Scene::Renderable;
 
   CreateRenderable(renderer, {
     .name = L"utahteapot",
@@ -608,8 +613,8 @@ void InputLoop()
         it = animLen.begin();
       }
     }
-    renderable->currentAnimation = it->first;
-    };
+    renderable->SetCurrentAnimation(it->first);
+  };
 
   if (!gamePadState.IsConnected()) {
 
@@ -637,7 +642,7 @@ void InputLoop()
 
 void AnimableStep(double elapsedSeconds)
 {
-  using namespace Renderable;
+  using namespace Scene::Renderable;
 
   for (auto& [name, r] : GetAnimables()) {
     r->StepAnimation(elapsedSeconds);
@@ -665,7 +670,7 @@ void RenderLoop()
 
     renderer->SetCSUDescriptorHeap();
 
-    using namespace Renderable;
+    using namespace Scene::Renderable;
 
     for (auto& [name,r] : GetRenderables()) {
       r->WriteConstantsBuffer(renderer->backBufferIndex);
@@ -710,7 +715,7 @@ void RenderLoop()
             }
             UpdateConstantsBufferNumLights(renderer->backBufferIndex, lightIndex);
 
-            for (auto& [name,r] : GetRenderables()) {
+            for (auto& [name,r] : Scene::Renderable::GetRenderables()) {
               r->Render(renderer,camera);
             }
         }
@@ -743,6 +748,29 @@ void RenderLoop()
 
 }
 
+void DestroySceneObjects()
+{
+  //Destroy sound instances
+  using namespace Audio;
+  DestroySounds();
+
+  //Destroy the lights
+  using namespace Scene::Lights;
+  DestroyLights();
+
+  //Destroy the cameras
+
+  //Destroy the renderables
+
+}
+
+void ReleaseTemplates() {
+  
+  using namespace Templates::Audio;
+
+  ReleaseSoundTemplates();
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     auto Destroy = []() -> void {
@@ -751,11 +779,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
             Flush(renderer->commandQueue, renderer->fence, renderer->fenceValue, renderer->fenceEvent);
 
+            DestroySceneObjects();
+
+            ReleaseTemplates();
+
+            ShutdownAudio();
+
             gamePad.reset();
             keyboard.reset();
 
             renderer->Destroy();
             renderer = nullptr;
+            
         }
     };
 

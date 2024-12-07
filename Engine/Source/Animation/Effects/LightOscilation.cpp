@@ -6,7 +6,7 @@ std::map<LightPtr, LightOscilationPtr> lightOscilationEffects;
 
 namespace Animation::Effects {
 
-	void CreateLightOscilation(std::shared_ptr<Scene::Lights::Light> light, void* constructionData) {
+	void CreateLightOscilation(LightPtr& light, void* constructionData) {
 
 		LightOscilationT* lightdata = (LightOscilationT*)constructionData;
 		lightOscilationEffects[light] = std::make_shared<LightOscilationT>(*lightdata);

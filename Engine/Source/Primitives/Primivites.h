@@ -1,6 +1,5 @@
 #pragma once
 #include "../Templates/Mesh.h"
-#include "../Renderer/DeviceUtils.h"
 
 extern std::mutex rendererMutex;
 namespace Primitives {

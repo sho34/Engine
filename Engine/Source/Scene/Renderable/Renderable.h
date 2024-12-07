@@ -1,12 +1,11 @@
 #pragma once
-#include "Renderer.h"
-#include "DeviceUtils.h"
-#include "../Templates/Model3D.h"
-#include "../Animation/Animated.h"
+#include "../../Renderer/Renderer.h"
+#include "../../Templates/Model3D.h"
+#include "../../Animation/Animated.h"
 
 namespace Scene::Lights { struct Light; };
 namespace Scene::Camera { struct Camera; };
-namespace Renderable 
+namespace Scene::Renderable 
 {
 	typedef std::pair<MeshPtr, MaterialPtr> MeshMaterialPair;
 	typedef std::map<MeshPtr, MaterialPtr> MeshMaterialMap;
@@ -100,7 +99,7 @@ namespace Renderable
 		void RenderShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Scene::Lights::Light>& light, UINT cameraIndex);
 
 		//animations
-		void SetCurrentAnimation(std::wstring animation);
+		void SetCurrentAnimation(std::wstring animation, float animationTime = 0.0f);
 		void StepAnimation(double elapsedSeconds);
 
 	};
@@ -111,6 +110,6 @@ namespace Renderable
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetRenderables();
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetAnimables();
 }
-typedef Renderable::Renderable RenderableT;
+typedef Scene::Renderable::Renderable RenderableT;
 typedef std::shared_ptr<RenderableT> RenderablePtr;
-typedef Renderable::MeshMaterialMap RenderableMapT;
+typedef Scene::Renderable::MeshMaterialMap RenderableMapT;
