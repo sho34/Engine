@@ -14,11 +14,12 @@
 #include "Animation/Effects/Effects.h"
 #include "Animation/Effects/DecalLoop.h"
 #include "Animation/Effects/LightOscilation.h"
-#include "2D/FPSText.h"
-#include "2D/Label.h"
+#include "UI/String2D.h"
 #include "Renderer/DeviceUtils/D3D12Device/Interop.h"
+#include "Renderer/DeviceUtils/Resources/Resources.h"
 
 using Microsoft::WRL::ComPtr;
+using namespace ShaderCompiler;
 using namespace Templates::Shader;
 using namespace Templates::Material;
 using namespace Templates::Mesh;
@@ -42,7 +43,6 @@ bool inFullScreen = false;
 std::shared_ptr<Renderer> renderer;
 
 //FPS
-std::shared_ptr<FPSText> fpsText;
 DX::StepTimer timer;
 
 //Mouse
@@ -54,14 +54,8 @@ DirectX::Keyboard::KeyboardStateTracker keys;
 std::unique_ptr<DirectX::GamePad> gamePad;
 DirectX::GamePad::ButtonStateTracker buttons;
 
-INT currentCamera = 0;
-std::shared_ptr<Label> currentCameraText;
-
-//animation
-std::shared_ptr<Label> animationLabel;
-
 //camera properties
-//propiedades de la camara
+INT currentCamera = 0;
 float cameraSpeed = 0.05f;
 XMFLOAT2 mouseCameraRotationSensitivity = { 0.001f, 0.001f };
 XMFLOAT2 gamePadCameraRotationSensitivity = { 0.02f, -0.02f };
@@ -71,17 +65,22 @@ RenderablePtr knight = nullptr;
 // Forward declarations of functions included in this code module:
 ATOM MyRegisterClass(HINSTANCE hInstance);
 BOOL InitInstance(HINSTANCE, int);
+void DestroyInstance();
 void CreateTemplates(std::shared_ptr<Renderer>& renderer);
 void CreateCameras(std::shared_ptr<Renderer>& renderer);
 void CreateLights(std::shared_ptr<Renderer>& renderer);
 void CreateRenderables(std::shared_ptr<Renderer>& renderer);
 void CreateSounds();
+void CreateUI();
 void InputLoop();
 void AnimableStep(double elapsedSeconds);
 void AudioStep();
+void UIStep();
 void RenderLoop();
 void DestroySceneObjects();
+void ReleaseGPUResources();
 void ReleaseTemplates();
+void AppStep();
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -112,17 +111,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     }
     else
     {
-      timer.Tick([&]() {});
-      InputLoop();
-      EffectsStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
-      AnimableStep(timer.GetElapsedSeconds());
-      if (renderer) {
-        RenderLoop();
-      }
-      AudioStep();
+      AppStep();
     }
   }
   return (int) msg.wParam;
+}
+
+void AppStep() {
+  timer.Tick([&]() {});
+  InputLoop();
+  EffectsStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
+  AnimableStep(timer.GetElapsedSeconds());
+  if (renderer) {
+    RenderLoop();
+  }
+  AudioStep();
+  UIStep();
 }
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
@@ -172,10 +176,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
   gamePad = std::make_unique<GamePad>();
   buttons.Reset();
-
+  
   //initialize the shader compiler and changes monitor
-  ShaderCompiler::BuildCompiler();
-  ShaderCompiler::MonitorChanges(L"Shaders");
+  BuildShaderCompiler();
+  MonitorShaderChanges(L"Shaders");
 
   //Initialize the audio system
   InitAudio();
@@ -191,23 +195,43 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   CreateCameras(renderer);
   CreateLights(renderer);
   CreateSounds();
+  CreateUI();
 
   //kick the audio listener update
   AudioStep();
 
-  //initialize 2D objects
-  //inicializar objetos 2D
-  fpsText = std::make_shared<FPSText>();
-  fpsText->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory);
-  
-  currentCameraText = std::make_shared<Label>(); currentCameraText->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 32, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
- 
-  animationLabel = std::make_shared<Label>(); animationLabel->Initialize(renderer->d2d1DeviceContext, renderer->dWriteFactory, 22, DWRITE_TEXT_ALIGNMENT_LEADING, DWRITE_PARAGRAPH_ALIGNMENT_NEAR, D2D1::ColorF::White);
-  
   //execute the commands on the GPU and wait for it's completion
   renderer->CloseCommandsAndFlush();
     
   return TRUE;
+}
+
+void DestroyInstance()
+{
+  using namespace DeviceUtils::D3D12Device;
+
+  Flush(renderer->commandQueue, renderer->fence, renderer->fenceValue, renderer->fenceEvent);
+
+  using namespace UI;
+  DestroyUI2DStrings();
+
+  DestroySceneObjects();
+  
+  using namespace DeviceUtils::Resources;
+  DestroyTextureResources();
+
+  ReleaseTemplates();
+  
+  ReleaseGPUResources();
+  
+  ShutdownAudio();
+  
+  gamePad.reset();
+  keyboard.reset();
+
+  renderer->Destroy();
+  renderer = nullptr;
+
 }
 
 void CreateTemplates(std::shared_ptr<Renderer>& renderer) {
@@ -431,6 +455,7 @@ void CreateLights(std::shared_ptr<Renderer>& renderer) {
       .farZ = 20.0f,
     },
   },[](LightPtr light){
+      using namespace Animation::Effects;
       LightOscilation fireplace = {
         .originalValue = light->point.color,
         .target = &light->point.color,
@@ -438,7 +463,7 @@ void CreateLights(std::shared_ptr<Renderer>& renderer) {
         .amplitude = 0.1f,
         .angularFrequency = 45.0f,
       };
-    CreateLightEffects[L"LightOscilation"](light,&fireplace);
+    CreateLightEffects[LightOscilationEffect](light,&fireplace);
   });
 }
 
@@ -529,7 +554,6 @@ void CreateRenderables(std::shared_ptr<Renderer>& renderer) {
     .scale = { 2.0f, 2.0f, 2.0f },
     .rotation = { -DirectX::XM_PIDIV2, -DirectX::XM_PIDIV2, 0.0f },
   });
-
   for (UINT flameIndex = 0U; flameIndex < 2U; flameIndex++) {
     std::wstring fireplaceName = L"fireplace(" + std::to_wstring(flameIndex) + L")";
     float flameRot = DirectX::XM_PIDIV2 * static_cast<float>(flameIndex);
@@ -541,11 +565,12 @@ void CreateRenderables(std::shared_ptr<Renderer>& renderer) {
       .scale = { 1.5f, 1.5f, 1.5f },
       .rotation = { 0.0f , flameRot, 0 }
     },[](RenderablePtr renderable) {
+        using namespace Animation::Effects;
         DecalLoopT decal = {
           .numFrames = 50U,
           .timePerFrames = 0.04f,
         };
-        Animation::Effects::CreateRenderableEffects[L"DecalLoop"](renderable, &decal);
+        Animation::Effects::CreateRenderableEffects[DecalLoopEffect](renderable, &decal);
     });
   }
 
@@ -571,7 +596,6 @@ void CreateRenderables(std::shared_ptr<Renderer>& renderer) {
 }
 
 void CreateSounds() {
-  
   CreateInstance(L"music", L"music", {
     .autoPlay = true,
     .volume = 0.3f,
@@ -582,7 +606,34 @@ void CreateSounds() {
     .volume = 2.0f,
     .position = { -2.2f, 0.7f, 7.1f }
   });
+}
+
+void CreateUI() {
+  using namespace UI;
   
+  CreateUI2DString(L"fpsText", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
+    .text = L"FPS:",
+    .fontSize = 32.0f,
+    .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
+    .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
+    .drawRect = { 10.0f, 10.0f, 250.0f, 30.0f },
+  });
+
+  CreateUI2DString(L"currentCamera", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
+    .fontSize = 32.0f,
+    .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
+    .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
+    .drawRect = { 200.0f, 10.0f, 700.0f, 310.0f }
+  });
+
+  FLOAT WinHeight = static_cast<FLOAT>(hWndRect.bottom - hWndRect.top);
+  CreateUI2DString(L"animation", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
+    .fontSize = 22,
+    .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
+    .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
+    .drawRect = { 60.0f, WinHeight - 90, 560.0f, WinHeight - 90 + 30.0f }
+  });
+
 }
 
 void InputLoop()
@@ -657,143 +708,156 @@ void AudioStep() {
   UpdateAudio();
 }
 
+void UIStep() {
+  using namespace UI;
+
+  GetUI2DString(L"fpsText")->text = L"FPS:" + std::to_wstring(timer.GetFramesPerSecond());
+
+  CameraPtr camera = Scene::Camera::GetCamera(currentCamera);
+
+  GetUI2DString(L"currentCamera")->text = camera->name;
+
+  if (knight != nullptr) {
+    GetUI2DString(L"animation")->text = L"Animation:" + knight->currentAnimation;
+  }
+}
+
 void RenderLoop()
 {
-    if (!inFullScreen)
+  if (!inFullScreen)
+  {
+    GetWindowRect(hWnd, &hWndRect);
+  }
+
+  CameraPtr camera = Scene::Camera::GetCamera(currentCamera);
+
+  renderer->ResetCommands();
+
+  renderer->SetCSUDescriptorHeap();
+
+  using namespace Scene::Renderable;
+
+  for (auto& [name, r] : GetRenderables()) {
+    r->WriteConstantsBuffer(renderer->backBufferIndex);
+  }
+
+  WriteEffectsConstantsBuffer(renderer->backBufferIndex);
+
+  PIXBeginEvent(renderer->commandQueue.p, 0, L"Render");
+  {
+
+    for (auto& l : Scene::Lights::GetLights()) {
+      if (!l->hasShadowMaps) continue;
+
+      auto renderSceneShadowMap = [&l](UINT cameraIndex) {
+        l->shadowMapCameras[cameraIndex]->UpdateConstantsBuffer(renderer->backBufferIndex);
+        for (auto& [name, r] : GetRenderables()) {
+          r->RenderShadowMap(renderer, l, cameraIndex);
+        }
+        };
+
+      std::wstring shadowMapEvent = L"ShadowMap:" + l->name;
+      PIXBeginEvent(renderer->commandList.p, 0, shadowMapEvent.c_str());
+
+      RenderShadowMap(l, renderer, renderSceneShadowMap);
+
+      PIXEndEvent(renderer->commandList.p);
+    }
+
+    PIXBeginEvent(renderer->commandList.p, 0, L"Render Scene");
     {
-        GetWindowRect(hWnd, &hWndRect);
+      renderer->SetRenderTargets();
+
+      camera->UpdateConstantsBuffer(renderer->backBufferIndex);
+
+      UINT lightIndex = 0U;
+      UINT shadowMapIndex = 0U;
+      for (auto l : Scene::Lights::GetLights()) {
+        UpdateConstantsBufferLightAttributes(l, renderer->backBufferIndex, lightIndex++);
+        if (l->hasShadowMaps && l->lightType != LightType::Ambient) {
+          UpdateConstantsBufferShadowMapAttributes(l, renderer->backBufferIndex, shadowMapIndex++);
+        }
+      }
+      UpdateConstantsBufferNumLights(renderer->backBufferIndex, lightIndex);
+
+      for (auto& [name, r] : Scene::Renderable::GetRenderables()) {
+        r->Render(renderer, camera);
+      }
     }
+    PIXEndEvent(renderer->commandList.p);
 
-    CameraPtr camera = Scene::Camera::GetCamera(currentCamera);
-    
-    renderer->ResetCommands();
+    //before switching to 2D mode the commandQueue must be executed
+    renderer->ExecuteCommands();
 
-    renderer->SetCSUDescriptorHeap();
-
-    using namespace Scene::Renderable;
-
-    for (auto& [name,r] : GetRenderables()) {
-      r->WriteConstantsBuffer(renderer->backBufferIndex);
-    }
-
-    WriteEffectsConstantsBuffer(renderer->backBufferIndex);
-
-    PIXBeginEvent(renderer->commandQueue.Get(), 0, L"Render");
+    //PIXBeginEvent(renderer->commandQueue.Get(), 0, L"Render UI");
     {
+      //switch to 2d mode
+      renderer->Set2DRenderTarget();
 
-        for (auto& l : Scene::Lights::GetLights()) {
-            if (!l->hasShadowMaps) continue;
-
-            auto renderSceneShadowMap = [&l](UINT cameraIndex) {
-                l->shadowMapCameras[cameraIndex]->UpdateConstantsBuffer(renderer->backBufferIndex);
-                for (auto& [name,r] : GetRenderables()) {
-                    r->RenderShadowMap(renderer, l, cameraIndex);
-                }
-            };
-
-            std::wstring shadowMapEvent = L"ShadowMap:"+l->name;
-            PIXBeginEvent(renderer->commandList.Get(), 0, shadowMapEvent.c_str());
-
-            RenderShadowMap(l, renderer, renderSceneShadowMap);
-
-            PIXEndEvent(renderer->commandList.Get());
-        }
-
-        PIXBeginEvent(renderer->commandList.Get(), 0, L"Render Scene");
-        {
-            renderer->SetRenderTargets();
-
-            camera->UpdateConstantsBuffer(renderer->backBufferIndex);
-
-            UINT lightIndex = 0U;
-            UINT shadowMapIndex = 0U;
-            for (auto l : Scene::Lights::GetLights()) {
-                UpdateConstantsBufferLightAttributes(l, renderer->backBufferIndex, lightIndex++);
-                if (l->hasShadowMaps && l->lightType != LightType::Ambient) {
-                    UpdateConstantsBufferShadowMapAttributes(l, renderer->backBufferIndex, shadowMapIndex++);
-                }
-            }
-            UpdateConstantsBufferNumLights(renderer->backBufferIndex, lightIndex);
-
-            for (auto& [name,r] : Scene::Renderable::GetRenderables()) {
-              r->Render(renderer,camera);
-            }
-        }
-        PIXEndEvent(renderer->commandList.Get());
-
-        //before switching to 2D mode the commandQueue must be executed
-        renderer->ExecuteCommands();
-
-        //PIXBeginEvent(renderer->commandQueue.Get(), 0, L"Render UI");
-        {
-            //switch to 2d mode
-            renderer->Set2DRenderTarget();
-
-            //draw the framerate
-            fpsText->Render(renderer->d2d1DeviceContext, timer.GetFramesPerSecond());
-
-            //draw the current camera
-            currentCameraText->Render(renderer->d2d1DeviceContext, 200, 10, 500, 300, camera->name.c_str());
-            
-            //draw the current animation of the knight
-            FLOAT WinHeight = static_cast<FLOAT>(hWndRect.bottom - hWndRect.top);
-            std::wstring animStr = L"Animation:" + knight->currentAnimation;
-            animationLabel->Render(renderer->d2d1DeviceContext, 60, WinHeight - 90, 500, 30, animStr);
-        }
-        //PIXEndEvent(renderer->commandQueue.Get());
-        
-        renderer->Present();
+      using namespace UI;
+      DrawUI2DStrings(renderer->d2d1DeviceContext);
     }
-    PIXEndEvent(renderer->commandQueue.Get());
+    //PIXEndEvent(renderer->commandQueue.Get());
+
+    renderer->Present();
+  }
+  //PIXEndEvent(renderer->commandQueue.Get());
+  PIXEndEvent(renderer->commandQueue.p);
 
 }
 
 void DestroySceneObjects()
 {
+  using namespace Animation::Effects;
+  EffectsDestroy();
+
   //Destroy sound instances
   using namespace Audio;
   DestroySounds();
-
+  
   //Destroy the lights
   using namespace Scene::Lights;
   DestroyLights();
-
+  
   //Destroy the cameras
+  using namespace Scene::Camera;
+  DestroyCameras();
 
+  //Destroy animated
+  using namespace Animation;
+  DestroyAnimated();
+  
   //Destroy the renderables
-
+  using namespace Scene::Renderable;
+  DestroyRenderables();
 }
 
 void ReleaseTemplates() {
   
   using namespace Templates::Audio;
-
   ReleaseSoundTemplates();
+
+  using namespace Templates::Model3D;
+  ReleaseModel3DTemplates();
+
+  using namespace Templates::Mesh;
+  ReleaseMeshTemplates();
+
+  using namespace Templates::Material;
+  ReleaseMaterialTemplates();
+
+  using namespace Templates::Shader;
+  ReleaseShaderTemplates();
+}
+
+void ReleaseGPUResources()
+{
+  using namespace DeviceUtils::ConstantsBuffer;
+  DestroyConstantsBufferViewData();
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    auto Destroy = []() -> void {
-        if (renderer) {
-          using namespace DeviceUtils::D3D12Device;
-
-            Flush(renderer->commandQueue, renderer->fence, renderer->fenceValue, renderer->fenceEvent);
-
-            DestroySceneObjects();
-
-            ReleaseTemplates();
-
-            ShutdownAudio();
-
-            gamePad.reset();
-            keyboard.reset();
-
-            renderer->Destroy();
-            renderer = nullptr;
-            
-        }
-    };
-
     switch (message)
     {
     case WM_ACTIVATE:
@@ -846,12 +910,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_PAINT:
     {
         if (inSizeMove && renderer) {
-            timer.Tick([&]() {});
-            InputLoop();
-            EffectsStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
-            AnimableStep(timer.GetElapsedSeconds());;
-            RenderLoop();
-            AudioStep();
+          AppStep();
         } else {
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
@@ -861,7 +920,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
         break;
     case WM_DESTROY:
-        Destroy();
+        DestroyInstance();
         PostQuitMessage(0);
         break;
     case WM_ENTERSIZEMOVE:

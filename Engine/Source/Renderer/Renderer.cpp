@@ -13,6 +13,11 @@ std::mutex rendererMutex;
 static std::shared_ptr<Renderer> renderer = nullptr;
 std::shared_ptr<Renderer> Renderer::GetPtr() { return renderer; }
 
+#if defined(_DEBUG)
+CComPtr<ID3D12Debug1> debugController;
+CComPtr<ID3D12DebugDevice1> debugDevice;
+#endif
+
 void Renderer::Initialize(HWND coreHwnd){
 	renderer = shared_from_this();
 	using namespace DeviceUtils::D3D12Device;
@@ -22,17 +27,20 @@ void Renderer::Initialize(HWND coreHwnd){
 	hwnd = coreHwnd;
 
 #if defined(_DEBUG)
+	ComPtr<ID3D12Debug1> debugController;
+	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 	{
-		ComPtr<ID3D12Debug1> debugController;
-		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-		{
-			debugController->EnableDebugLayer();
-		}
+		debugController->EnableDebugLayer();
 	}
 #endif
 
-	ComPtr<IDXGIAdapter4> dxgiAdapter4 = GetAdapter();
+	CComPtr<IDXGIAdapter4> dxgiAdapter4 = GetAdapter();
 	d3dDevice = CreateDevice(dxgiAdapter4);
+
+#if defined(_DEBUG)
+	d3dDevice->QueryInterface(IID_PPV_ARGS(&debugDevice));
+#endif
+
 	commandQueue = CreateCommandQueue(d3dDevice);
 	swapChain = CreateSwapChain(hwnd, commandQueue, numFrames);
 	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
@@ -40,10 +48,10 @@ void Renderer::Initialize(HWND coreHwnd){
 	rtvDescriptorSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	dsvDescriptorHeap = CreateDescriptorHeap(d3dDevice, 1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-	NAME_D3D12_OBJECT(d3dDevice);
-	NAME_D3D12_OBJECT(commandQueue);
-	NAME_D3D12_OBJECT(rtvDescriptorHeap);
-	NAME_D3D12_OBJECT(dsvDescriptorHeap);
+	CCNAME_D3D12_OBJECT(d3dDevice);
+	CCNAME_D3D12_OBJECT(commandQueue);
+	CCNAME_D3D12_OBJECT(rtvDescriptorHeap);
+	CCNAME_D3D12_OBJECT(dsvDescriptorHeap);
 
 	CreateCSUDescriptorHeap(d3dDevice, numFrames);
 	
@@ -60,7 +68,7 @@ void Renderer::Initialize(HWND coreHwnd){
 	}
 	
 	commandList = CreateCommandList(d3dDevice, commandAllocators[backBufferIndex]);
-	NAME_D3D12_OBJECT(commandList);
+	CCNAME_D3D12_OBJECT(commandList);
 
 	fence = CreateFence(d3dDevice);
 	fenceEvent = CreateEventHandle();
@@ -71,51 +79,92 @@ void Renderer::Initialize(HWND coreHwnd){
 
 	//D2D1
 	CreateD2D1Device(dxgiDevice, d2d1Factory, d2d1Device, d2d1DeviceContext);
-	DX::ThrowIfFailed(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), &dWriteFactory));
+	DX::ThrowIfFailed(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&dWriteFactory)));
 	UpdateD2D1RenderTargets(d3d11on12Device, d2d1DeviceContext, renderTargets, wrappedBackBuffers, d2dRenderTargets, numFrames);
 }
 
 void Renderer::Destroy() {
-	fence = nullptr;// ->Release();
+	fence.Release();
+	fence = nullptr;
 
 	//release d2d
-	//liberar d2d
-	dWriteFactory = nullptr;//->Release();
+	dWriteFactory.Release();
+	dWriteFactory = nullptr;
+	
 	for (int i = 0; i < numFrames; i++) {
-		d2dRenderTargets[i] = nullptr;// ->Release();
+		d2dRenderTargets[i].Release();
+		d2dRenderTargets[i] = nullptr;
 	}
-	d2d1DeviceContext = nullptr;//->Release();
-	d2d1Device = nullptr;//->Release();
-	d2d1Factory = nullptr;//->Release();
+
+	d2d1DeviceContext.Release();
+	d2d1DeviceContext = nullptr;
+
+	d2d1Device.Release();
+	d2d1Device = nullptr;
+
+	d2d1Factory.Release();
+	d2d1Factory = nullptr;
+
 	for (int i = 0; i < numFrames; i++) {
-		wrappedBackBuffers[i] = nullptr;// ->Release();
+
+		wrappedBackBuffers[i].Release();
+		wrappedBackBuffers[i] = nullptr;
 	}
-	dxgiDevice = nullptr;//->Release();
-	d3d11DeviceContext = nullptr;//->Release();
-	d3d11on12Device = nullptr;//->Release();
-	d3d11Device = nullptr;//->Release();
+	dxgiDevice.Release();
+	dxgiDevice = nullptr;
+
+	d3d11DeviceContext.Release();
+	d3d11DeviceContext = nullptr;
+
+	d3d11on12Device.Release();
+	d3d11on12Device = nullptr;
+
+	d3d11Device.Release();
+	d3d11Device = nullptr;
 
 	//release d3d12
-	//liberar d3d12
-	commandList = nullptr;// ->Release();
-	//for (auto commandAllocator : commandAllocators) {
-	//	commandAllocator->Release();
-	//}
+	commandList.Release();
+	commandList = nullptr;
+	
 	for (int i = 0; i < numFrames; i++) {
-		commandAllocators[i] = nullptr;// ->Release();
+		commandAllocators[i].Release();
+		commandAllocators[i] = nullptr;
 	}
-	depthStencil = nullptr;// ->Release();
-	//for (auto renderTarget : renderTargets) {
-	//	renderTarget->Release();
-	//}
+
+	depthStencil.Release();
+	depthStencil = nullptr;
+
 	for (int i = 0; i < numFrames; i++) {
-		renderTargets[i] = nullptr;// ->Release();
+		renderTargets[i].Release();
+		renderTargets[i] = nullptr;
 	}
-	dsvDescriptorHeap = nullptr;// ->Release();
-	rtvDescriptorHeap = nullptr;// ->Release();
-	swapChain = nullptr;// ->Release();
-	commandQueue = nullptr;// ->Release();
-	d3dDevice = nullptr;//->Release();
+
+	using namespace DeviceUtils::ConstantsBuffer;
+	DestroyCSUDescriptorHeap();
+
+	dsvDescriptorHeap.Release();
+	dsvDescriptorHeap = nullptr;
+
+	rtvDescriptorHeap.Release();
+	rtvDescriptorHeap = nullptr;
+
+	swapChain.Release();
+	swapChain = nullptr;
+
+	commandQueue.Release();
+	commandQueue = nullptr;
+
+	d3dDevice.Release();
+	d3dDevice = nullptr;
+
+#if defined(_DEBUG)
+	debugController.Release();
+	debugController = nullptr;
+
+	//debugDevice->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL);
+	debugDevice.Release();
+	debugDevice = nullptr;
+#endif
 
 	renderer = nullptr;
 }
@@ -129,7 +178,6 @@ void Renderer::UpdateViewportPerspective() {
 	float aspectRatio = static_cast<FLOAT>(width) / static_cast<FLOAT>(height);
 	scissorRect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
 	screenViewport = { 0.0f, 0.0f, static_cast<FLOAT>(width), static_cast<FLOAT>(height), 0.0f, 1.0f };
-	perspectiveMatrix = XMMatrixPerspectiveFovRH(fovAngleY, aspectRatio, 0.01f, 100.0f);
 }
 
 void Renderer::Resize(UINT width, UINT height) {
@@ -140,16 +188,16 @@ void Renderer::Resize(UINT width, UINT height) {
 
 	for (UINT i = 0; i < numFrames; ++i)
 	{
-		renderTargets[i].Reset();
+		renderTargets[i].Release();
 		frameFenceValues[i] = frameFenceValues[backBufferIndex];
 	}
-	depthStencil.Reset();
+	depthStencil.Release();
 
 	//free d3d11on12 & d2d resources
 	for (UINT i = 0; i < numFrames; ++i)
 	{
-		wrappedBackBuffers[i].Reset();
-		d2dRenderTargets[i].Reset();
+		wrappedBackBuffers[i].Release();
+		d2dRenderTargets[i].Release();
 	}
 	d2d1DeviceContext->SetTarget(nullptr);
 	d3d11DeviceContext->Flush();
@@ -172,16 +220,16 @@ void Renderer::Resize(UINT width, UINT height) {
 void Renderer::ResetCommands() {
 	auto commandAllocator = commandAllocators[backBufferIndex];
 	commandAllocator->Reset();
-	commandList->Reset(commandAllocator.Get(), nullptr);
+	commandList->Reset(commandAllocator, nullptr);
 }
 
 void Renderer::SetCSUDescriptorHeap() {
 	using namespace DeviceUtils::ConstantsBuffer;
-	ID3D12DescriptorHeap* ppHeaps[] = { GetCSUDescriptorHeap().Get()};
+	ID3D12DescriptorHeap* ppHeaps[] = { GetCSUDescriptorHeap() };
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 }
 
-void Renderer::SetShadowMapTarget(ComPtr<ID3D12Resource> shadowMap, D3D12_CPU_DESCRIPTOR_HANDLE shadowMapCpuHandle, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport) {
+void Renderer::SetShadowMapTarget(CComPtr<ID3D12Resource>& shadowMap, D3D12_CPU_DESCRIPTOR_HANDLE shadowMapCpuHandle, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport) {
 	commandList->RSSetViewports(1, &shadowMapViewport);
 	commandList->RSSetScissorRects(1, &shadowMapScissorRect);
 	commandList->ClearDepthStencilView(shadowMapCpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
@@ -191,7 +239,7 @@ void Renderer::SetShadowMapTarget(ComPtr<ID3D12Resource> shadowMap, D3D12_CPU_DE
 void Renderer::SetRenderTargets() {
 	auto backBuffer = renderTargets[backBufferIndex];
 
-	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	commandList->ResourceBarrier(1, &barrier);
 
 	commandList->RSSetViewports(1, &screenViewport);
@@ -209,25 +257,25 @@ void Renderer::SetRenderTargets() {
 void Renderer::ExecuteCommands()
 {
 	//auto backBuffer = renderTargets[backBufferIndex];
-	//CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	//CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	//commandList->ResourceBarrier(1, &barrier);
 
 	DX::ThrowIfFailed(commandList->Close());
-	ID3D12CommandList* const commandLists[] = { commandList.Get() };
+	ID3D12CommandList* const commandLists[] = { commandList };
 	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 }
 
 void Renderer::Set2DRenderTarget() {
 
-	d3d11on12Device->AcquireWrappedResources(wrappedBackBuffers[backBufferIndex].GetAddressOf(), 1);
-	d2d1DeviceContext->SetTarget(d2dRenderTargets[backBufferIndex].Get());
+	d3d11on12Device->AcquireWrappedResources(&wrappedBackBuffers[backBufferIndex].p, 1);
+	d2d1DeviceContext->SetTarget(d2dRenderTargets[backBufferIndex]);
 }
 
 void Renderer::Present() {
 	using namespace DeviceUtils::D3D12Device;
 
 	//flush d3d11on12
-	d3d11on12Device->ReleaseWrappedResources(wrappedBackBuffers[backBufferIndex].GetAddressOf(), 1);
+	d3d11on12Device->ReleaseWrappedResources(&wrappedBackBuffers[backBufferIndex].p, 1);
 	d3d11DeviceContext->Flush();
 
 	//present
@@ -236,7 +284,6 @@ void Renderer::Present() {
 	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 
 	//make the CPU to wait for the GPU to finish the current processing
-	//hacer que la CPU espere a que el procesamiento de la GPU termine
 	WaitForFenceValue(fence, frameFenceValues[backBufferIndex], fenceEvent);
 }
 
@@ -244,7 +291,7 @@ void Renderer::CloseCommandsAndFlush() {
 	using namespace DeviceUtils::D3D12Device;
 
 	commandList->Close();
-	ID3D12CommandList* const commandLists[] = { commandList.Get() };
+	ID3D12CommandList* const commandLists[] = { commandList };
 	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 	Flush(commandQueue, fence, fenceValue, fenceEvent);
 }

@@ -62,6 +62,7 @@ namespace Scene::Camera {
     Camera() :
       perspective{}
     {};
+    ~Camera() { cameraCbv = nullptr; }
 
     void CreateConstantsBufferView(const std::shared_ptr<Renderer>& renderer);
     void UpdateConstantsBuffer(UINT backbufferIndex);
@@ -82,6 +83,7 @@ namespace Scene::Camera {
   };
 
   std::shared_ptr<Camera> CreateCamera(const CameraDefinition& cameraDefinition);
+  void DestroyCameras();
   size_t GetNumCameras();
   std::shared_ptr<Camera> GetCamera(UINT index);
   std::shared_ptr<Camera> GetCamera(std::wstring name);

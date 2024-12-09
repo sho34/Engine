@@ -6,14 +6,14 @@
 namespace DeviceUtils::PipelineState
 {
 
-	ComPtr<ID3D12PipelineState> CreatePipelineState(ComPtr<ID3D12Device2> d3dDevice, std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout, const MaterialPtr& material, ComPtr<ID3D12RootSignature>& rootSignature) {
+	CComPtr<ID3D12PipelineState> CreatePipelineState(CComPtr<ID3D12Device2>& d3dDevice, std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout, const MaterialPtr& material, CComPtr<ID3D12RootSignature>& rootSignature) {
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC state = {};
 
 		//input layout
 		state.InputLayout = { inputLayout.data(), static_cast<UINT>(inputLayout.size()) };
 
 		//root signature
-		state.pRootSignature = rootSignature.Get();
+		state.pRootSignature = rootSignature;
 
 		//shader based state
 		state.VS = CD3DX12_SHADER_BYTECODE(&material->shader->vertexShader->byteCode->at(0), material->shader->vertexShader->byteCode->size());
@@ -33,16 +33,17 @@ namespace DeviceUtils::PipelineState
 		state.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 		state.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 
-		ComPtr<ID3D12PipelineState> pipelineState;
-		DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(pipelineState.ReleaseAndGetAddressOf())));
+		CComPtr<ID3D12PipelineState> pipelineState;
+		DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState)));
+		CCNAME_D3D12_OBJECT(pipelineState);
 		return pipelineState;
 	}
 
-	ComPtr<ID3D12PipelineState> CreatePipelineState(ComPtr<ID3D12Device2> d3dDevice, VertexClass vertexClass, const MaterialPtr& material, ComPtr<ID3D12RootSignature>& rootSignature) {
+	CComPtr<ID3D12PipelineState> CreatePipelineState(CComPtr<ID3D12Device2>& d3dDevice, VertexClass vertexClass, const MaterialPtr& material, CComPtr<ID3D12RootSignature>& rootSignature) {
 		return CreatePipelineState(d3dDevice, vertexInputLayoutsMap[vertexClass], material, rootSignature);
 	}
 
-	ComPtr<ID3D12PipelineState> CreateShadowMapPipelineState(ComPtr<ID3D12Device2> d3dDevice, VertexClass vertexClass, const MaterialPtr& material, ComPtr<ID3D12RootSignature>& rootSignature) {
+	CComPtr<ID3D12PipelineState> CreateShadowMapPipelineState(CComPtr<ID3D12Device2>& d3dDevice, VertexClass vertexClass, const MaterialPtr& material, CComPtr<ID3D12RootSignature>& rootSignature) {
 		return CreatePipelineState(d3dDevice, shadowMapVertexInputLayoutsMap[vertexClass], material, rootSignature);
 	}
 

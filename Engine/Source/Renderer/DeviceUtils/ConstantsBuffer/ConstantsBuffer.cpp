@@ -9,20 +9,26 @@ namespace DeviceUtils::ConstantsBuffer
 	static ConstantsBufferGpuHandleMap constantsBufferGpuMap;
 
 	static UINT csuDescriptorSize;
-	static ComPtr<ID3D12DescriptorHeap> csuDescriptorHeap; //CBV_SRV_UAV
+	static CComPtr<ID3D12DescriptorHeap> csuDescriptorHeap; //CBV_SRV_UAV
 	static CD3DX12_CPU_DESCRIPTOR_HANDLE csuCpuDescriptorHandleStart;
 	static CD3DX12_CPU_DESCRIPTOR_HANDLE csuCpuDescriptorHandleCurrent;
 	static CD3DX12_GPU_DESCRIPTOR_HANDLE csuGpuDescriptorHandleStart;
 	static CD3DX12_GPU_DESCRIPTOR_HANDLE csuGpuDescriptorHandleCurrent;
 
-	void CreateCSUDescriptorHeap(ComPtr<ID3D12Device2>& d3dDevice, UINT numFrames) {
+	void CreateCSUDescriptorHeap(CComPtr<ID3D12Device2>& d3dDevice, UINT numFrames) {
 		csuDescriptorHeap = D3D12Device::CreateDescriptorHeap(d3dDevice, numFrames * csuNumDescriptorsInFrame, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 		csuDescriptorSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 		csuCpuDescriptorHandleStart = csuCpuDescriptorHandleCurrent = CD3DX12_CPU_DESCRIPTOR_HANDLE(csuDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 		csuGpuDescriptorHandleStart = csuGpuDescriptorHandleCurrent = CD3DX12_GPU_DESCRIPTOR_HANDLE(csuDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
 
-		NAME_D3D12_OBJECT(csuDescriptorHeap);
+		CCNAME_D3D12_OBJECT(csuDescriptorHeap);
+	}
+
+	void DestroyCSUDescriptorHeap()
+	{
+		csuDescriptorHeap.Release();
+		csuDescriptorHeap = nullptr;
 	}
 
 	UINT GetCSUDescriptorSize()
@@ -30,7 +36,7 @@ namespace DeviceUtils::ConstantsBuffer
 		return csuDescriptorSize;
 	}
 
-	ComPtr<ID3D12DescriptorHeap>& GetCSUDescriptorHeap() 
+	CComPtr<ID3D12DescriptorHeap>& GetCSUDescriptorHeap() 
 	{
 		return csuDescriptorHeap;
 	}
@@ -95,6 +101,17 @@ namespace DeviceUtils::ConstantsBuffer
 		ZeroMemory(cbvData->mappedConstantBuffer, renderer->numFrames * cbvData->alignedConstantBufferSize);
 
 		return cbvData;
+	}
+
+	void DestroyConstantsBufferViewData()
+	{
+		for (auto& [cbvData,cpuHandlers] : constantsBufferCpuMap)
+		{
+			cbvData->constantBuffer.Release();
+			cbvData->constantBuffer = nullptr;
+		}
+		constantsBufferCpuMap.clear();
+		constantsBufferGpuMap.clear();
 	}
 
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(std::shared_ptr<ConstantsBufferViewData> cbvData, UINT index)

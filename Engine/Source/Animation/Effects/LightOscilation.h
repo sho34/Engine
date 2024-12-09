@@ -5,6 +5,8 @@ namespace Scene::Lights { struct Light; };
 typedef std::shared_ptr<Scene::Lights::Light> LightPtr;
 namespace Animation::Effects {
 
+	static const std::wstring LightOscilationEffect = L"LightOscilation";
+
 	struct LightOscilation
 	{
 		XMFLOAT3 originalValue;
@@ -16,6 +18,7 @@ namespace Animation::Effects {
 	};
 
 	void CreateLightOscilation(LightPtr&, void* constructionData);
+	void DestroyLightOscilations();
 	void StepLightOscilation(FLOAT delta);
 }
 

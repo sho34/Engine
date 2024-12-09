@@ -128,27 +128,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="2D\FPSText.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="2D\Label.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="Animation\Animated.h" />
     <ClInclude Include="Animation\Effects\Effects.h" />
     <ClInclude Include="Animation\Effects\DecalLoop.h" />
     <ClInclude Include="Audio\Audio.h" />
     <ClInclude Include="Primitives\Decal.h" />
+    <ClInclude Include="UI\String2D.h" />
     <ClInclude Include="Templates\Model3D.h" />
     <ClInclude Include="Scene\Lights\AmbientLight.h" />
     <ClInclude Include="Scene\Lights\DirectionalLight.h" />
@@ -235,26 +220,11 @@
     <ClInclude Include="Animation\Effects\LightOscilation.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="2D\FPSText.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="2D\Label.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="Animation\Animated.cpp" />
     <ClCompile Include="Animation\Effects\Effects.cpp" />
     <ClCompile Include="Animation\Effects\DecalLoop.cpp" />
     <ClCompile Include="Audio\Audio.cpp" />
+    <ClCompile Include="UI\String2D.cpp" />
     <ClCompile Include="Templates\Model3D.cpp" />
     <ClCompile Include="Scene\Lights\Lights.cpp" />
     <ClCompile Include="Scene\Camera\Camera.cpp" />

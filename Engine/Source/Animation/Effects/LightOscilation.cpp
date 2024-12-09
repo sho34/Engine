@@ -13,6 +13,11 @@ namespace Animation::Effects {
 
 	}
 
+	void DestroyLightOscilations()
+	{
+		lightOscilationEffects.clear();
+	}
+
 	void StepLightOscilation(FLOAT delta) {
 
 		for (auto& [light, oscilation] : lightOscilationEffects) {

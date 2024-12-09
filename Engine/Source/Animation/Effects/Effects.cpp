@@ -21,4 +21,12 @@ namespace Animation::Effects {
 		}
 	}
 
+	void EffectsDestroy()
+	{
+		for (auto& [fx, DestroyCbFn] : DestroyEffects)
+		{
+			DestroyCbFn();
+		}
+	}
+
 }

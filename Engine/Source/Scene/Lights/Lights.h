@@ -97,9 +97,9 @@ namespace Scene::Lights {
 		
 		//DSV Heap
 		UINT shadowMapDescriptorSize;
-		ComPtr<ID3D12DescriptorHeap> shadowMapDsvDescriptorHeap;
+		CComPtr<ID3D12DescriptorHeap> shadowMapDsvDescriptorHeap;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE shadowMapDsvCpuHandle;
-		ComPtr<ID3D12Resource> shadowMap;
+		CComPtr<ID3D12Resource> shadowMap;
 
 		//Camera
 		std::vector<std::shared_ptr<Scene::Camera::Camera>> shadowMapCameras;
@@ -130,7 +130,7 @@ namespace Scene::Lights {
 
 	Concurrency::task<void> CreateShadowMapPipeline(std::shared_ptr<Renderer>& renderer, const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial);
 
-	std::pair<ComPtr<ID3D12RootSignature>, ComPtr<ID3D12PipelineState>> GetShadowMapRenderAttributes(VertexClass vertexClass, const MaterialPtr material);
+	std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>> GetShadowMapRenderAttributes(VertexClass vertexClass, const MaterialPtr material);
 	
 };
 

@@ -235,13 +235,13 @@ namespace ShaderCompiler {
 		});
 	}
 
-	void BuildCompiler() {
+	void BuildShaderCompiler() {
 		DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(pUtils.GetAddressOf()));
 		DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler));
 	}
 	
 	static CompileQueue changesQueue;
-	void MonitorChanges(std::wstring folder) {
+	void MonitorShaderChanges(std::wstring folder) {
 		
 		std::thread monitor([folder]() {
 			HANDLE file = CreateFileW(folder.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);

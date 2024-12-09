@@ -15,11 +15,11 @@ namespace Scene::Renderable
 	typedef std::pair<MeshPtr, std::vector<ConstantsBufferViewDataPtr>> MeshConstantBufferPair;
 	typedef std::map<MeshPtr, std::vector<ConstantsBufferViewDataPtr>> MeshConstantsBufferMap;
 
-	typedef std::pair<MeshPtr, ComPtr<ID3D12RootSignature>> MeshRootSignaturePair;
-	typedef std::map<MeshPtr, ComPtr<ID3D12RootSignature>> MeshRootSignatureMap;
+	typedef std::pair<MeshPtr, CComPtr<ID3D12RootSignature>> MeshRootSignaturePair;
+	typedef std::map<MeshPtr, CComPtr<ID3D12RootSignature>> MeshRootSignatureMap;
 
-	typedef std::pair<MeshPtr, ComPtr<ID3D12PipelineState>> MeshPipelineStatePair;
-	typedef std::map<MeshPtr, ComPtr<ID3D12PipelineState>> MeshPipelineStateMap;
+	typedef std::pair<MeshPtr, CComPtr<ID3D12PipelineState>> MeshPipelineStatePair;
+	typedef std::map<MeshPtr, CComPtr<ID3D12PipelineState>> MeshPipelineStateMap;
 
 	struct RenderableDefinition
 	{
@@ -107,6 +107,7 @@ namespace Scene::Renderable
 	typedef void LoadRenderableFn(std::shared_ptr<Renderable> renderable);
 
 	std::shared_ptr<Renderable> CreateRenderable(const std::shared_ptr<Renderer>& renderer, const RenderableDefinition& renderableParams, LoadRenderableFn loadFn = nullptr);
+	void DestroyRenderables();
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetRenderables();
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetAnimables();
 }

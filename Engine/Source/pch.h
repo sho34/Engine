@@ -17,6 +17,7 @@
 #include <tchar.h>
 #include <wrl.h>
 #include <wrl/client.h>
+#include <atlbase.h>
 
 //concurrency
 #include <ppl.h>

@@ -13,9 +13,10 @@ namespace DeviceUtils::ConstantsBuffer
 {
 	static constexpr UINT	csuNumDescriptorsInFrame = 1000;
 
-	void CreateCSUDescriptorHeap(ComPtr<ID3D12Device2>& d3dDevice, UINT numFrames);
+	void CreateCSUDescriptorHeap(CComPtr<ID3D12Device2>& d3dDevice, UINT numFrames);
+	void DestroyCSUDescriptorHeap();
 	UINT GetCSUDescriptorSize();
-	ComPtr<ID3D12DescriptorHeap>&	GetCSUDescriptorHeap();
+	CComPtr<ID3D12DescriptorHeap>&	GetCSUDescriptorHeap();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE& GetCpuDescriptorHandleStart();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE& GetCpuDescriptorHandleCurrent();
 	CD3DX12_GPU_DESCRIPTOR_HANDLE& GetGpuDescriptorHandleStart();
@@ -23,9 +24,10 @@ namespace DeviceUtils::ConstantsBuffer
 
 	struct ConstantsBufferViewData {
 		ConstantsBufferViewData(size_t size) : alignedConstantBufferSize((size + 255) & ~255) { }
+		~ConstantsBufferViewData() { constantBuffer.Release(); constantBuffer = nullptr; }
 		UINT alignedConstantBufferSize;
 
-		ComPtr<ID3D12Resource> constantBuffer;
+		CComPtr<ID3D12Resource> constantBuffer;
 		UINT8* mappedConstantBuffer = nullptr;
 
 		template<typename T> size_t push(T& data, UINT index, size_t offset = 0ULL) {
@@ -35,6 +37,7 @@ namespace DeviceUtils::ConstantsBuffer
 	};
 
 	std::shared_ptr<ConstantsBufferViewData> CreateConstantsBufferViewData(const std::shared_ptr<Renderer>& renderer, size_t bufferSize, std::wstring cbName=L"");
+	void DestroyConstantsBufferViewData();
 	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(std::shared_ptr<ConstantsBufferViewData> cbvData, UINT index);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(std::shared_ptr<ConstantsBufferViewData> cbvData, UINT index);
 	void WriteMaterialVariablesToConstantsBufferSpace(MaterialPtr& material, std::shared_ptr<ConstantsBufferViewData>& cbvData, UINT cbvFrameIndex);

@@ -106,6 +106,28 @@ namespace Templates::Material {
 		return &materialTemplates.find(materialName)->second;
 	}
 
+	void ReleaseMaterialTemplates()
+	{
+		for (auto& [name, material] : materialTemplates) {
+
+			//destroy the textures
+			for (auto& texture : material->textures) {
+				texture.texture = nullptr;
+				texture.textureUpload = nullptr; //move this to other place
+			}
+			material->textures.clear();
+
+			//destroy the variables buffers(variables referencing to constants buffer values)
+			for (auto& buf : material->variablesBuffer) {
+				delete* buf;
+			}
+			material->variablesBuffer.clear();
+
+		}
+
+		materialTemplates.clear();
+	}
+
 	void BuildMaterialProperties(std::shared_ptr<Material>& material) {
 
 		//get the shader and initialize the memory space for the constant buffer definition space
@@ -302,7 +324,7 @@ namespace Templates::Material {
 			using namespace DeviceUtils;
 			texture.textureCpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(ConstantsBuffer::GetCpuDescriptorHandleCurrent());
 			texture.textureGpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(ConstantsBuffer::GetGpuDescriptorHandleCurrent());
-			renderer->d3dDevice->CreateShaderResourceView(texture.texture.Get(), &texture.textureViewDesc, texture.textureCpuHandle);
+			renderer->d3dDevice->CreateShaderResourceView(texture.texture, &texture.textureViewDesc, texture.textureCpuHandle);
 			ConstantsBuffer::GetCpuDescriptorHandleCurrent().Offset(ConstantsBuffer::GetCSUDescriptorSize());
 			ConstantsBuffer::GetGpuDescriptorHandleCurrent().Offset(ConstantsBuffer::GetCSUDescriptorSize());
 		}

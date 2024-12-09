@@ -201,74 +201,9 @@ namespace Templates::Model3D {
 
     CreateMaterialTemplate(materialName, matDef).wait();
 
-    /*
-    TextureDe
-    aiString diffuseName;
-    material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
-    if()*/
-    /*
-    AI_MATKEY_USE_COLOR_MAP
-    AI_MATKEY_USE_METALLIC_MAP
-    AI_MATKEY_USE_ROUGHNESS_MAP
-    AI_MATKEY_USE_EMISSIVE_MAP
-    AI_MATKEY_USE_AO_MAP
-    */
-
-    /*
-    aiString shadingModel;
-    material->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
-    std::string shadingModelStr = "shadingModel:";
-    shadingModelStr += shadingModel.C_Str();
-    shadingModelStr += "\n";
-
-    bool useColorMap = false;
-    material->Get(AI_MATKEY_USE_COLOR_MAP, useColorMap);
-    std::string useColorMapStr = "useColorMap:";
-    useColorMapStr += (useColorMap ? "true" : "false");
-    useColorMapStr += "\n";
-    */
-
-    /*
-    aiString diffuseName, normalMapName, metallicRoughnessName;
-    material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
-    material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
-    material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
-    ai_real metallic, roughness;
-    material->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
-    material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
-    ai_real shininess;
-    material->Get(AI_MATKEY_SHININESS, shininess);
-    
-    std::string aiMaterialNameStr = "aiMaterial:";
-    aiMaterialNameStr += material->GetName().C_Str();
-    aiMaterialNameStr += +"\n";
-    
-    std::wstring materialNameStr = L"material:";
-    materialNameStr += materialName.c_str();
-    materialNameStr += L"\n";
-    std::string diffuseStr = "diffuse:" + std::string(diffuseName.C_Str()) + "\n";
-    std::string normalMapStr = "normalMap:" + std::string(normalMapName.C_Str()) + "\n";
-    std::string metallicRoughnessStr = "metallicRoughness:" + std::string(metallicRoughnessName.C_Str()) + "\n";
-    std::string metallicStr = "metallic:" + std::to_string(metallic) + "\n";
-    std::string roughnessStr = "roughness:" + std::to_string(roughness) + "\n";
-    std::string shininessStr = "shininess:" + std::to_string(shininess) + "\n";
-    
-    OutputDebugStringA(aiMaterialNameStr.c_str());
-    //OutputDebugStringA(shadingModelStr.c_str());
-    //OutputDebugStringA(useColorMapStr.c_str());
-    
-    OutputDebugString(materialNameStr.c_str());
-    OutputDebugStringA(diffuseStr.c_str());
-    OutputDebugStringA(normalMapStr.c_str());
-    OutputDebugStringA(metallicRoughnessStr.c_str());
-    OutputDebugStringA(metallicStr.c_str());
-    OutputDebugStringA(roughnessStr.c_str());
-    OutputDebugStringA(shininessStr.c_str());
-    */
   }
 
-//  Concurrency::task<void> CreateModel3DTemplate(std::wstring model3DName, std::wstring assetPath, std::shared_ptr<Renderer>& renderer, Model3DDefinition params, LoadModel3DCallback loadFn)
-  Concurrency::task<void> CreateModel3DTemplate(std::wstring model3DName, std::wstring assetPath, std::shared_ptr<Renderer>& renderer, Model3DDefinition params/*, LoadModel3DCallback loadFn*/)
+  Concurrency::task<void> CreateModel3DTemplate(std::wstring model3DName, std::wstring assetPath, std::shared_ptr<Renderer>& renderer, Model3DDefinition params)
   {
     //read the shader
     const std::wstring assetsRootFolder = L"Assets/models/";
@@ -341,11 +276,35 @@ namespace Templates::Model3D {
       importer.FreeScene();
       return model;
 
-     }).then([/*loadFn*/](Model3DPtr model) {
-      //if (loadFn) loadFn(model);
+     }).then([](Model3DPtr model) {
       model->loading = false;
     });
 
+  }
+
+  void ReleaseModel3DTemplates()
+  {
+    for (auto& [name, model] : model3DTemplates) {
+
+      for (auto& vert : model->vertices) {
+        delete* vert;
+      }
+      model->indices.clear();
+
+      for (auto& mesh : model->meshes) {
+        mesh->vbvData.vertexBuffer = nullptr;
+        mesh->vbvData.vertexBufferUpload = nullptr;
+        mesh->ibvData.indexBuffer = nullptr;
+        mesh->ibvData.indexBufferUpload = nullptr;
+      }
+      model->meshes.clear();
+
+      if (model->animations) {
+        DestroyNodesHierarchy(&model->animations->rootHierarchy);
+      }
+    }
+
+    model3DTemplates.clear();
   }
 
   std::shared_ptr<Model3D> GetModel3DTemplate(std::wstring model3DName) {

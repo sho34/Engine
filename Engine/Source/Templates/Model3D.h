@@ -33,6 +33,7 @@ namespace Templates::Model3D {
 
 
 	Concurrency::task<void> CreateModel3DTemplate(std::wstring model3DName, std::wstring assetPath, std::shared_ptr<Renderer>& renderer, Model3DDefinition params = {});
+	void ReleaseModel3DTemplates();
 	std::shared_ptr<Model3D> GetModel3DTemplate(std::wstring model3DName);
 }
 typedef Templates::Model3D::Model3D Model3DT;

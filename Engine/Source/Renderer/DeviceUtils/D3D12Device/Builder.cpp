@@ -4,9 +4,9 @@
 
 namespace DeviceUtils::D3D12Device {
 
-	ComPtr<IDXGIAdapter4> GetAdapter() {
+	CComPtr<IDXGIAdapter4> GetAdapter() {
 
-		ComPtr<IDXGIFactory4> dxgiFactory;
+		CComPtr<IDXGIFactory4> dxgiFactory;
 		UINT createFactoryFlags = 0;
 #if defined(_DEBUG)
 		createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
@@ -14,8 +14,8 @@ namespace DeviceUtils::D3D12Device {
 
 		DX::ThrowIfFailed(CreateDXGIFactory2(createFactoryFlags, IID_PPV_ARGS(&dxgiFactory)));
 
-		ComPtr<IDXGIAdapter1> dxgiAdapter1;
-		ComPtr<IDXGIAdapter4> dxgiAdapter4;
+		CComPtr<IDXGIAdapter1> dxgiAdapter1;
+		CComPtr<IDXGIAdapter4> dxgiAdapter4;
 		{
 			SIZE_T maxDedicatedVideoMemory = 0;
 			for (UINT i = 0; dxgiFactory->EnumAdapters1(i, &dxgiAdapter1) != DXGI_ERROR_NOT_FOUND; ++i)
@@ -24,28 +24,32 @@ namespace DeviceUtils::D3D12Device {
 				dxgiAdapter1->GetDesc1(&dxgiAdapterDesc1);
 
 				if ((dxgiAdapterDesc1.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) == 0 &&
-					SUCCEEDED(D3D12CreateDevice(dxgiAdapter1.Get(),
+					SUCCEEDED(D3D12CreateDevice(dxgiAdapter1,
 						D3D_FEATURE_LEVEL_12_1, __uuidof(ID3D12Device), nullptr)) &&
 					dxgiAdapterDesc1.DedicatedVideoMemory > maxDedicatedVideoMemory)
 				{
 					maxDedicatedVideoMemory = dxgiAdapterDesc1.DedicatedVideoMemory;
-					DX::ThrowIfFailed(dxgiAdapter1.As(&dxgiAdapter4));
+					dxgiAdapter4.Release();
+					DX::ThrowIfFailed(dxgiAdapter1.QueryInterface(&dxgiAdapter4));
+					//DX::ThrowIfFailed(dxgiAdapter1.As(&dxgiAdapter4));
 				}
+				dxgiAdapter1.Release();
 			}
 		}
 
 		return dxgiAdapter4;
 	}
 
-	ComPtr<ID3D12Device2> CreateDevice(ComPtr<IDXGIAdapter4> adapter)
+	CComPtr<ID3D12Device2> CreateDevice(CComPtr<IDXGIAdapter4> adapter)
 	{
-		ComPtr<ID3D12Device2> d3d12Device2;
-		DX::ThrowIfFailed(D3D12CreateDevice(adapter.Get(), D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&d3d12Device2)));
+		CComPtr<ID3D12Device2> d3d12Device2;
+		DX::ThrowIfFailed(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&d3d12Device2)));
 
 		// Enable debug messages in debug mode.
 #if defined(_DEBUG)
-		ComPtr<ID3D12InfoQueue> pInfoQueue;
-		if (SUCCEEDED(d3d12Device2.As(&pInfoQueue)))
+		CComPtr<ID3D12InfoQueue> pInfoQueue;
+		//if (SUCCEEDED(d3d12Device2.As(&pInfoQueue)))
+		if (SUCCEEDED(d3d12Device2.QueryInterface(&pInfoQueue)))
 		{
 			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE);
 			pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE);
@@ -82,9 +86,9 @@ namespace DeviceUtils::D3D12Device {
 		return d3d12Device2;
 	}
 
-	ComPtr<ID3D12CommandQueue> CreateCommandQueue(ComPtr<ID3D12Device2> device)
+	CComPtr<ID3D12CommandQueue> CreateCommandQueue(CComPtr<ID3D12Device2> device)
 	{
-		ComPtr<ID3D12CommandQueue> d3d12CommandQueue;
+		CComPtr<ID3D12CommandQueue> d3d12CommandQueue;
 
 		D3D12_COMMAND_QUEUE_DESC desc = {};
 		desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
@@ -97,10 +101,10 @@ namespace DeviceUtils::D3D12Device {
 		return d3d12CommandQueue;
 	}
 
-	ComPtr<IDXGISwapChain4> CreateSwapChain(HWND hwnd, ComPtr<ID3D12CommandQueue> commandQueue, UINT bufferCount)
+	CComPtr<IDXGISwapChain4> CreateSwapChain(HWND hwnd, CComPtr<ID3D12CommandQueue> commandQueue, UINT bufferCount)
 	{
-		ComPtr<IDXGISwapChain4> dxgiSwapChain4;
-		ComPtr<IDXGIFactory4> dxgiFactory4;
+		CComPtr<IDXGISwapChain4> dxgiSwapChain4;
+		CComPtr<IDXGIFactory4> dxgiFactory4;
 		UINT createFactoryFlags = 0;
 #if defined(_DEBUG)
 		createFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
@@ -129,44 +133,45 @@ namespace DeviceUtils::D3D12Device {
 		DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsSwapChainDesc = {};
 		fsSwapChainDesc.Windowed = TRUE;
 
-		ComPtr<IDXGISwapChain1> swapChain1;
+		CComPtr<IDXGISwapChain1> swapChain1;
 		DX::ThrowIfFailed(
 			dxgiFactory4->CreateSwapChainForHwnd(
-				commandQueue.Get(), hwnd, &swapChainDesc, &fsSwapChainDesc, nullptr, swapChain1.GetAddressOf()
+				commandQueue, hwnd, &swapChainDesc, &fsSwapChainDesc, nullptr, &swapChain1
 			)
 		);
 
-		DX::ThrowIfFailed(swapChain1.As(&dxgiSwapChain4));
+		DX::ThrowIfFailed(swapChain1.QueryInterface(&dxgiSwapChain4));
+		//DX::ThrowIfFailed(swapChain1.QueryInterface(&dxgiSwapChain4));
 
 		return dxgiSwapChain4;
 	}
 
-	ComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(ComPtr<ID3D12Device2> device, uint32_t numDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags)
+	CComPtr<ID3D12DescriptorHeap> CreateDescriptorHeap(CComPtr<ID3D12Device2> device, uint32_t numDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE type, D3D12_DESCRIPTOR_HEAP_FLAGS flags)
 	{
-		ComPtr<ID3D12DescriptorHeap> descriptorHeap;
+		CComPtr<ID3D12DescriptorHeap> descriptorHeap;
 		D3D12_DESCRIPTOR_HEAP_DESC desc = { .Type = type, .NumDescriptors = numDescriptors, .Flags = flags };
 		DX::ThrowIfFailed(device->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&descriptorHeap)));
 		return descriptorHeap;
 	}
 
-	ComPtr<ID3D12CommandAllocator> CreateCommandAllocator(ComPtr<ID3D12Device2> device)
+	CComPtr<ID3D12CommandAllocator> CreateCommandAllocator(CComPtr<ID3D12Device2> device)
 	{
-		ComPtr<ID3D12CommandAllocator> commandAllocator;
+		CComPtr<ID3D12CommandAllocator> commandAllocator;
 		DX::ThrowIfFailed(device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAllocator)));
 		return commandAllocator;
 	}
 
-	ComPtr<ID3D12GraphicsCommandList2> CreateCommandList(ComPtr<ID3D12Device2> device, ComPtr<ID3D12CommandAllocator> commandAllocator)
+	CComPtr<ID3D12GraphicsCommandList2> CreateCommandList(CComPtr<ID3D12Device2> device, CComPtr<ID3D12CommandAllocator> commandAllocator)
 	{
-		ComPtr<ID3D12GraphicsCommandList2> commandList;
-		DX::ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator.Get(), nullptr, IID_PPV_ARGS(&commandList)));
+		CComPtr<ID3D12GraphicsCommandList2> commandList;
+		DX::ThrowIfFailed(device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAllocator, nullptr, IID_PPV_ARGS(&commandList)));
 		DX::ThrowIfFailed(commandList->Close());
 		return commandList;
 	}
 
-	ComPtr<ID3D12Fence> CreateFence(ComPtr<ID3D12Device2> device)
+	CComPtr<ID3D12Fence> CreateFence(CComPtr<ID3D12Device2> device)
 	{
-		ComPtr<ID3D12Fence> fence;
+		CComPtr<ID3D12Fence> fence;
 		DX::ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
 		return fence;
 	}
@@ -182,38 +187,38 @@ namespace DeviceUtils::D3D12Device {
 		return fenceEvent;
 	}
 
-	void CreateD3D11On12Device(ComPtr<ID3D12Device2> d3dDevice, ComPtr<ID3D12CommandQueue> commandQueue, ComPtr<ID3D11Device>& d3d11Device, ComPtr<ID3D11On12Device>& d3d11on12Device, ComPtr<ID3D11DeviceContext>& d3d11DeviceContext, ComPtr<IDXGIDevice>& dxgiDevice) {
+	void CreateD3D11On12Device(CComPtr<ID3D12Device2> d3dDevice, CComPtr<ID3D12CommandQueue> commandQueue, CComPtr<ID3D11Device> d3d11Device, CComPtr<ID3D11On12Device>& d3d11on12Device, CComPtr<ID3D11DeviceContext>& d3d11DeviceContext, CComPtr<IDXGIDevice>& dxgiDevice) {
 		UINT d3d11DeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #if defined(_DEBUG)
 		// Enable the debug layer (requires the Graphics Tools "optional feature").
 		// NOTE: Enabling the debug layer after device creation will invalidate the active device.
 		{
-			ComPtr<ID3D12Debug> debugController;
-			if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-			{
-				debugController->EnableDebugLayer();
+			//ComPtr<ID3D12Debug> debugController;
+			//if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+			//{
+			//	debugController->EnableDebugLayer();
 
 				// Enable additional debug layers.
 				d3d11DeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-			}
+			//}
 		}
 #endif
 
-		DX::ThrowIfFailed(D3D11On12CreateDevice(d3dDevice.Get(), d3d11DeviceFlags,
-			nullptr, 0, reinterpret_cast<IUnknown**>(commandQueue.GetAddressOf()),
+		DX::ThrowIfFailed(D3D11On12CreateDevice(d3dDevice, d3d11DeviceFlags,
+			nullptr, 0, reinterpret_cast<IUnknown**>(&commandQueue.p),
 			1, 0, &d3d11Device, &d3d11DeviceContext, nullptr));
 
-		DX::ThrowIfFailed(d3d11Device.As(&d3d11on12Device));
-		DX::ThrowIfFailed(d3d11on12Device.As(&dxgiDevice));
+		DX::ThrowIfFailed(d3d11Device.QueryInterface(&d3d11on12Device));
+		DX::ThrowIfFailed(d3d11on12Device.QueryInterface(&dxgiDevice));
 	}
 
-	void CreateD2D1Device(ComPtr<IDXGIDevice> dxgiDevice, ComPtr<ID2D1Factory6>& d2d1Factory, ComPtr<ID2D1Device5>& d2d1Device, ComPtr<ID2D1DeviceContext5>& d2d1DeviceContext) {
+	void CreateD2D1Device(CComPtr<IDXGIDevice> dxgiDevice, CComPtr<ID2D1Factory6>& d2d1Factory, CComPtr<ID2D1Device5>& d2d1Device, CComPtr<ID2D1DeviceContext5>& d2d1DeviceContext) {
 		D2D1_FACTORY_OPTIONS d2d1FactoryOptions = {};
 #if defined(_DEBUG)
 		d2d1FactoryOptions.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
 #endif
-		DX::ThrowIfFailed(D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, __uuidof(ID2D1Factory6), &d2d1FactoryOptions, &d2d1Factory));
-		DX::ThrowIfFailed(d2d1Factory->CreateDevice(dxgiDevice.Get(), &d2d1Device));
+		DX::ThrowIfFailed(D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, d2d1FactoryOptions, &d2d1Factory));
+		DX::ThrowIfFailed(d2d1Factory->CreateDevice(dxgiDevice, &d2d1Device));
 		DX::ThrowIfFailed(d2d1Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &d2d1DeviceContext));
 	}
 

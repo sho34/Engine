@@ -90,6 +90,6 @@ namespace ShaderCompiler {
 	//compiler and utils
 	static ComPtr<IDxcCompiler3> pCompiler;
 	static ComPtr<IDxcUtils> pUtils;
-	void BuildCompiler();
-	void MonitorChanges(std::wstring folder);
+	void BuildShaderCompiler();
+	void MonitorShaderChanges(std::wstring folder);
 };

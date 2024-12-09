@@ -14,6 +14,11 @@ namespace Animation::Effects {
 
 	}
 
+	void DestroyDecalLoops()
+	{
+		decalLoopEffects.clear();
+	}
+
 	void StepDecalLoop(FLOAT delta)
 	{
 		for (auto& [renderable, decal] : decalLoopEffects) {

@@ -96,6 +96,11 @@ namespace Templates::Shader {
 		});
 	}
 
+	void ReleaseShaderTemplates()
+	{
+		shaderTemplates.clear();
+	}
+
 	Concurrency::task<void> BindToShaderTemplate(const std::wstring& shaderTemplateName, void* target, NotificationCallbacks callbacks)
 	{
 		auto shader = GetShaderTemplate(shaderTemplateName);

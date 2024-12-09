@@ -23,6 +23,9 @@ namespace Scene::Lights {
 	static CD3DX12_CPU_DESCRIPTOR_HANDLE shadowMapSrvCpuDescriptorHandle[MaxLights];
 	static CD3DX12_GPU_DESCRIPTOR_HANDLE shadowMapSrvGpuDescriptorHandle[MaxLights];
 
+	std::map<std::pair<VertexClass, const MaterialPtr>, std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>>> shadowMapRenderAttributes;
+	static std::vector<CComPtr<ID3D12Resource>> shadowMapsRenderTargets;
+
 	ConstantsBufferViewDataPtr GetLightsConstantBufferView() { return lightsCbv; }
 	ConstantsBufferViewDataPtr GetShadowMapConstantBufferView() { return shadowMapsCbv; }
 	CD3DX12_GPU_DESCRIPTOR_HANDLE& GetShadowMapGpuDescriptorHandleStart() { return shadowMapSrvGpuDescriptorHandle[0]; }
@@ -191,16 +194,44 @@ namespace Scene::Lights {
 
 	void DestroyLights()
 	{
-		auto renderer = Renderer::GetPtr();
-
 		for (auto& l : lights) {
 			if (!l->hasShadowMaps) continue;
-			//l->shadowMap->Release();
-			l->shadowMap = nullptr;
-			l->shadowMapDsvDescriptorHeap = nullptr;
-		}
 
+			for (auto& cam : l->shadowMapCameras) {
+				cam->cameraCbv->constantBuffer.Release();
+				cam->cameraCbv->constantBuffer = nullptr;
+				cam->cameraCbv.reset();
+				cam->cameraCbv = nullptr;
+			}
+			l->shadowMapCameras.clear();
+
+			l->shadowMap.Release();
+			l->shadowMap = nullptr;
+			l->shadowMapDsvDescriptorHeap.Release();
+			l->shadowMapDsvDescriptorHeap = nullptr;
+			l = nullptr;
+		}
 		lights.clear();
+
+		for (auto& rt : shadowMapsRenderTargets) {
+			rt.Release();
+			rt = nullptr;
+		}
+		shadowMapsRenderTargets.clear();
+
+		for (auto& [p1, p2] : shadowMapRenderAttributes) {
+			p2.first.Release();
+			p2.first = nullptr;
+			p2.second.Release();
+			p2.second = nullptr;
+		}
+		shadowMapRenderAttributes.clear();
+
+		lightsCbv->constantBuffer.Release();
+		lightsCbv->constantBuffer = nullptr;
+		shadowMapsCbv->constantBuffer.Release();
+		shadowMapsCbv->constantBuffer = nullptr;
+		
 	}
 
 	void CreateDirectionalLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, DirectionalLightShadowMapParams params) {
@@ -298,14 +329,14 @@ namespace Scene::Lights {
 	.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
 	.Texture2D = {.MostDetailedMip = 0, .MipLevels = 1U, .ResourceMinLODClamp = 0.0f },
 	};
-	static std::vector<ComPtr<ID3D12Resource>> shadowMapsRenderTargets;
+	
 	void CreateShadowMapDepthStencilResource(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light) {
 		//shadow maps
 		light->shadowMapDsvDescriptorHeap = CreateDescriptorHeap(renderer->d3dDevice, 1U, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 		light->shadowMapDsvCpuHandle = light->shadowMapDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 		light->shadowMapDescriptorSize = renderer->d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 		std::wstring shadowMapHeapName = light->name.c_str(); shadowMapHeapName+=+L" ShadowMapHeap";
-		DX::SetName(light->shadowMapDsvDescriptorHeap.Get(), shadowMapHeapName.c_str());
+		DX::SetName(light->shadowMapDsvDescriptorHeap, shadowMapHeapName.c_str());
 
 		const CD3DX12_HEAP_PROPERTIES depthHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 
@@ -333,18 +364,24 @@ namespace Scene::Lights {
 		}
 
 		//create the GPU texture representation of the same DSV memory area
-		ComPtr<ID3D12Resource> shadowMap;
+		//CComPtr<ID3D12Resource> shadowMap;
 		DX::ThrowIfFailed(renderer->d3dDevice->CreateCommittedResource(&depthHeapProperties, D3D12_HEAP_FLAG_NONE,
-			&depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &shadowMapOptimizedClearValue, IID_PPV_ARGS(&shadowMap)));
+			//&depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &shadowMapOptimizedClearValue, IID_PPV_ARGS(&shadowMap)));
+			&depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &shadowMapOptimizedClearValue, IID_PPV_ARGS(&light->shadowMap)));
 		std::wstring shadowMapTextureName = light->name.c_str(); shadowMapTextureName+=L" ShadowMapTexture";
-		DX::SetName(shadowMap.Get(), shadowMapTextureName.c_str());
-		shadowMapsRenderTargets.push_back(shadowMap);
+		//DX::SetName(shadowMap, shadowMapTextureName.c_str());
+		DX::SetName(light->shadowMap, shadowMapTextureName.c_str());
+		//shadowMapsRenderTargets.push_back(shadowMap);
+		shadowMapsRenderTargets.push_back(light->shadowMap);
 		
-		renderer->d3dDevice->CreateDepthStencilView(shadowMap.Get(), &shadowMapDepthStencilViewDesc, light->shadowMapDsvCpuHandle);
-		shadowMap.CopyTo(light->shadowMap.GetAddressOf());
+		//renderer->d3dDevice->CreateDepthStencilView(shadowMap, &shadowMapDepthStencilViewDesc, light->shadowMapDsvCpuHandle);
+		renderer->d3dDevice->CreateDepthStencilView(light->shadowMap, &shadowMapDepthStencilViewDesc, light->shadowMapDsvCpuHandle);
+		//shadowMap.CopyTo(&light->shadowMap);
+		//shadowMap.CopyTo(light->shadowMap);
 
 		//get the cpu/gpu handlers and move the offsets
-		renderer->d3dDevice->CreateShaderResourceView(shadowMap.Get(), &shadowMapSrvDesc, shadowMapSrvCpuDescriptorHandle[numShadowMaps]);
+		//renderer->d3dDevice->CreateShaderResourceView(shadowMap, &shadowMapSrvDesc, shadowMapSrvCpuDescriptorHandle[numShadowMaps]);
+		renderer->d3dDevice->CreateShaderResourceView(light->shadowMap, &shadowMapSrvDesc, shadowMapSrvCpuDescriptorHandle[numShadowMaps]);
 		numShadowMaps++;
 	}
 
@@ -375,7 +412,6 @@ namespace Scene::Lights {
 		}
 	}
 
-	std::map<std::pair<VertexClass, const MaterialPtr>, std::pair<ComPtr<ID3D12RootSignature>, ComPtr<ID3D12PipelineState>>> shadowMapRenderAttributes;
 	Concurrency::task<void> CreateShadowMapPipeline(std::shared_ptr<Renderer>& renderer, const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial) {
 		return Concurrency::create_task([renderer, shadowMapsInputLayoutMaterial] {
 			for (auto& [vertexClass, material] : shadowMapsInputLayoutMaterial) {
@@ -386,20 +422,20 @@ namespace Scene::Lights {
 				auto pipelineState = CreateShadowMapPipelineState(renderer->d3dDevice, vertexClass, material, rootSignature);
 
 				std::pair<VertexClass, const MaterialPtr> key(vertexClass, material);
-				std::pair<ComPtr<ID3D12RootSignature>, ComPtr<ID3D12PipelineState>> value(rootSignature, pipelineState);
+				std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>> value(rootSignature, pipelineState);
 
 				shadowMapRenderAttributes[key] = value;
 			}
 		});
 	}
 
-	std::pair<ComPtr<ID3D12RootSignature>, ComPtr<ID3D12PipelineState>> GetShadowMapRenderAttributes(VertexClass vertexClass, const MaterialPtr material) {
+	std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>> GetShadowMapRenderAttributes(VertexClass vertexClass, const MaterialPtr material) {
 		std::pair<VertexClass, const MaterialPtr> key(vertexClass, material);
 		if (shadowMapRenderAttributes.contains(key)) {
 			return shadowMapRenderAttributes[key];
 		} else {
 			assert(true);
-			return std::pair<ComPtr<ID3D12RootSignature>, ComPtr<ID3D12PipelineState>>();
+			return std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>>();
 		}
 	}
 }

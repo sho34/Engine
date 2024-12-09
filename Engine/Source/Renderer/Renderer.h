@@ -11,42 +11,42 @@ struct Renderer: public std::enable_shared_from_this<Renderer>
 	static const constexpr float fovAngleY = (70.0f * XM_PI / 180.0f);
 
 	//app window reference
-	//Agile<CoreWindow>                       window;
-	HWND									hwnd;
+	//Agile<CoreWindow> window;
+	HWND hwnd;
 
 	//d3d device resources in order of creation
-	ComPtr<ID3D12Device2>                   d3dDevice;
-	ComPtr<ID3D12CommandQueue>              commandQueue;
-	ComPtr<IDXGISwapChain4>                 swapChain;
+	CComPtr<ID3D12Device2> d3dDevice;
+	CComPtr<ID3D12CommandQueue>              commandQueue;
+	CComPtr<IDXGISwapChain4>                 swapChain;
 
 	//d3d12 descriptor heaps
 	UINT                                    rtvDescriptorSize;
-	ComPtr<ID3D12DescriptorHeap>            rtvDescriptorHeap;
+	CComPtr<ID3D12DescriptorHeap>            rtvDescriptorHeap;
 	
-	ComPtr<ID3D12DescriptorHeap>            dsvDescriptorHeap;
+	CComPtr<ID3D12DescriptorHeap>            dsvDescriptorHeap;
 	UINT																		dsvDescriptorSize;
 
-	ComPtr<ID3D12CommandAllocator>          commandAllocators[numFrames];
-	ComPtr<ID3D12GraphicsCommandList2>      commandList;
+	CComPtr<ID3D12CommandAllocator>          commandAllocators[numFrames];
+	CComPtr<ID3D12GraphicsCommandList2>      commandList;
 
 	//d3d11on12 resources to allow dwrite&d2d1 interop
-	ComPtr<ID3D11Device>                    d3d11Device;
-	ComPtr<ID3D11On12Device>                d3d11on12Device;
-	ComPtr<ID3D11DeviceContext>             d3d11DeviceContext;
-	ComPtr<IDXGIDevice>                     dxgiDevice;
-	ComPtr<ID3D11Resource>                  wrappedBackBuffers[numFrames];
+	CComPtr<ID3D11Device>                    d3d11Device;
+	CComPtr<ID3D11On12Device>                d3d11on12Device;
+	CComPtr<ID3D11DeviceContext>             d3d11DeviceContext;
+	CComPtr<IDXGIDevice>                     dxgiDevice;
+	CComPtr<ID3D11Resource>                  wrappedBackBuffers[numFrames];
 
 	//d2d1 resources
-	ComPtr<ID2D1Factory6>                   d2d1Factory;
-	ComPtr<ID2D1Device5>                    d2d1Device;
-	ComPtr<ID2D1DeviceContext5>             d2d1DeviceContext;
-	ComPtr<ID2D1Bitmap1>                    d2dRenderTargets[numFrames];
+	CComPtr<ID2D1Factory6>                   d2d1Factory;
+	CComPtr<ID2D1Device5>                    d2d1Device;
+	CComPtr<ID2D1DeviceContext5>             d2d1DeviceContext;
+	CComPtr<ID2D1Bitmap1>                    d2dRenderTargets[numFrames];
 
 	//dwrite resources
-	ComPtr<IDWriteFactory>                  dWriteFactory;
+	CComPtr<IDWriteFactory>                  dWriteFactory;
 
 	//GPU <-> CPU synchronization 
-	ComPtr<ID3D12Fence>                     fence;
+	CComPtr<ID3D12Fence>                     fence;
 	UINT64                                  fenceValue = 0;
 	UINT64                                  frameFenceValues[numFrames] = {};
 	HANDLE                                  fenceEvent;
@@ -56,12 +56,9 @@ struct Renderer: public std::enable_shared_from_this<Renderer>
 	D3D12_RECT                              scissorRect;
 
 	//back buffer and depth stencil targets
-	ComPtr<ID3D12Resource>                  renderTargets[numFrames];
-	ComPtr<ID3D12Resource>                  depthStencil;
+	CComPtr<ID3D12Resource>                  renderTargets[numFrames];
+	CComPtr<ID3D12Resource>                  depthStencil;
 	UINT                                    backBufferIndex;
-
-	//matrices
-	XMMATRIX                                perspectiveMatrix;
 
 	void Initialize(HWND hwnd);
 	void Destroy();
@@ -70,7 +67,7 @@ struct Renderer: public std::enable_shared_from_this<Renderer>
 	void ResetCommands();
 	void SetCSUDescriptorHeap();
 	void CloseCommandsAndFlush();
-	void SetShadowMapTarget(ComPtr<ID3D12Resource> shadowMap, D3D12_CPU_DESCRIPTOR_HANDLE shadowMapCpuHandle, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport);
+	void SetShadowMapTarget(CComPtr<ID3D12Resource>& shadowMap, D3D12_CPU_DESCRIPTOR_HANDLE shadowMapCpuHandle, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport);
 	void SetRenderTargets();
 	void Set2DRenderTarget();
 	void ExecuteCommands();

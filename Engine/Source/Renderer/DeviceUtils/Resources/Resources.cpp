@@ -5,8 +5,8 @@
 namespace DeviceUtils::Resources {
 
 	static std::mutex loadBufferResourceMutex;
-	void UpdateBufferResource(ComPtr<ID3D12Device2>& device, ComPtr<ID3D12GraphicsCommandList2>& commandList,
-		ComPtr<ID3D12Resource>& pDestinationResource, ComPtr<ID3D12Resource>& pIntermediateResource, size_t numElements, size_t elementSize, const void* bufferData) {
+	void UpdateBufferResource(CComPtr<ID3D12Device2>& device, CComPtr<ID3D12GraphicsCommandList2>& commandList,
+		CComPtr<ID3D12Resource>& pDestinationResource, CComPtr<ID3D12Resource>& pIntermediateResource, size_t numElements, size_t elementSize, const void* bufferData) {
 		std::lock_guard<std::mutex> lock(loadBufferResourceMutex);
 
 		size_t bufferSize = numElements * elementSize;
@@ -22,7 +22,7 @@ namespace DeviceUtils::Resources {
 			nullptr,
 			IID_PPV_ARGS(&pDestinationResource)));
 
-		NAME_D3D12_OBJECT(pDestinationResource);
+		//NAME_D3D12_OBJECT(pDestinationResource);
 
 		// Create a committed resource for the upload.
 		if (bufferData)
@@ -37,30 +37,29 @@ namespace DeviceUtils::Resources {
 				nullptr,
 				IID_PPV_ARGS(&pIntermediateResource)));
 
-			NAME_D3D12_OBJECT(pIntermediateResource);
+			//NAME_D3D12_OBJECT(pIntermediateResource);
 
 			D3D12_SUBRESOURCE_DATA subresourceData = {};
 			subresourceData.pData = bufferData;
 			subresourceData.RowPitch = bufferSize;
 			subresourceData.SlicePitch = subresourceData.RowPitch;
 
-			UpdateSubresources(commandList.Get(),
-				pDestinationResource.Get(), pIntermediateResource.Get(),
+			UpdateSubresources(commandList,
+				pDestinationResource, pIntermediateResource,
 				0, 0, 1, &subresourceData);
 		}
 	}
 
-	static std::map<std::wstring, ComPtr<ID3D12Resource>> texturesCache;
+	static std::map<std::wstring, CComPtr<ID3D12Resource>> texturesCache;
 	static std::map<std::wstring, UINT> texturesCacheMipMaps;
 
-	void CreateTextureResource(ComPtr<ID3D12Device2>& d3dDevice, ComPtr<ID3D12GraphicsCommandList2>& commandList,
-		const LPWSTR path, ComPtr<ID3D12Resource>& texture, ComPtr<ID3D12Resource>& textureUpload, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, DXGI_FORMAT textureFormat) {
+	void CreateTextureResource(CComPtr<ID3D12Device2>& d3dDevice, CComPtr<ID3D12GraphicsCommandList2>& commandList,
+		const LPWSTR path, CComPtr<ID3D12Resource>& texture, CComPtr<ID3D12Resource>& textureUpload, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, DXGI_FORMAT textureFormat) {
 
 		UINT nMipMaps = 0U;
 		if (texturesCache.find(path) != texturesCache.end()) {
 			//if the texture is in the cache, take a new reference from it
 			//si la textura esta en el cache, toma una nueva referencia de el
-			texturesCache[path]->AddRef();
 			texture = texturesCache[path];
 			nMipMaps = texturesCacheMipMaps[path];
 		}
@@ -69,11 +68,11 @@ namespace DeviceUtils::Resources {
 			//para simplificar las cosas usamos el formato de imagenes dds y lo cargamos a travez de DirecXTK12
 			std::unique_ptr<uint8_t[]> ddsData;
 			std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-			DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice.Get(), path, texture.ReleaseAndGetAddressOf(), ddsData, subresources));
+			DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, path, &texture, ddsData, subresources));
 
 			//obtain the size of the buffer which is SUM(1->n):mipmap(i)->width*height*4
 			//obtener el porte del buffer el cual es SUM(1->n):mipmap(i)->width*height*4
-			auto uploadBufferSize = GetRequiredIntermediateSize(texture.Get(), 0, static_cast<UINT>(subresources.size()));
+			auto uploadBufferSize = GetRequiredIntermediateSize(texture, 0, static_cast<UINT>(subresources.size()));
 
 			//create the upload texture
 			//creamos la textura de subida
@@ -83,7 +82,7 @@ namespace DeviceUtils::Resources {
 
 			//copy the data for the texture and it's mipmaps
 			//copiamos los datos de la textura y sus mipmaps
-			UpdateSubresources(commandList.Get(), texture.Get(), textureUpload.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
+			UpdateSubresources(commandList, texture, textureUpload, 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
 
 			nMipMaps = static_cast<UINT>(subresources.size());
 
@@ -94,7 +93,7 @@ namespace DeviceUtils::Resources {
 
 			//now put a barrier for this copy to avoid keeping processing things untils this is done
 			//ahora ponemos una barrera para esta copia para esperar a que el procesamiento complete
-			auto transition = CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			auto transition = CD3DX12_RESOURCE_BARRIER::Transition(texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 			commandList->ResourceBarrier(1, &transition);
 		}
 
@@ -108,14 +107,13 @@ namespace DeviceUtils::Resources {
 		srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 	}
 
-	void CreateTextureArrayResource(ComPtr<ID3D12Device2>& d3dDevice, ComPtr<ID3D12GraphicsCommandList2>& commandList,
-		const LPWSTR path, ComPtr<ID3D12Resource>& texture, ComPtr<ID3D12Resource>& textureUpload, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, UINT numFrames, DXGI_FORMAT textureFormat) {
+	void CreateTextureArrayResource(CComPtr<ID3D12Device2>& d3dDevice, CComPtr<ID3D12GraphicsCommandList2>& commandList,
+		const LPWSTR path, CComPtr<ID3D12Resource>& texture, CComPtr<ID3D12Resource>& textureUpload, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, UINT numFrames, DXGI_FORMAT textureFormat) {
 
 		UINT nMipMaps = 0U;
 		if (texturesCache.find(path) != texturesCache.end()) {
 			//if the texture is in the cache, take a new reference from it
 			//si la textura esta en el cache, toma una nueva referencia de el
-			texturesCache[path]->AddRef();
 			texture = texturesCache[path];
 			nMipMaps = texturesCacheMipMaps[path];
 		}
@@ -124,11 +122,11 @@ namespace DeviceUtils::Resources {
 			//para simplificar las cosas usamos el formato de imagenes dds y lo cargamos a travez de DirecXTK12
 			std::unique_ptr<uint8_t[]> ddsData;
 			std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-			DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice.Get(), path, texture.ReleaseAndGetAddressOf(), ddsData, subresources));
+			DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, path, &texture.p, ddsData, subresources));
 
 			//obtain the size of the buffer which is numFrames*SUM(1->n):mipmap(i)->width*height*4
 			//obtener el porte del buffer el cual es numFrames*SUM(1->n):mipmap(i)->width*height*4
-			auto uploadBufferSize = GetRequiredIntermediateSize(texture.Get(), 0, static_cast<UINT>(subresources.size()));
+			auto uploadBufferSize = GetRequiredIntermediateSize(texture.p, 0, static_cast<UINT>(subresources.size()));
 
 			//create the upload texture
 			//creamos la textura de subida
@@ -138,7 +136,7 @@ namespace DeviceUtils::Resources {
 
 			//copy the data for the texture and it's mipmaps
 			//copiamos los datos de la textura y sus mipmaps
-			UpdateSubresources(commandList.Get(), texture.Get(), textureUpload.Get(), 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
+			UpdateSubresources(commandList, texture, textureUpload, 0, 0, static_cast<UINT>(subresources.size()), subresources.data());
 
 			nMipMaps = static_cast<UINT>(subresources.size()) / numFrames;
 
@@ -149,7 +147,7 @@ namespace DeviceUtils::Resources {
 
 			//now put a barrier for this copy to avoid keeping processing things untils this is done
 			//ahora ponemos una barrera para esta copia para esperar a que el procesamiento complete
-			auto transition = CD3DX12_RESOURCE_BARRIER::Transition(texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+			auto transition = CD3DX12_RESOURCE_BARRIER::Transition(texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 			commandList->ResourceBarrier(1, &transition);
 		}
 
@@ -162,6 +160,17 @@ namespace DeviceUtils::Resources {
 		srvDesc.Texture2DArray.MostDetailedMip = 0;
 		srvDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
 		srvDesc.Texture2DArray.ArraySize = numFrames;
+	}
+
+	void DestroyTextureResources()
+	{
+
+		for (auto& [name, tex] : texturesCache) {
+			tex.Release();
+			tex = nullptr;
+		}
+		texturesCache.clear();
+
 	}
 
 }

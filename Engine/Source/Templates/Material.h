@@ -83,8 +83,8 @@ namespace Templates::Material {
 		D3D12_SHADER_RESOURCE_VIEW_DESC textureViewDesc;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE textureCpuHandle;
 		CD3DX12_GPU_DESCRIPTOR_HANDLE textureGpuHandle;
-		ComPtr<ID3D12Resource> texture;
-		ComPtr<ID3D12Resource> textureUpload;
+		CComPtr<ID3D12Resource> texture;
+		CComPtr<ID3D12Resource> textureUpload;
 	};
 
 	struct Material
@@ -116,6 +116,7 @@ namespace Templates::Material {
 	typedef void LoadMaterialFn(std::shared_ptr<Material> material);
 
 	std::shared_ptr<Material>* CreateNewMaterial(std::wstring materialName, MaterialDefinition materialDefinition);
+	void ReleaseMaterialTemplates();
 	void BuildMaterialProperties(std::shared_ptr<Material>& material);
 
 	Concurrency::task<void> CreateMaterialTemplate(std::wstring materialName, MaterialDefinition materialDefinition, LoadMaterialFn loadFn = nullptr);

@@ -4,6 +4,8 @@ namespace Scene::Renderable { struct Renderable; };
 typedef std::shared_ptr<Scene::Renderable::Renderable> RenderablePtr;
 namespace Animation::Effects {
 
+	static const std::wstring DecalLoopEffect = L"DecalLoop";
+
 	struct DecalLoop
 	{
 		UINT numFrames;
@@ -13,6 +15,7 @@ namespace Animation::Effects {
 	};
 
 	void CreateDecalLoop(RenderablePtr&, void* constructionData);
+	void DestroyDecalLoops();
 	void StepDecalLoop(FLOAT delta);
 	void WriteDecalLoopConstantsBuffers(UINT backbufferIndex);
 }

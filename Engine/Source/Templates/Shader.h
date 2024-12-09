@@ -31,6 +31,7 @@ namespace Templates::Shader {
 	typedef void LoadShaderFn(std::shared_ptr<Shader>* shader);
 
 	Concurrency::task<void> CreateShaderTemplate(std::wstring shaderTemplateName, ShaderDefaultValues defaultValues = {}, LoadShaderFn loadFn = nullptr);
+	void ReleaseShaderTemplates();
 	Concurrency::task<void> BindToShaderTemplate(const std::wstring& shaderTemplateName, void* target, NotificationCallbacks callbacks);
 	std::shared_ptr<Shader>* GetShaderTemplate(std::wstring shaderTemplateName);
 }

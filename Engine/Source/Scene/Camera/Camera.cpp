@@ -39,9 +39,25 @@ namespace Scene::Camera {
 		return camera;
 	}
 
+	void DestroyCameras()
+	{
+		for (auto& cam : cameraByIndex) {
+			if (cam->cameraCbv) {
+				cam->cameraCbv->constantBuffer.Release();
+				cam->cameraCbv->constantBuffer = nullptr;
+				cam->cameraCbv.reset();
+				cam->cameraCbv = nullptr;
+			}
+			cam.reset();
+			cam = nullptr;
+		}
+		cameraByIndex.clear();
+		cameraByNames.clear();
+	}
+
 	void Camera::CreateConstantsBufferView(const std::shared_ptr<Renderer>& renderer)
 	{
-		this->cameraCbv = CreateConstantsBufferViewData(renderer, sizeof(CameraAttributes) * renderer->numFrames, L"camera");
+		cameraCbv = CreateConstantsBufferViewData(renderer, sizeof(CameraAttributes) * renderer->numFrames, L"camera");
 	}
 
 	void Camera::UpdateConstantsBuffer(UINT backbufferIndex)

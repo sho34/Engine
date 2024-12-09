@@ -5,7 +5,7 @@
 namespace DeviceUtils::RootSignature
 {
 	static std::mutex rootSignatureMutex;
-	ComPtr<ID3D12RootSignature> CreateRootSignature(ComPtr<ID3D12Device2> d3dDevice, const MaterialPtr& material)
+	CComPtr<ID3D12RootSignature> CreateRootSignature(CComPtr<ID3D12Device2> d3dDevice, const MaterialPtr& material)
 	{
 		std::lock_guard<std::mutex> lock(rootSignatureMutex);
 
@@ -33,12 +33,12 @@ namespace DeviceUtils::RootSignature
 		);
 
 		//build the root signature
-		ComPtr<ID3D12RootSignature> rootSignature;
-		ComPtr<ID3DBlob> pSignature;
-		ComPtr<ID3DBlob> pError;
-		DX::ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, pSignature.GetAddressOf(), pError.GetAddressOf()));
-		DX::ThrowIfFailed(d3dDevice->CreateRootSignature(0, pSignature->GetBufferPointer(), pSignature->GetBufferSize(), IID_PPV_ARGS(rootSignature.ReleaseAndGetAddressOf())));
-		NAME_D3D12_OBJECT(rootSignature);
+		CComPtr<ID3D12RootSignature> rootSignature;
+		CComPtr<ID3DBlob> pSignature;
+		CComPtr<ID3DBlob> pError;
+		DX::ThrowIfFailed(D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignature, &pError));
+		DX::ThrowIfFailed(d3dDevice->CreateRootSignature(0, pSignature->GetBufferPointer(), pSignature->GetBufferSize(), IID_PPV_ARGS(&rootSignature)));
+		CCNAME_D3D12_OBJECT(rootSignature);
 
 		return rootSignature;
 	}

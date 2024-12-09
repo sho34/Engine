@@ -126,3 +126,4 @@ namespace DX
 // Nombrar función del asistente para ComPtr<T>.
 // Asigna el nombre de la variable como nombre del objeto.
 #define NAME_D3D12_OBJECT(x) DX::SetName(x.Get(), L#x)
+#define CCNAME_D3D12_OBJECT(x) x->SetName(L#x)

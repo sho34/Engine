@@ -19,22 +19,31 @@ namespace Animation::Effects {
 	//write cbv
 	typedef void (*WriteEffectsConstantsBuffersPtr)(UINT backbufferIndex);
 
+	//destroy
+	typedef void (*DestroyEffectPtr)();
+
 	static std::map<std::wstring, CreateRenderableEffectPtr> CreateRenderableEffects = {
-		{ L"DecalLoop", CreateDecalLoop },
+		{ DecalLoopEffect, CreateDecalLoop },
 	};
 	static std::map<std::wstring, CreateLightEffectPtr> CreateLightEffects = {
-		{ L"LightOscilation", CreateLightOscilation },
+		{ LightOscilationEffect, CreateLightOscilation },
 	};
 
 	static std::map<std::wstring, StepEffectPtr> StepEffects = {
-		{ L"DecalLoop", StepDecalLoop },
-		{ L"LightOscilation", StepLightOscilation },
+		{ DecalLoopEffect, StepDecalLoop },
+		{ LightOscilationEffect, StepLightOscilation },
 	};
 
 	static std::map<std::wstring, WriteEffectsConstantsBuffersPtr> WriteEffectsConstantsBuffers = {
-		{ L"DecalLoop", WriteDecalLoopConstantsBuffers },
+		{ DecalLoopEffect, WriteDecalLoopConstantsBuffers },
+	};
+
+	static std::map<std::wstring, DestroyEffectPtr> DestroyEffects = {
+		{ DecalLoopEffect, DestroyDecalLoops },
+		{ LightOscilationEffect, DestroyLightOscilations }
 	};
 
 	void EffectsStep(FLOAT delta);
 	void WriteEffectsConstantsBuffer(UINT backbufferIndex);
+	void EffectsDestroy();
 }

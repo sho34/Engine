@@ -66,12 +66,6 @@
     <ClInclude Include="Renderer\VertexFormats.h">
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="2D\FPSText.h">
-      <Filter>Source Files\2D</Filter>
-    </ClInclude>
-    <ClInclude Include="2D\Label.h">
-      <Filter>Source Files\2D</Filter>
-    </ClInclude>
     <ClInclude Include="Common\StepTimer.h">
       <Filter>Source Files\Common</Filter>
     </ClInclude>
@@ -216,6 +210,9 @@
     <ClInclude Include="Audio\Audio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UI\String2D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -223,12 +220,6 @@
     </ClCompile>
     <ClCompile Include="Renderer\Renderer.cpp">
       <Filter>Source Files\Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="2D\FPSText.cpp">
-      <Filter>Source Files\2D</Filter>
-    </ClCompile>
-    <ClCompile Include="2D\Label.cpp">
-      <Filter>Source Files\2D</Filter>
     </ClCompile>
     <ClCompile Include="Shaders\Compiler\ShaderCompiler.cpp">
       <Filter>Source Files\Shaders\Compiler</Filter>
@@ -300,6 +291,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Audio\Audio.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UI\String2D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

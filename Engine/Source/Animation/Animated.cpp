@@ -6,7 +6,7 @@
 
 namespace Animation {
 
-  static std::map<RenderablePtr, ConstantsBufferViewDataPtr> animationsCBV;
+  static std::map<RenderablePtr, ConstantsBufferViewDataPtr> animationsCbv;
 
 	void BuildBonesOffsets(const aiScene* aiModel, BonesTransformations& bonesOffsets) {
 
@@ -108,19 +108,30 @@ namespace Animation {
 		return animated;
   }
 
+	void DestroyAnimated()
+	{
+		for (auto& [renderable,cbvData] : animationsCbv) {
+			cbvData->constantBuffer.Release();
+			cbvData->constantBuffer = nullptr;
+			cbvData.reset();
+			cbvData = nullptr;
+		}
+		animationsCbv.clear();
+	}
+
 	void AttachAnimation(const std::shared_ptr<Renderer>& renderer, RenderablePtr& renderable, std::shared_ptr<Animated>& animated)
 	{
 		using namespace DeviceUtils::ConstantsBuffer;
 
 		ConstantsBufferViewDataPtr cbvData = CreateConstantsBufferViewData(renderer, sizeof(BonesMatrices));
-		animationsCBV[renderable] = cbvData;
+		animationsCbv[renderable] = cbvData;
 
 		renderable->bonesTransformation = animated->bonesOffsets;
 	}
 
 	ConstantsBufferViewDataPtr GetAnimatedConstantBufferView(RenderablePtr& renderable)
 	{
-		return animationsCBV[renderable];
+		return animationsCbv[renderable];
 	}
 
 	void WriteBoneTransformationsToConstantsBuffer(RenderablePtr& renderable, BonesTransformations& bonesTransformation, UINT backbufferIndex)

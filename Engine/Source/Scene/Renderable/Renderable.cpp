@@ -74,6 +74,46 @@ namespace Scene::Renderable {
     return r;
   }
 
+  void DestroyRenderables()
+  {
+    for (auto& [name, renderable] : renderables) {
+
+      if (renderable->animations) {
+        renderable->animations.reset();
+        renderable->animations = nullptr;
+      }
+
+      for (auto& [mesh, pipelinestate] : renderable->meshPipelineStates) {
+        pipelinestate.Release();
+        pipelinestate = nullptr;
+      }
+      for (auto& [mesh, rootsignature] : renderable->meshRootSignatures) {
+        rootsignature.Release();
+        rootsignature = nullptr;
+      }
+
+      for (auto& [mesh, cbvvec] : renderable->meshConstantsBuffer) {
+        for (auto& cbv : cbvvec) {
+          cbv->constantBuffer.Release();
+          cbv->constantBuffer = nullptr;
+          cbv.reset();
+          cbv = nullptr;
+        }
+      }
+
+      renderable->this_ptr = nullptr;
+      renderable.reset();
+      renderable = nullptr;
+    }
+    renderables.clear();
+
+    for (auto& [name, renderable] : animables) {
+      renderable.reset();
+      renderable = nullptr;
+    }
+    animables.clear();
+  }
+
   std::map<std::wstring, std::shared_ptr<Renderable>>& GetRenderables()
   {
     return renderables;
@@ -178,7 +218,7 @@ namespace Scene::Renderable {
 
     auto& commandList = renderer->commandList;
 
-    PIXBeginEvent(commandList.Get(), 0, name.c_str());
+    PIXBeginEvent(commandList.p, 0, name.c_str());
 
     commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
@@ -196,8 +236,8 @@ namespace Scene::Renderable {
       using namespace Scene::Lights;
       using namespace Animation;
 
-      commandList->SetGraphicsRootSignature(rootSignature.Get());
-      commandList->SetPipelineState(pipelineState.Get());
+      commandList->SetGraphicsRootSignature(rootSignature);
+      commandList->SetPipelineState(pipelineState);
 
       UINT cbvSlot = 0U;
       for (UINT i = 0U; i < cbuffers.size(); i++){
@@ -251,7 +291,7 @@ namespace Scene::Renderable {
       commandList->DrawIndexedInstanced(mesh->ibvData.indexBufferView.SizeInBytes / sizeof(UINT32), 1, 0, 0, 0);
     }
   
-    PIXEndEvent(commandList.Get());
+    PIXEndEvent(commandList.p);
   }
 
   void Renderable::RenderShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Scene::Lights::Light>& light, UINT cameraIndex) {
@@ -270,8 +310,8 @@ namespace Scene::Renderable {
       if (CamRegister == -1) continue; //don't draw things without a camera, bad shader(sorry)
 
       auto [rootSignature, pipelineState] =  GetShadowMapRenderAttributes(mesh->vertexClass, material);
-      commandList->SetGraphicsRootSignature(rootSignature.Get());
-      commandList->SetPipelineState(pipelineState.Get());
+      commandList->SetGraphicsRootSignature(rootSignature);
+      commandList->SetPipelineState(pipelineState);
 
       auto cbuffers = meshConstantsBuffer[mesh];
       UINT cbvSlot = 0U;
