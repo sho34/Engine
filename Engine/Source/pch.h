@@ -38,11 +38,11 @@
 #include <dxgidebug.h>
 #endif
 
-#if defined(_DEVELOPMENT)
+//#if defined(_DEVELOPMENT)
 #include <d3dcompiler.h>
 #include <dxcapi.h>
 #include <pix3.h>
-#endif
+//#endif
 
 //DirectXTK stuff
 #include <DDSTextureLoader.h>
