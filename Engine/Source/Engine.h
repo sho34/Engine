@@ -10,3 +10,7 @@
 #include "Templates/Mesh.h"
 #include "Templates/Model3D.h"
 #include "Templates/Sound.h"
+
+#if defined(_EDITOR)
+#include "Editor/Editor.h"
+#endif

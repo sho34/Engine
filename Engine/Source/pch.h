@@ -71,5 +71,12 @@
 #include <ranges>
 #include <any>
 
+#if defined(_EDITOR)
+#include "imgui.h"
+#include "imgui_internal.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_dx12.h"
+#endif
+
 template<typename... Args> void whatis();
 template<typename T> void whatis(T);

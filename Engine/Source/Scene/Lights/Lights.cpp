@@ -146,6 +146,7 @@ namespace Scene::Lights {
 
 	}
 
+	static std::map<std::wstring, LightPtr> lightsByName;
 	static std::vector<LightPtr> lights;
 	std::shared_ptr<Light> CreateLight(const std::shared_ptr<Renderer>& renderer, const LightDefinition& lightParam, LoadLightFn loadFn) {
 		LightPtr light = std::make_shared<LightT>(LightT{
@@ -186,11 +187,17 @@ namespace Scene::Lights {
 			CreateShadowMapDepthStencilResource(renderer, light);
 		}
 		lights.push_back(light);
+		lightsByName[light->name] = light;
 		if (loadFn) loadFn(light);
 		return light;
 	}
 
 	std::vector<std::shared_ptr<Light>> GetLights() { return lights; }
+
+	std::shared_ptr<Light> GetLight(std::wstring lightName)
+	{
+		return lightsByName[lightName];
+	}
 
 	void DestroyLights()
 	{
@@ -212,6 +219,11 @@ namespace Scene::Lights {
 			l = nullptr;
 		}
 		lights.clear();
+
+		for (auto& [name, l] : lightsByName) {
+			l = nullptr;
+		}
+		lightsByName.clear();
 
 		for (auto& rt : shadowMapsRenderTargets) {
 			rt.Release();

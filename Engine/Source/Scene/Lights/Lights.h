@@ -120,6 +120,7 @@ namespace Scene::Lights {
 
 	std::shared_ptr<Light> CreateLight(const std::shared_ptr<Renderer>& renderer, const LightDefinition& lightParam, LoadLightFn loadFn = nullptr);
 	std::vector<std::shared_ptr<Light>> GetLights();
+	std::shared_ptr<Light> GetLight(std::wstring lightName);
 	void DestroyLights();
 	
 	void CreateDirectionalLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, DirectionalLightShadowMapParams params);

@@ -37,6 +37,7 @@ HWND hWnd;                                      // hWnd
 RECT hWndRect;
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+bool appDone = false;
 bool inSizeMove = false;
 bool inFullScreen = false;
 
@@ -72,11 +73,12 @@ void CreateLights(std::shared_ptr<Renderer>& renderer);
 void CreateRenderables(std::shared_ptr<Renderer>& renderer);
 void CreateSounds();
 void CreateUI();
-void InputLoop();
+void GameInputLoop();
 void AnimableStep(double elapsedSeconds);
 void AudioStep();
 void UIStep();
 void RenderLoop();
+void DrawEditorApplicationBar();
 void DestroySceneObjects();
 void ReleaseGPUResources();
 void ReleaseTemplates();
@@ -100,26 +102,32 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     return FALSE;
   }
 
-  // Main message loop
-  MSG msg = {};
-  while (WM_QUIT != msg.message)
+  // Main loop
+  while (!appDone)
   {
-    if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+    // Poll and handle messages (inputs, window resize, etc.)
+    // See the WndProc() function below for our to dispatch events to the Win32 backend.
+    MSG msg;
+    while (::PeekMessage(&msg, nullptr, 0U, 0U, PM_REMOVE))
     {
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
+      ::TranslateMessage(&msg);
+      ::DispatchMessage(&msg);
+      if (msg.message == WM_QUIT)
+        appDone = true;
     }
-    else
-    {
-      AppStep();
-    }
+    if (appDone)
+      break;
+
+    AppStep();
   }
-  return (int) msg.wParam;
+  DestroyInstance();
+
+  return 0;
 }
 
 void AppStep() {
   timer.Tick([&]() {});
-  InputLoop();
+  GameInputLoop();
   EffectsStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
   AnimableStep(timer.GetElapsedSeconds());
   if (renderer) {
@@ -164,8 +172,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW, 0, 0, winWidth, winHeight, nullptr, nullptr, hInstance, nullptr);
   if (!hWnd) return FALSE;
     
+  SetWindowLong(hWnd, GWL_STYLE, 0);
+
   ShowWindow(hWnd, nCmdShow);
   UpdateWindow(hWnd);
+
   GetWindowRect(hWnd, &hWndRect);
 
   //initialize input helpers
@@ -188,6 +199,42 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   renderer = std::make_shared<Renderer>();
   renderer->Initialize(hWnd);
   renderer->ResetCommands();
+
+#if defined(_EDITOR)
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  //ImGui::StyleColorsLight();
+
+  // Setup Platform/Renderer backends
+  ImGui_ImplWin32_Init(hWnd);
+
+  ImGui_ImplDX12_InitInfo init_info = {};
+  init_info.Device = renderer->d3dDevice;
+  init_info.CommandQueue = renderer->commandQueue;
+  init_info.NumFramesInFlight = renderer->numFrames;
+  init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+  init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
+  
+  // Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
+  // (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
+  init_info.SrvDescriptorHeap = DeviceUtils::ConstantsBuffer::GetCSUDescriptorHeap();
+  init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { 
+    *out_cpu_handle = DeviceUtils::ConstantsBuffer::GetCpuDescriptorHandleCurrent();
+    *out_gpu_handle = DeviceUtils::ConstantsBuffer::GetGpuDescriptorHandleCurrent();
+    /*return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle);*/
+  };
+  init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) {
+    /*return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle);*/
+  };
+  ImGui_ImplDX12_Init(&init_info);
+#endif
 
   //create the objects
   CreateTemplates(renderer);
@@ -228,6 +275,13 @@ void DestroyInstance()
   
   gamePad.reset();
   keyboard.reset();
+
+#if defined(_EDITOR)
+  // Cleanup
+  ImGui_ImplDX12_Shutdown();
+  ImGui_ImplWin32_Shutdown();
+  ImGui::DestroyContext();
+#endif
 
   renderer->Destroy();
   renderer = nullptr;
@@ -636,8 +690,11 @@ void CreateUI() {
 
 }
 
-void InputLoop()
+void GameInputLoop()
 {
+#if defined(_EDITOR)
+  return;
+#endif
   //get the gamepad and keyboard states and update their trackers
   auto keyboardState = keyboard->GetState();
   keys.Update(keyboardState);
@@ -786,6 +843,10 @@ void RenderLoop()
     }
     PIXEndEvent(renderer->commandList.p);
 
+#if defined(_EDITOR)
+    Editor::DrawEditor();
+#endif
+
     //before switching to 2D mode the commandQueue must be executed
     renderer->ExecuteCommands();
 
@@ -794,8 +855,10 @@ void RenderLoop()
       //switch to 2d mode
       renderer->Set2DRenderTarget();
 
+#if !defined(_EDITOR)
       using namespace UI;
       DrawUI2DStrings(renderer->d2d1DeviceContext);
+#endif
     }
     //PIXEndEvent(renderer->commandQueue.Get());
 
@@ -856,8 +919,18 @@ void ReleaseGPUResources()
   DestroyConstantsBufferViewData();
 }
 
+#if defined(_EDITOR)
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+#endif
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+#if defined(_EDITOR)
+  if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+    return true;
+#endif
+
     switch (message)
     {
     case WM_ACTIVATE:
@@ -885,10 +958,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //implement fullscreen with ALT+ENTER
             if (inFullScreen) {
                 SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
-                SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
+                //SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
+                SetWindowLongPtr(hWnd, GWL_STYLE, 0);
 
                 ShowWindow(hWnd, SW_SHOWNORMAL);
-
+                //SetWindowLong(hWnd, GWL_STYLE, 0);
                 SetWindowPos(hWnd, HWND_TOP, hWndRect.left, hWndRect.top, hWndRect.right - hWndRect.left, hWndRect.bottom - hWndRect.top, SWP_NOZORDER | SWP_FRAMECHANGED);
             } else {
                 SetWindowLongPtr(hWnd, GWL_STYLE, WS_POPUP);
@@ -932,6 +1006,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             renderer->Resize(hWndRect.right - hWndRect.left, hWndRect.bottom - hWndRect.top);
         }
         break;
+    case WM_NCCALCSIZE:
+      if (wParam == TRUE)
+      {
+        return DefWindowProc(hWnd, message, wParam, lParam);
+      }
+      break;
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
