@@ -29,9 +29,9 @@ namespace Scene::Renderable
 		ModelMaterialPair modelMaterials;
 		ModelMaterialPair modelMaterialsShadowMap;
 
-		XMVECTOR position = { 0.0f, 0.0f, 0.0f, 1.0f };
-		XMVECTOR scale = { 1.0f, 1.0f, 1.0f, 1.0f };
-		XMVECTOR rotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+		XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
+		XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
+		XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
 
 		std::set<UINT> skipMeshes;
 	};
@@ -40,6 +40,8 @@ namespace Scene::Renderable
 	{
 		~Renderable() { this_ptr = nullptr; } //will this work?
 		std::shared_ptr<Renderable> this_ptr = nullptr; //dumb but efective
+
+		RenderableDefinition definition;
 
 		bool loading = true;
 
@@ -51,9 +53,9 @@ namespace Scene::Renderable
 		MeshRootSignatureMap meshRootSignatures;
 		MeshPipelineStateMap meshPipelineStates;
 
-		XMVECTOR position = { 0.0f, 0.0f, 0.0f, 1.0f };
-		XMVECTOR scale = { 1.0f, 1.0f, 1.0f, 1.0f };
-		XMVECTOR rotation = { 0.0f, 0.0f, 0.0f, 1.0f };
+		XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
+		XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
+		XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
 
 		std::set<MeshPtr> skipMeshes;
 
@@ -101,6 +103,10 @@ namespace Scene::Renderable
 		//animations
 		void SetCurrentAnimation(std::wstring animation, float animationTime = 0.0f);
 		void StepAnimation(double elapsedSeconds);
+
+#if defined(_EDITOR)
+		nlohmann::json json();
+#endif
 
 	};
 

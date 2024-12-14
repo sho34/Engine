@@ -57,6 +57,7 @@ namespace Scene::Renderable {
     }
 
     auto r = std::make_shared<RenderableT>(RenderableT{
+      .definition = renderableParams,
       .name = renderableParams.name,
       .meshMaterials = meshMaterials,
       .meshMaterialsShadowMap = meshMaterialsShadowMap,
@@ -194,9 +195,9 @@ namespace Scene::Renderable {
 
   void Renderable::WriteConstantsBuffer(UINT backbufferIndex)
   {
-    XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector(rotation);
-    XMMATRIX scaleM = XMMatrixScalingFromVector(scale);
-    XMMATRIX positionM = XMMatrixTranslationFromVector(position);
+    XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotation.x, rotation.y, rotation.z, 0.0f });
+    XMMATRIX scaleM = XMMatrixScalingFromVector({ scale.x, scale.y, scale.z });
+    XMMATRIX positionM = XMMatrixTranslationFromVector({ position.x, position.y, position.z });
     XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
 
     WriteConstantsBuffer(L"world", world, backbufferIndex);
@@ -361,4 +362,37 @@ namespace Scene::Renderable {
     TraverseMultiplycationQueue(animationTime, animations->multiplyNavigator, animations->animationsBonesKeys[currentAnimation], bonesTransformation, animations->bonesOffsets, animations->rootNodeInverseTransform, XMMatrixIdentity());
   }
 
+#if defined(_EDITOR)
+  nlohmann::json Renderable::json() {
+    nlohmann::json j = nlohmann::json({});
+
+    std::string jname;
+    std::transform(name.begin(), name.end(), std::back_inserter(jname), [](wchar_t c) { return (char)c; });
+
+    j["name"] = jname;
+    j["position"] = { position.x, position.y, position.z };
+    j["scale"] = { scale.x, scale.y, scale.z };
+    j["rotation"] = { rotation.x, rotation.y, rotation.z };
+
+    auto buildJsonMeshMaterials = [](auto& j, std::string objectName, MeshMaterialMap& meshMatMap){
+      j[objectName] = nlohmann::json::array();
+      for (auto& [mesh, material] : meshMatMap) {
+        std::string jmeshname, jmaterialname;
+        std::transform(mesh->name.begin(), mesh->name.end(), std::back_inserter(jmeshname), [](wchar_t c) { return (char)c; });
+        std::transform(material->materialName.begin(), material->materialName.end(), std::back_inserter(jmaterialname), [](wchar_t c) { return (char)c; });
+        j[objectName].push_back({ {"mesh", jmeshname}, {"material", jmaterialname} });
+      }
+    };
+
+    buildJsonMeshMaterials(j, "meshMaterials", meshMaterials);
+    buildJsonMeshMaterials(j, "meshMaterialsShadowMap", meshMaterialsShadowMap);
+
+    j["skipMeshes"] = nlohmann::json::array();
+    for (auto meshIdx : definition.skipMeshes) {
+      j["skipMeshes"].push_back(meshIdx);
+    }
+
+    return j;
+  }
+#endif
 }
