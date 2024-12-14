@@ -28,6 +28,9 @@ using namespace Templates::Audio;
 using namespace Scene::Lights;
 using namespace Animation::Effects;
 using namespace Audio;
+#if defined(_EDITOR)
+using namespace Editor;
+#endif
 
 #define MAX_LOADSTRING 100
 
@@ -78,7 +81,6 @@ void AnimableStep(double elapsedSeconds);
 void AudioStep();
 void UIStep();
 void RenderLoop();
-void DrawEditorApplicationBar();
 void DestroySceneObjects();
 void ReleaseGPUResources();
 void ReleaseTemplates();
@@ -201,39 +203,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   renderer->ResetCommands();
 
 #if defined(_EDITOR)
-  // Setup Dear ImGui context
-  IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-  io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-
-  // Setup Dear ImGui style
-  ImGui::StyleColorsDark();
-  //ImGui::StyleColorsLight();
-
-  // Setup Platform/Renderer backends
-  ImGui_ImplWin32_Init(hWnd);
-
-  ImGui_ImplDX12_InitInfo init_info = {};
-  init_info.Device = renderer->d3dDevice;
-  init_info.CommandQueue = renderer->commandQueue;
-  init_info.NumFramesInFlight = renderer->numFrames;
-  init_info.RTVFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
-  init_info.DSVFormat = DXGI_FORMAT_UNKNOWN;
-  
-  // Allocating SRV descriptors (for textures) is up to the application, so we provide callbacks.
-  // (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
-  init_info.SrvDescriptorHeap = DeviceUtils::ConstantsBuffer::GetCSUDescriptorHeap();
-  init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) { 
-    *out_cpu_handle = DeviceUtils::ConstantsBuffer::GetCpuDescriptorHandleCurrent();
-    *out_gpu_handle = DeviceUtils::ConstantsBuffer::GetGpuDescriptorHandleCurrent();
-    /*return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle);*/
-  };
-  init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) {
-    /*return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle);*/
-  };
-  ImGui_ImplDX12_Init(&init_info);
+  InitEditor();
 #endif
 
   //create the objects
@@ -277,10 +247,7 @@ void DestroyInstance()
   keyboard.reset();
 
 #if defined(_EDITOR)
-  // Cleanup
-  ImGui_ImplDX12_Shutdown();
-  ImGui_ImplWin32_Shutdown();
-  ImGui::DestroyContext();
+  DestroyEditor();
 #endif
 
   renderer->Destroy();
@@ -541,7 +508,7 @@ void CreateRenderables(std::shared_ptr<Renderer>& renderer) {
     .name = L"pyramid",
     .meshMaterials = { { GetMeshTemplate(L"pyramid"), GetMaterialTemplate(L"Pyramid") } },
     .meshMaterialsShadowMap = { { GetMeshTemplate(L"pyramid"), GetMaterialTemplate(L"ShadowMapAlpha") } },
-    .position = { 6.0f, -1.0f, 2.0f, 1.0f }
+    .position = { 6.0f, -1.0f, 2.0f }
   });
   CreateRenderable(renderer, {
     .name = L"floor",
@@ -629,7 +596,7 @@ void CreateRenderables(std::shared_ptr<Renderer>& renderer) {
   }
 
   for (UINT candleFlameIndex = 0U; candleFlameIndex < 6U; candleFlameIndex++) {
-    XMVECTOR candlePos[] = { { -4.55f, 4.38f,  7.65f }, {  2.24f, 1.80f,  7.39f }, { 10.29f, 1.26f, 12.36f }, };
+    XMFLOAT3 candlePos[] = { { -4.55f, 4.38f,  7.65f }, {  2.24f, 1.80f,  7.39f }, { 10.29f, 1.26f, 12.36f }, };
     std::wstring candleFlameName = L"candleFlame(" + std::to_wstring(candleFlameIndex) + L")";
     float candleFlameRot = DirectX::XM_PIDIV2 * static_cast<float>(candleFlameIndex %2);
     CreateRenderable(renderer, {
@@ -919,15 +886,10 @@ void ReleaseGPUResources()
   DestroyConstantsBufferViewData();
 }
 
-#if defined(_EDITOR)
-// Forward declare message handler from imgui_impl_win32.cpp
-extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-#endif
-
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 #if defined(_EDITOR)
-  if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+  if (WndProcHandlerEditor(hWnd, message, wParam, lParam))
     return true;
 #endif
 

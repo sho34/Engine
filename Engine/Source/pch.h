@@ -70,6 +70,13 @@
 #include <filesystem>
 #include <ranges>
 #include <any>
+#include <ios>
+#include <streambuf>
+#include <fstream>
+#include <iostream>
+#include <ostream>
+#include <istream>
+#include <sstream>
 
 #if defined(_EDITOR)
 #include "imgui.h"
@@ -77,6 +84,8 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
 #endif
+
+#include <nlohmann/json.hpp>
 
 template<typename... Args> void whatis();
 template<typename T> void whatis(T);
