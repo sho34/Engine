@@ -39,6 +39,10 @@ namespace Scene::Camera {
 		return camera;
 	}
 
+	std::vector<std::shared_ptr<Camera>> GetCameras() {
+		return cameraByIndex;
+	}
+
 	void DestroyCameras()
 	{
 		for (auto& cam : cameraByIndex) {
@@ -237,5 +241,49 @@ namespace Scene::Camera {
 	size_t GetNumCameras() { return cameraByIndex.size(); }
 	CameraPtr GetCamera(UINT index) { return cameraByIndex[index]; }
 	CameraPtr GetCamera(std::wstring name) { return cameraByNames[name]; }
+
+#if defined(_EDITOR)
+	nlohmann::json Camera::json() {
+		nlohmann::json j = nlohmann::json({});
+
+		std::string jname;
+		std::transform(name.begin(), name.end(), std::back_inserter(jname), [](wchar_t c) { return (char)c; });
+		j["name"] = jname;
+
+		std::string jprojectionType;
+		std::transform(ProjectionsTypesStr[projectionType].begin(), ProjectionsTypesStr[projectionType].end(), std::back_inserter(jprojectionType), [](wchar_t c) { return (char)c; });
+		j["projectionType"] = jprojectionType;
+
+		auto buildOrthographicJsonCamera = [this](auto& j) {
+			j["orthographic"]["nearZ"] = orthographic.nearZ;
+			j["orthographic"]["farZ"] = orthographic.farZ;
+			j["orthographic"]["width"] = orthographic.width;
+			j["orthographic"]["height"] = orthographic.height;
+		};
+
+		auto buildPerspectiveJsonCamera = [this](auto& j) {
+			j["perspective"]["nearZ"] = perspective.nearZ;
+			j["perspective"]["farZ"] = perspective.farZ;
+			j["perspective"]["fovAngleY"] = perspective.fovAngleY;
+			j["perspective"]["width"] = perspective.width;
+			j["perspective"]["height"] = perspective.height;
+		};
+
+		switch (projectionType) {
+		case Orthographic:
+			buildOrthographicJsonCamera(j);
+			break;
+		case Perspective:
+			buildPerspectiveJsonCamera(j);
+			break;
+		}
+
+		j["position"] = { position.x, position.y, position.z };
+		j["rotation"] = { rotation.x, rotation.y };
+		j["speed"] = speed;
+
+		return j;
+	}
+#endif
 
 }

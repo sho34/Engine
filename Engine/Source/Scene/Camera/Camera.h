@@ -27,6 +27,17 @@ namespace Scene::Camera {
     Ultrawite
   };
 
+  inline static const std::vector<std::wstring> ProjectionsTypesStr = {
+    L"Cylindrical",
+    L"Fisheye",
+    L"Omnimax",
+    L"Orthographic",
+    L"Panoramic",
+    L"Perspective",
+    L"Spherical",
+    L"Ultrawite"
+  };
+
   struct CameraAttributes {
     XMMATRIX viewProjection;
     XMFLOAT3 eyePosition;
@@ -80,9 +91,14 @@ namespace Scene::Camera {
     void MoveBack(float step);
     void MoveLeft(float step);
     void MoveRight(float step);
+
+#if defined(_EDITOR)
+    nlohmann::json json();
+#endif
   };
 
   std::shared_ptr<Camera> CreateCamera(const CameraDefinition& cameraDefinition);
+  std::vector<std::shared_ptr<Camera>> GetCameras();
   void DestroyCameras();
   size_t GetNumCameras();
   std::shared_ptr<Camera> GetCamera(UINT index);
