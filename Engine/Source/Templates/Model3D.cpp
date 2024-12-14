@@ -255,7 +255,9 @@ namespace Templates::Model3D {
 
         using namespace Templates::Mesh;
         MeshPtr mesh = std::make_shared<MeshT>();
+        std::wstring meshName = L"mesh." + model3DName + L"." + std::to_wstring(meshIndex);
         mesh->loading = true;
+        mesh->name = meshName;
         mesh->vertexClass = model->vertexClass;
       
         InitializeVertexBufferView(renderer->d3dDevice, renderer->commandList, *model->vertices.back(), static_cast<UINT>(vertexSize), model->numVertices.back(), mesh->vbvData);

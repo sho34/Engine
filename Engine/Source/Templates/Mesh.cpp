@@ -19,6 +19,7 @@ namespace Templates::Mesh {
 			std::lock_guard<std::mutex> lock(rendererMutex); 
 
 			MeshPtr mesh = std::make_shared<Mesh>();
+			mesh->name = meshName;
 			mesh->loading = true;
 			meshTemplates.insert(std::pair<std::wstring, MeshPtr>(meshName, mesh));
 

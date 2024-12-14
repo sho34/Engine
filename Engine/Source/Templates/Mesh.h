@@ -9,6 +9,7 @@ namespace Templates::Mesh {
 	
 	struct Mesh
 	{
+		std::wstring name;
 		VertexClass vertexClass;
 		VertexBufferViewDataT vbvData;
 		IndexBufferViewDataT	ibvData;
