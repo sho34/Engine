@@ -32,7 +32,7 @@ namespace Scene::Lights {
 		Spot,
 		Point
 	};
-	inline static const std::wstring LightTypesStr[] = {
+	inline static const std::vector<std::wstring> LightTypesStr = {
 		L"Ambient",
 		L"Directional",
 		L"Spot",
@@ -103,6 +103,10 @@ namespace Scene::Lights {
 
 		//Camera
 		std::vector<std::shared_ptr<Scene::Camera::Camera>> shadowMapCameras;
+
+#if defined(_EDITOR)
+		nlohmann::json json();
+#endif
 	};
 
 	//lights and shadow map CBV data

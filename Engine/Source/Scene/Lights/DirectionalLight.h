@@ -11,7 +11,7 @@ namespace Scene::Lights {
 		FLOAT viewWidth;
 		FLOAT viewHeight;
 		FLOAT nearZ = 0.01f;
-		FLOAT farZ = 1000.0f;;
+		FLOAT farZ = 1000.0f;
 	};
 
 	struct DirectionalLightShadowMap {

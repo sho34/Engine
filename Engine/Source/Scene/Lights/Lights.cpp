@@ -318,7 +318,6 @@ namespace Scene::Lights {
 					.height = params.shadowMapHeight,
 				},
 				.position = light->point.position,
-				//.rotation = PointLightRotations[i],
 				.light = light,
 			});
 			camera->perspective.updateProjectionMatrix(static_cast<UINT>(params.shadowMapWidth), static_cast<UINT>(params.shadowMapHeight));
@@ -376,23 +375,15 @@ namespace Scene::Lights {
 		}
 
 		//create the GPU texture representation of the same DSV memory area
-		//CComPtr<ID3D12Resource> shadowMap;
 		DX::ThrowIfFailed(renderer->d3dDevice->CreateCommittedResource(&depthHeapProperties, D3D12_HEAP_FLAG_NONE,
-			//&depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &shadowMapOptimizedClearValue, IID_PPV_ARGS(&shadowMap)));
 			&depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &shadowMapOptimizedClearValue, IID_PPV_ARGS(&light->shadowMap)));
 		std::wstring shadowMapTextureName = light->name.c_str(); shadowMapTextureName+=L" ShadowMapTexture";
-		//DX::SetName(shadowMap, shadowMapTextureName.c_str());
 		DX::SetName(light->shadowMap, shadowMapTextureName.c_str());
-		//shadowMapsRenderTargets.push_back(shadowMap);
 		shadowMapsRenderTargets.push_back(light->shadowMap);
 		
-		//renderer->d3dDevice->CreateDepthStencilView(shadowMap, &shadowMapDepthStencilViewDesc, light->shadowMapDsvCpuHandle);
 		renderer->d3dDevice->CreateDepthStencilView(light->shadowMap, &shadowMapDepthStencilViewDesc, light->shadowMapDsvCpuHandle);
-		//shadowMap.CopyTo(&light->shadowMap);
-		//shadowMap.CopyTo(light->shadowMap);
 
 		//get the cpu/gpu handlers and move the offsets
-		//renderer->d3dDevice->CreateShaderResourceView(shadowMap, &shadowMapSrvDesc, shadowMapSrvCpuDescriptorHandle[numShadowMaps]);
 		renderer->d3dDevice->CreateShaderResourceView(light->shadowMap, &shadowMapSrvDesc, shadowMapSrvCpuDescriptorHandle[numShadowMaps]);
 		numShadowMaps++;
 	}
@@ -450,4 +441,84 @@ namespace Scene::Lights {
 			return std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>>();
 		}
 	}
+
+#if defined(_EDITOR)
+	nlohmann::json Light::json() {
+		nlohmann::json j = nlohmann::json({});
+
+		std::string jname;
+		std::transform(name.begin(), name.end(), std::back_inserter(jname), [](wchar_t c) { return (char)c; });
+		j["name"] = jname;
+
+		std::string jlightType;
+		std::transform(LightTypesStr[lightType].begin(), LightTypesStr[lightType].end(), std::back_inserter(jlightType), [](wchar_t c) { return (char)c; });
+		j["lightType"] = jlightType;
+
+		auto buildJsonAmbientLight = [this](auto& j) {
+			j["ambient"]["color"] = { ambient.color.x, ambient.color.y, ambient.color.z };
+		};
+
+		auto buildJsonDirectionalLight = [this](auto& j) {
+			j["directional"]["color"] = { directional.color.x, directional.color.y, directional.color.z };
+			j["directional"]["distance"] = directional.distance;
+			j["directional"]["rotation"] = { directional.rotation.x, directional.rotation.y };
+			j["directional"]["hasShadowMaps"] = hasShadowMaps;
+			if (hasShadowMaps) {
+				j["directional"]["directionalShadowMap"]["shadowMapWidth"] = directionalShadowMap.creation_params.shadowMapWidth;
+				j["directional"]["directionalShadowMap"]["shadowMapHeight"] = directionalShadowMap.creation_params.shadowMapHeight;
+				j["directional"]["directionalShadowMap"]["viewWidth"] = directionalShadowMap.creation_params.viewWidth;
+				j["directional"]["directionalShadowMap"]["viewHeight"] = directionalShadowMap.creation_params.viewHeight;
+				j["directional"]["directionalShadowMap"]["nearZ"] = directionalShadowMap.creation_params.nearZ;
+				j["directional"]["directionalShadowMap"]["farZ"] = directionalShadowMap.creation_params.farZ;
+			}
+		};
+
+		auto buildJsonSpotLight = [this](auto& j) {
+			j["spot"]["color"] = { spot.color.x, spot.color.y, spot.color.z };
+			j["spot"]["position"] = { spot.position.x, spot.position.y, spot.position.z };
+			j["spot"]["rotation"] = { spot.rotation.x, spot.rotation.y };
+			j["spot"]["coneAngle"] = spot.coneAngle;
+			j["spot"]["attenuation"] = { spot.attenuation.x, spot.attenuation.y, spot.attenuation.z };
+			j["spot"]["hasShadowMaps"] = hasShadowMaps;
+			if (hasShadowMaps) {
+				j["spot"]["spotShadowMap"]["shadowMapWidth"] = spotShadowMap.creation_params.shadowMapWidth;
+				j["spot"]["spotShadowMap"]["shadowMapHeight"] = spotShadowMap.creation_params.shadowMapHeight;
+				j["spot"]["spotShadowMap"]["viewWidth"] = spotShadowMap.creation_params.viewWidth;
+				j["spot"]["spotShadowMap"]["viewHeight"] = spotShadowMap.creation_params.viewHeight;
+				j["spot"]["spotShadowMap"]["nearZ"] = spotShadowMap.creation_params.nearZ;
+				j["spot"]["spotShadowMap"]["farZ"] = spotShadowMap.creation_params.farZ;
+			}
+		};
+
+		auto buildJsonPointLight = [this](auto& j) {
+			j["point"]["color"] = { point.color.x, point.color.y, point.color.z };
+			j["point"]["position"] = { point.position.x, point.position.y, point.position.z };
+			j["point"]["attenuation"] = { point.attenuation.x, point.attenuation.y, point.attenuation.z };
+			j["point"]["hasShadowMaps"] = hasShadowMaps;
+			if (hasShadowMaps) {
+				j["point"]["pointShadowMap"]["shadowMapWidth"] = pointShadowMap.creation_params.shadowMapWidth;
+				j["point"]["pointShadowMap"]["shadowMapHeight"] = pointShadowMap.creation_params.shadowMapHeight;
+				j["point"]["pointShadowMap"]["nearZ"] = pointShadowMap.creation_params.nearZ;
+				j["point"]["pointShadowMap"]["farZ"] = pointShadowMap.creation_params.farZ;
+			}
+		};
+
+		switch (lightType) {
+		case Ambient:
+			buildJsonAmbientLight(j);
+			break;
+		case Directional:
+			buildJsonDirectionalLight(j);
+			break;
+		case Spot:
+			buildJsonSpotLight(j);
+			break;
+		case Point:
+			buildJsonPointLight(j);
+			break;
+		}
+
+		return j;
+	}
+#endif
 }

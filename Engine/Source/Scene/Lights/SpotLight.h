@@ -13,7 +13,6 @@ namespace Scene::Lights {
 		UINT shadowMapHeight;
 		FLOAT viewWidth;
 		FLOAT viewHeight;
-		//FLOAT angle = DirectX::XM_PIDIV4;
 		FLOAT nearZ = 0.01f;
 		FLOAT farZ = 1000.0f;
 	};
