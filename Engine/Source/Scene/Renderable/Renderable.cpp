@@ -12,6 +12,9 @@
 #include "../../Renderer/DeviceUtils/D3D12Device/Interop.h"
 #include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
 #include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
+#if defined(_EDITOR)
+#include "../../Animation/Effects/Effects.h"
+#endif
 #include <DirectXMath.h>
 
 extern std::mutex rendererMutex;
@@ -390,6 +393,12 @@ namespace Scene::Renderable {
     j["skipMeshes"] = nlohmann::json::array();
     for (auto meshIdx : definition.skipMeshes) {
       j["skipMeshes"].push_back(meshIdx);
+    }
+
+    using namespace Animation::Effects;
+    auto effects = GetRenderableEffects(this_ptr);
+    if (!effects.empty()) {
+      j["effects"] = effects;
     }
 
     return j;

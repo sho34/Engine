@@ -78,6 +78,9 @@ namespace Scene::Lights {
 
 	struct Light
 	{
+		~Light() { this_ptr = nullptr; } //will this work?
+		std::shared_ptr<Light> this_ptr = nullptr; //dumb but efective
+
 		std::wstring name;
 		LightType lightType = Ambient;
 

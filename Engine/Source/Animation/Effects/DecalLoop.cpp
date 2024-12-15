@@ -34,4 +34,23 @@ namespace Animation::Effects {
 		}
 	}
 
+#if defined(_EDITOR)
+	void DecalLoopJson(RenderablePtr& renderable, nlohmann::json& j) {
+		if (!decalLoopEffects.contains(renderable)) return;
+		
+		if (j.empty()) j = nlohmann::json::array();
+
+		auto effect = decalLoopEffects[renderable];
+		std::string jname;
+		std::transform(DecalLoopEffect.begin(), DecalLoopEffect.end(), std::back_inserter(jname), [](wchar_t c) { return (char)c; });
+		j.push_back({
+			jname, {
+				{"numFrames", effect->numFrames },
+				{"timePerFrames", effect->timePerFrames }
+			}
+		});
+
+	}
+#endif
+
 }

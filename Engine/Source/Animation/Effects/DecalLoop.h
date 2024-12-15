@@ -18,6 +18,9 @@ namespace Animation::Effects {
 	void DestroyDecalLoops();
 	void StepDecalLoop(FLOAT delta);
 	void WriteDecalLoopConstantsBuffers(UINT backbufferIndex);
+#if defined(_EDITOR)
+	void DecalLoopJson(RenderablePtr& renderable, nlohmann::json& j);
+#endif
 }
 
 typedef Animation::Effects::DecalLoop DecalLoopT;

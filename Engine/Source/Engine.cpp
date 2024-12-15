@@ -478,7 +478,6 @@ void CreateLights(std::shared_ptr<Renderer>& renderer) {
   },[](LightPtr light){
       using namespace Animation::Effects;
       LightOscilation fireplace = {
-        .originalValue = light->point.color,
         .target = &light->point.color,
         .offset = 0.9f,
         .amplitude = 0.1f,

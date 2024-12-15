@@ -29,4 +29,29 @@ namespace Animation::Effects {
 		}
 	}
 
+#if defined(_EDITOR)
+
+	nlohmann::json GetRenderableEffects(RenderablePtr& renderable) {
+		nlohmann::json j;
+
+		for (auto& [fx, JsonCbFn] : RenderableEffectsJson) {
+			JsonCbFn(renderable, j);
+		}
+
+		return j;
+	}
+
+	nlohmann::json GetLightEffects(LightPtr& light)
+	{
+		nlohmann::json j;
+
+		for (auto& [fx, JsonCbFn] : LightEffectsJson) {
+			JsonCbFn(light, j);
+		}
+
+		return j;
+	}
+
+#endif
+
 }

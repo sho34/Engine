@@ -20,6 +20,9 @@ namespace Animation::Effects {
 	void CreateLightOscilation(LightPtr&, void* constructionData);
 	void DestroyLightOscilations();
 	void StepLightOscilation(FLOAT delta);
+#if defined(_EDITOR)
+	void LightOscilationJson(LightPtr& light, nlohmann::json& j);
+#endif
 }
 
 typedef Animation::Effects::LightOscilation LightOscilationT;

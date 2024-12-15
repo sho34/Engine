@@ -8,6 +8,9 @@
 #include "../../Renderer/DeviceUtils/D3D12Device/Interop.h"
 #include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
 #include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
+#if defined(_EDITOR)
+#include "../../Animation/Effects/Effects.h"
+#endif
 
 namespace Scene::Lights {
 
@@ -154,6 +157,7 @@ namespace Scene::Lights {
 			.lightType = lightParam.lightType,
 			.hasShadowMaps = lightParam.hasShadowMap
 		});
+		light->this_ptr = light;
 		switch (light->lightType) {
 		case Ambient:
 			light->ambient = lightParam.ambient;
@@ -516,6 +520,12 @@ namespace Scene::Lights {
 		case Point:
 			buildJsonPointLight(j);
 			break;
+		}
+
+		using namespace Animation::Effects;
+		auto effects = GetLightEffects(this_ptr);
+		if (!effects.empty()) {
+			j["effects"] = effects;
 		}
 
 		return j;

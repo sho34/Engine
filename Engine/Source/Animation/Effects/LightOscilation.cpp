@@ -10,6 +10,7 @@ namespace Animation::Effects {
 
 		LightOscilationT* lightdata = (LightOscilationT*)constructionData;
 		lightOscilationEffects[light] = std::make_shared<LightOscilationT>(*lightdata);
+		lightOscilationEffects[light]->originalValue = *lightOscilationEffects[light]->target;
 
 	}
 
@@ -28,5 +29,29 @@ namespace Animation::Effects {
 			*oscilation->target = *(XMFLOAT3*)newVector.m128_f32;
 		}
 	}
+
+#if defined(_EDITOR)
+	void LightOscilationJson(LightPtr& light, nlohmann::json& j) {
+		if (!lightOscilationEffects.contains(light)) return;
+
+		if (j.empty()) j = nlohmann::json::array();
+
+		auto effect = lightOscilationEffects[light];
+		std::string jname;
+		std::transform(LightOscilationEffect.begin(), LightOscilationEffect.end(), std::back_inserter(jname), [](wchar_t c) { return (char)c; });
+
+		ULONGLONG target = (byte*)effect->target - (byte*)light.get();
+
+		j.push_back({
+			jname, {
+				{"offset", effect->offset },
+				{"amplitude", effect->amplitude },
+				{"angularFrequency", effect->angularFrequency },
+				{"target", target}
+			}
+		});
+
+	}
+#endif
 
 }
