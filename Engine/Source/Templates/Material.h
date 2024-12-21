@@ -9,6 +9,8 @@ struct Renderer;
 
 namespace Templates::Material {
 
+	static const std::wstring templateName = L"materials.json";
+
 	struct MaterialSamplerDesc : D3D12_STATIC_SAMPLER_DESC {
 		MaterialSamplerDesc() {
 			Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
@@ -50,6 +52,25 @@ namespace Templates::Material {
 					other.MipLODBias, other.MaxAnisotropy, other.ComparisonFunc, other.BorderColor,
 					other.MinLOD, other.MaxLOD, other.ShaderRegister, other.RegisterSpace, other.ShaderVisibility);
 		}
+#if defined(_EDITOR)
+		nlohmann::json json() {
+			nlohmann::json j = nlohmann::json({});
+			j["Filter"] = WStringToString(filterToString[Filter]);
+			j["AddressU"] = WStringToString(textureAddressModeToString[AddressU]);
+			j["AddressV"] = WStringToString(textureAddressModeToString[AddressV]);
+			j["AddressW"] = WStringToString(textureAddressModeToString[AddressW]);
+			j["MipLODBias"] = MipLODBias;
+			j["MaxAnisotropy"] = MaxAnisotropy;
+			j["ComparisonFunc"] = WStringToString(comparisonFuncToString[ComparisonFunc]);
+			j["BorderColor"] = WStringToString(borderColorToString[BorderColor]);
+			j["MinLOD"] = MinLOD;
+			j["MaxLOD"] = MaxLOD;
+			j["ShaderRegister"] = ShaderRegister;
+			j["RegisterSpace"] = RegisterSpace;
+			j["ShaderVisibility"] = WStringToString(shaderVisibilityToString[ShaderVisibility]);
+			return j;
+		}
+#endif
 	};
 
 	struct TextureDefinition {
@@ -61,6 +82,8 @@ namespace Templates::Material {
 	struct MaterialDefinition {
 		//vertex & pixel shader 
 		std::wstring shaderTemplate = L"";
+
+		bool systemCreated = false;
 
 		//constants buffer
 		MaterialInitialValueMap mappedValues = MaterialInitialValueMap();
@@ -125,6 +148,11 @@ namespace Templates::Material {
 	std::shared_ptr<Material>* GetMaterialTemplatePtr(std::wstring materialName);
 	void BuildMaterialTextures(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Material>& material);
 	
+#if defined(_EDITOR)
+	nlohmann::json json();
+#endif
+	Concurrency::task<void> json(std::wstring, nlohmann::json);
+
 };
 typedef Templates::Material::Material MaterialT;
 typedef std::shared_ptr<MaterialT> MaterialPtr;

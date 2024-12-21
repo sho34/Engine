@@ -10,6 +10,9 @@ namespace Templates::Model3D {
 
 	using namespace Templates::Mesh;
 
+	static const std::wstring templateName = L"model3d.json";
+	static const std::wstring assetsRootFolder = L"Assets/models/";
+
 	struct Model3DDefinition {
 		bool autoCreateMaterial = true;
 		std::wstring materialsShader = L"";
@@ -18,6 +21,9 @@ namespace Templates::Model3D {
 	struct Model3D
 	{
 		bool loading = true;
+		std::wstring assetPath;
+
+		Model3DDefinition model3dDefinition;
 
 		//animation
 		std::shared_ptr<Animation::Animated> animations = nullptr;
@@ -31,10 +37,17 @@ namespace Templates::Model3D {
 		std::vector<MeshPtr> meshes;
 	};
 
+	std::wstring getMeshName(std::wstring model3DName, UINT meshIndex);
+	std::wstring getMaterialName(std::wstring model3DName, UINT meshIndex);
 
 	Concurrency::task<void> CreateModel3DTemplate(std::wstring model3DName, std::wstring assetPath, std::shared_ptr<Renderer>& renderer, Model3DDefinition params = {});
 	void ReleaseModel3DTemplates();
 	std::shared_ptr<Model3D> GetModel3DTemplate(std::wstring model3DName);
+
+#if defined(_EDITOR)
+	nlohmann::json json();
+#endif
+	Concurrency::task<void> json(std::wstring, nlohmann::json);
 }
 typedef Templates::Model3D::Model3D Model3DT;
 typedef std::shared_ptr<Model3DT> Model3DPtr;

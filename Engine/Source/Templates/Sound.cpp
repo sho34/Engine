@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Sound.h"
 #include "../Audio/Audio.h"
+#include "../Types.h"
 
 std::map<std::wstring, SoundPtr> soundTemplates;
 
@@ -16,6 +17,7 @@ namespace Templates::Audio {
 			std::lock_guard<std::mutex> lock(soundCreateMutex);
 
 			SoundPtr sound = std::make_shared<SoundT>();
+			sound->assetPath = assetPath;
 			sound->sound = std::make_unique<SoundEffect>(GetAudio().get(), assetPath.c_str());
 
 			soundTemplates.insert_or_assign(soundName,sound);
@@ -37,4 +39,35 @@ namespace Templates::Audio {
 		soundTemplates.clear();
 	}
 
+#if defined(_EDITOR)
+	nlohmann::json json()
+	{
+		nlohmann::json j = nlohmann::json({});
+		for (auto& [name, sound] : soundTemplates) {
+			if (sound->systemCreated) continue;
+			std::string jname = WStringToString(name);
+			j[jname] = nlohmann::json({});
+			j[jname]["assetPath"] = WStringToString(sound->assetPath);
+		}
+		return j;
+	}
+#endif
+
+	Concurrency::task<void> json(std::wstring name, nlohmann::json soundj)
+	{
+		assert(!soundTemplates.contains(name));
+
+		std::wstring assetPath = StringToWString(soundj["assetPath"]);
+
+		return concurrency::create_task([name, assetPath] {
+			std::lock_guard<std::mutex> lock(soundCreateMutex);
+
+			SoundPtr sound = std::make_shared<SoundT>();
+			sound->assetPath = assetPath;
+			sound->sound = std::make_unique<SoundEffect>(GetAudio().get(), assetPath.c_str());
+
+			soundTemplates.insert_or_assign(name, sound);
+			assert(soundTemplates.contains(name));
+		});
+	}
 }

@@ -8,10 +8,15 @@
 
 namespace Templates::Shader {
 
+	static const std::wstring templateName = L"shaders.json";
+
 	struct ShaderDefaultValues
 	{
 		//shader filename
 		std::wstring shaderFileName = L"";
+
+		//system created flag
+		bool systemCreated = false;
 
 		//default values to map to the constant buffers
 		MaterialInitialValueMap mappedValues = MaterialInitialValueMap();
@@ -34,6 +39,12 @@ namespace Templates::Shader {
 	void ReleaseShaderTemplates();
 	Concurrency::task<void> BindToShaderTemplate(const std::wstring& shaderTemplateName, void* target, NotificationCallbacks callbacks);
 	std::shared_ptr<Shader>* GetShaderTemplate(std::wstring shaderTemplateName);
+
+#if defined(_EDITOR)
+	nlohmann::json json();
+#endif
+	Concurrency::task<void> json(std::wstring, nlohmann::json);
+
 }
 typedef Templates::Shader::Shader ShaderT;
 typedef std::shared_ptr<ShaderT> ShaderPtr;

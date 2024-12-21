@@ -32,11 +32,26 @@ namespace Scene::Lights {
 		Spot,
 		Point
 	};
-	inline static const std::vector<std::wstring> LightTypesStr = {
+
+	static std::vector<std::wstring> LightTypesStr = {
 		L"Ambient",
 		L"Directional",
 		L"Spot",
 		L"Point"
+	};
+
+	static std::map<LightType, std::wstring> LightTypeToStr = {
+		{ Ambient,  L"Ambient" },
+		{ Directional, L"Directional" },
+		{ Spot, L"Spot" },
+		{ Point, L"Point" }
+	};
+
+	static std::map<std::wstring, LightType> StrToLightType = {
+		{ L"Ambient",	Ambient },
+		{ L"Directional",	Directional },
+		{ L"Spot", Spot },
+		{ L"Point",	Point }
 	};
 
 	struct LightAttributes {
@@ -78,10 +93,11 @@ namespace Scene::Lights {
 
 	struct Light
 	{
+		Light(){}
 		~Light() { this_ptr = nullptr; } //will this work?
 		std::shared_ptr<Light> this_ptr = nullptr; //dumb but efective
 
-		std::wstring name;
+		std::wstring name = L"";
 		LightType lightType = Ambient;
 
 		union {
@@ -97,7 +113,8 @@ namespace Scene::Lights {
 			PointLightShadowMap pointShadowMap;
 		};
 		bool hasShadowMaps = false;
-		
+		nlohmann::json shadowMapParams;
+
 		//DSV Heap
 		UINT shadowMapDescriptorSize;
 		CComPtr<ID3D12DescriptorHeap> shadowMapDsvDescriptorHeap;
@@ -117,7 +134,8 @@ namespace Scene::Lights {
 	ConstantsBufferViewDataPtr GetShadowMapConstantBufferView();
 	CD3DX12_GPU_DESCRIPTOR_HANDLE& GetShadowMapGpuDescriptorHandleStart();
 
-	Concurrency::task<void> CreateLightsResources(const std::shared_ptr<Renderer>& renderer);
+	Concurrency::task<void> CreateLightsResources();
+	void DestroyLightsResources();
 
 	void UpdateConstantsBufferNumLights(UINT backbufferIndex, UINT numLights);
 	void UpdateConstantsBufferLightAttributes(std::shared_ptr<Light>& light, UINT backbufferIndex, UINT lightIndex);
@@ -125,20 +143,22 @@ namespace Scene::Lights {
 
 	typedef void LoadLightFn(std::shared_ptr<Light> light);
 
-	std::shared_ptr<Light> CreateLight(const std::shared_ptr<Renderer>& renderer, const LightDefinition& lightParam, LoadLightFn loadFn = nullptr);
+	std::shared_ptr<Light> CreateLight(const LightDefinition& lightParam, LoadLightFn loadFn = nullptr);
+	std::shared_ptr<Light> CreateLight(nlohmann::json light);
 	std::vector<std::shared_ptr<Light>> GetLights();
 	std::shared_ptr<Light> GetLight(std::wstring lightName);
 	void DestroyLights();
 	
-	void CreateDirectionalLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, DirectionalLightShadowMapParams params);
-	void CreateSpotLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, SpotLightShadowMapParams params);
-	void CreatePointLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, PointLightShadowMapParams params);
-	void CreateShadowMapDepthStencilResource(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light);
-	void RenderShadowMap(std::shared_ptr<Light> light, std::shared_ptr<Renderer>& renderer, std::function<void(UINT)> renderScene);
+	void CreateDirectionalLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params);
+	void CreateSpotLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params);
+	void CreatePointLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params);
+	void CreateShadowMapDepthStencilResource(const std::shared_ptr<Light>& light);
+	void RenderShadowMap(std::shared_ptr<Light> light, std::function<void(UINT)> renderScene);
 
-	Concurrency::task<void> CreateShadowMapPipeline(std::shared_ptr<Renderer>& renderer, const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial);
+	Concurrency::task<void> CreateShadowMapPipeline(const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial);
 
 	std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>> GetShadowMapRenderAttributes(VertexClass vertexClass, const MaterialPtr material);
+	void DestroyShadowMapAttributes();
 	
 };
 

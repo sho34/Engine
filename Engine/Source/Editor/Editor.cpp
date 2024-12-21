@@ -6,6 +6,12 @@
 #include "../Scene/Renderable/Renderable.h"
 #include "../Scene/Lights/Lights.h"
 #include "../Scene/Camera/Camera.h"
+#include "../Templates/Templates.h"
+#include "../Templates/Shader.h"
+#include "../Templates/Material.h"
+#include "../Templates/Mesh.h"
+#include "../Templates/Model3D.h"
+#include "../Templates/Sound.h"
 
 extern bool appDone;
 extern HWND hWnd;
@@ -14,6 +20,7 @@ extern std::shared_ptr<Renderer> renderer;
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+extern void LoadLevel(std::filesystem::path level);
 
 namespace Editor {
 
@@ -50,15 +57,22 @@ namespace Editor {
     // (current version of the backend will only allocate one descriptor, future versions will need to allocate more)
     init_info.SrvDescriptorHeap = DeviceUtils::ConstantsBuffer::GetCSUDescriptorHeap();
     init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle) {
-      *out_cpu_handle = GetCpuDescriptorHandleCurrent();
-      *out_gpu_handle = GetGpuDescriptorHandleCurrent();
-      GetCpuDescriptorHandleCurrent().Offset(GetCSUDescriptorSize());
-      GetGpuDescriptorHandleCurrent().Offset(GetCSUDescriptorSize());
-      /*return g_pd3dSrvDescHeapAlloc.Alloc(out_cpu_handle, out_gpu_handle);*/
-      };
+      
+      CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_xhandle;
+      CD3DX12_GPU_DESCRIPTOR_HANDLE gpu_xhandle;
+
+      AllocCSUDescriptor(cpu_xhandle, gpu_xhandle);
+
+      out_cpu_handle->ptr = cpu_xhandle.ptr;
+      out_gpu_handle->ptr = gpu_xhandle.ptr;
+    };
     init_info.SrvDescriptorFreeFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE gpu_handle) {
-      /*return g_pd3dSrvDescHeapAlloc.Free(cpu_handle, gpu_handle);*/
-      };
+      CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_xhandle(cpu_handle);
+      CD3DX12_GPU_DESCRIPTOR_HANDLE gpu_xhandle(gpu_handle);
+      FreeCSUDescriptor(cpu_xhandle, gpu_xhandle);
+      cpu_handle.ptr = 0;
+      gpu_handle.ptr = 0;
+    };
     ImGui_ImplDX12_Init(&init_info);
 
   }
@@ -141,7 +155,9 @@ namespace Editor {
       {
         ImGui::MenuItem("New");
         ImGui::Separator();
-        ImGui::MenuItem("Open");
+        if (ImGui::MenuItem("Open")) {
+          OpenFile();
+        }
         if (ImGui::MenuItem("Save")) {
           SaveLevelToFile(currentLevelName);
         }
@@ -149,7 +165,9 @@ namespace Editor {
           SaveLevelAs();
         }
         ImGui::Separator();
-        ImGui::MenuItem("Save Templates");
+        if (ImGui::MenuItem("Save Templates")) {
+          SaveTemplates();
+        }
         ImGui::Separator();
         if (ImGui::MenuItem("Exit")) // It would be nice if this was a "X" like in the windows title bar set off to the far right
         {
@@ -223,6 +241,105 @@ namespace Editor {
 
     // Render Dear ImGui graphics
     ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), renderer->commandList);
+  }
+
+  bool OpenFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr)
+  {
+    IFileOpenDialog* p_file_open = nullptr;
+    bool are_all_operation_success = false;
+    while (!are_all_operation_success)
+    {
+      HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+        IID_IFileOpenDialog, reinterpret_cast<void**>(&p_file_open));
+      if (FAILED(hr))
+        break;
+
+      if (!pFilterInfo)
+      {
+        COMDLG_FILTERSPEC open_filter[1];
+        open_filter[0].pszName = L"All files";
+        open_filter[0].pszSpec = L"*.*";
+        hr = p_file_open->SetFileTypes(1, open_filter);
+        if (FAILED(hr))
+          break;
+        hr = p_file_open->SetFileTypeIndex(1);
+        if (FAILED(hr))
+          break;
+      }
+      else
+      {
+        hr = p_file_open->SetFileTypes(pFilterInfo->second, pFilterInfo->first);
+        if (FAILED(hr))
+          break;
+        hr = p_file_open->SetFileTypeIndex(1);
+        if (FAILED(hr))
+          break;
+      }
+
+      if (!defaultDirectory.empty()) {
+        IShellItem* pCurFolder = NULL;
+        hr = SHCreateItemFromParsingName(defaultDirectory.c_str(), NULL, IID_PPV_ARGS(&pCurFolder));
+        if (FAILED(hr))
+          break;
+        p_file_open->SetFolder(pCurFolder);
+        pCurFolder->Release();
+      }
+
+      if (!defaultFileName.empty())
+      {
+        hr = p_file_open->SetFileName(defaultFileName.c_str());
+        if (FAILED(hr))
+          break;
+      }
+
+      hr = p_file_open->Show(NULL);
+      if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) // No item was selected.
+      {
+        are_all_operation_success = true;
+        break;
+      }
+      else if (FAILED(hr))
+        break;
+
+      IShellItem* p_item;
+      hr = p_file_open->GetResult(&p_item);
+      if (FAILED(hr))
+        break;
+
+      PWSTR item_path;
+      hr = p_item->GetDisplayName(SIGDN_FILESYSPATH, &item_path);
+      if (FAILED(hr))
+        break;
+      path = item_path;
+      CoTaskMemFree(item_path);
+      p_item->Release();
+
+      are_all_operation_success = true;
+    }
+
+    if (p_file_open)
+      p_file_open->Release();
+    return are_all_operation_success;
+  }
+
+  void OpenFile() {
+    std::thread load([]() {
+      //first create the directory if needed
+      std::filesystem::path directory(defaultLevelsFolder);
+      std::filesystem::create_directory(directory);
+
+      std::wstring path = L"";
+      COMDLG_FILTERSPEC filters[] = { {.pszName = L"JSON files. (*.json)", .pszSpec = L"*.json" } };
+      std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
+      if (!OpenFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
+      if (path.empty()) return;
+
+      std::filesystem::path jsonFilePath = path;
+      jsonFilePath.replace_extension(".json");
+
+      LoadLevel(jsonFilePath);
+    });
+    load.detach();
   }
 
   void SaveLevelToFile(std::wstring levelFileName) {
@@ -350,9 +467,8 @@ namespace Editor {
   void SaveLevelAs() {
 
     std::thread saveAs([]() {
-      const std::wstring levelsRootFolder = L"Levels/";
       //first create the directory if needed
-      std::filesystem::path directory(levelsRootFolder);
+      std::filesystem::path directory(defaultLevelsFolder);
       std::filesystem::create_directory(directory);
 
       std::wstring path = L"";
@@ -368,6 +484,18 @@ namespace Editor {
     });
     saveAs.detach();
   }
+
+  void SaveTemplates()
+  {
+    using namespace Templates;
+
+    Templates::SaveTemplates(defaultTemplatesFolder, Shader::templateName, Shader::json());
+    Templates::SaveTemplates(defaultTemplatesFolder, Material::templateName, Material::json());
+    Templates::SaveTemplates(defaultTemplatesFolder, Model3D::templateName, Model3D::json());
+    Templates::SaveTemplates(defaultTemplatesFolder, Audio::templateName, Audio::json());
+
+  }
+
 };
 
 #endif

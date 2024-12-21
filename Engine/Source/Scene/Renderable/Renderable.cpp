@@ -7,6 +7,8 @@
 #include "../Camera/Camera.h"
 #include "../Lights/Lights.h"
 #include "../../Templates/Model3D.h"
+#include "../../Templates/Mesh.h"
+#include "../../Templates/Material.h"
 #include "../../Animation/Animated.h"
 #include "../../Renderer/DeviceUtils/D3D12Device/Builder.h"
 #include "../../Renderer/DeviceUtils/D3D12Device/Interop.h"
@@ -18,10 +20,90 @@
 #include <DirectXMath.h>
 
 extern std::mutex rendererMutex;
+extern std::shared_ptr<Renderer> renderer;
 namespace Scene::Renderable {
 
   std::map<std::wstring, std::shared_ptr<Renderable>> renderables;
   std::map<std::wstring, std::shared_ptr<Renderable>> animables;
+
+  MeshMaterialMap TranformJsonToMeshMaterialMap(nlohmann::json j) {
+    MeshMaterialMap map;
+
+    std::transform(j.begin(), j.end(), std::inserter(map,map.end()), [](const nlohmann::json& value) {
+      using namespace Templates::Mesh;
+      using namespace Templates::Material;
+
+      return MeshMaterialPair(GetMeshTemplate(StringToWString(value["mesh"])), GetMaterialTemplate(StringToWString(value["material"])));
+    });
+
+    return map;
+  }
+
+  std::set<UINT> TransformJsonArrayToSet(nlohmann::json j) {
+    std::set<UINT> set;
+    for (auto& value : j) {
+      UINT v = value;
+      set.insert(v);
+    }
+    return set;
+  }
+
+  std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej) {
+
+    assert(renderablej["meshMaterials"].empty() xor renderablej["model"].empty());
+    assert(renderablej["name"] != "");
+   
+    using namespace Animation;
+
+    std::set<MeshPtr> skipMeshes;
+    std::shared_ptr<Animated> animation = nullptr;
+
+    RenderableDefinition renderableParams = {
+      .name = StringToWString(renderablej["name"]),
+      .position = JsonToFloat3(renderablej["position"]),
+      .scale = JsonToFloat3(renderablej["scale"]),
+      .rotation = JsonToFloat3(renderablej["rotation"]),
+      .skipMeshes = TransformJsonArrayToSet(renderablej["skipMeshes"])
+    };
+
+    std::wstring model3DName = L"";
+    if (!renderablej["meshMaterials"].empty()) {
+      renderableParams.meshMaterials = TranformJsonToMeshMaterialMap(renderablej["meshMaterials"]);
+      renderableParams.meshMaterialsShadowMap = TranformJsonToMeshMaterialMap(renderablej["meshMaterialsShadowMap"]);
+    } else {
+      using namespace Templates::Model3D;
+      model3DName = StringToWString(renderablej["model"]);
+      Model3DPtr model = GetModel3DTemplate(model3DName);
+      animation = model->animations;
+      auto shadowMapMaterial = model->animations ? GetMaterialTemplate(L"ShadowMapAlphaSkinning") : GetMaterialTemplate(L"ShadowMapAlpha");
+      for (UINT meshIndex = 0; meshIndex < model->meshes.size(); meshIndex++) {
+        auto mesh = model->meshes[meshIndex];
+        renderableParams.meshMaterials.insert_or_assign(mesh, GetMaterialTemplate(getMaterialName(model3DName, meshIndex)));
+        renderableParams.meshMaterialsShadowMap.insert_or_assign(mesh, shadowMapMaterial);
+      }
+    }
+
+    auto meshMaterials = renderableParams.meshMaterials;
+    auto meshMaterialsShadowMap = renderableParams.meshMaterialsShadowMap;
+
+    auto r = std::make_shared<RenderableT>(RenderableT{
+      .definition = renderableParams,
+      .name = renderableParams.name,
+      .model3DName = model3DName,
+      .meshMaterials = meshMaterials,
+      .meshMaterialsShadowMap = meshMaterialsShadowMap,
+      .position = renderableParams.position,
+      .scale = renderableParams.scale,
+      .rotation = renderableParams.rotation,
+      .skipMeshes = skipMeshes,
+      .animations = animation,
+    });
+    r->this_ptr = r;
+    r->Initialize(renderer);// .wait();
+    renderables[r->name] = r;
+    if (r->animations) animables[r->name] = r;
+    return r;
+  }
 
   std::shared_ptr<Renderable> CreateRenderable(const std::shared_ptr<Renderer>& renderer, const RenderableDefinition& renderableParams, LoadRenderableFn loadFn)
   {
@@ -71,7 +153,7 @@ namespace Scene::Renderable {
       .animations = animation,
     });
     r->this_ptr = r;
-    r->Initialize(renderer).wait();
+    r->Initialize(renderer);//.wait();
     renderables[r->name] = r;
     if (r->animations) animables[r->name] = r;
     if (loadFn) loadFn(r);
@@ -135,14 +217,14 @@ namespace Scene::Renderable {
   static void OnMaterialChangeComplete(void* renderablePtr, void* materialPtr) {
     auto renderable = static_cast<Renderable*>(renderablePtr);
     std::shared_ptr<Renderer> renderer = Renderer::GetPtr();
-    renderable->Initialize(renderer).wait();
+    renderable->Initialize(renderer);//.wait();
     renderable->loading = false;
   }
 
   static void OnMaterialDestroy(void* renderablePtr, void* materialPtr) {
   }
 
-  Concurrency::task<void> Renderable::Initialize(const std::shared_ptr<Renderer>& renderer)
+  void Renderable::Initialize(const std::shared_ptr<Renderer>& renderer)
   {
     meshConstantsBuffer.clear();
     meshRootSignatures.clear();
@@ -156,8 +238,8 @@ namespace Scene::Renderable {
     }
     
     for (auto& [mesh, material] : this->meshMaterials) {
-      tasks.push_back(concurrency::create_task([this, &renderer ,&mesh, &material]() {
-        
+      tasks.push_back(concurrency::create_task([this, &renderer, &mesh, &material]() {
+
         std::lock_guard<std::mutex> lock(rendererMutex);
 
         //initialize material textures
@@ -184,16 +266,16 @@ namespace Scene::Renderable {
         using namespace DeviceUtils::PipelineState;
         auto pipelineState = CreatePipelineState(renderer->d3dDevice, mesh->vertexClass, material, rootSignature);
         meshPipelineStates[mesh] = pipelineState;
-        
-      }).then([this,&mesh,&material]() {
-        BindToMaterialTemplate(material->materialName, this,
-          { .onLoadStart = OnMaterialChangeStart, .onLoadComplete = OnMaterialChangeComplete, .onDestroy = OnMaterialDestroy }
-        );
-        })
-      );
+
+        BindToMaterialTemplate(material->materialName, this, {
+          .onLoadStart = OnMaterialChangeStart,
+          .onLoadComplete = OnMaterialChangeComplete,
+          .onDestroy = OnMaterialDestroy
+          });
+      }));
     }
 
-    return when_all(tasks.begin(), tasks.end()).then([this]() { this->loading = false; });
+    when_all(tasks.begin(), tasks.end()).then([this]() { this->loading = false; }).wait();
   }
 
   void Renderable::WriteConstantsBuffer(UINT backbufferIndex)
@@ -369,10 +451,7 @@ namespace Scene::Renderable {
   nlohmann::json Renderable::json() {
     nlohmann::json j = nlohmann::json({});
 
-    std::string jname;
-    std::transform(name.begin(), name.end(), std::back_inserter(jname), [](wchar_t c) { return (char)c; });
-
-    j["name"] = jname;
+    j["name"] = WStringToString(name);
     j["position"] = { position.x, position.y, position.z };
     j["scale"] = { scale.x, scale.y, scale.z };
     j["rotation"] = { rotation.x, rotation.y, rotation.z };
@@ -380,15 +459,16 @@ namespace Scene::Renderable {
     auto buildJsonMeshMaterials = [](auto& j, std::string objectName, MeshMaterialMap& meshMatMap){
       j[objectName] = nlohmann::json::array();
       for (auto& [mesh, material] : meshMatMap) {
-        std::string jmeshname, jmaterialname;
-        std::transform(mesh->name.begin(), mesh->name.end(), std::back_inserter(jmeshname), [](wchar_t c) { return (char)c; });
-        std::transform(material->materialName.begin(), material->materialName.end(), std::back_inserter(jmaterialname), [](wchar_t c) { return (char)c; });
-        j[objectName].push_back({ {"mesh", jmeshname}, {"material", jmaterialname} });
+        j[objectName].push_back({ {"mesh", WStringToString(mesh->name)}, {"material", WStringToString(material->materialName) } });
       }
     };
 
-    buildJsonMeshMaterials(j, "meshMaterials", meshMaterials);
-    buildJsonMeshMaterials(j, "meshMaterialsShadowMap", meshMaterialsShadowMap);
+    if (model3DName == L"") {
+      buildJsonMeshMaterials(j, "meshMaterials", meshMaterials);
+      buildJsonMeshMaterials(j, "meshMaterialsShadowMap", meshMaterialsShadowMap);
+    } else {
+      j["model"] = WStringToString(model3DName);
+    }
 
     j["skipMeshes"] = nlohmann::json::array();
     for (auto meshIdx : definition.skipMeshes) {

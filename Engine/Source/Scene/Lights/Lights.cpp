@@ -12,6 +12,8 @@
 #include "../../Animation/Effects/Effects.h"
 #endif
 
+extern std::shared_ptr<Renderer> renderer;
+
 namespace Scene::Lights {
 
 	using namespace DeviceUtils::ConstantsBuffer;
@@ -33,18 +35,28 @@ namespace Scene::Lights {
 	ConstantsBufferViewDataPtr GetShadowMapConstantBufferView() { return shadowMapsCbv; }
 	CD3DX12_GPU_DESCRIPTOR_HANDLE& GetShadowMapGpuDescriptorHandleStart() { return shadowMapSrvGpuDescriptorHandle[0]; }
 
-	Concurrency::task<void> CreateLightsResources(const std::shared_ptr<Renderer>& renderer) {
-		return Concurrency::create_task([&renderer]() {
+	Concurrency::task<void> CreateLightsResources() {
+		return Concurrency::create_task([]() {
 			lightsCbv = CreateConstantsBufferViewData(renderer, sizeof(LightPool), L"lightsCbv");
 			shadowMapsCbv = CreateConstantsBufferViewData(renderer, sizeof(LightAttributes)*MaxLights, L"shadowMapsCbv");
 		}).then([]() {
 			for (UINT i = 0; i < MaxLights; i++) {
-				shadowMapSrvCpuDescriptorHandle[i] = CD3DX12_CPU_DESCRIPTOR_HANDLE(GetCpuDescriptorHandleCurrent());
-				shadowMapSrvGpuDescriptorHandle[i] = CD3DX12_GPU_DESCRIPTOR_HANDLE(GetGpuDescriptorHandleCurrent());
-				GetCpuDescriptorHandleCurrent().Offset(GetCSUDescriptorSize());
-				GetGpuDescriptorHandleCurrent().Offset(GetCSUDescriptorSize());
+				AllocCSUDescriptor(shadowMapSrvCpuDescriptorHandle[i], shadowMapSrvGpuDescriptorHandle[i]);
 			}
 		});
+	}
+
+	void DestroyLightsResources() {
+
+		for (UINT i = 0; i < MaxLights; i++) {
+			FreeCSUDescriptor(shadowMapSrvCpuDescriptorHandle[i], shadowMapSrvGpuDescriptorHandle[i]);
+		}
+
+		lightsCbv->constantBuffer.Release();
+		lightsCbv->constantBuffer = nullptr;
+		shadowMapsCbv->constantBuffer.Release();
+		shadowMapsCbv->constantBuffer = nullptr;
+
 	}
 
 	void UpdateConstantsBufferNumLights(UINT backbufferIndex, UINT numLights) {
@@ -151,48 +163,68 @@ namespace Scene::Lights {
 
 	static std::map<std::wstring, LightPtr> lightsByName;
 	static std::vector<LightPtr> lights;
-	std::shared_ptr<Light> CreateLight(const std::shared_ptr<Renderer>& renderer, const LightDefinition& lightParam, LoadLightFn loadFn) {
-		LightPtr light = std::make_shared<LightT>(LightT{
-			.name = lightParam.name,
-			.lightType = lightParam.lightType,
-			.hasShadowMaps = lightParam.hasShadowMap
-		});
+
+	std::shared_ptr<Light> CreateLight(nlohmann::json lightj) {
+
+		LightPtr light = std::make_shared<LightT>();
 		light->this_ptr = light;
+		light->name = StringToWString(lightj["name"]);
+		light->lightType = StrToLightType[StringToWString(lightj["lightType"])];
+
 		switch (light->lightType) {
 		case Ambient:
-			light->ambient = lightParam.ambient;
-		break;
+			light->ambient = {
+				.color = JsonToFloat3(lightj["ambient"]["color"])
+			};
+			break;
 		case Directional:
-			light->directional = lightParam.directional;
-		break;
+			replaceFromJson(light->hasShadowMaps, lightj["directional"], "hasShadowMaps");
+			light->directional = {
+				.color = JsonToFloat3(lightj["directional"]["color"]),
+				.distance = lightj["directional"]["distance"],
+				.rotation = JsonToFloat2(lightj["directional"]["rotation"])
+			};
+			break;
 		case Spot:
-			light->spot = lightParam.spot;
-		break;
+			replaceFromJson(light->hasShadowMaps, lightj["spot"], "hasShadowMaps");
+			light->spot = {
+				.color = JsonToFloat3(lightj["spot"]["color"]),
+				.position = JsonToFloat3(lightj["spot"]["position"]),
+				.rotation = JsonToFloat2(lightj["spot"]["rotation"]),
+				.coneAngle = lightj["spot"]["coneAngle"],
+				.attenuation = JsonToFloat3(lightj["spot"]["attenuation"])
+			};
+			break;
 		case Point:
-			light->point = lightParam.point;
-		break;
+			replaceFromJson(light->hasShadowMaps, lightj["point"], "hasShadowMaps");
+			light->point = {
+				.color = JsonToFloat3(lightj["point"]["color"]),
+				.position = JsonToFloat3(lightj["point"]["position"]),
+				.attenuation = JsonToFloat3(lightj["point"]["attenuation"])
+			};
+			break;
 		}
 
 		if (light->hasShadowMaps) {
 			switch (light->lightType) {
 			case Directional:
-				CreateDirectionalLightShadowMap(renderer, light, lightParam.directionalLightShadowMapParams);
-			break;
+				CreateDirectionalLightShadowMap(light, lightj["directional"]["directionalShadowMap"]);
+				break;
 			case Spot:
-				CreateSpotLightShadowMap(renderer, light, lightParam.spotLightShadowMapParams);
-			break;
+				CreateSpotLightShadowMap(light, lightj["spot"]["spotShadowMap"]);
+				break;
 			case Point:
-				CreatePointLightShadowMap(renderer, light, lightParam.pointLightShadowMapParams);
-			break;
+				CreatePointLightShadowMap(light, lightj["point"]["pointShadowMap"]);
+				break;
 			default:
 				assert(light->lightType != Directional || light->lightType != Spot || light->lightType != Point);
-			break;
+				break;
 			}
-			CreateShadowMapDepthStencilResource(renderer, light);
+			CreateShadowMapDepthStencilResource(light);
 		}
+		
 		lights.push_back(light);
 		lightsByName[light->name] = light;
-		if (loadFn) loadFn(light);
 		return light;
 	}
 
@@ -234,54 +266,42 @@ namespace Scene::Lights {
 			rt = nullptr;
 		}
 		shadowMapsRenderTargets.clear();
-
-		for (auto& [p1, p2] : shadowMapRenderAttributes) {
-			p2.first.Release();
-			p2.first = nullptr;
-			p2.second.Release();
-			p2.second = nullptr;
-		}
-		shadowMapRenderAttributes.clear();
-
-		lightsCbv->constantBuffer.Release();
-		lightsCbv->constantBuffer = nullptr;
-		shadowMapsCbv->constantBuffer.Release();
-		shadowMapsCbv->constantBuffer = nullptr;
 		
+		numShadowMaps = 0;
 	}
 
-	void CreateDirectionalLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, DirectionalLightShadowMapParams params) {
-		light->directionalShadowMap.creation_params = params;
-		light->directionalShadowMap.shadowMapScissorRect = { 0, 0, static_cast<LONG>(params.shadowMapWidth), static_cast<LONG>(params.shadowMapHeight) };
-		light->directionalShadowMap.shadowMapViewport = { 0.0f, 0.0f, static_cast<FLOAT>(params.shadowMapWidth), static_cast<FLOAT>(params.shadowMapHeight), 0.0f, 1.0f };
-		light->directionalShadowMap.shadowMapProjectionMatrix = XMMatrixOrthographicRH(params.viewWidth, params.viewHeight, params.nearZ, params.farZ);
-		light->directionalShadowMap.shadowMapTexelInvSize = { 1.0f / static_cast<FLOAT>(params.shadowMapWidth), 1.0f / static_cast<FLOAT>(params.shadowMapHeight) };
+	void CreateDirectionalLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params) {
+		light->shadowMapParams = params;
+		light->directionalShadowMap.shadowMapScissorRect = { 0, 0, static_cast<LONG>(params["shadowMapWidth"]), static_cast<LONG>(params["shadowMapHeight"])};
+		light->directionalShadowMap.shadowMapViewport = { 0.0f, 0.0f, static_cast<FLOAT>(params["shadowMapWidth"]), static_cast<FLOAT>(params["shadowMapHeight"]), 0.0f, 1.0f };
+		light->directionalShadowMap.shadowMapProjectionMatrix = XMMatrixOrthographicRH(params["viewWidth"], params["viewHeight"], params["nearZ"], params["farZ"]);
+		light->directionalShadowMap.shadowMapTexelInvSize = { 1.0f / static_cast<FLOAT>(params["shadowMapWidth"]), 1.0f / static_cast<FLOAT>(params["shadowMapHeight"]) };
 		
-		auto camera = Scene::Camera::CreateCamera({
+		auto camera = Scene::Camera::CreateCamera(Scene::Camera::CameraDefinition({
 			.name = light->name + L".cam",
 			.projectionType = Camera::ProjectionsTypes::Orthographic,
 			.orthographic = {
-				.nearZ = params.nearZ,
-				.farZ = params.farZ,
-				.width = params.viewWidth,
-				.height = params.viewHeight,
+				.nearZ = params["nearZ"],
+				.farZ = params["farZ"],
+				.width = params["viewWidth"],
+				.height = params["viewHeight"],
 			},
 			.rotation = light->directional.rotation,
 			.light = light,
-		});
+		}));
 		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(camera->CameraFw()), -light->directional.distance);
 		camera->position = *(XMFLOAT3*)camPos.m128_f32;
-		camera->orthographic.updateProjectionMatrix(params.viewWidth, params.viewHeight);
+		camera->orthographic.updateProjectionMatrix(params["viewWidth"], params["viewHeight"]);
 		camera->CreateConstantsBufferView(renderer);
 		light->shadowMapCameras.push_back(camera);
 	}
 
-	void CreateSpotLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, SpotLightShadowMapParams params) {
-		light->spotShadowMap.creation_params = params;
-		light->spotShadowMap.shadowMapScissorRect = { 0, 0, static_cast<LONG>(params.shadowMapWidth), static_cast<LONG>(params.shadowMapHeight) };
-		light->spotShadowMap.shadowMapViewport = { 0.0f, 0.0f, static_cast<FLOAT>(params.shadowMapWidth), static_cast<FLOAT>(params.shadowMapHeight), 0.0f, 1.0f };
-		light->spotShadowMap.shadowMapProjectionMatrix = XMMatrixPerspectiveFovRH(light->spot.coneAngle * 2.0f, 1.0f, params.nearZ, params.farZ);
-		light->spotShadowMap.shadowMapTexelInvSize = { 1.0f / static_cast<FLOAT>(params.shadowMapWidth), 1.0f / static_cast<FLOAT>(params.shadowMapHeight) };
+	void CreateSpotLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params) {
+		light->shadowMapParams = params;
+		light->spotShadowMap.shadowMapScissorRect = { 0, 0, static_cast<LONG>(params["shadowMapWidth"]), static_cast<LONG>(params["shadowMapHeight"])};
+		light->spotShadowMap.shadowMapViewport = { 0.0f, 0.0f, static_cast<FLOAT>(params["shadowMapWidth"]), static_cast<FLOAT>(params["shadowMapHeight"]), 0.0f, 1.0f };
+		light->spotShadowMap.shadowMapProjectionMatrix = XMMatrixPerspectiveFovRH(light->spot.coneAngle * 2.0f, 1.0f, params["nearZ"], params["farZ"]);
+		light->spotShadowMap.shadowMapTexelInvSize = { 1.0f / static_cast<FLOAT>(params["shadowMapWidth"]), 1.0f / static_cast<FLOAT>(params["shadowMapHeight"]) };
 
 		using namespace Scene::Camera;
 
@@ -290,41 +310,41 @@ namespace Scene::Lights {
 			.projectionType = ProjectionsTypes::Perspective,
 			.perspective = {
 				.fovAngleY = light->spot.coneAngle * 2.0f,
-				.width = static_cast<UINT>(params.viewWidth),
-				.height = static_cast<UINT>(params.viewHeight),
+				.width = params["viewWidth"],
+				.height = params["viewHeight"],
 			},
 			.position = light->spot.position,
 			.rotation = light->spot.rotation,
 			.light = light,
 		});
-		camera->perspective.updateProjectionMatrix(static_cast<UINT>(params.viewWidth), static_cast<UINT>(params.viewHeight));
+		camera->perspective.updateProjectionMatrix(params["viewWidth"], params["viewHeight"]);
 		camera->CreateConstantsBufferView(renderer);
 
 		light->shadowMapCameras.push_back(camera);
 	}
 
-	void CreatePointLightShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light, PointLightShadowMapParams params) {
-		light->pointShadowMap.creation_params = params;
+	void CreatePointLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params) {
+		light->shadowMapParams = params;
 		for (UINT i = 0U; i < 6U; i++) {
-			light->pointShadowMap.shadowMapScissorRect[i] = { 0, static_cast<LONG>(i) * static_cast<LONG>(params.shadowMapHeight), static_cast<LONG>(params.shadowMapWidth), static_cast<LONG>(i + 1U) * static_cast<LONG>(params.shadowMapHeight) };
-			light->pointShadowMap.shadowMapViewport[i] = { 0.0f, static_cast<FLOAT>(i) * static_cast<FLOAT>(params.shadowMapHeight), static_cast<FLOAT>(params.shadowMapWidth), static_cast<FLOAT>(params.shadowMapHeight), 0.0f, 1.0f };
+			light->pointShadowMap.shadowMapScissorRect[i] = { 0, static_cast<LONG>(i) * static_cast<LONG>(params["shadowMapHeight"]), static_cast<LONG>(params["shadowMapWidth"]), static_cast<LONG>(i + 1U) * static_cast<LONG>(params["shadowMapHeight"])};
+			light->pointShadowMap.shadowMapViewport[i] = { 0.0f, static_cast<FLOAT>(i) * static_cast<FLOAT>(params["shadowMapHeight"]), static_cast<FLOAT>(params["shadowMapWidth"]), static_cast<FLOAT>(params["shadowMapHeight"]), 0.0f, 1.0f };
 		}
-		light->pointShadowMap.shadowMapClearScissorRect = { 0, 0, static_cast<LONG>(params.shadowMapWidth), 6L * static_cast<LONG>(params.shadowMapHeight) };
-		light->pointShadowMap.shadowMapClearViewport = { 0.0f, 0.0f , static_cast<FLOAT>(params.shadowMapWidth), 6L * static_cast<FLOAT>(params.shadowMapHeight), 0.0f, 1.0f };
-		light->pointShadowMap.shadowMapProjectionMatrix = XMMatrixPerspectiveFovRH(DirectX::XM_PIDIV2, 1.0f, params.nearZ, params.farZ);
+		light->pointShadowMap.shadowMapClearScissorRect = { 0, 0, static_cast<LONG>(params["shadowMapWidth"]), 6L * static_cast<LONG>(params["shadowMapHeight"]) };
+		light->pointShadowMap.shadowMapClearViewport = { 0.0f, 0.0f , static_cast<FLOAT>(params["shadowMapWidth"]), 6L * static_cast<FLOAT>(params["shadowMapHeight"]), 0.0f, 1.0f };
+		light->pointShadowMap.shadowMapProjectionMatrix = XMMatrixPerspectiveFovRH(DirectX::XM_PIDIV2, 1.0f, params["nearZ"], params["farZ"]);
 		for(UINT i = 0U; i < 6U; i++) {
 			auto camera = Scene::Camera::CreateCamera({
-				.name = light->name + L".cam("+std::to_wstring(i) + L")",
+				.name = light->name + L".cam."+std::to_wstring(i),
 				.projectionType = Camera::ProjectionsTypes::Perspective,
 				.perspective = {
 					.fovAngleY = DirectX::XM_PIDIV2,
-					.width = params.shadowMapWidth,
-					.height = params.shadowMapHeight,
+					.width = static_cast<float>(params["shadowMapWidth"]),
+					.height = static_cast<float>(params["shadowMapHeight"]),
 				},
 				.position = light->point.position,
 				.light = light,
 			});
-			camera->perspective.updateProjectionMatrix(static_cast<UINT>(params.shadowMapWidth), static_cast<UINT>(params.shadowMapHeight));
+			camera->perspective.updateProjectionMatrix(static_cast<float>(params["shadowMapWidth"]), static_cast<float>(params["shadowMapHeight"]));
 			camera->CreateConstantsBufferView(renderer);
 
 			light->shadowMapCameras.push_back(camera);
@@ -345,7 +365,7 @@ namespace Scene::Lights {
 	.Texture2D = {.MostDetailedMip = 0, .MipLevels = 1U, .ResourceMinLODClamp = 0.0f },
 	};
 	
-	void CreateShadowMapDepthStencilResource(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Light>& light) {
+	void CreateShadowMapDepthStencilResource(const std::shared_ptr<Light>& light) {
 		//shadow maps
 		light->shadowMapDsvDescriptorHeap = CreateDescriptorHeap(renderer->d3dDevice, 1U, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 		light->shadowMapDsvCpuHandle = light->shadowMapDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -359,18 +379,18 @@ namespace Scene::Lights {
 
 		switch (light->lightType) {
 		case Directional: {
-			depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D( DXGI_FORMAT_D32_FLOAT, light->directionalShadowMap.creation_params.shadowMapWidth,
-				light->directionalShadowMap.creation_params.shadowMapHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+			depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D( DXGI_FORMAT_D32_FLOAT, light->shadowMapParams["shadowMapWidth"],
+				light->shadowMapParams["shadowMapHeight"], 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 		}
 		break;
 		case Spot: {
-			depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D( DXGI_FORMAT_D32_FLOAT, light->spotShadowMap.creation_params.shadowMapWidth,
-				light->spotShadowMap.creation_params.shadowMapHeight, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+			depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D( DXGI_FORMAT_D32_FLOAT, light->shadowMapParams["shadowMapWidth"],
+				light->shadowMapParams["shadowMapHeight"], 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 		}
 		break;
 		case Point: {
-			depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D( DXGI_FORMAT_D32_FLOAT, light->pointShadowMap.creation_params.shadowMapWidth,
-				light->pointShadowMap.creation_params.shadowMapHeight * 6U, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
+			depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D( DXGI_FORMAT_D32_FLOAT, light->shadowMapParams["shadowMapWidth"],
+				light->shadowMapParams["shadowMapHeight"] * 6U, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 		}
 		break;
 		default:
@@ -392,7 +412,7 @@ namespace Scene::Lights {
 		numShadowMaps++;
 	}
 
-	void RenderShadowMap(std::shared_ptr<Light> light, std::shared_ptr<Renderer>& renderer, std::function<void(UINT)> renderScene) {
+	void RenderShadowMap(std::shared_ptr<Light> light, std::function<void(UINT)> renderScene) {
 		switch (light->lightType) {
 		case Directional: {
 			renderer->SetShadowMapTarget(light->shadowMap, light->shadowMapDsvCpuHandle, light->directionalShadowMap.shadowMapScissorRect, light->directionalShadowMap.shadowMapViewport);
@@ -419,8 +439,8 @@ namespace Scene::Lights {
 		}
 	}
 
-	Concurrency::task<void> CreateShadowMapPipeline(std::shared_ptr<Renderer>& renderer, const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial) {
-		return Concurrency::create_task([renderer, shadowMapsInputLayoutMaterial] {
+	Concurrency::task<void> CreateShadowMapPipeline(const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial) {
+		return Concurrency::create_task([shadowMapsInputLayoutMaterial] {
 			for (auto& [vertexClass, material] : shadowMapsInputLayoutMaterial) {
 				using namespace DeviceUtils::RootSignature;
 				auto rootSignature = CreateRootSignature(renderer->d3dDevice, material);
@@ -446,6 +466,18 @@ namespace Scene::Lights {
 		}
 	}
 
+	void DestroyShadowMapAttributes() {
+
+		for (auto& [p1, p2] : shadowMapRenderAttributes) {
+			p2.first.Release();
+			p2.first = nullptr;
+			p2.second.Release();
+			p2.second = nullptr;
+		}
+		shadowMapRenderAttributes.clear();
+
+	}
+
 #if defined(_EDITOR)
 	nlohmann::json Light::json() {
 		nlohmann::json j = nlohmann::json({});
@@ -468,12 +500,12 @@ namespace Scene::Lights {
 			j["directional"]["rotation"] = { directional.rotation.x, directional.rotation.y };
 			j["directional"]["hasShadowMaps"] = hasShadowMaps;
 			if (hasShadowMaps) {
-				j["directional"]["directionalShadowMap"]["shadowMapWidth"] = directionalShadowMap.creation_params.shadowMapWidth;
-				j["directional"]["directionalShadowMap"]["shadowMapHeight"] = directionalShadowMap.creation_params.shadowMapHeight;
-				j["directional"]["directionalShadowMap"]["viewWidth"] = directionalShadowMap.creation_params.viewWidth;
-				j["directional"]["directionalShadowMap"]["viewHeight"] = directionalShadowMap.creation_params.viewHeight;
-				j["directional"]["directionalShadowMap"]["nearZ"] = directionalShadowMap.creation_params.nearZ;
-				j["directional"]["directionalShadowMap"]["farZ"] = directionalShadowMap.creation_params.farZ;
+				j["directional"]["directionalShadowMap"]["shadowMapWidth"] = shadowMapParams["shadowMapWidth"];
+				j["directional"]["directionalShadowMap"]["shadowMapHeight"] = shadowMapParams["shadowMapHeight"];
+				j["directional"]["directionalShadowMap"]["viewWidth"] = shadowMapParams["viewWidth"];
+				j["directional"]["directionalShadowMap"]["viewHeight"] = shadowMapParams["viewHeight"];
+				j["directional"]["directionalShadowMap"]["nearZ"] = shadowMapParams["nearZ"];
+				j["directional"]["directionalShadowMap"]["farZ"] = shadowMapParams["farZ"];
 			}
 		};
 
@@ -485,12 +517,12 @@ namespace Scene::Lights {
 			j["spot"]["attenuation"] = { spot.attenuation.x, spot.attenuation.y, spot.attenuation.z };
 			j["spot"]["hasShadowMaps"] = hasShadowMaps;
 			if (hasShadowMaps) {
-				j["spot"]["spotShadowMap"]["shadowMapWidth"] = spotShadowMap.creation_params.shadowMapWidth;
-				j["spot"]["spotShadowMap"]["shadowMapHeight"] = spotShadowMap.creation_params.shadowMapHeight;
-				j["spot"]["spotShadowMap"]["viewWidth"] = spotShadowMap.creation_params.viewWidth;
-				j["spot"]["spotShadowMap"]["viewHeight"] = spotShadowMap.creation_params.viewHeight;
-				j["spot"]["spotShadowMap"]["nearZ"] = spotShadowMap.creation_params.nearZ;
-				j["spot"]["spotShadowMap"]["farZ"] = spotShadowMap.creation_params.farZ;
+				j["spot"]["spotShadowMap"]["shadowMapWidth"] = shadowMapParams["shadowMapWidth"];
+				j["spot"]["spotShadowMap"]["shadowMapHeight"] = shadowMapParams["shadowMapHeight"];
+				j["spot"]["spotShadowMap"]["viewWidth"] = shadowMapParams["viewWidth"];
+				j["spot"]["spotShadowMap"]["viewHeight"] = shadowMapParams["viewHeight"];
+				j["spot"]["spotShadowMap"]["nearZ"] = shadowMapParams["nearZ"];
+				j["spot"]["spotShadowMap"]["farZ"] = shadowMapParams["farZ"];
 			}
 		};
 
@@ -500,10 +532,10 @@ namespace Scene::Lights {
 			j["point"]["attenuation"] = { point.attenuation.x, point.attenuation.y, point.attenuation.z };
 			j["point"]["hasShadowMaps"] = hasShadowMaps;
 			if (hasShadowMaps) {
-				j["point"]["pointShadowMap"]["shadowMapWidth"] = pointShadowMap.creation_params.shadowMapWidth;
-				j["point"]["pointShadowMap"]["shadowMapHeight"] = pointShadowMap.creation_params.shadowMapHeight;
-				j["point"]["pointShadowMap"]["nearZ"] = pointShadowMap.creation_params.nearZ;
-				j["point"]["pointShadowMap"]["farZ"] = pointShadowMap.creation_params.farZ;
+				j["point"]["pointShadowMap"]["shadowMapWidth"] = shadowMapParams["shadowMapWidth"];
+				j["point"]["pointShadowMap"]["shadowMapHeight"] = shadowMapParams["shadowMapHeight"];
+				j["point"]["pointShadowMap"]["nearZ"] = shadowMapParams["nearZ"];
+				j["point"]["pointShadowMap"]["farZ"] = shadowMapParams["farZ"];
 			}
 		};
 

@@ -26,7 +26,6 @@ namespace Scene::Lights {
 	};
 
 	struct PointLightShadowMap {
-		PointLightShadowMapParams creation_params;
 		D3D12_RECT shadowMapClearScissorRect;
 		D3D12_VIEWPORT shadowMapClearViewport;
 		D3D12_RECT shadowMapScissorRect[6];

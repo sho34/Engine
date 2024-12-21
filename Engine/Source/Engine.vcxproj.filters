@@ -216,6 +216,12 @@
     <ClInclude Include="Editor\Editor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Templates\Templates.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\DefaultLevel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -300,6 +306,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Editor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Templates.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

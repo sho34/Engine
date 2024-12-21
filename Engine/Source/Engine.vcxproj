@@ -265,8 +265,10 @@
     <ClInclude Include="Animation\Effects\Effects.h" />
     <ClInclude Include="Animation\Effects\DecalLoop.h" />
     <ClInclude Include="Audio\Audio.h" />
+    <ClInclude Include="Editor\DefaultLevel.h" />
     <ClInclude Include="Editor\Editor.h" />
     <ClInclude Include="Primitives\Decal.h" />
+    <ClInclude Include="Templates\Templates.h" />
     <ClInclude Include="UI\String2D.h" />
     <ClInclude Include="Templates\Model3D.h" />
     <ClInclude Include="Scene\Lights\AmbientLight.h" />
@@ -383,6 +385,7 @@
     <ClCompile Include="Animation\Effects\DecalLoop.cpp" />
     <ClCompile Include="Audio\Audio.cpp" />
     <ClCompile Include="Editor\Editor.cpp" />
+    <ClCompile Include="Templates\Templates.cpp" />
     <ClCompile Include="UI\String2D.cpp" />
     <ClCompile Include="Templates\Model3D.cpp" />
     <ClCompile Include="Scene\Lights\Lights.cpp" />

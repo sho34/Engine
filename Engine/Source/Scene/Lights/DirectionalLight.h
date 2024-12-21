@@ -15,7 +15,6 @@ namespace Scene::Lights {
 	};
 
 	struct DirectionalLightShadowMap {
-		DirectionalLightShadowMapParams creation_params;
 		D3D12_RECT shadowMapScissorRect;
 		D3D12_VIEWPORT shadowMapViewport;
 		XMMATRIX shadowMapProjectionMatrix;

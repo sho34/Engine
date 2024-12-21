@@ -46,6 +46,7 @@ namespace Scene::Renderable
 		bool loading = true;
 
 		std::wstring name = L"";
+		std::wstring model3DName = L"";
 		MeshMaterialMap meshMaterials;
 		MeshMaterialMap meshMaterialsShadowMap;
 
@@ -65,7 +66,7 @@ namespace Scene::Renderable
 		float currentAnimationTime = 0.0f;
 
 		//initialization
-		Concurrency::task<void> Initialize(const std::shared_ptr<Renderer>& renderer);
+		void Initialize(const std::shared_ptr<Renderer>& renderer);
 		
 		//constants buffer
 		template<typename T>
@@ -112,6 +113,7 @@ namespace Scene::Renderable
 
 	typedef void LoadRenderableFn(std::shared_ptr<Renderable> renderable);
 
+	std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej);
 	std::shared_ptr<Renderable> CreateRenderable(const std::shared_ptr<Renderer>& renderer, const RenderableDefinition& renderableParams, LoadRenderableFn loadFn = nullptr);
 	void DestroyRenderables();
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetRenderables();

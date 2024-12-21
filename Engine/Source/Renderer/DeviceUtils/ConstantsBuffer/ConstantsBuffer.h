@@ -17,10 +17,8 @@ namespace DeviceUtils::ConstantsBuffer
 	void DestroyCSUDescriptorHeap();
 	UINT GetCSUDescriptorSize();
 	CComPtr<ID3D12DescriptorHeap>&	GetCSUDescriptorHeap();
-	CD3DX12_CPU_DESCRIPTOR_HANDLE& GetCpuDescriptorHandleStart();
-	CD3DX12_CPU_DESCRIPTOR_HANDLE& GetCpuDescriptorHandleCurrent();
-	CD3DX12_GPU_DESCRIPTOR_HANDLE& GetGpuDescriptorHandleStart();
-	CD3DX12_GPU_DESCRIPTOR_HANDLE& GetGpuDescriptorHandleCurrent();
+	void AllocCSUDescriptor(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle);
+	void FreeCSUDescriptor(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle);
 
 	struct ConstantsBufferViewData {
 		ConstantsBufferViewData(size_t size) : alignedConstantBufferSize((size + 255) & ~255) { }

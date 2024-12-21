@@ -2,6 +2,9 @@
 #include "Camera.h"
 #include "../Lights/Lights.h"
 
+extern RECT hWndRect;
+extern std::shared_ptr<Renderer> renderer;
+
 namespace Scene::Camera {
 
 	using namespace DeviceUtils::ConstantsBuffer;
@@ -32,6 +35,67 @@ namespace Scene::Camera {
 		camera->position = cameraDefinition.position;
 		camera->rotation = cameraDefinition.rotation;
 		camera->light = cameraDefinition.light;
+
+		cameraByIndex.push_back(camera);
+		cameraByNames[camera->name] = camera;
+
+		return camera;
+	}
+
+	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraDefinition)
+	{
+		CameraPtr camera = std::make_unique<CameraT>();
+		if (cameraDefinition["name"] == "") {
+			camera->name = L"cam." + std::to_wstring(cameraByIndex.size());
+		} else {
+			camera->name = StringToWString(cameraDefinition["name"]);
+		}
+		assert(!cameraByNames.contains(camera->name));
+
+		replaceFromJson(camera->fitWindow,cameraDefinition,"fitWindow");
+		camera->projectionType = StrToProjectionTypes[StringToWString(cameraDefinition["projectionType"])];
+		switch (camera->projectionType) {
+		case ProjectionsTypes::Perspective:
+		{
+			float winWidth = cameraDefinition["fitWindow"] ? static_cast<float>(hWndRect.right - hWndRect.left) : static_cast<float>(cameraDefinition["perspective"]["width"]);
+			float winHeight = cameraDefinition["fitWindow"] ? static_cast<float>(hWndRect.bottom - hWndRect.top) : static_cast<float>(cameraDefinition["perspective"]["height"]);
+			camera->perspective = {
+				.nearZ = cameraDefinition["perspective"]["nearZ"],
+				.farZ = cameraDefinition["perspective"]["farZ"],
+				.fovAngleY = cameraDefinition["perspective"]["fovAngleY"],
+				.width = winWidth,
+				.height = winHeight,
+			};
+			camera->perspective.updateProjectionMatrix();
+		}
+		break;
+		case ProjectionsTypes::Orthographic:
+		{
+			float winWidth = cameraDefinition["fitWindow"] ? static_cast<float>(hWndRect.right - hWndRect.left) : static_cast<float>(cameraDefinition["orthographic"]["width"]);
+			float winHeight = cameraDefinition["fitWindow"] ? static_cast<float>(hWndRect.bottom - hWndRect.top) : static_cast<float>(cameraDefinition["orthographic"]["height"]);
+			camera->orthographic = {
+				.nearZ = cameraDefinition["orthographic"]["nearZ"],
+				.farZ = cameraDefinition["orthographic"]["farZ"],
+				.width = winWidth,
+				.height = winHeight
+			};
+			camera->orthographic.updateProjectionMatrix();
+		}
+		break;
+		default:
+			assert(true); //not implemented
+			break;
+		}
+
+		camera->position = { cameraDefinition["position"][0], cameraDefinition["position"][1], cameraDefinition["position"][2] };
+		camera->rotation = { cameraDefinition["rotation"][0], cameraDefinition["rotation"][1] };
+		camera->speed = cameraDefinition["speed"];
+
+		/*
+		camera->light = cameraDefinition.light;
+		*/
+
+		camera->CreateConstantsBufferView(renderer);
 
 		cameraByIndex.push_back(camera);
 		cameraByNames[camera->name] = camera;
@@ -246,27 +310,27 @@ namespace Scene::Camera {
 	nlohmann::json Camera::json() {
 		nlohmann::json j = nlohmann::json({});
 
-		std::string jname;
-		std::transform(name.begin(), name.end(), std::back_inserter(jname), [](wchar_t c) { return (char)c; });
-		j["name"] = jname;
-
-		std::string jprojectionType;
-		std::transform(ProjectionsTypesStr[projectionType].begin(), ProjectionsTypesStr[projectionType].end(), std::back_inserter(jprojectionType), [](wchar_t c) { return (char)c; });
-		j["projectionType"] = jprojectionType;
+		j["name"] = WStringToString(name);
+		j["fitWindow"] = fitWindow;
+		j["projectionType"] = WStringToString(ProjectionsTypesStr[projectionType]);
 
 		auto buildOrthographicJsonCamera = [this](auto& j) {
 			j["orthographic"]["nearZ"] = orthographic.nearZ;
 			j["orthographic"]["farZ"] = orthographic.farZ;
-			j["orthographic"]["width"] = orthographic.width;
-			j["orthographic"]["height"] = orthographic.height;
+			if (!fitWindow) {
+				j["orthographic"]["width"] = orthographic.width;
+				j["orthographic"]["height"] = orthographic.height;
+			}
 		};
 
 		auto buildPerspectiveJsonCamera = [this](auto& j) {
 			j["perspective"]["nearZ"] = perspective.nearZ;
 			j["perspective"]["farZ"] = perspective.farZ;
 			j["perspective"]["fovAngleY"] = perspective.fovAngleY;
-			j["perspective"]["width"] = perspective.width;
-			j["perspective"]["height"] = perspective.height;
+			if (!fitWindow) {
+				j["perspective"]["width"] = perspective.width;
+				j["perspective"]["height"] = perspective.height;
+			}
 		};
 
 		switch (projectionType) {

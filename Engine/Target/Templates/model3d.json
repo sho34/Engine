@@ -1,0 +1,12 @@
+{
+    "knight": {
+        "assetPath": "knight/scene.gltf",
+        "autoCreateMaterial": true,
+        "materialsShader": "SkinningPBRLighting"
+    },
+    "messy_tavern": {
+        "assetPath": "messy_tavern/scene.gltf",
+        "autoCreateMaterial": true,
+        "materialsShader": "NormalMappingLighting"
+    }
+}

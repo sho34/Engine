@@ -1,5 +1,10 @@
 #pragma once
 #include "../Templates/Mesh.h"
+#include "Cube.h"
+#include "Decal.h"
+#include "Floor.h"
+#include "Pentahedron.h"
+#include "UtahTeapot.h"
 
 extern std::mutex rendererMutex;
 namespace Primitives {
@@ -18,3 +23,12 @@ namespace Primitives {
 		});
 	}
 }
+
+typedef Concurrency::task<void> (*LoadPrimitiveIntoMeshPtr)(std::shared_ptr<Renderer>& renderer, MeshPtr& mesh);
+static std::map<std::wstring, LoadPrimitiveIntoMeshPtr> LoadPrimitiveIntoMeshFunctions = {
+	{ L"utahteapot", Primitives::LoadPrimitiveIntoMesh<UtahTeapot> },
+	{ L"cube", Primitives::LoadPrimitiveIntoMesh<Cube> },
+	{ L"pyramid", Primitives::LoadPrimitiveIntoMesh<Pentahedron> },
+	{ L"floor", Primitives::LoadPrimitiveIntoMesh<Floor> },
+	{ L"decal", Primitives::LoadPrimitiveIntoMesh<Decal> }
+};

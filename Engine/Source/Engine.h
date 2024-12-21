@@ -13,4 +13,5 @@
 
 #if defined(_EDITOR)
 #include "Editor/Editor.h"
+#include "Editor/DefaultLevel.h"
 #endif

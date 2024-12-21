@@ -27,7 +27,7 @@ namespace Scene::Camera {
     Ultrawite
   };
 
-  inline static const std::vector<std::wstring> ProjectionsTypesStr = {
+  static std::vector<std::wstring> ProjectionsTypesStr = {
     L"Cylindrical",
     L"Fisheye",
     L"Omnimax",
@@ -36,6 +36,28 @@ namespace Scene::Camera {
     L"Perspective",
     L"Spherical",
     L"Ultrawite"
+  };
+
+  static std::map<ProjectionsTypes, std::wstring> ProjectionTypesToStr = {
+    { Cylindrical, L"Cylindrical" },
+    { Fisheye, L"Fisheye" },
+    { Omnimax, L"Omnimax" },
+    { Orthographic, L"Orthographic" },
+    { Panoramic, L"Panoramic" },
+    { Perspective, L"Perspective" },
+    { Spherical, L"Spherical" },
+    { Ultrawite, L"Ultrawite" }
+  };
+
+  static std::map<std::wstring, ProjectionsTypes> StrToProjectionTypes = {
+    { L"Cylindrical", Cylindrical },
+    { L"Fisheye", Fisheye },
+    { L"Omnimax", Omnimax },
+    { L"Orthographic", Orthographic },
+    { L"Panoramic", Panoramic },
+    { L"Perspective", Perspective },
+    { L"Spherical", Spherical },
+    { L"Ultrawite", Ultrawite }
   };
 
   struct CameraAttributes {
@@ -58,6 +80,7 @@ namespace Scene::Camera {
   struct Camera
   {
     std::wstring name = L"";
+    bool fitWindow = false;
     ProjectionsTypes projectionType = Perspective;
     union {
       Projections::Perspective perspective;
@@ -98,6 +121,7 @@ namespace Scene::Camera {
   };
 
   std::shared_ptr<Camera> CreateCamera(const CameraDefinition& cameraDefinition);
+  std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraDefinition);
   std::vector<std::shared_ptr<Camera>> GetCameras();
   void DestroyCameras();
   size_t GetNumCameras();

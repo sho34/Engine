@@ -69,8 +69,6 @@ namespace Templates::Shader {
 
 		ShaderPtr* shader = CreateNewShader(shaderTemplateName, defaultValues);
 
-		auto& shTemplates = shaderTemplates;
-
 		std::wstring shaderName = defaultValues.shaderFileName == L"" ? shaderTemplateName : defaultValues.shaderFileName;
 
 		return concurrency::create_task([shaderName, shader] {
@@ -119,6 +117,61 @@ namespace Templates::Shader {
 	{
 		auto it = shaderTemplates.find(shaderTemplateName);
 		return (it != shaderTemplates.end()) ? &it->second : nullptr;
+	}
+
+#if defined(_DEBUG)
+	nlohmann::json json()
+	{
+		nlohmann::json j = nlohmann::json({});
+
+		for (auto& [name, shader] : shaderTemplates) {
+			if (shader->defaultValues.systemCreated) continue;
+			std::string jname = WStringToString(name);
+			j[jname] = nlohmann::json({});
+			j[jname]["shaderFileName"] = WStringToString(shader->defaultValues.shaderFileName);
+			j[jname]["mappedValues"] = TransformMappingToJson(shader->defaultValues.mappedValues);
+		}
+
+		return j;
+	}
+#endif
+
+	Concurrency::task<void> json(std::wstring name, nlohmann::json shaderj)
+	{
+		auto currentShader = GetShaderTemplate(name);
+		if (currentShader != nullptr) {
+			return concurrency::create_task([] {});
+		}
+
+		ShaderDefaultValues defaultValues = {
+			.shaderFileName = (shaderj.contains("shaderFileName") and shaderj["shaderFileName"] != "") ? StringToWString(shaderj["shaderFileName"]) : name,
+			.mappedValues = TransformJsonToMapping(shaderj["mappedValues"]),
+		};
+		replaceFromJson(defaultValues.systemCreated, shaderj, "systemCreated");
+
+		ShaderPtr* shader = CreateNewShader(name, defaultValues);
+
+		std::wstring shaderName = (shaderj.contains("shaderFileName") and shaderj["shaderFileName"] != "") ? StringToWString(shaderj["shaderFileName"]) : name;
+
+		return concurrency::create_task([shaderName, shader] {
+			std::lock_guard<std::mutex> lock(createShaderMutex);
+			auto shaderTasks = {
+				ShaderCompiler::Bind(shaderName.c_str(),ShaderType::VERTEX_SHADER, (void*)(shader), NotificationCallbacks({
+					.onLoadStart = OnShaderCompilationStart,
+					.onLoadComplete = OnShaderCompilationComplete,
+					.onDestroy = OnShaderCompilerOutputDestroy,
+				})),
+				ShaderCompiler::Bind(shaderName.c_str(),ShaderType::PIXEL_SHADER, (void*)(shader), NotificationCallbacks({
+					.onLoadStart = OnShaderCompilationStart,
+					.onLoadComplete = OnShaderCompilationComplete,
+					.onDestroy = OnShaderCompilerOutputDestroy,
+				})),
+			};
+
+			auto waitForShaders = when_all(std::begin(shaderTasks), std::end(shaderTasks));
+
+			waitForShaders.wait();
+		});
 	}
 
 }

@@ -14,21 +14,22 @@ namespace Scene::Camera::Projections {
 		float nearZ = defaultNearZ;
 		float farZ = defaultFarZ;
 		float fovAngleY = defaultFovAngleY;
-		UINT width = 0;
-		UINT height = 0;
+		float width = 0;
+		float height = 0;
 		XMMATRIX projectionMatrix;
 
-		inline void updateProjectionMatrix(UINT width, UINT height) {
-
-			this->width = width;
-			this->height = height;
+		inline void updateProjectionMatrix() {
 			float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 			projectionMatrix = XMMatrixPerspectiveFovRH(fovAngleY, aspectRatio, nearZ, farZ);
+		};
 
+		inline void updateProjectionMatrix(float width, float height) {
+			this->width = width;
+			this->height = height;
+			updateProjectionMatrix();
 		};
 
 		inline void updateFovAngle(float fovAngle) {
-
 			fovAngleY = fovAngle;
 			updateProjectionMatrix(width, height);
 		}

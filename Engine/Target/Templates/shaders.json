@@ -1,0 +1,40 @@
+{
+    "AnimatedDecal": {
+        "mappedValues": [
+            {
+                "value": 0,
+                "variable": "frameIndex",
+                "variableType": "UNSIGNED_INTEGER"
+            }
+        ],
+        "shaderFileName": "AnimatedDecal"
+    },
+    "Model3D": {
+        "mappedValues": [],
+        "shaderFileName": "Model3D"
+    },
+    "NormalMappingLighting": {
+        "mappedValues": [
+            {
+                "value": 1024.0,
+                "variable": "specularExponent",
+                "variableType": "FLOAT"
+            }
+        ],
+        "shaderFileName": "NormalMappingLighting"
+    },
+    "SkinningPBRLighting": {
+        "mappedValues": [],
+        "shaderFileName": "SkinningPBRLighting"
+    },
+    "TexturedLighting": {
+        "mappedValues": [
+            {
+                "value": 1024.0,
+                "variable": "specularExponent",
+                "variableType": "FLOAT"
+            }
+        ],
+        "shaderFileName": "TexturedLighting"
+    }
+}

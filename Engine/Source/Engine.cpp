@@ -17,6 +17,7 @@
 #include "UI/String2D.h"
 #include "Renderer/DeviceUtils/D3D12Device/Interop.h"
 #include "Renderer/DeviceUtils/Resources/Resources.h"
+#include "Templates/Templates.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace ShaderCompiler;
@@ -25,7 +26,9 @@ using namespace Templates::Material;
 using namespace Templates::Mesh;
 using namespace Templates::Model3D;
 using namespace Templates::Audio;
+using namespace Scene::Camera;
 using namespace Scene::Lights;
+using namespace Scene::Renderable;
 using namespace Animation::Effects;
 using namespace Audio;
 #if defined(_EDITOR)
@@ -43,6 +46,9 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 bool appDone = false;
 bool inSizeMove = false;
 bool inFullScreen = false;
+bool loadingLevel = false;
+nlohmann::json levelToLoad;
+std::function<void()> loadLevelFn = nullptr;
 
 std::shared_ptr<Renderer> renderer;
 
@@ -69,11 +75,18 @@ RenderablePtr knight = nullptr;
 // Forward declarations of functions included in this code module:
 ATOM MyRegisterClass(HINSTANCE hInstance);
 BOOL InitInstance(HINSTANCE, int);
+void LoadDefaultLevel();
+void LoadScene();
+void LoadLevel(std::filesystem::path level);
 void DestroyInstance();
-void CreateTemplates(std::shared_ptr<Renderer>& renderer);
-void CreateCameras(std::shared_ptr<Renderer>& renderer);
-void CreateLights(std::shared_ptr<Renderer>& renderer);
-void CreateRenderables(std::shared_ptr<Renderer>& renderer);
+void LoadSystemTemplates();
+void LoadTemplates();
+void MapLightingResources();
+
+void CreateRenderables(nlohmann::json renderables);
+void CreateCameras(nlohmann::json cameras);
+void CreateLights(nlohmann::json lights);
+
 void CreateSounds();
 void CreateUI();
 void GameInputLoop();
@@ -128,15 +141,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 }
 
 void AppStep() {
-  timer.Tick([&]() {});
-  GameInputLoop();
-  EffectsStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
-  AnimableStep(timer.GetElapsedSeconds());
-  if (renderer) {
-    RenderLoop();
+  if (loadingLevel) {
+    loadLevelFn();
+  } else {
+    timer.Tick([&]() {});
+    GameInputLoop();
+    EffectsStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
+    AnimableStep(timer.GetElapsedSeconds());
+    if (renderer) {
+      RenderLoop();
+    }
+    AudioStep();
+#if !defined(_EDITOR)
+    UIStep();
+#endif
   }
-  AudioStep();
-  UIStep();
 }
 
 ATOM MyRegisterClass(HINSTANCE hInstance)
@@ -206,13 +225,16 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   InitEditor();
 #endif
 
-  //create the objects
-  CreateTemplates(renderer);
-  CreateRenderables(renderer);
-  CreateCameras(renderer);
-  CreateLights(renderer);
-  CreateSounds();
-  CreateUI();
+  //create the templates
+  LoadSystemTemplates();
+  LoadTemplates();
+  MapLightingResources();
+
+  //create the basic scene objects
+  LoadDefaultLevel();
+
+  //CreateSounds();
+  //CreateUI();
 
   //kick the audio listener update
   AudioStep();
@@ -221,6 +243,65 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   renderer->CloseCommandsAndFlush();
     
   return TRUE;
+}
+
+void LoadDefaultLevel()
+{
+  loadingLevel = true;
+
+  CreateRenderables(DefaultLevel::renderables);
+  CreateCameras(DefaultLevel::cameras);
+  CreateLights(DefaultLevel::lights);
+
+  loadingLevel = false;
+}
+
+std::mutex loadLevelMutex;
+void LoadScene() {
+  std::lock_guard<std::mutex> lock(loadLevelMutex);
+  renderer->ResetCommands();
+  renderer->SetCSUDescriptorHeap();
+
+  renderer->SetRenderTargets();
+
+  DestroySceneObjects();
+
+  if (levelToLoad.contains("renderables")) {
+    CreateRenderables(levelToLoad["renderables"]);
+  }
+
+  if (levelToLoad.contains("cameras")) {
+    CreateCameras(levelToLoad["cameras"]);
+  }
+  
+  if (levelToLoad.contains("lights")) {
+    CreateLights(levelToLoad["lights"]);
+  }
+
+  loadingLevel = false;
+  loadLevelFn = nullptr;
+
+#if defined(_EDITOR)
+  Editor::DrawEditor();
+#endif
+
+  //before switching to 2D mode the commandQueue must be executed
+  renderer->ExecuteCommands();
+  renderer->Set2DRenderTarget();
+  renderer->Present();
+}
+
+void LoadLevel(std::filesystem::path level)
+{
+  std::string pathStr = level.generic_string();
+  std::ifstream file(pathStr);
+  nlohmann::json data = nlohmann::json::parse(file);
+  file.close();
+
+  levelToLoad = data;
+  loadLevelFn = LoadScene;
+  loadingLevel = true;
+
 }
 
 void DestroyInstance()
@@ -233,6 +314,8 @@ void DestroyInstance()
   DestroyUI2DStrings();
 
   DestroySceneObjects();
+
+  DestroyLightsResources();
   
   using namespace DeviceUtils::Resources;
   DestroyTextureResources();
@@ -255,151 +338,68 @@ void DestroyInstance()
 
 }
 
-void CreateTemplates(std::shared_ptr<Renderer>& renderer) {
+void LoadSystemTemplates() {
   auto loadingTasks = {
-    concurrency::create_task([] {
-      auto createShaderTasks = {
-        CreateShaderTemplate(L"Teapot", {
-          .shaderFileName = L"BaseLighting",
-          .mappedValues = {
-            { L"specularExponent", { MaterialVariablesTypes::MAT_VAR_FLOAT, 400.0f }},
-            { L"baseColor" , { MaterialVariablesTypes::MAT_VAR_FLOAT3, DirectX::Colors::DodgerBlue }}
-          }
-        }),
-        CreateShaderTemplate(L"TexturedLighting", {
-          .mappedValues = {
-            { L"specularExponent", { MaterialVariablesTypes::MAT_VAR_FLOAT, 1024.0f }},
-          }
-        }),
-        CreateShaderTemplate(L"NormalMappingLighting", {
-          .mappedValues = {
-            { L"specularExponent", { MaterialVariablesTypes::MAT_VAR_FLOAT, 1024.0f }},
-          }
-        }),
-        CreateShaderTemplate(L"Floor", {
-          .shaderFileName = L"Grid",
-          .mappedValues = {
-            { L"specularExponent", { MaterialVariablesTypes::MAT_VAR_FLOAT, 1024.0f }},
-            { L"baseColor" , { MaterialVariablesTypes::MAT_VAR_FLOAT3, DirectX::Colors::Black }}
-          }
-        }),
-        CreateShaderTemplate(L"ShadowMap"),
-        CreateShaderTemplate(L"ShadowMapAlpha"),
-        CreateShaderTemplate(L"ShadowMapAlphaSkinning"),
-        CreateShaderTemplate(L"Model3D"),
-        CreateShaderTemplate(L"SkinningPBRLighting"),
-        CreateShaderTemplate(L"AnimatedDecal", {
-          .mappedValues = {
-            { L"frameIndex", { MaterialVariablesTypes::MAT_VAR_UNSIGNED_INTEGER, 0U }},
-          },
-        }),
-      };
-      return when_all(std::begin(createShaderTasks), std::end(createShaderTasks));
-    }).then([] {
-      auto createMaterialTasks = {
-        CreateMaterialTemplate(L"Teapot", {
-          .shaderTemplate = L"Teapot"
-        }),
-        CreateMaterialTemplate(L"Crate", {
-          .shaderTemplate = L"TexturedLighting",
-          .textures = {
-            { L"Assets/crate/crate.dds" }
-          },
-          .samplers = { MaterialSamplerDesc() },
-        }),
-        CreateMaterialTemplate(L"Pyramid",{
-          .shaderTemplate = L"NormalMappingLighting",
-          .mappedValues = {
-            { L"specularExponent", { MaterialVariablesTypes::MAT_VAR_FLOAT, 1024.0f }},
-          },
-          .textures = {
-            { L"Assets/pyramid/pyramid.dds" },
-            { L"Assets/pyramid/pyramidNormalMap.dds" },
-          },
-          .samplers = { MaterialSamplerDesc() },
-        }),
-        CreateMaterialTemplate(L"Floor",{
-          .shaderTemplate = L"Floor",
-        }),
-        CreateMaterialTemplate(L"ShadowMap",{
-          .shaderTemplate = L"ShadowMap"
-        }),
-        CreateMaterialTemplate(L"ShadowMapAlpha",{
-          .shaderTemplate = L"ShadowMapAlpha"
-        }),
-        CreateMaterialTemplate(L"ShadowMapAlphaSkinning",{
-          .shaderTemplate = L"ShadowMapAlphaSkinning"
-        }),
-        CreateMaterialTemplate(L"Model3D",{
-          .shaderTemplate = L"Model3D"
-        }),
-        CreateMaterialTemplate(L"Fireplace",{
-          .shaderTemplate = L"AnimatedDecal",
-          .mappedValues = {
-            { L"alphaCut", { MaterialVariablesTypes::MAT_VAR_FLOAT, 100.0f/255.0f }},
-          },
-          .textures = {
-            { L"Assets/fx/fire-65.dds", DXGI_FORMAT_BC7_UNORM_SRGB , 50U }
-          },
-
-          .twoSided = true,
-        }),
-        CreateMaterialTemplate(L"CandleFlame",{
-          .shaderTemplate = L"AnimatedDecal",
-          .mappedValues = {
-            { L"alphaCut", { MaterialVariablesTypes::MAT_VAR_FLOAT, 250.0f/255.0f }},
-          },
-          .textures = {
-            { L"Assets/fx/flame.dds", DXGI_FORMAT_BC7_UNORM_SRGB , 7U }
-          },
-
-          .twoSided = true,
-        }),
-      };
-      return when_all(std::begin(createMaterialTasks), std::end(createMaterialTasks));
-    }).then([&renderer]() {
-      auto createMeshesTasks = {
-        CreateMeshTemplate(L"utahteapot",renderer,Primitives::LoadPrimitiveIntoMesh<UtahTeapot>),
-        CreateMeshTemplate(L"cube",renderer,Primitives::LoadPrimitiveIntoMesh<Cube>),
-        CreateMeshTemplate(L"pyramid",renderer,Primitives::LoadPrimitiveIntoMesh<Pentahedron>),
-        CreateMeshTemplate(L"floor", renderer, Primitives::LoadPrimitiveIntoMesh<Floor>),
-        CreateModel3DTemplate(L"messy_tavern",L"messy_tavern/scene.gltf",renderer, {
-          .materialsShader = L"NormalMappingLighting"
-        }),
-        CreateModel3DTemplate(L"knight",L"knight/scene.gltf",renderer,{
-          .materialsShader = L"SkinningPBRLighting"
-        }),
-        CreateMeshTemplate(L"decal", renderer, Primitives::LoadPrimitiveIntoMesh<Decal>,{
-        }),
-      };
-      return when_all(std::begin(createMeshesTasks), std::end(createMeshesTasks));
-    }).then([]{
-      auto createSoundsTasks = {
-        CreateSoundTemplate(L"music",L"Assets/sounds/music.wav"),
-        CreateSoundTemplate(L"fireplace",L"Assets/sounds/fireplace.wav")
-      };
-      return when_all(std::begin(createSoundsTasks), std::end(createSoundsTasks));
-    })
+  concurrency::create_task([] {
+    auto createShaderTasks = {
+      Templates::Shader::json(L"Teapot", R"( {
+        "systemCreated" : true,
+        "mappedValues": [
+          { "value": [ 0.11764706671237946, 0.5647059082984924, 1.0 ], "variable": "baseColor", "variableType": "FLOAT3" },
+          { "value": 400.0, "variable": "specularExponent", "variableType": "FLOAT" }
+        ],
+        "shaderFileName": "BaseLighting"
+      })"_json),
+      Templates::Shader::json(L"Floor", R"( {
+        "systemCreated" : true,
+        "mappedValues": [
+          { "value": [ 0.0, 0.0, 0.0 ], "variable": "baseColor", "variableType": "FLOAT3" },
+          { "value": 1024.0, "variable": "specularExponent", "variableType": "FLOAT" }
+        ],
+        "shaderFileName": "Grid"
+      })"_json),
+      Templates::Shader::json(L"ShadowMap", R"( { "systemCreated" : true })"_json),
+      Templates::Shader::json(L"ShadowMapAlpha", R"( { "systemCreated" : true })"_json),
+      Templates::Shader::json(L"ShadowMapAlphaSkinning", R"( { "systemCreated" : true })"_json),
+    };
+    return when_all(std::begin(createShaderTasks), std::end(createShaderTasks));
+  }).then([] {
+    auto createMaterialTasks = {
+      Templates::Material::json(L"Teapot", R"({ "shaderTemplate":"Teapot", "systemCreated":true })"_json),
+      Templates::Material::json(L"Floor", R"({ "shaderTemplate":"Floor", "systemCreated":true })"_json),
+      Templates::Material::json(L"ShadowMap", R"({ "shaderTemplate":"ShadowMap", "systemCreated":true })"_json),
+      Templates::Material::json(L"ShadowMapAlpha", R"({ "shaderTemplate":"ShadowMapAlpha", "systemCreated":true })"_json),
+      Templates::Material::json(L"ShadowMapAlphaSkinning", R"({ "shaderTemplate":"ShadowMapAlphaSkinning", "systemCreated":true })"_json),
+    };
+    return when_all(std::begin(createMaterialTasks), std::end(createMaterialTasks));
+  }).then([]() {
+    auto createMeshesTasks = {
+      CreatePrimitiveMeshTemplate(L"floor"),
+      CreatePrimitiveMeshTemplate(L"utahteapot"),
+      CreatePrimitiveMeshTemplate(L"cube"),
+      CreatePrimitiveMeshTemplate(L"pyramid"),
+      CreatePrimitiveMeshTemplate(L"decal"),
+    };
+    return when_all(std::begin(createMeshesTasks), std::end(createMeshesTasks));
+  })
   };
 
   when_all(std::begin(loadingTasks), std::end(loadingTasks)).wait();
 }
 
-void CreateCameras(std::shared_ptr<Renderer>& renderer) {
-  UINT winWidth = hWndRect.right - hWndRect.left;
-  UINT winHeight = hWndRect.bottom - hWndRect.top;
+void LoadTemplates() {
 
-  CameraPtr camera = Scene::Camera::CreateCamera({
-    .position = { -5.7f, 2.2f, 3.8f },
-    .rotation = { DirectX::XM_PIDIV2 , -DirectX::XM_PIDIV4 * 0.25f },
-  });
-  camera->perspective.updateProjectionMatrix(winWidth, winHeight);
-  camera->CreateConstantsBufferView(renderer);
+  using namespace Templates;
+
+  Templates::LoadTemplates(defaultTemplatesFolder, Templates::Shader::templateName, Templates::Shader::json);
+  Templates::LoadTemplates(defaultTemplatesFolder, Templates::Material::templateName, Templates::Material::json);
+  Templates::LoadTemplates(defaultTemplatesFolder, Templates::Model3D::templateName, Templates::Model3D::json);
+  Templates::LoadTemplates(defaultTemplatesFolder, Templates::Audio::templateName, Templates::Audio::json);
+
 }
 
-void CreateLights(std::shared_ptr<Renderer>& renderer) {
-
-  CreateLightsResources(renderer).then([&renderer] {
+void MapLightingResources() {
+  CreateLightsResources().then([] {
     const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial = {
       { VertexClass::POS, GetMaterialTemplate(L"ShadowMap") },
       { VertexClass::POS_COLOR, GetMaterialTemplate(L"ShadowMap") },
@@ -411,208 +411,31 @@ void CreateLights(std::shared_ptr<Renderer>& renderer) {
       { VertexClass::POS_NORMAL_TANGENT_TEXCOORD0_SKINNING, GetMaterialTemplate(L"ShadowMapAlphaSkinning") },
       { VertexClass::POS_NORMAL_TANGENT_BITANGENT_TEXCOORD0, GetMaterialTemplate(L"ShadowMapAlpha") },
     };
-    return CreateShadowMapPipeline(renderer, shadowMapsInputLayoutMaterial);
+    return CreateShadowMapPipeline(shadowMapsInputLayoutMaterial);
   }).wait();
-  CreateLight(renderer, {
-    .name = L"light0(amb)",
-    .lightType = LightType::Ambient,
-    .ambient = {
-      .color = { 0.05f, 0.05f, 0.05f }
-    }
-  });
-  CreateLight(renderer, {
-    .name = L"light1(dir)",
-    .lightType = LightType::Directional,
-    .directional = {
-      //.color = { 0.3f, 0.3f, 0.4f },
-      .color = *((XMFLOAT3*)&DirectX::Colors::White),
-      .rotation = { 1.54499948f, -0.300000399f },
-    },
-    .hasShadowMap = true,
-    .directionalLightShadowMapParams = {
-      .shadowMapWidth = 4096U,
-      .shadowMapHeight = 4096U,
-      .viewWidth = 32.0f,
-      .viewHeight = 32.0f,
-      .nearZ = 0.01f,
-      .farZ = 1000.0f
-    },
-  });
-  CreateLight(renderer, {
-    .name = L"light2(spot)",
-    .lightType = LightType::Spot,
-    .spot = {
-      .color = *((XMFLOAT3*)&DirectX::Colors::WhiteSmoke),
-      .position = { -6.52f, 2.16f, 0.65f}, //position
-      //.rotation = { 1.46f, -0.37f }, //rotation
-      .azimuthalAngle = 1.46f,
-      .polarAngle = -0.37f,
-      .coneAngle = DirectX::XM_PIDIV4*0.25f,
-      .attenuation = { 0.0f, 0.01f, 0.02f },
-    },
-    .hasShadowMap = true,
-    .spotLightShadowMapParams = {
-      .shadowMapWidth = 1024U,
-      .shadowMapHeight = 1024U,
-      .viewWidth = 32.0f,
-      .viewHeight = 32.0f,
-      .nearZ = 0.01f,
-      .farZ = 100.0f,
-    }
-  });
-  CreateLight(renderer, {
-    .name = L"light3(point)",
-    .lightType = LightType::Point,
-    .point = {
-      .color = { 234.0f / 255.0f, 81.0f / 255.0f, 4.0f / 255.0f },
-      .position = { -2.2f, 0.7f, 7.1f },
-      .attenuation = { 0.0f, 0.1f, 0.02f },
-    },
-    .hasShadowMap = true,
-    .pointLightShadowMapParams = {
-      .shadowMapWidth = 1024U,
-      .shadowMapHeight = 1024U,
-      .nearZ = 0.01f,
-      .farZ = 20.0f,
-    },
-  },[](LightPtr light){
-      using namespace Animation::Effects;
-      LightOscilation fireplace = {
-        .target = &light->point.color,
-        .offset = 0.9f,
-        .amplitude = 0.1f,
-        .angularFrequency = 45.0f,
-      };
-    CreateLightEffects[LightOscilationEffect](light,&fireplace);
-  });
 }
 
-void CreateRenderables(std::shared_ptr<Renderer>& renderer) {
+void CreateRenderables(nlohmann::json renderables) {
 
-  using namespace Scene::Renderable;
-
-  CreateRenderable(renderer, {
-    .name = L"utahteapot",
-    .meshMaterials = { { GetMeshTemplate(L"utahteapot"), GetMaterialTemplate(L"Teapot")} },
-    .meshMaterialsShadowMap = { { GetMeshTemplate(L"utahteapot"), GetMaterialTemplate(L"ShadowMap") } },
-    .position = { -2.0f, -0.6f, 2.0f },
-    .scale = { 0.01f, 0.01f, 0.01f }
-  });
-  CreateRenderable(renderer, {
-    .name = L"crate",
-    .meshMaterials = { { GetMeshTemplate(L"cube"), GetMaterialTemplate(L"Crate")} },
-    .meshMaterialsShadowMap = { { GetMeshTemplate(L"cube"), GetMaterialTemplate(L"ShadowMapAlpha")} },
-  });
-  CreateRenderable(renderer, {
-    .name = L"pyramid",
-    .meshMaterials = { { GetMeshTemplate(L"pyramid"), GetMaterialTemplate(L"Pyramid") } },
-    .meshMaterialsShadowMap = { { GetMeshTemplate(L"pyramid"), GetMaterialTemplate(L"ShadowMapAlpha") } },
-    .position = { 6.0f, -1.0f, 2.0f }
-  });
-  CreateRenderable(renderer, {
-    .name = L"floor",
-    .meshMaterials = { { GetMeshTemplate(L"floor"), GetMaterialTemplate(L"Floor")} },
-    .position = { 0.0f, -1.0f, 0.0f },
-    .scale = { 20.0f, 1.0f, 20.0f },
-  });
-  CreateRenderable(renderer, {
-    .name = L"tavern",
-    .modelMaterials = { GetModel3DTemplate(L"messy_tavern"), {
-      GetMaterialTemplate(L"mat.messy_tavern.0"),
-      GetMaterialTemplate(L"mat.messy_tavern.1"),
-      GetMaterialTemplate(L"mat.messy_tavern.2"),
-      GetMaterialTemplate(L"mat.messy_tavern.3"),
-      GetMaterialTemplate(L"mat.messy_tavern.4"),
-      GetMaterialTemplate(L"mat.messy_tavern.5"),
-      GetMaterialTemplate(L"mat.messy_tavern.6"),
-    }},
-    .modelMaterialsShadowMap = { GetModel3DTemplate(L"messy_tavern"), {
-      GetMaterialTemplate(L"ShadowMapAlpha"),
-      GetMaterialTemplate(L"ShadowMapAlpha"),
-      GetMaterialTemplate(L"ShadowMapAlpha"),
-      GetMaterialTemplate(L"ShadowMapAlpha"),
-      GetMaterialTemplate(L"ShadowMapAlpha"),
-      GetMaterialTemplate(L"ShadowMapAlpha"),
-      GetMaterialTemplate(L"ShadowMapAlpha"),
-    }},
-    .position = { -14.0f, -1.1f, 0.0f},
-    .scale = { 0.1f, 0.1f, 0.1f },
-    .rotation = { -DirectX::XM_PIDIV2, DirectX::XM_PI, DirectX::XM_PIDIV2 },
-    .skipMeshes = { 0 }
-  });
-  knight = CreateRenderable(renderer, {
-    .name = L"knight",
-    .modelMaterials = { GetModel3DTemplate(L"knight"), {
-      GetMaterialTemplate(L"mat.knight.0"),
-      GetMaterialTemplate(L"mat.knight.1"),
-      GetMaterialTemplate(L"mat.knight.2"),
-      GetMaterialTemplate(L"mat.knight.3"),
-      GetMaterialTemplate(L"mat.knight.4"),
-      GetMaterialTemplate(L"mat.knight.5"),
-      GetMaterialTemplate(L"mat.knight.6"),
-      GetMaterialTemplate(L"mat.knight.7"),
-      GetMaterialTemplate(L"mat.knight.8"),
-      GetMaterialTemplate(L"mat.knight.9"),
-      GetMaterialTemplate(L"mat.knight.10"),
-      GetMaterialTemplate(L"mat.knight.11"),
-    }},
-    .modelMaterialsShadowMap = { GetModel3DTemplate(L"knight"), {
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-      GetMaterialTemplate(L"ShadowMapAlphaSkinning"),
-    }},
-    .position = { 0.0f, -0.95f, 3.0f},
-    .scale = { 2.0f, 2.0f, 2.0f },
-    .rotation = { -DirectX::XM_PIDIV2, -DirectX::XM_PIDIV2, 0.0f },
-  });
-  for (UINT flameIndex = 0U; flameIndex < 2U; flameIndex++) {
-    std::wstring fireplaceName = L"fireplace(" + std::to_wstring(flameIndex) + L")";
-    float flameRot = DirectX::XM_PIDIV2 * static_cast<float>(flameIndex);
-
-    CreateRenderable(renderer, {
-      .name = fireplaceName,
-      .meshMaterials = { { GetMeshTemplate(L"decal"), GetMaterialTemplate(L"Fireplace")} },
-      .position = { -2.2f, 0.3f, 8.0f },
-      .scale = { 1.5f, 1.5f, 1.5f },
-      .rotation = { 0.0f , flameRot, 0 }
-    },[](RenderablePtr renderable) {
-        using namespace Animation::Effects;
-        DecalLoopT decal = {
-          .numFrames = 50U,
-          .timePerFrames = 0.04f,
-        };
-        Animation::Effects::CreateRenderableEffects[DecalLoopEffect](renderable, &decal);
-    });
+  for(auto& renderable: renderables){
+    CreateRenderable(renderable);
   }
 
-  for (UINT candleFlameIndex = 0U; candleFlameIndex < 6U; candleFlameIndex++) {
-    XMFLOAT3 candlePos[] = { { -4.55f, 4.38f,  7.65f }, {  2.24f, 1.80f,  7.39f }, { 10.29f, 1.26f, 12.36f }, };
-    std::wstring candleFlameName = L"candleFlame(" + std::to_wstring(candleFlameIndex) + L")";
-    float candleFlameRot = DirectX::XM_PIDIV2 * static_cast<float>(candleFlameIndex %2);
-    CreateRenderable(renderer, {
-      .name = candleFlameName,
-      .meshMaterials = { { GetMeshTemplate(L"decal"), GetMaterialTemplate(L"CandleFlame")} },
-      .position = candlePos[candleFlameIndex>>1],
-      .scale = { 0.075f, 0.33f, 0.075f },
-      .rotation = { 0.0f , candleFlameRot, 0 }
-      }, [](RenderablePtr renderable) {
-        DecalLoopT decal = {
-          .numFrames = 7U,
-          .timePerFrames = 0.1f
-        };
-        Animation::Effects::CreateRenderableEffects[L"DecalLoop"](renderable, &decal);
-      });
+}
+
+void CreateCameras(nlohmann::json cameras) {
+
+  for (auto& cam : cameras) {
+    CreateCamera(cam);
   }
 
+}
+
+void CreateLights(nlohmann::json lights) {
+
+  for (auto& light : lights) {
+    CreateLight(light);
+  }
 }
 
 void CreateSounds() {
@@ -668,7 +491,7 @@ void GameInputLoop()
   auto gamePadState = gamePad->GetState(0);
   buttons.Update(gamePadState);
 
-  CameraPtr camera = Scene::Camera::GetCamera(currentCamera);
+  CameraPtr camera = GetCamera(currentCamera);
 
   auto ChangeAnimation = [](auto renderable, bool forward) {
     auto& animLen = renderable->animations->animationsLength;
@@ -724,7 +547,8 @@ void AnimableStep(double elapsedSeconds)
 }
 
 void AudioStep() {
-  CameraPtr camera = Scene::Camera::GetCamera(currentCamera);
+  if (GetNumCameras() == 0) return;
+  CameraPtr camera = GetCamera(currentCamera);
   XMVECTOR fw = camera->CameraFw();
   XMVECTOR up = camera->CameraUp();
   UpdateListener(camera->position, *(XMFLOAT3*)&fw.m128_f32, *(XMFLOAT3*)up.m128_f32);
@@ -747,18 +571,29 @@ void UIStep() {
 
 void RenderLoop()
 {
+  std::lock_guard<std::mutex> lock(loadLevelMutex);
   if (!inFullScreen)
   {
     GetWindowRect(hWnd, &hWndRect);
   }
 
-  CameraPtr camera = Scene::Camera::GetCamera(currentCamera);
-
   renderer->ResetCommands();
-
   renderer->SetCSUDescriptorHeap();
 
-  using namespace Scene::Renderable;
+  if (GetNumCameras() == 0) {
+    renderer->SetRenderTargets();
+#if defined(_EDITOR)
+    Editor::DrawEditor();
+#endif
+    //before switching to 2D mode the commandQueue must be executed
+    renderer->ExecuteCommands();
+    //switch to 2d mode
+    renderer->Set2DRenderTarget();
+    renderer->Present();
+    return;
+  }
+
+  CameraPtr camera = GetCamera(currentCamera);
 
   for (auto& [name, r] : GetRenderables()) {
     r->WriteConstantsBuffer(renderer->backBufferIndex);
@@ -777,12 +612,12 @@ void RenderLoop()
         for (auto& [name, r] : GetRenderables()) {
           r->RenderShadowMap(renderer, l, cameraIndex);
         }
-        };
+      };
 
       std::wstring shadowMapEvent = L"ShadowMap:" + l->name;
       PIXBeginEvent(renderer->commandList.p, 0, shadowMapEvent.c_str());
 
-      RenderShadowMap(l, renderer, renderSceneShadowMap);
+      RenderShadowMap(l, renderSceneShadowMap);
 
       PIXEndEvent(renderer->commandList.p);
     }
@@ -883,6 +718,9 @@ void ReleaseGPUResources()
 {
   using namespace DeviceUtils::ConstantsBuffer;
   DestroyConstantsBufferViewData();
+
+  using namespace Scene::Lights;
+  DestroyShadowMapAttributes();
 }
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

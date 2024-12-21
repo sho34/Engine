@@ -30,8 +30,7 @@ namespace Templates::Material {
 		}
 	}
 
-	static void OnShaderDestroy(void* materialPtr, void* shaderPtr) {
-	}
+	static void OnShaderDestroy(void* materialPtr, void* shaderPtr) {}
 
 	INT FindCBufferIndexInMaterial(const MaterialPtr& material, std::wstring bufferName)
 	{
@@ -55,19 +54,19 @@ namespace Templates::Material {
 		switch (def.variableType) {
 		case MAT_VAR_BOOLEAN:
 		{
-			auto src = std::any_cast<BOOLEAN>(def.any_value);
+			auto src = std::any_cast<BOOLEAN>(def.value);
 			memcpy(dst, &src, size);
 		}
 			break;
 		case MAT_VAR_INTEGER:
 		{
-			auto src = std::any_cast<INT>(def.any_value);
+			auto src = std::any_cast<INT>(def.value);
 			memcpy(dst, &src, size);
 		}
 			break;
 		case MAT_VAR_UNSIGNED_INTEGER:
 		{
-			auto src = std::any_cast<UINT>(def.any_value);
+			auto src = std::any_cast<UINT>(def.value);
 			memcpy(dst, &src, size);
 		}
 			break;
@@ -77,7 +76,7 @@ namespace Templates::Material {
 			break;
 		case MAT_VAR_FLOAT:
 		{
-			auto src = std::any_cast<FLOAT>(def.any_value);
+			auto src = std::any_cast<FLOAT>(def.value);
 			memcpy(dst, &src, size);
 		}
 		break;
@@ -85,9 +84,8 @@ namespace Templates::Material {
 			break;
 		case MAT_VAR_FLOAT3:
 		{
-			auto src = std::any_cast<XMVECTORF32>(def.any_value);
-			memcpy(dst, &src.f[0], size);
-			int i = 0;
+			auto src = std::any_cast<XMFLOAT3>(def.value);
+			memcpy(dst, &src.x, size);
 		}
 		break;
 		case MAT_VAR_FLOAT4:
@@ -112,6 +110,7 @@ namespace Templates::Material {
 
 			//destroy the textures
 			for (auto& texture : material->textures) {
+				FreeCSUDescriptor(texture.textureCpuHandle, texture.textureGpuHandle);
 				texture.texture = nullptr;
 				texture.textureUpload = nullptr; //move this to other place
 			}
@@ -322,12 +321,127 @@ namespace Templates::Material {
 				);
 			}
 			using namespace DeviceUtils;
-			texture.textureCpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(ConstantsBuffer::GetCpuDescriptorHandleCurrent());
-			texture.textureGpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(ConstantsBuffer::GetGpuDescriptorHandleCurrent());
+			AllocCSUDescriptor(texture.textureCpuHandle, texture.textureGpuHandle);
 			renderer->d3dDevice->CreateShaderResourceView(texture.texture, &texture.textureViewDesc, texture.textureCpuHandle);
-			ConstantsBuffer::GetCpuDescriptorHandleCurrent().Offset(ConstantsBuffer::GetCSUDescriptorSize());
-			ConstantsBuffer::GetGpuDescriptorHandleCurrent().Offset(ConstantsBuffer::GetCSUDescriptorSize());
 		}
 	}
 
+#if defined(_EDITOR)
+
+	nlohmann::json TransformTexturesDefinitionToJson(const std::vector<TextureDefinition>& textures) {
+		nlohmann::json jtextures = nlohmann::json::array();
+
+		std::transform(textures.begin(), textures.end(), std::back_inserter(jtextures), [](TextureDefinition def) {
+			nlohmann::json texture = nlohmann::json({});
+
+			texture["texturePath"] = WStringToString(def.texturePath);
+			texture["textureFormat"] = WStringToString(texturesFormatsToString[def.textureFormat]);
+			texture["numFrames"] = def.numFrames;
+
+			return texture;
+		});
+
+		return jtextures;
+	}
+
+	nlohmann::json json()
+	{
+		nlohmann::json j = nlohmann::json({});
+
+		for (auto& [name, material] : materialTemplates) {
+			if (material->materialDefinition.systemCreated) continue;
+			std::string jname = WStringToString(name);
+			j[jname] = nlohmann::json({});
+			j[jname]["shaderTemplate"] = WStringToString(material->materialDefinition.shaderTemplate);
+			j[jname]["mappedValues"] = TransformMappingToJson(material->materialDefinition.mappedValues);
+			if (material->materialDefinition.textures.size() > 0) {
+				j[jname]["textures"] = TransformTexturesDefinitionToJson(material->materialDefinition.textures);
+			}
+			if (material->materialDefinition.samplers.size() > 0) {
+				j[jname]["samplers"] = nlohmann::json::array();
+				for (auto& sampler : material->materialDefinition.samplers) {
+					j[jname]["samplers"].push_back(sampler.json());
+				}
+			}
+			j[jname]["twoSided"] = material->materialDefinition.twoSided;
+		}
+		return j;
+	}
+#endif
+
+	std::vector<TextureDefinition> TransformJsonToTexturesDefinition(nlohmann::json jtextures) {
+		std::vector<TextureDefinition> textures;
+
+		std::transform(jtextures.begin(), jtextures.end(), std::back_inserter(textures), [](nlohmann::json texture) {
+			return TextureDefinition({
+				.texturePath = StringToWString(texture["texturePath"]),
+				.textureFormat = stringToTextureFormat[StringToWString(texture["textureFormat"])],
+				.numFrames = texture["numFrames"]
+			});
+		});
+
+		return textures;
+	}
+
+	std::vector<MaterialSamplerDesc> TransformJsonToSamplers(nlohmann::json jsamplers) {
+		std::vector<MaterialSamplerDesc> samplers;
+
+		std::transform(jsamplers.begin(), jsamplers.end(), std::back_inserter(samplers), [](nlohmann::json sampler) {
+			MaterialSamplerDesc desc;
+			desc.Filter = stringToFilter[StringToWString(sampler["Filter"])];
+			desc.AddressU = stringToTextureAddressMode[StringToWString(sampler["AddressU"])];
+			desc.AddressV = stringToTextureAddressMode[StringToWString(sampler["AddressV"])];
+			desc.AddressW = stringToTextureAddressMode[StringToWString(sampler["AddressW"])];
+			desc.MipLODBias = sampler["MipLODBias"];
+			desc.MaxAnisotropy = sampler["MaxAnisotropy"];
+			desc.ComparisonFunc = stringToComparisonFunc[StringToWString(sampler["ComparisonFunc"])];
+			desc.BorderColor = stringToBorderColor[StringToWString(sampler["BorderColor"])];
+			desc.MinLOD = sampler["MinLOD"];
+			desc.MaxLOD = sampler["MaxLOD"];
+			desc.ShaderRegister = sampler["ShaderRegister"];
+			desc.RegisterSpace = sampler["RegisterSpace"];
+			desc.ShaderVisibility = stringToShaderVisibility[StringToWString(sampler["ShaderVisibility"])];
+			return desc;
+		});
+
+		return samplers;
+	}
+
+	Concurrency::task<void> json(std::wstring name, nlohmann::json materialj)
+	{
+		auto currentMaterial = GetMaterialTemplate(name);
+		if (currentMaterial != nullptr) {
+			return concurrency::create_task([] {});
+		}
+
+		MaterialDefinition materialDefinition = {
+			.shaderTemplate = StringToWString(materialj["shaderTemplate"]),
+			.mappedValues = TransformJsonToMapping(materialj["mappedValues"]),
+		};
+
+		replaceFromJson(materialDefinition.twoSided, materialj, "twoSided");
+		replaceFromJson(materialDefinition.systemCreated, materialj, "systemCreated");
+
+		if (materialj.contains("textures")) {
+			materialDefinition.textures = TransformJsonToTexturesDefinition(materialj["textures"]);
+		}
+		if (materialj.contains("samplers")) {
+			materialDefinition.samplers = TransformJsonToSamplers(materialj["samplers"]);
+		}
+
+		auto material = CreateNewMaterial(name, materialDefinition);
+
+		return concurrency::create_task([material] {
+
+			BuildMaterialProperties(*material);
+
+			//bind the material to the shader
+			return Shader::BindToShaderTemplate((*material)->materialDefinition.shaderTemplate, material,
+				{ .onLoadStart = OnShaderCompilationStart, .onLoadComplete = OnShaderCompilationComplete, .onDestroy = OnShaderDestroy, }
+			).then([material] {
+				(*material)->loading = false;
+			});
+		});
+		return concurrency::create_task([] {});
+	}
 }
