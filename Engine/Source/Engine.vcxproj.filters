@@ -75,13 +75,13 @@
     <ClInclude Include="Shaders\Compiler\ShaderCompiler.h">
       <Filter>Source Files\Shaders\Compiler</Filter>
     </ClInclude>
-    <ClInclude Include="Templates\Mesh.h">
+    <ClInclude Include="Templates\Mesh\Mesh.h">
       <Filter>Source Files\Templates</Filter>
     </ClInclude>
-    <ClInclude Include="Templates\Material.h">
+    <ClInclude Include="Templates\Material\Material.h">
       <Filter>Source Files\Templates</Filter>
     </ClInclude>
-    <ClInclude Include="Templates\Sound.h">
+    <ClInclude Include="Templates\Sound\Sound.h">
       <Filter>Source Files\Templates</Filter>
     </ClInclude>
     <ClInclude Include="Resource.h">
@@ -105,7 +105,7 @@
     <ClInclude Include="Primitives\Primivites.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Templates\Shader.h">
+    <ClInclude Include="Templates\Shader\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Shaders\Compiler\ShaderCompilerOutput.h">
@@ -156,24 +156,6 @@
     <ClInclude Include="Scene\Camera\Projections\Orthographic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Camera\Projections\Fisheye.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\Projections\Ultrawide.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\Projections\Omnimax.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\Projections\Panoramic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\Projections\Cylindrical.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\Projections\Spherical.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Scene\Lights\Lights.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -189,7 +171,7 @@
     <ClInclude Include="Scene\Lights\PointLight.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Templates\Model3D.h">
+    <ClInclude Include="Templates\Model3D\Model3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Animation\Animated.h">
@@ -222,6 +204,48 @@
     <ClInclude Include="Editor\DefaultLevel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Scene\Level.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compiler\ShaderCompilerImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material\MaterialImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Shader\ShaderImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Model3D\Model3DImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Mesh\MeshImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Sound\SoundImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Camera\CameraImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Lights\LightsImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Renderable\RenderableImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\SceneImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\TemplatesImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Sound\SoundEffect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Sound\SoundEffectImpl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -233,19 +257,19 @@
     <ClCompile Include="Shaders\Compiler\ShaderCompiler.cpp">
       <Filter>Source Files\Shaders\Compiler</Filter>
     </ClCompile>
-    <ClCompile Include="Templates\Sound.cpp">
+    <ClCompile Include="Templates\Sound\Sound.cpp">
       <Filter>Source Files\Templates</Filter>
     </ClCompile>
-    <ClCompile Include="Templates\Mesh.cpp">
+    <ClCompile Include="Templates\Mesh\Mesh.cpp">
       <Filter>Source Files\Templates</Filter>
     </ClCompile>
-    <ClCompile Include="Templates\Material.cpp">
+    <ClCompile Include="Templates\Material\Material.cpp">
       <Filter>Source Files\Templates</Filter>
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Templates\Shader.cpp">
+    <ClCompile Include="Templates\Shader\Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Renderable\Renderable.cpp">
@@ -284,7 +308,7 @@
     <ClCompile Include="Scene\Lights\Lights.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Templates\Model3D.cpp">
+    <ClCompile Include="Templates\Model3D\Model3D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Animation\Animated.cpp">
@@ -309,6 +333,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Templates\Templates.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Level.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Sound\SoundEffect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

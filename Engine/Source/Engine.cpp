@@ -1,40 +1,6 @@
 #include "pch.h"
 #include "Engine.h"
 
-#include "Common/StepTimer.h"
-#include "Primitives/Primivites.h"
-#include "Primitives/Cube.h"
-#include "Primitives/Pentahedron.h"
-#include "Primitives/UtahTeapot.h"
-#include "Primitives/Floor.h"
-#include "Primitives/Decal.h"
-#include "Scene/Renderable/Renderable.h"
-#include "Scene/Camera/Camera.h"
-#include "Scene/Lights/Lights.h"
-#include "Animation/Effects/Effects.h"
-#include "Animation/Effects/DecalLoop.h"
-#include "Animation/Effects/LightOscilation.h"
-#include "UI/String2D.h"
-#include "Renderer/DeviceUtils/D3D12Device/Interop.h"
-#include "Renderer/DeviceUtils/Resources/Resources.h"
-#include "Templates/Templates.h"
-
-using Microsoft::WRL::ComPtr;
-using namespace ShaderCompiler;
-using namespace Templates::Shader;
-using namespace Templates::Material;
-using namespace Templates::Mesh;
-using namespace Templates::Model3D;
-using namespace Templates::Audio;
-using namespace Scene::Camera;
-using namespace Scene::Lights;
-using namespace Scene::Renderable;
-using namespace Animation::Effects;
-using namespace Audio;
-#if defined(_EDITOR)
-using namespace Editor;
-#endif
-
 #define MAX_LOADSTRING 100
 
 // Global Variables:
@@ -46,9 +12,6 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 bool appDone = false;
 bool inSizeMove = false;
 bool inFullScreen = false;
-bool loadingLevel = false;
-nlohmann::json levelToLoad;
-std::function<void()> loadLevelFn = nullptr;
 
 std::shared_ptr<Renderer> renderer;
 
@@ -75,26 +38,17 @@ RenderablePtr knight = nullptr;
 // Forward declarations of functions included in this code module:
 ATOM MyRegisterClass(HINSTANCE hInstance);
 BOOL InitInstance(HINSTANCE, int);
-void LoadDefaultLevel();
-void LoadScene();
-void LoadLevel(std::filesystem::path level);
 void DestroyInstance();
 void LoadSystemTemplates();
 void LoadTemplates();
 void MapLightingResources();
 
-void CreateRenderables(nlohmann::json renderables);
-void CreateCameras(nlohmann::json cameras);
-void CreateLights(nlohmann::json lights);
-
-void CreateSounds();
-void CreateUI();
 void GameInputLoop();
 void AnimableStep(double elapsedSeconds);
 void AudioStep();
-void UIStep();
+//void UIStep();
 void RenderLoop();
-void DestroySceneObjects();
+
 void ReleaseGPUResources();
 void ReleaseTemplates();
 void AppStep();
@@ -141,8 +95,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 }
 
 void AppStep() {
-  if (loadingLevel) {
-    loadLevelFn();
+  if (isLoadingLevel()) {
+    callLoadLevelFn();
   } else {
     timer.Tick([&]() {});
     GameInputLoop();
@@ -152,9 +106,11 @@ void AppStep() {
       RenderLoop();
     }
     AudioStep();
+    /*
 #if !defined(_EDITOR)
     UIStep();
 #endif
+*/
   }
 }
 
@@ -245,73 +201,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   return TRUE;
 }
 
-void LoadDefaultLevel()
-{
-  loadingLevel = true;
-
-  CreateRenderables(DefaultLevel::renderables);
-  CreateCameras(DefaultLevel::cameras);
-  CreateLights(DefaultLevel::lights);
-
-  loadingLevel = false;
-}
-
-std::mutex loadLevelMutex;
-void LoadScene() {
-  std::lock_guard<std::mutex> lock(loadLevelMutex);
-  renderer->ResetCommands();
-  renderer->SetCSUDescriptorHeap();
-
-  renderer->SetRenderTargets();
-
-  DestroySceneObjects();
-
-  if (levelToLoad.contains("renderables")) {
-    CreateRenderables(levelToLoad["renderables"]);
-  }
-
-  if (levelToLoad.contains("cameras")) {
-    CreateCameras(levelToLoad["cameras"]);
-  }
-  
-  if (levelToLoad.contains("lights")) {
-    CreateLights(levelToLoad["lights"]);
-  }
-
-  loadingLevel = false;
-  loadLevelFn = nullptr;
-
-#if defined(_EDITOR)
-  Editor::DrawEditor();
-#endif
-
-  //before switching to 2D mode the commandQueue must be executed
-  renderer->ExecuteCommands();
-  renderer->Set2DRenderTarget();
-  renderer->Present();
-}
-
-void LoadLevel(std::filesystem::path level)
-{
-  std::string pathStr = level.generic_string();
-  std::ifstream file(pathStr);
-  nlohmann::json data = nlohmann::json::parse(file);
-  file.close();
-
-  levelToLoad = data;
-  loadLevelFn = LoadScene;
-  loadingLevel = true;
-
-}
-
 void DestroyInstance()
 {
-  using namespace DeviceUtils::D3D12Device;
 
   Flush(renderer->commandQueue, renderer->fence, renderer->fenceValue, renderer->fenceEvent);
 
-  using namespace UI;
-  DestroyUI2DStrings();
+  //DestroyUI2DStrings();
 
   DestroySceneObjects();
 
@@ -394,7 +289,7 @@ void LoadTemplates() {
   Templates::LoadTemplates(defaultTemplatesFolder, Templates::Shader::templateName, Templates::Shader::json);
   Templates::LoadTemplates(defaultTemplatesFolder, Templates::Material::templateName, Templates::Material::json);
   Templates::LoadTemplates(defaultTemplatesFolder, Templates::Model3D::templateName, Templates::Model3D::json);
-  Templates::LoadTemplates(defaultTemplatesFolder, Templates::Audio::templateName, Templates::Audio::json);
+  Templates::LoadTemplates(defaultTemplatesFolder, Templates::Sound::templateName, Templates::Sound::json);
 
 }
 
@@ -413,70 +308,6 @@ void MapLightingResources() {
     };
     return CreateShadowMapPipeline(shadowMapsInputLayoutMaterial);
   }).wait();
-}
-
-void CreateRenderables(nlohmann::json renderables) {
-
-  for(auto& renderable: renderables){
-    CreateRenderable(renderable);
-  }
-
-}
-
-void CreateCameras(nlohmann::json cameras) {
-
-  for (auto& cam : cameras) {
-    CreateCamera(cam);
-  }
-
-}
-
-void CreateLights(nlohmann::json lights) {
-
-  for (auto& light : lights) {
-    CreateLight(light);
-  }
-}
-
-void CreateSounds() {
-  CreateInstance(L"music", L"music", {
-    .autoPlay = true,
-    .volume = 0.3f,
-  });
-  CreateInstance(L"fireplace", L"fireplace", {
-    .instanceFlags = SoundEffectInstance_Use3D,
-    .autoPlay = true,
-    .volume = 2.0f,
-    .position = { -2.2f, 0.7f, 7.1f }
-  });
-}
-
-void CreateUI() {
-  using namespace UI;
-  
-  CreateUI2DString(L"fpsText", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
-    .text = L"FPS:",
-    .fontSize = 32.0f,
-    .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
-    .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
-    .drawRect = { 10.0f, 10.0f, 250.0f, 30.0f },
-  });
-
-  CreateUI2DString(L"currentCamera", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
-    .fontSize = 32.0f,
-    .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
-    .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
-    .drawRect = { 200.0f, 10.0f, 700.0f, 310.0f }
-  });
-
-  FLOAT WinHeight = static_cast<FLOAT>(hWndRect.bottom - hWndRect.top);
-  CreateUI2DString(L"animation", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
-    .fontSize = 22,
-    .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
-    .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
-    .drawRect = { 60.0f, WinHeight - 90, 560.0f, WinHeight - 90 + 30.0f }
-  });
-
 }
 
 void GameInputLoop()
@@ -555,6 +386,7 @@ void AudioStep() {
   UpdateAudio();
 }
 
+/*
 void UIStep() {
   using namespace UI;
 
@@ -568,10 +400,10 @@ void UIStep() {
     GetUI2DString(L"animation")->text = L"Animation:" + knight->currentAnimation;
   }
 }
+*/
 
 void RenderLoop()
 {
-  std::lock_guard<std::mutex> lock(loadLevelMutex);
   if (!inFullScreen)
   {
     GetWindowRect(hWnd, &hWndRect);
@@ -670,47 +502,12 @@ void RenderLoop()
 
 }
 
-void DestroySceneObjects()
-{
-  using namespace Animation::Effects;
-  EffectsDestroy();
-
-  //Destroy sound instances
-  using namespace Audio;
-  DestroySounds();
-  
-  //Destroy the lights
-  using namespace Scene::Lights;
-  DestroyLights();
-  
-  //Destroy the cameras
-  using namespace Scene::Camera;
-  DestroyCameras();
-
-  //Destroy animated
-  using namespace Animation;
-  DestroyAnimated();
-  
-  //Destroy the renderables
-  using namespace Scene::Renderable;
-  DestroyRenderables();
-}
-
 void ReleaseTemplates() {
   
-  using namespace Templates::Audio;
   ReleaseSoundTemplates();
-
-  using namespace Templates::Model3D;
   ReleaseModel3DTemplates();
-
-  using namespace Templates::Mesh;
   ReleaseMeshTemplates();
-
-  using namespace Templates::Material;
   ReleaseMaterialTemplates();
-
-  using namespace Templates::Shader;
   ReleaseShaderTemplates();
 }
 

@@ -267,10 +267,24 @@
     <ClInclude Include="Audio\Audio.h" />
     <ClInclude Include="Editor\DefaultLevel.h" />
     <ClInclude Include="Editor\Editor.h" />
+    <ClInclude Include="Scene\Camera\CameraImpl.h" />
+    <ClInclude Include="Scene\Level.h" />
     <ClInclude Include="Primitives\Decal.h" />
+    <ClInclude Include="Scene\SceneImpl.h" />
+    <ClInclude Include="Scene\Lights\LightsImpl.h" />
+    <ClInclude Include="Scene\Renderable\RenderableImpl.h" />
+    <ClInclude Include="Scene\Sound\SoundEffectImpl.h" />
+    <ClInclude Include="Shaders\Compiler\ShaderCompilerImpl.h" />
+    <ClInclude Include="Scene\Sound\SoundEffect.h" />
+    <ClInclude Include="Templates\Material\MaterialImpl.h" />
+    <ClInclude Include="Templates\Mesh\MeshImpl.h" />
+    <ClInclude Include="Templates\Model3D\Model3DImpl.h" />
+    <ClInclude Include="Templates\Shader\ShaderImpl.h" />
+    <ClInclude Include="Templates\Sound\SoundImpl.h" />
     <ClInclude Include="Templates\Templates.h" />
+    <ClInclude Include="Templates\TemplatesImpl.h" />
     <ClInclude Include="UI\String2D.h" />
-    <ClInclude Include="Templates\Model3D.h" />
+    <ClInclude Include="Templates\Model3D\Model3D.h" />
     <ClInclude Include="Scene\Lights\AmbientLight.h" />
     <ClInclude Include="Scene\Lights\DirectionalLight.h" />
     <ClInclude Include="Scene\Lights\Lights.h" />
@@ -317,31 +331,25 @@
     <ClInclude Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.h" />
     <ClInclude Include="Renderer\DeviceUtils\Resources\Resources.h" />
     <ClInclude Include="Renderer\DeviceUtils\RootSignature\RootSignature.h" />
-    <ClInclude Include="Scene\Camera\Projections\Cylindrical.h" />
-    <ClInclude Include="Scene\Camera\Projections\Fisheye.h" />
-    <ClInclude Include="Scene\Camera\Projections\Omnimax.h" />
     <ClInclude Include="Scene\Camera\Projections\Orthographic.h" />
-    <ClInclude Include="Scene\Camera\Projections\Panoramic.h" />
     <ClInclude Include="Scene\Camera\Projections\Perspective.h" />
-    <ClInclude Include="Scene\Camera\Projections\Spherical.h" />
-    <ClInclude Include="Scene\Camera\Projections\Ultrawide.h" />
     <ClInclude Include="Scene\Lights\PointLight.h" />
     <ClInclude Include="Scene\Lights\SpotLight.h" />
     <ClInclude Include="Shaders\Compiler\ShaderCompilerOutput.h" />
-    <ClInclude Include="Templates\Shader.h" />
-    <ClInclude Include="Templates\Mesh.h">
+    <ClInclude Include="Templates\Shader\Shader.h" />
+    <ClInclude Include="Templates\Mesh\Mesh.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Templates\Sound.h">
+    <ClInclude Include="Templates\Sound\Sound.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Templates\Material.h">
+    <ClInclude Include="Templates\Material\Material.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
@@ -385,9 +393,11 @@
     <ClCompile Include="Animation\Effects\DecalLoop.cpp" />
     <ClCompile Include="Audio\Audio.cpp" />
     <ClCompile Include="Editor\Editor.cpp" />
+    <ClCompile Include="Scene\Level.cpp" />
+    <ClCompile Include="Scene\Sound\SoundEffect.cpp" />
     <ClCompile Include="Templates\Templates.cpp" />
     <ClCompile Include="UI\String2D.cpp" />
-    <ClCompile Include="Templates\Model3D.cpp" />
+    <ClCompile Include="Templates\Model3D\Model3D.cpp" />
     <ClCompile Include="Scene\Lights\Lights.cpp" />
     <ClCompile Include="Scene\Camera\Camera.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\PipelineState\PipelineState.cpp" />
@@ -407,20 +417,20 @@
     <ClCompile Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\Resources\Resources.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\RootSignature\RootSignature.cpp" />
-    <ClCompile Include="Templates\Shader.cpp" />
-    <ClCompile Include="Templates\Mesh.cpp">
+    <ClCompile Include="Templates\Shader\Shader.cpp" />
+    <ClCompile Include="Templates\Mesh\Mesh.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Templates\Sound.cpp">
+    <ClCompile Include="Templates\Sound\Sound.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Templates\Material.cpp">
+    <ClCompile Include="Templates\Material\Material.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
