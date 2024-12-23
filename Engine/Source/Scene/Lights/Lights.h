@@ -143,7 +143,6 @@ namespace Scene::Lights {
 
 	typedef void LoadLightFn(std::shared_ptr<Light> light);
 
-	std::shared_ptr<Light> CreateLight(const LightDefinition& lightParam, LoadLightFn loadFn = nullptr);
 	std::shared_ptr<Light> CreateLight(nlohmann::json light);
 	std::vector<std::shared_ptr<Light>> GetLights();
 	std::shared_ptr<Light> GetLight(std::wstring lightName);

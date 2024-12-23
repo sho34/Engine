@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Templates.h"
-#include "../Types.h"
 
 namespace Templates {
 

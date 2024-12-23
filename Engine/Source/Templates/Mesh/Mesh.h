@@ -1,9 +1,8 @@
 #pragma once
 
-#include "../Renderer/Renderer.h"
-#include "../Renderer/VertexFormats.h"
-#include "../Renderer/DeviceUtils/VertexBuffer/VertexBuffer.h"
-#include "../Renderer/DeviceUtils/IndexBuffer/IndexBuffer.h"
+#include "../../Renderer/VertexFormats.h"
+#include "../../Renderer/DeviceUtils/VertexBuffer/VertexBuffer.h"
+#include "../../Renderer/DeviceUtils/IndexBuffer/IndexBuffer.h"
 
 namespace Templates::Mesh {
 	
@@ -17,7 +16,7 @@ namespace Templates::Mesh {
 	};
 
 	typedef void LoadMeshCallback(std::shared_ptr<Mesh>& mesh);
-	typedef Concurrency::task<void> LoadPrimitiveIntoMesh(std::shared_ptr<Renderer>& renderer, std::shared_ptr<Mesh>& mesh);
+	typedef Concurrency::task<void> LoadPrimitiveIntoMesh(std::shared_ptr<Mesh>& mesh);
 
 	Concurrency::task<void> CreatePrimitiveMeshTemplate(std::wstring meshName, LoadMeshCallback loadFn = nullptr);
 	void ReleaseMeshTemplates();

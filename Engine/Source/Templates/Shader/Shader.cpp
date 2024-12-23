@@ -2,7 +2,7 @@
 #include "Shader.h"
 #include <map>
 #include <string>
-#include "../Shaders/Compiler/ShaderCompiler.h"
+#include "../../Shaders/Compiler/ShaderCompiler.h"
 
 namespace Templates::Shader {
 

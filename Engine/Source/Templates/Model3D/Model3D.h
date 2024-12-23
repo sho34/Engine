@@ -1,14 +1,10 @@
 #pragma once
 
-#include "../Renderer/Renderer.h"
-#include "../Renderer/VertexFormats.h"
-//#include "../Animation/Animation3D.h"
-#include "../Templates/Mesh.h"
+#include "../../Renderer/VertexFormats.h"
+#include "../Mesh/MeshImpl.h"
 
 namespace Animation { struct Animated; };
 namespace Templates::Model3D {
-
-	using namespace Templates::Mesh;
 
 	static const std::wstring templateName = L"model3d.json";
 	static const std::wstring assetsRootFolder = L"Assets/models/";
@@ -40,7 +36,6 @@ namespace Templates::Model3D {
 	std::wstring getMeshName(std::wstring model3DName, UINT meshIndex);
 	std::wstring getMaterialName(std::wstring model3DName, UINT meshIndex);
 
-	Concurrency::task<void> CreateModel3DTemplate(std::wstring model3DName, std::wstring assetPath, std::shared_ptr<Renderer>& renderer, Model3DDefinition params = {});
 	void ReleaseModel3DTemplates();
 	std::shared_ptr<Model3D> GetModel3DTemplate(std::wstring model3DName);
 

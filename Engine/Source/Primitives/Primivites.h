@@ -1,5 +1,6 @@
 #pragma once
-#include "../Templates/Mesh.h"
+#include "../Templates/Mesh/MeshImpl.h"
+#include "../Renderer/Renderer.h"
 #include "Cube.h"
 #include "Decal.h"
 #include "Floor.h"
@@ -7,12 +8,12 @@
 #include "UtahTeapot.h"
 
 extern std::mutex rendererMutex;
+extern std::shared_ptr<Renderer> renderer;
 namespace Primitives {
 
 	template<typename T>
-	Concurrency::task<void> LoadPrimitiveIntoMesh(std::shared_ptr<Renderer>& renderer, MeshPtr& mesh) {
-		return concurrency::create_task([&renderer, &mesh] {
-			//std::lock_guard<std::mutex> lock(rendererMutex);
+	Concurrency::task<void> LoadPrimitiveIntoMesh(MeshPtr& mesh) {
+		return concurrency::create_task([&mesh] {
 			mesh->vertexClass = T::VertexClass;
 
 			//upload the vertex buffer to the GPU and create the vertex buffer view
@@ -24,7 +25,7 @@ namespace Primitives {
 	}
 }
 
-typedef Concurrency::task<void> (*LoadPrimitiveIntoMeshPtr)(std::shared_ptr<Renderer>& renderer, MeshPtr& mesh);
+typedef Concurrency::task<void> (*LoadPrimitiveIntoMeshPtr)(MeshPtr& mesh);
 static std::map<std::wstring, LoadPrimitiveIntoMeshPtr> LoadPrimitiveIntoMeshFunctions = {
 	{ L"utahteapot", Primitives::LoadPrimitiveIntoMesh<UtahTeapot> },
 	{ L"cube", Primitives::LoadPrimitiveIntoMesh<Cube> },

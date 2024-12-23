@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "Model3D.h"
-#include "Mesh.h"
-#include "Material.h"
-#include "../Renderer/VertexFormats.h"
-#include "../Animation/Animated.h"
+#include "../Mesh/MeshImpl.h"
+#include "../Material/MaterialImpl.h"
+#include "../../Renderer/VertexFormats.h"
+#include "../../Animation/Animated.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -212,87 +212,6 @@ namespace Templates::Model3D {
   std::wstring getMaterialName(std::wstring model3DName, UINT meshIndex)
   {
     return L"mat." + model3DName + L"." + std::to_wstring(meshIndex);
-  }
-
-  Concurrency::task<void> CreateModel3DTemplate(std::wstring model3DName, std::wstring assetPath, std::shared_ptr<Renderer>& renderer, Model3DDefinition params)
-  {
-    const std::wstring filename = assetsRootFolder + assetPath;
-
-    return concurrency::create_task([filename, assetPath, model3DName, &renderer,params] {
-
-      std::lock_guard<std::mutex> lock(rendererMutex);
-
-      Model3DPtr model = std::make_shared<Model3D>();
-      model->loading = true;
-      model->assetPath = assetPath;
-      model->model3dDefinition = params;
-      model3DTemplates.insert(std::pair<std::wstring, Model3DPtr>(model3DName, model));
-      
-      std::filesystem::path path(filename);
-
-      Assimp::Importer importer;
-      const aiScene* aiModel = importer.ReadFile(path.string(), 
-        aiProcess_JoinIdenticalVertices | aiProcess_GenNormals | 
-        aiProcess_CalcTangentSpace | aiProcess_Triangulate | 
-        aiProcess_FlipUVs
-      );
-
-      if (!aiModel) {
-        OutputDebugStringA(importer.GetErrorString());
-        assert(!aiModel);
-      }
-    
-      //fill the length of the animations so they can be looped
-      if (aiModel->mNumAnimations > 0U) {
-        using namespace Animation;
-        model->animations = CreateAnimatedFromAssimp(aiModel);
-      }
-
-      model->vertexClass = !model->animations ? POS_NORMAL_TANGENT_TEXCOORD0 : POS_NORMAL_TANGENT_TEXCOORD0_SKINNING;
-      size_t vertexSize = !model->animations ? sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0>) : sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>);
-
-      //go through all the meshes in the model
-      for (UINT meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++) {
-
-        auto aMesh = aiModel->mMeshes[meshIndex];
-
-        model->vertices.push_back(VerticesLoader[model->vertexClass](aMesh));
-        model->numVertices.push_back(aMesh->mNumVertices);
-        model->indices.push_back(LoadIndices(aMesh));
-
-        if (model->animations) {
-          LoadBonesInVertices(aMesh, model->animations->bonesOffsets, model->vertices.back());
-        }
-
-        using namespace Templates::Mesh;
-        MeshPtr mesh = std::make_shared<MeshT>();
-        std::wstring meshName = getMeshName(model3DName,meshIndex);
-        mesh->loading = true;
-        mesh->name = meshName;
-        mesh->vertexClass = model->vertexClass;
-      
-        InitializeVertexBufferView(renderer->d3dDevice, renderer->commandList, *model->vertices.back(), static_cast<UINT>(vertexSize), model->numVertices.back(), mesh->vbvData);
-        InitializeIndexBufferView(renderer->d3dDevice, renderer->commandList, model->indices.back().data(), static_cast<UINT>(model->indices.back().size()), mesh->ibvData);
-
-        if (params.autoCreateMaterial) {
-          std::wstring materialName = getMaterialName(model3DName,meshIndex);
-          using namespace Templates::Material;
-          if (GetMaterialTemplate(materialName) == nullptr) {
-            CreateModel3DMaterial(materialName, params.materialsShader, path.relative_path(), aiModel->mMaterials[aMesh->mMaterialIndex]);
-          }
-        }
-
-        model->meshes.push_back(mesh);
-        mesh->loading = false;
-      }
-
-      importer.FreeScene();
-      return model;
-
-     }).then([](Model3DPtr model) {
-      model->loading = false;
-    });
-
   }
 
   void ReleaseModel3DTemplates()

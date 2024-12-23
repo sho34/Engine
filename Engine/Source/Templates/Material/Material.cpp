@@ -1,12 +1,11 @@
 #include "pch.h"
 #include "Material.h"
-#include "../Renderer/Renderer.h"
-#include "../Renderer/DeviceUtils/Resources/Resources.h"
-#include "../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
-#include "../Scene/Lights/Lights.h"
-#include "../Scene/Camera/Camera.h"
-#include <ppltasks.h>
-#include "../Common/d3dx12.h"
+#include "../../Renderer/Renderer.h"
+#include "../../Renderer/DeviceUtils/Resources/Resources.h"
+#include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
+#include "../../Scene/Lights/Lights.h"
+#include "../../Scene/Camera/Camera.h"
+#include "../../Common/d3dx12.h"
 
 namespace Templates::Material {
 

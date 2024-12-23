@@ -1,12 +1,9 @@
 #pragma once
 
-#include <DirectXMath.h>
 #include "Projections/Perspective.h"
 #include "Projections/Orthographic.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 
-using namespace DirectX;
-using namespace DirectX::SimpleMath;
 using namespace DeviceUtils::ConstantsBuffer;
 
 namespace Scene::Lights { struct Light; };
@@ -17,64 +14,29 @@ namespace Scene::Camera {
   static XMVECTOR	right = { 1.0f, 0.0f, 0.0f, 0.0f };
 
   enum ProjectionsTypes {
-    Cylindrical,
-    Fisheye,
-    Omnimax,
     Orthographic,
-    Panoramic,
-    Perspective,
-    Spherical,
-    Ultrawite
+    Perspective
   };
 
   static std::vector<std::wstring> ProjectionsTypesStr = {
-    L"Cylindrical",
-    L"Fisheye",
-    L"Omnimax",
     L"Orthographic",
-    L"Panoramic",
-    L"Perspective",
-    L"Spherical",
-    L"Ultrawite"
+    L"Perspective"
   };
 
   static std::map<ProjectionsTypes, std::wstring> ProjectionTypesToStr = {
-    { Cylindrical, L"Cylindrical" },
-    { Fisheye, L"Fisheye" },
-    { Omnimax, L"Omnimax" },
     { Orthographic, L"Orthographic" },
-    { Panoramic, L"Panoramic" },
-    { Perspective, L"Perspective" },
-    { Spherical, L"Spherical" },
-    { Ultrawite, L"Ultrawite" }
+    { Perspective, L"Perspective" }
   };
 
   static std::map<std::wstring, ProjectionsTypes> StrToProjectionTypes = {
-    { L"Cylindrical", Cylindrical },
-    { L"Fisheye", Fisheye },
-    { L"Omnimax", Omnimax },
     { L"Orthographic", Orthographic },
-    { L"Panoramic", Panoramic },
-    { L"Perspective", Perspective },
-    { L"Spherical", Spherical },
-    { L"Ultrawite", Ultrawite }
+    { L"Perspective", Perspective }
   };
 
   struct CameraAttributes {
     XMMATRIX viewProjection;
     XMFLOAT3 eyePosition;
     XMFLOAT3 eyeForward;
-  };
-
-  struct CameraDefinition {
-    std::wstring name = L"";
-    ProjectionsTypes projectionType = Perspective;
-    Projections::Perspective perspective;
-    Projections::Orthographic orthographic;
-    XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
-    XMFLOAT2 rotation = { 0.0f, 0.0f };
-    FLOAT speed = 0.05f;
-    std::shared_ptr<Scene::Lights::Light> light = nullptr;
   };
 
   struct Camera
@@ -120,7 +82,6 @@ namespace Scene::Camera {
 #endif
   };
 
-  std::shared_ptr<Camera> CreateCamera(const CameraDefinition& cameraDefinition);
   std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraDefinition);
   std::vector<std::shared_ptr<Camera>> GetCameras();
   void DestroyCameras();

@@ -3,7 +3,7 @@
 #include "../../Common/d3dx12.h"
 #include "../../Common/DirectXHelper.h"
 #include "../../Renderer/Renderer.h"
-#include "../Camera/Camera.h"
+#include "../Camera/CameraImpl.h"
 #include "../../Renderer/DeviceUtils/D3D12Device/Builder.h"
 #include "../../Renderer/DeviceUtils/D3D12Device/Interop.h"
 #include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
@@ -205,6 +205,9 @@ namespace Scene::Lights {
 			break;
 		}
 
+		lights.push_back(light);
+		lightsByName[light->name] = light;
+
 		if (light->hasShadowMaps) {
 			switch (light->lightType) {
 			case Directional:
@@ -222,9 +225,7 @@ namespace Scene::Lights {
 			}
 			CreateShadowMapDepthStencilResource(light);
 		}
-		
-		lights.push_back(light);
-		lightsByName[light->name] = light;
+
 		return light;
 	}
 
@@ -277,18 +278,18 @@ namespace Scene::Lights {
 		light->directionalShadowMap.shadowMapProjectionMatrix = XMMatrixOrthographicRH(params["viewWidth"], params["viewHeight"], params["nearZ"], params["farZ"]);
 		light->directionalShadowMap.shadowMapTexelInvSize = { 1.0f / static_cast<FLOAT>(params["shadowMapWidth"]), 1.0f / static_cast<FLOAT>(params["shadowMapHeight"]) };
 		
-		auto camera = Scene::Camera::CreateCamera(Scene::Camera::CameraDefinition({
-			.name = light->name + L".cam",
-			.projectionType = Camera::ProjectionsTypes::Orthographic,
-			.orthographic = {
-				.nearZ = params["nearZ"],
-				.farZ = params["farZ"],
-				.width = params["viewWidth"],
-				.height = params["viewHeight"],
-			},
-			.rotation = light->directional.rotation,
-			.light = light,
-		}));
+		auto camera = CreateCamera({
+			{ "name", WStringToString(light->name + L".cam") },
+			{ "projectionType", "Orthographic" },
+			{ "orthographic", {
+				{ "nearZ", params["nearZ"] },
+				{ "farZ", params["farZ"] },
+				{ "width", params["viewWidth"] },
+				{ "height", params["viewHeight"] },
+			}},
+			{ "rotation", { light->directional.rotation.x, light->directional.rotation.y } },
+			{ "light", WStringToString(light->name) }
+		});
 		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(camera->CameraFw()), -light->directional.distance);
 		camera->position = *(XMFLOAT3*)camPos.m128_f32;
 		camera->orthographic.updateProjectionMatrix(params["viewWidth"], params["viewHeight"]);
@@ -306,16 +307,16 @@ namespace Scene::Lights {
 		using namespace Scene::Camera;
 
 		auto camera = CreateCamera({
-			.name = light->name + L".cam",
-			.projectionType = ProjectionsTypes::Perspective,
-			.perspective = {
-				.fovAngleY = light->spot.coneAngle * 2.0f,
-				.width = params["viewWidth"],
-				.height = params["viewHeight"],
-			},
-			.position = light->spot.position,
-			.rotation = light->spot.rotation,
-			.light = light,
+			{ "name", WStringToString(light->name + L".cam") },
+			{ "projectionType", "Perspective" },
+			{ "perspective", {
+				{ "fovAngleY", light->spot.coneAngle * 2.0f },
+				{ "width", params["viewWidth"] },
+				{ "height", params["viewHeight"] },
+			}},
+			{ "position", { light->spot.position.x, light->spot.position.y, light->spot.position.z }},
+			{ "rotation", { light->spot.rotation.x, light->spot.rotation.y }},
+			{ "light", WStringToString(light->name) }
 		});
 		camera->perspective.updateProjectionMatrix(params["viewWidth"], params["viewHeight"]);
 		camera->CreateConstantsBufferView(renderer);
@@ -333,16 +334,16 @@ namespace Scene::Lights {
 		light->pointShadowMap.shadowMapClearViewport = { 0.0f, 0.0f , static_cast<FLOAT>(params["shadowMapWidth"]), 6L * static_cast<FLOAT>(params["shadowMapHeight"]), 0.0f, 1.0f };
 		light->pointShadowMap.shadowMapProjectionMatrix = XMMatrixPerspectiveFovRH(DirectX::XM_PIDIV2, 1.0f, params["nearZ"], params["farZ"]);
 		for(UINT i = 0U; i < 6U; i++) {
-			auto camera = Scene::Camera::CreateCamera({
-				.name = light->name + L".cam."+std::to_wstring(i),
-				.projectionType = Camera::ProjectionsTypes::Perspective,
-				.perspective = {
-					.fovAngleY = DirectX::XM_PIDIV2,
-					.width = static_cast<float>(params["shadowMapWidth"]),
-					.height = static_cast<float>(params["shadowMapHeight"]),
-				},
-				.position = light->point.position,
-				.light = light,
+			auto camera = CreateCamera({
+				{ "name", WStringToString(light->name + L".cam." + std::to_wstring(i)) },
+				{ "projectionType", "Perspective" },
+				{ "perspective", {
+					{ "fovAngleY", DirectX::XM_PIDIV2 },
+					{ "width", static_cast<float>(params["shadowMapWidth"]) },
+					{ "height", static_cast<float>(params["shadowMapHeight"]) },
+				}},
+				{ "position", { light->point.position.x, light->point.position.y, light->point.position.z }},
+				{ "light", WStringToString(light->name) }
 			});
 			camera->perspective.updateProjectionMatrix(static_cast<float>(params["shadowMapWidth"]), static_cast<float>(params["shadowMapHeight"]));
 			camera->CreateConstantsBufferView(renderer);

@@ -1,18 +1,17 @@
 #pragma once
 
-using namespace DirectX;
-namespace Templates::Audio {
+namespace Templates::Sound {
 
 	static const std::wstring templateName = L"audio.json";
 
 	struct Sound
 	{
 		bool systemCreated = false;
+		std::wstring name = L"";
 		std::wstring assetPath;
 		std::unique_ptr<SoundEffect> sound;
 	};
 
-	concurrency::task<void> CreateSoundTemplate(std::wstring soundName, std::wstring assetPath);
 	std::shared_ptr<Sound>& GetSoundTemplate(std::wstring soundName);
 	void ReleaseSoundTemplates();
 
@@ -23,6 +22,6 @@ namespace Templates::Audio {
 
 };
 
-typedef Templates::Audio::Sound SoundT;
+typedef Templates::Sound::Sound SoundT;
 typedef std::shared_ptr<SoundT> SoundPtr;
 

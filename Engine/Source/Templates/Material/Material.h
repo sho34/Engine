@@ -1,10 +1,8 @@
 #pragma once
 
 #include <string>
-#include "Shader.h"
-#include "../Types.h"
+#include "../Shader/ShaderImpl.h"
 
-using namespace Microsoft::WRL;
 struct Renderer;
 
 namespace Templates::Material {

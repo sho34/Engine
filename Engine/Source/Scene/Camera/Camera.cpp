@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Camera.h"
-#include "../Lights/Lights.h"
+#include "../Lights/LightsImpl.h"
 
 extern RECT hWndRect;
 extern std::shared_ptr<Renderer> renderer;
@@ -11,36 +11,6 @@ namespace Scene::Camera {
 
 	std::vector<CameraPtr> cameraByIndex;
 	std::map<std::wstring, CameraPtr> cameraByNames;
-
-	std::shared_ptr<Camera> CreateCamera(const CameraDefinition& cameraDefinition) {
-		CameraPtr camera = std::make_unique<CameraT>();
-		if (cameraDefinition.name == L"") {
-			camera->name = L"cam(" + std::to_wstring(cameraByIndex.size()) + L")";
-		} else {
-			camera->name = cameraDefinition.name;
-		}
-		assert(!cameraByNames.contains(camera->name));
-		camera->projectionType = cameraDefinition.projectionType;
-		switch (cameraDefinition.projectionType) {
-		case ProjectionsTypes::Perspective:
-			camera->perspective = cameraDefinition.perspective;
-			break;
-		case ProjectionsTypes::Orthographic:
-			camera->orthographic = cameraDefinition.orthographic;
-			break;
-		default:
-			assert(true); //not implemented
-			break;
-		}
-		camera->position = cameraDefinition.position;
-		camera->rotation = cameraDefinition.rotation;
-		camera->light = cameraDefinition.light;
-
-		cameraByIndex.push_back(camera);
-		cameraByNames[camera->name] = camera;
-
-		return camera;
-	}
 
 	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraDefinition)
 	{
@@ -54,15 +24,20 @@ namespace Scene::Camera {
 
 		replaceFromJson(camera->fitWindow,cameraDefinition,"fitWindow");
 		camera->projectionType = StrToProjectionTypes[StringToWString(cameraDefinition["projectionType"])];
+		bool fitToWindow = (cameraDefinition.contains("fitWindow") && cameraDefinition["fitWindow"]);
 		switch (camera->projectionType) {
 		case ProjectionsTypes::Perspective:
 		{
-			float winWidth = cameraDefinition["fitWindow"] ? static_cast<float>(hWndRect.right - hWndRect.left) : static_cast<float>(cameraDefinition["perspective"]["width"]);
-			float winHeight = cameraDefinition["fitWindow"] ? static_cast<float>(hWndRect.bottom - hWndRect.top) : static_cast<float>(cameraDefinition["perspective"]["height"]);
+			float winWidth = fitToWindow ? static_cast<float>(hWndRect.right - hWndRect.left) : static_cast<float>(cameraDefinition["perspective"]["width"]);
+			float winHeight = fitToWindow ? static_cast<float>(hWndRect.bottom - hWndRect.top) : static_cast<float>(cameraDefinition["perspective"]["height"]);
+			float nearZ = cameraDefinition["perspective"].contains("nearZ") ? static_cast<float>(cameraDefinition["perspective"]["nearZ"]) : Projections::Perspective::defaultNearZ;
+			float farZ = cameraDefinition["perspective"].contains("farZ") ? static_cast<float>(cameraDefinition["perspective"]["farZ"]) : Projections::Perspective::defaultFarZ;
+			float fovAngleY = cameraDefinition["perspective"].contains("fovAngleY") ? static_cast<float>(cameraDefinition["perspective"]["fovAngleY"]) : Projections::Perspective::defaultFovAngleY;
+
 			camera->perspective = {
-				.nearZ = cameraDefinition["perspective"]["nearZ"],
-				.farZ = cameraDefinition["perspective"]["farZ"],
-				.fovAngleY = cameraDefinition["perspective"]["fovAngleY"],
+				.nearZ = nearZ,
+				.farZ = farZ,
+				.fovAngleY = fovAngleY,
 				.width = winWidth,
 				.height = winHeight,
 			};
@@ -71,11 +46,14 @@ namespace Scene::Camera {
 		break;
 		case ProjectionsTypes::Orthographic:
 		{
-			float winWidth = cameraDefinition["fitWindow"] ? static_cast<float>(hWndRect.right - hWndRect.left) : static_cast<float>(cameraDefinition["orthographic"]["width"]);
-			float winHeight = cameraDefinition["fitWindow"] ? static_cast<float>(hWndRect.bottom - hWndRect.top) : static_cast<float>(cameraDefinition["orthographic"]["height"]);
+			float winWidth = fitToWindow ? static_cast<float>(hWndRect.right - hWndRect.left) : static_cast<float>(cameraDefinition["orthographic"]["width"]);
+			float winHeight = fitToWindow ? static_cast<float>(hWndRect.bottom - hWndRect.top) : static_cast<float>(cameraDefinition["orthographic"]["height"]);
+			float nearZ = cameraDefinition["orthographic"].contains("nearZ") ? static_cast<float>(cameraDefinition["orthographic"]["nearZ"]) : Projections::Orthographic::defaultNearZ;
+			float farZ = cameraDefinition["orthographic"].contains("farZ") ? static_cast<float>(cameraDefinition["orthographic"]["farZ"]) : Projections::Orthographic::defaultFarZ;
+
 			camera->orthographic = {
-				.nearZ = cameraDefinition["orthographic"]["nearZ"],
-				.farZ = cameraDefinition["orthographic"]["farZ"],
+				.nearZ = nearZ,
+				.farZ = farZ,
 				.width = winWidth,
 				.height = winHeight
 			};
@@ -87,13 +65,19 @@ namespace Scene::Camera {
 			break;
 		}
 
-		camera->position = { cameraDefinition["position"][0], cameraDefinition["position"][1], cameraDefinition["position"][2] };
-		camera->rotation = { cameraDefinition["rotation"][0], cameraDefinition["rotation"][1] };
-		camera->speed = cameraDefinition["speed"];
+		if (cameraDefinition.contains("position")) {
+			camera->position = { cameraDefinition["position"][0], cameraDefinition["position"][1], cameraDefinition["position"][2] };
+		}
+		if (cameraDefinition.contains("rotation")) {
+			camera->rotation = { cameraDefinition["rotation"][0], cameraDefinition["rotation"][1] };
+		}
+		if (cameraDefinition.contains("speed")) {
+			camera->speed = cameraDefinition["speed"];
+		}
 
-		/*
-		camera->light = cameraDefinition.light;
-		*/
+		if (cameraDefinition.contains("light")) {
+			camera->light = GetLight(StringToWString(cameraDefinition["light"]));
+		}
 
 		camera->CreateConstantsBufferView(renderer);
 

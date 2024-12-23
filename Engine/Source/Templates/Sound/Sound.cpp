@@ -1,29 +1,13 @@
 #include "pch.h"
 #include "Sound.h"
-#include "../Audio/Audio.h"
-#include "../Types.h"
+#include "../../Audio/Audio.h"
 
 std::map<std::wstring, SoundPtr> soundTemplates;
 
 using namespace Audio;
-namespace Templates::Audio {
+namespace Templates::Sound {
 
 	std::mutex soundCreateMutex;
-	concurrency::task<void> CreateSoundTemplate(std::wstring soundName, std::wstring assetPath)
-	{
-		assert(!soundTemplates.contains(soundName));
-
-		return concurrency::create_task([soundName, assetPath] {
-			std::lock_guard<std::mutex> lock(soundCreateMutex);
-
-			SoundPtr sound = std::make_shared<SoundT>();
-			sound->assetPath = assetPath;
-			sound->sound = std::make_unique<SoundEffect>(GetAudio().get(), assetPath.c_str());
-
-			soundTemplates.insert_or_assign(soundName,sound);
-			assert(soundTemplates.contains(soundName));
-		});
-	}
 
 	std::shared_ptr<Sound>& GetSoundTemplate(std::wstring soundName) {
 		assert(soundTemplates.contains(soundName));
@@ -63,6 +47,7 @@ namespace Templates::Audio {
 			std::lock_guard<std::mutex> lock(soundCreateMutex);
 
 			SoundPtr sound = std::make_shared<SoundT>();
+			sound->name = name;
 			sound->assetPath = assetPath;
 			sound->sound = std::make_unique<SoundEffect>(GetAudio().get(), assetPath.c_str());
 

@@ -3,8 +3,9 @@
 #include <vector>
 #include <cstddef>
 
-#include "../Shaders/Compiler/ShaderCompilerOutput.h"
-#include "../Types.h"
+#if defined(_DEVELOPMENT)
+#include "../../Shaders/Compiler/ShaderCompilerOutput.h"
+#endif
 
 namespace Templates::Shader {
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "../../Renderer/Renderer.h"
-#include "../../Templates/Model3D.h"
+#include "../../Templates/Model3D/Model3DImpl.h"
 #include "../../Animation/Animated.h"
 
 namespace Scene::Lights { struct Light; };
@@ -111,13 +111,15 @@ namespace Scene::Renderable
 
 	};
 
-	typedef void LoadRenderableFn(std::shared_ptr<Renderable> renderable);
-
+	//create
 	std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej);
-	std::shared_ptr<Renderable> CreateRenderable(const std::shared_ptr<Renderer>& renderer, const RenderableDefinition& renderableParams, LoadRenderableFn loadFn = nullptr);
-	void DestroyRenderables();
+	
+	//access
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetRenderables();
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetAnimables();
+
+	//destroy
+	void DestroyRenderables();
 }
 typedef Scene::Renderable::Renderable RenderableT;
 typedef std::shared_ptr<RenderableT> RenderablePtr;

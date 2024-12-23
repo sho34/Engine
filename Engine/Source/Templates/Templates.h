@@ -9,3 +9,4 @@ namespace Templates {
 	typedef Concurrency::task<void> (*TemplateLoader)(std::wstring, nlohmann::json);
 	void LoadTemplates(const std::wstring folder, const std::wstring fileName, TemplateLoader loader);
 }
+
