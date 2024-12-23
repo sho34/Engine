@@ -8,14 +8,7 @@
 #include <dxcapi.h>
 #include <d3d12.h>
 #include "ShaderCompilerOutput.h"
-#include "../../Templates/Shader.h"
-#include "../../Types.h"
-
-using namespace Microsoft::WRL;
-using namespace DirectX;
-using namespace Concurrency;
-
-struct Renderer;
+#include "../../Templates/Shader/ShaderImpl.h"
 
 namespace ShaderCompiler {
 	

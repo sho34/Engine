@@ -1,15 +1,11 @@
 #include "pch.h"
 #include "ShaderCompiler.h"
-#include "../../Templates/Shader.h"
 #include "../../Common/DirectXHelper.h"
 #include "../../Renderer/Renderer.h"
 #include "../../Scene/Lights/Lights.h"
 #include "../../Scene/Camera/Camera.h"
 #include "../../Animation/Animated.h"
 #include <d3d12shader.h>
-#include <filesystem>
-#include <dxgi1_6.h>
-#include <dxcapi.h>
 
 namespace ShaderCompiler {
 	
