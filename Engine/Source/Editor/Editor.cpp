@@ -3,15 +3,8 @@
 #if defined(_EDITOR)
 #include "Editor.h"
 #include "../Renderer/Renderer.h"
-#include "../Scene/Renderable/Renderable.h"
-#include "../Scene/Lights/Lights.h"
-#include "../Scene/Camera/Camera.h"
-#include "../Templates/Templates.h"
-#include "../Templates/Shader.h"
-#include "../Templates/Material.h"
-#include "../Templates/Mesh.h"
-#include "../Templates/Model3D.h"
-#include "../Templates/Sound.h"
+#include "../Templates/TemplatesImpl.h"
+#include "../Scene/SceneImpl.h"
 
 extern bool appDone;
 extern HWND hWnd;
@@ -20,7 +13,6 @@ extern std::shared_ptr<Renderer> renderer;
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-extern void LoadLevel(std::filesystem::path level);
 
 namespace Editor {
 
@@ -345,11 +337,12 @@ namespace Editor {
   void SaveLevelToFile(std::wstring levelFileName) {
     using namespace nlohmann;
 
-    json level;
+    nlohmann::json level;
 
     level["renderables"] = json::array();
     level["lights"] = json::array();
     level["cameras"] = json::array();
+    level["sounds"] = json::array();
 
     using namespace Scene::Renderable;
     for (auto& [name,renderable] : GetRenderables()) {
@@ -365,6 +358,11 @@ namespace Editor {
     for (auto& camera : GetCameras()) {
       if (camera->light != nullptr) continue;
       level["cameras"].push_back(camera->json());
+    }
+
+    using namespace Scene::SoundEffect;
+    for (auto& [name,sfx] : GetSoundsEffects()) {
+      level["sounds"].push_back(sfx->json());
     }
 
     std::string levelString =  level.dump(4);
@@ -487,12 +485,11 @@ namespace Editor {
 
   void SaveTemplates()
   {
-    using namespace Templates;
-
-    Templates::SaveTemplates(defaultTemplatesFolder, Shader::templateName, Shader::json());
-    Templates::SaveTemplates(defaultTemplatesFolder, Material::templateName, Material::json());
-    Templates::SaveTemplates(defaultTemplatesFolder, Model3D::templateName, Model3D::json());
-    Templates::SaveTemplates(defaultTemplatesFolder, Audio::templateName, Audio::json());
+    
+    Templates::SaveTemplates(defaultTemplatesFolder, Templates::Shader::templateName, Templates::Shader::json());
+    Templates::SaveTemplates(defaultTemplatesFolder, Templates::Material::templateName, Templates::Material::json());
+    Templates::SaveTemplates(defaultTemplatesFolder, Templates::Model3D::templateName, Templates::Model3D::json());
+    Templates::SaveTemplates(defaultTemplatesFolder, Templates::Sound::templateName, Templates::Sound::json());
 
   }
 
