@@ -2,7 +2,9 @@
 #include <cstdint>
 #include <map>
 
+#if defined(_EDITOR)
 #include "Shaders/Compiler/ShaderCompilerOutput.h"
+#endif
 
 //notifications
 struct NotificationTarget {
@@ -261,6 +263,15 @@ static MaterialInitialValueMap TransformJsonToMapping(nlohmann::json mappedValue
 
 	return map;
 
+}
+
+static std::set<UINT> TransformJsonArrayToSet(nlohmann::json j) {
+	std::set<UINT> set;
+	for (auto& value : j) {
+		UINT v = value;
+		set.insert(v);
+	}
+	return set;
 }
 
 static std::map<DXGI_FORMAT, std::wstring> texturesFormatsToString = {
@@ -679,6 +690,22 @@ static std::map<std::wstring, D3D12_SHADER_VISIBILITY> stringToShaderVisibility 
 	{ L"MESH", D3D12_SHADER_VISIBILITY_MESH }
 };
 
+static std::map<SOUND_EFFECT_INSTANCE_FLAGS, std::wstring> soundEffectInstanceFlagToString = {
+	{ SoundEffectInstance_Default, L"Default" },
+	{ SoundEffectInstance_Use3D, L"Use3D" },
+	{ SoundEffectInstance_ReverbUseFilters,	L"ReverbUseFilters" },
+	{ SoundEffectInstance_NoSetPitch,	L"NoSetPitch" },
+	{ SoundEffectInstance_UseRedirectLFE,	L"UseRedirectLFE" }
+};
+
+static std::map<std::wstring, SOUND_EFFECT_INSTANCE_FLAGS> stringToSoundEffectInstanceFlag = {
+	{ L"Default", SoundEffectInstance_Default },
+	{ L"Use3D",	SoundEffectInstance_Use3D },
+	{ L"ReverbUseFilters", SoundEffectInstance_ReverbUseFilters },
+	{ L"NoSetPitch", SoundEffectInstance_NoSetPitch },
+	{ L"UseRedirectLFE", SoundEffectInstance_UseRedirectLFE },
+};
+
 static const std::wstring defaultLevelsFolder = L"Levels/";
 static const std::wstring defaultTemplatesFolder = L"Templates/";
 static const std::wstring defaultLevelName = L"baseLevel.json";
@@ -686,4 +713,9 @@ static const std::wstring defaultLevelName = L"baseLevel.json";
 template<typename T>
 void replaceFromJson(T& value, nlohmann::json& object, const std::string& key) {
 	if(object.contains(key)) value = static_cast<T>(object[key]);
+}
+
+template<typename T, typename E>
+bool bytesHas(T bytes, E flag ) {
+	return (bytes & flag) == flag;
 }

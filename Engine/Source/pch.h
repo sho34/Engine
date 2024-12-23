@@ -38,11 +38,11 @@
 #include <dxgidebug.h>
 #endif
 
-//#if defined(_DEVELOPMENT)
+#if defined(_DEVELOPMENT)
 #include <d3dcompiler.h>
 #include <dxcapi.h>
 #include <pix3.h>
-//#endif
+#endif
 
 //DirectXTK stuff
 #include <DDSTextureLoader.h>
@@ -89,3 +89,10 @@
 
 template<typename... Args> void whatis();
 template<typename T> void whatis(T);
+
+using Microsoft::WRL::ComPtr;
+using namespace DirectX;
+using namespace DirectX::SimpleMath;
+using namespace Concurrency;
+
+#include "Types.h"
