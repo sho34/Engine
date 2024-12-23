@@ -4,10 +4,7 @@
 #include <map>
 #include "../../../d3dx12.h"
 #include "../../Renderer.h"
-#include "../../../Templates/Material.h"
-
-using namespace Microsoft::WRL;
-using namespace DirectX;
+#include "../../../Templates/Material/MaterialImpl.h"
 
 namespace DeviceUtils::ConstantsBuffer
 {

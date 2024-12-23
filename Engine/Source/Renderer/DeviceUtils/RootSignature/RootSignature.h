@@ -1,12 +1,7 @@
 #pragma once
 
-#include <wrl.h>
 #include "../../../d3dx12.h"
-#include "../../../Templates/Material.h"
-
-using namespace Microsoft::WRL;
-using namespace DirectX;
-using namespace Templates::Material;
+#include "../../../Templates/Material/MaterialImpl.h"
 
 namespace DeviceUtils::RootSignature
 {
