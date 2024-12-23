@@ -165,5 +165,21 @@
                 0
             ]
         }
-    ]
+    ],
+	"sounds":[
+		{
+			"name":"music",
+			"sound":"music",
+			"volume":0.3,
+			"autoPlay":true
+		},
+		{
+			"name":"fireplace",
+			"sound":"fireplace",
+			"volume":2.0,
+			"autoPlay":true,
+			"position":[-2.2,0.7,7.1],
+			"instanceFlags":"Use3D"			
+		}
+	]
 }
