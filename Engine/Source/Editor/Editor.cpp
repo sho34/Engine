@@ -135,77 +135,8 @@ namespace Editor {
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
 
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-
-    RECT dragRect;
-    ZeroMemory(&dragRect,sizeof(dragRect));
-    dragRect.bottom = 19;
-
-    if (ImGui::BeginMainMenuBar())
-    {
-      if (ImGui::BeginMenu("File"))
-      {
-        ImGui::MenuItem("New");
-        ImGui::Separator();
-        if (ImGui::MenuItem("Open")) {
-          OpenFile();
-        }
-        if (ImGui::MenuItem("Save")) {
-          SaveLevelToFile(currentLevelName);
-        }
-        if(ImGui::MenuItem("Save As..")) {
-          SaveLevelAs();
-        }
-        ImGui::Separator();
-        if (ImGui::MenuItem("Save Templates")) {
-          SaveTemplates();
-        }
-        ImGui::Separator();
-        if (ImGui::MenuItem("Exit")) // It would be nice if this was a "X" like in the windows title bar set off to the far right
-        {
-          appDone = true;
-        }
-        ImGui::EndMenu();
-      
-      }
-
-      auto cursorPos = ImGui::GetCursorScreenPos();
-
-      dragRect.left = static_cast<LONG>(cursorPos.x);
-
-      ImGui::SetCursorPos(ImVec2(viewport->WorkSize.x * 0.5f - 3.0f, 2.0f));
-      ImGui::TextColored(ImVec4{ 1.0f,1.0f,1.0f,1.0f }, "Title");
-
-      struct WinButtonDef {
-        std::string label;
-        FLOAT x;
-        FLOAT y = 0.0f;
-        std::function<void()> onClick;
-      };
-
-      WinButtonDef windowsButtons[] = {
-        { .label = "X", .x = viewport->WorkSize.x - 1.0f * 19.0f, .onClick = []() {appDone = true; }},
-        { .label = "O", .x = viewport->WorkSize.x - 2.0f * 19.0f, .onClick = []() {
-          HWND desktopHwnd = GetDesktopWindow();
-          RECT desktopRect;
-          GetClientRect(desktopHwnd, &desktopRect);
-          int winWidth = desktopRect.right;
-          int winHeight = desktopRect.bottom - 40;
-          SetWindowPos(hWnd, HWND_TOP, 0, 0, winWidth, winHeight, 0);
-        }},
-        { .label = "_", .x = viewport->WorkSize.x - 3.0f * 19.0f, .onClick = []() { ShowWindow(hWnd, SW_MINIMIZE); }},
-      };
-
-      dragRect.right = static_cast<LONG>(windowsButtons[_countof(windowsButtons) - 1].x);
-
-      for (auto button : windowsButtons) {
-        ImGui::SetCursorPos(ImVec2(button.x,button.y));
-        if (ImGui::Button(button.label.c_str(), ImVec2(19.0f, 19.0f))) { button.onClick(); }
-      }
-
-      ImGui::EndMainMenuBar();
-    }
-    HandleApplicationDragTitleBar(dragRect);
+    DrawApplicationBar();
+    DrawRightPanel();
   
 
     /*
@@ -233,6 +164,251 @@ namespace Editor {
 
     // Render Dear ImGui graphics
     ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), renderer->commandList);
+  }
+
+  void DrawApplicationBar()
+  {
+    RECT dragRect;
+    ZeroMemory(&dragRect, sizeof(dragRect));
+    dragRect.bottom = 19;
+    
+    if (ImGui::BeginMainMenuBar())
+    {
+      if (ImGui::BeginMenu("File"))
+      {
+        ImGui::MenuItem("New");
+        ImGui::Separator();
+        if (ImGui::MenuItem("Open")) {
+          OpenFile();
+        }
+        if (ImGui::MenuItem("Save")) {
+          SaveLevelToFile(currentLevelName);
+        }
+        if (ImGui::MenuItem("Save As..")) {
+          SaveLevelAs();
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Save Templates")) {
+          SaveTemplates();
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Exit")) // It would be nice if this was a "X" like in the windows title bar set off to the far right
+        {
+          appDone = true;
+        }
+        ImGui::EndMenu();
+
+      }
+
+      auto cursorPos = ImGui::GetCursorScreenPos();
+      dragRect.left = static_cast<LONG>(cursorPos.x);
+
+      const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+      ImGui::SetCursorPos(ImVec2(viewport->WorkSize.x * 0.5f - 3.0f, 2.0f));
+      ImGui::TextColored(ImVec4{ 1.0f,1.0f,1.0f,1.0f }, "Title");
+
+      struct WinButtonDef {
+        std::string label;
+        FLOAT x;
+        FLOAT y = 0.0f;
+        std::function<void()> onClick;
+      };
+
+      WinButtonDef windowsButtons[] = {
+        { .label = "X", .x = viewport->WorkSize.x - 1.0f * 19.0f, .onClick = []() {appDone = true; } },
+        { .label = "O", .x = viewport->WorkSize.x - 2.0f * 19.0f, .onClick = []() {
+          HWND desktopHwnd = GetDesktopWindow();
+          RECT desktopRect;
+          GetClientRect(desktopHwnd, &desktopRect);
+          int winWidth = desktopRect.right;
+          int winHeight = desktopRect.bottom - 40;
+          SetWindowPos(hWnd, HWND_TOP, 0, 0, winWidth, winHeight, 0);
+        } },
+        { .label = "_", .x = viewport->WorkSize.x - 3.0f * 19.0f, .onClick = []() { ShowWindow(hWnd, SW_MINIMIZE); } },
+      };
+
+      dragRect.right = static_cast<LONG>(windowsButtons[_countof(windowsButtons) - 1].x);
+
+      for (auto button : windowsButtons) {
+        ImGui::SetCursorPos(ImVec2(button.x, button.y));
+        if (ImGui::Button(button.label.c_str(), ImVec2(19.0f, 19.0f))) { button.onClick(); }
+      }
+
+      ImGui::EndMainMenuBar();
+    }
+    HandleApplicationDragTitleBar(dragRect);
+  }
+
+  RenderablePtr selectedRenderable = nullptr;
+  LightPtr selectedLight = nullptr;
+  CameraPtr selectedCamera = nullptr;
+  RightPanelSceneTabOptions currentSceneObjectTab = RightPanelSceneTabOptions::Renderables;
+
+  void DebugWindowPosSize(std::wstring name) {
+    ImVec2 spos = ImGui::GetCursorScreenPos();
+    ImVec2 ravail = ImGui::GetContentRegionAvail();
+
+    std::wstring str = name + L"\npos:(" + std::to_wstring(spos.x) + L"," + std::to_wstring(spos.y) + L")\nsize:(" + std::to_wstring(ravail.x) + L"," + std::to_wstring(ravail.y) + L")\n\n";
+
+    OutputDebugString(str.c_str());
+  }
+
+  void DebugPosSize(std::wstring name, ImVec2 pos, ImVec2 size) {
+    std::wstring str = name + L"\npos:(" + std::to_wstring(pos.x) + L"," + std::to_wstring(pos.y) + L")\nsize:(" + std::to_wstring(size.x) + L"," + std::to_wstring(size.y) + L")\n\n";
+
+    OutputDebugString(str.c_str());
+  }
+
+  auto DrawTableRows(auto GetObjects, auto OnSelect) {
+    int row = 0;
+    for (auto& [nameW, o] : GetObjects()) {
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      std::string name = WStringToString(nameW);
+      if (ImGui::TextLink(name.c_str())) { OnSelect(o); }
+      row++;
+    }
+    
+  }
+
+  void DrawRightPanelSceneObjectsTab(ImVec2 pos, ImVec2 size)
+  {
+    auto SelectRenderable = [](auto renderable) {
+      selectedRenderable = renderable;
+      selectedLight = nullptr;
+      selectedCamera = nullptr;
+    };
+
+    auto SelectLight = [](auto light) {
+      selectedRenderable = nullptr;
+      selectedLight = light;
+      selectedCamera = nullptr;
+    };
+
+    auto SelectCamera = [](auto camera) {
+      selectedRenderable = nullptr;
+      selectedLight = nullptr;
+      selectedCamera = camera;
+    };
+
+    auto DrawSceneObjectList = [](auto tableName, auto GetObjects, auto OnSelect) {
+      if (ImGui::BeginTable(tableName, 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+      {
+        DrawTableRows(GetObjects, OnSelect);
+        ImGui::EndTable();
+      }
+    };
+
+    //ImGui::SetCursorPos(pos);
+    ImGui::SetNextWindowPos(pos);
+    ImGui::SetNextWindowSize(size);
+    ImGui::BeginTabBar("Scene objects");
+    {
+      DebugWindowPosSize(L"tab");
+
+      if (ImGui::TabItemButton("Renderables", (currentSceneObjectTab == RightPanelSceneTabOptions::Renderables) ? ImGuiTabItemFlags_SetSelected:ImGuiTabItemFlags_None)) { currentSceneObjectTab = RightPanelSceneTabOptions::Renderables; }
+      if (ImGui::TabItemButton("Lights", (currentSceneObjectTab == RightPanelSceneTabOptions::Lights) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None)) { currentSceneObjectTab = RightPanelSceneTabOptions::Lights; }
+      if (ImGui::TabItemButton("Cameras", (currentSceneObjectTab == RightPanelSceneTabOptions::Cameras) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None)) { currentSceneObjectTab = RightPanelSceneTabOptions::Cameras; }
+
+      if (currentSceneObjectTab == RightPanelSceneTabOptions::Renderables) { DrawSceneObjectList("Renderables-Table", GetRenderables, SelectRenderable); }
+      if (currentSceneObjectTab == RightPanelSceneTabOptions::Lights) { DrawSceneObjectList("Lights-Table", GetNamedLights, SelectLight); }
+      if (currentSceneObjectTab == RightPanelSceneTabOptions::Cameras) { DrawSceneObjectList("Cameras-Table", GetNamedCameras, SelectCamera); }
+    }
+    ImGui::EndTabBar();
+  }
+
+
+  MaterialPtr selectedMaterial = nullptr;
+  Model3DPtr selectedModel3D = nullptr;
+  ShaderPtr selectedShader = nullptr;
+  SoundPtr selectedSound = nullptr;
+  RightPanelTemplatesTabOptions currentTemplateTab = RightPanelTemplatesTabOptions::Material;
+
+  void DrawRightPanelTemplatesTab(ImVec2 pos, ImVec2 size)
+  {
+    auto SelectMaterial = [](auto material) {
+      selectedMaterial = material;
+      selectedModel3D = nullptr;
+      selectedShader = nullptr;
+      selectedSound = nullptr;
+    };
+
+    auto Select3DModel = [](auto model3D) {
+      selectedMaterial = nullptr;
+      selectedModel3D = model3D;
+      selectedShader = nullptr;
+      selectedSound = nullptr;
+    };
+
+    auto SelectShader = [](auto shader) {
+      selectedMaterial = nullptr;
+      selectedModel3D = nullptr;
+      selectedShader = shader;
+      selectedSound = nullptr;
+    };
+
+    auto SelectSound = [](auto sound) {
+      selectedMaterial = nullptr;
+      selectedModel3D = nullptr;
+      selectedShader = nullptr;
+      selectedSound = sound;
+    };
+
+    auto DrawTemplatesList = [](auto tableName, auto GetObjects, auto OnSelect) {
+      if (ImGui::BeginTable(tableName, 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+      {
+        DrawTableRows(GetObjects, OnSelect);
+        ImGui::EndTable();
+      }
+    };
+
+    //ImGui::SetCursorPos(pos);
+   // ImGui::SetNextWindowPos(pos);
+    //ImGui::SetNextWindowSize(size);
+    ImGui::BeginTabBar("Templates");
+    {
+      if (ImGui::TabItemButton("Material")) { currentTemplateTab = RightPanelTemplatesTabOptions::Material; }
+      if (ImGui::TabItemButton("Model3D")) { currentTemplateTab = RightPanelTemplatesTabOptions::Model3D; }
+      if (ImGui::TabItemButton("Shader")) { currentTemplateTab = RightPanelTemplatesTabOptions::Shader; }
+      if (ImGui::TabItemButton("Sound")) { currentTemplateTab = RightPanelTemplatesTabOptions::Sound; }
+      
+      if (currentTemplateTab == RightPanelTemplatesTabOptions::Material) { DrawTemplatesList("Material-Table", GetNamedMaterials, SelectMaterial); }
+      if (currentTemplateTab == RightPanelTemplatesTabOptions::Model3D) { DrawTemplatesList("Model3D-Table", GetNamedModels3D, Select3DModel); }
+      if (currentTemplateTab == RightPanelTemplatesTabOptions::Shader) { DrawTemplatesList("Shader-Table", GetNamedShaders, SelectShader); }
+      if (currentTemplateTab == RightPanelTemplatesTabOptions::Sound) { DrawTemplatesList("Sound-Table", GetNamedSounds, SelectSound); }
+      
+    }
+    ImGui::EndTabBar();
+  }
+
+  float titleBarHeight = 19.0f;
+  float rightPanelWidth = 400.0f;
+  void DrawRightPanel() {
+    
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+    ImVec2 rightPanelPos = ImVec2(viewport->Size.x - rightPanelWidth, titleBarHeight);
+    ImVec2 rightPanelSize = ImVec2(rightPanelWidth, viewport->Size.y - titleBarHeight);
+
+    ImGui::SetNextWindowPos(rightPanelPos);
+    ImGui::SetNextWindowSize(rightPanelSize);
+    ImGui::Begin("Right panel",(bool*)1, 
+      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+      ImGuiWindowFlags_NoSavedSettings
+    );
+    {
+      ImVec2 sceneObjectsPanelPos = ImVec2(rightPanelPos.x + 5.0f, rightPanelPos.y + 30.0f);
+      ImVec2 sceneObjectsPanelSize = ImVec2(rightPanelSize.x, rightPanelSize.y * 0.5f - 60.0f);
+      DrawRightPanelSceneObjectsTab(sceneObjectsPanelPos, sceneObjectsPanelSize);
+
+      ImVec2 templatesPanelPos = ImVec2(rightPanelPos.x + 5.0f, sceneObjectsPanelPos.y + sceneObjectsPanelSize.y);
+      ImVec2 templatesPanelSize = ImVec2(rightPanelSize.x, rightPanelSize.y * 0.5f - 60.0f);
+      DrawRightPanelTemplatesTab(templatesPanelPos, templatesPanelSize);
+
+    }
+    ImGui::End();
   }
 
   bool OpenFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr)
