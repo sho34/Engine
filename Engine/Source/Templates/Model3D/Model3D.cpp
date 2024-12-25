@@ -244,6 +244,10 @@ namespace Templates::Model3D {
     return (it != model3DTemplates.end()) ? it->second : nullptr;
   }
 
+  std::map<std::wstring, std::shared_ptr<Model3D>> GetNamedModels3D() {
+    return model3DTemplates;
+  }
+
 #if defined(_EDITOR)
   nlohmann::json json()
   {
