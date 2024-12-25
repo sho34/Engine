@@ -84,6 +84,7 @@ namespace Scene::Camera {
 
   std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraDefinition);
   std::vector<std::shared_ptr<Camera>> GetCameras();
+  std::map<std::wstring,std::shared_ptr<Camera>> GetNamedCameras();
   void DestroyCameras();
   size_t GetNumCameras();
   std::shared_ptr<Camera> GetCamera(UINT index);

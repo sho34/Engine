@@ -91,6 +91,10 @@ namespace Scene::Camera {
 		return cameraByIndex;
 	}
 
+	std::map<std::wstring, std::shared_ptr<Camera>> GetNamedCameras() {
+		return cameraByNames;
+	}
+
 	void DestroyCameras()
 	{
 		for (auto& cam : cameraByIndex) {
