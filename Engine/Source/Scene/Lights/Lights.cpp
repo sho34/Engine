@@ -231,9 +231,12 @@ namespace Scene::Lights {
 
 	std::vector<std::shared_ptr<Light>> GetLights() { return lights; }
 
-	std::shared_ptr<Light> GetLight(std::wstring lightName)
-	{
+	std::shared_ptr<Light> GetLight(std::wstring lightName)	{
 		return lightsByName[lightName];
+	}
+
+	std::map<std::wstring, std::shared_ptr<Light>> GetNamedLights() {
+		return lightsByName;
 	}
 
 	void DestroyLights()
