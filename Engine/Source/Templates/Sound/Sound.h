@@ -13,6 +13,7 @@ namespace Templates::Sound {
 	};
 
 	std::shared_ptr<Sound>& GetSoundTemplate(std::wstring soundName);
+	std::map<std::wstring, std::shared_ptr<Sound>> GetNamedSounds();
 	void ReleaseSoundTemplates();
 
 #if defined(_EDITOR)

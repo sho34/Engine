@@ -15,6 +15,10 @@ namespace Templates::Sound {
 		return soundTemplates[soundName];
 	}
 
+	std::map<std::wstring, std::shared_ptr<Sound>> GetNamedSounds() {
+		return soundTemplates;
+	}
+
 	void ReleaseSoundTemplates()
 	{
 		for (auto& [name, sound] : soundTemplates) {
