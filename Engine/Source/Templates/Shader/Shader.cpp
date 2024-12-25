@@ -119,6 +119,10 @@ namespace Templates::Shader {
 		return (it != shaderTemplates.end()) ? &it->second : nullptr;
 	}
 
+	std::map<std::wstring, std::shared_ptr<Shader>> GetNamedShaders() {
+		return shaderTemplates;
+	}
+
 #if defined(_DEBUG)
 	nlohmann::json json()
 	{
