@@ -289,6 +289,10 @@ namespace Templates::Material {
 		return (it != materialTemplates.end()) ? &it->second : nullptr;
 	}
 
+	std::map<std::wstring, std::shared_ptr<Material>> GetNamedMaterials() {
+		return materialTemplates;
+	}
+
 	static std::mutex buildTexturesMutex;
 	void BuildMaterialTextures(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Material>& material)
 	{

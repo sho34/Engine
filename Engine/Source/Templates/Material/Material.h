@@ -144,6 +144,7 @@ namespace Templates::Material {
 	Concurrency::task<void> BindToMaterialTemplate(const std::wstring& materialName, void* target, NotificationCallbacks callbacks);
 	std::shared_ptr<Material> GetMaterialTemplate(std::wstring materialName);
 	std::shared_ptr<Material>* GetMaterialTemplatePtr(std::wstring materialName);
+	std::map<std::wstring, std::shared_ptr<Material>> GetNamedMaterials();
 	void BuildMaterialTextures(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Material>& material);
 	
 #if defined(_EDITOR)
