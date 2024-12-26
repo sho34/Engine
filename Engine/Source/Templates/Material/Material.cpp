@@ -293,6 +293,12 @@ namespace Templates::Material {
 		return materialTemplates;
 	}
 
+	std::vector<std::wstring> GetMaterialsNames() {
+		std::vector<std::wstring> names;
+		std::transform(materialTemplates.begin(), materialTemplates.end(), std::back_inserter(names), [](std::pair<std::wstring, std::shared_ptr<Material>> pair) { return pair.first; });
+		return names;
+	}
+
 	static std::mutex buildTexturesMutex;
 	void BuildMaterialTextures(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Material>& material)
 	{

@@ -240,11 +240,6 @@ namespace Editor {
     HandleApplicationDragTitleBar(dragRect);
   }
 
-  RenderablePtr selectedRenderable = nullptr;
-  LightPtr selectedLight = nullptr;
-  CameraPtr selectedCamera = nullptr;
-  RightPanelSceneTabOptions currentSceneObjectTab = RightPanelSceneTabOptions::Renderables;
-
   void DebugWindowPosSize(std::wstring name) {
     ImVec2 spos = ImGui::GetCursorScreenPos();
     ImVec2 ravail = ImGui::GetContentRegionAvail();
@@ -262,128 +257,46 @@ namespace Editor {
 
   auto DrawTableRows(auto GetObjects, auto OnSelect) {
     int row = 0;
-    for (auto& [nameW, o] : GetObjects()) {
+    for (auto nameW : GetObjects()) {
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
       std::string name = WStringToString(nameW);
-      if (ImGui::TextLink(name.c_str())) { OnSelect(o); }
-      row++;
+      for(int i = 0 ; i < 20; i++)
+      if (ImGui::TextLink(name.c_str())) { OnSelect(nameW); }
     }
-    
   }
 
-  void DrawRightPanelSceneObjectsTab(ImVec2 pos, ImVec2 size)
+  auto DrawListPanel = [](const char* tableName, auto GetObjects, auto OnSelect) {
+    if (ImGui::BeginTable(tableName, 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+    {
+      DrawTableRows(GetObjects, OnSelect);
+      ImGui::EndTable();
+    }
+  };
+
+  template<typename T>
+  void DrawTabPanel(ImVec2 pos, ImVec2 size, const char* name, T& tab,
+    std::unordered_map<T, std::wstring> TabToStr,
+    std::map<T, std::function<std::vector<std::wstring>()>> GetTabList 
+    )
   {
-    auto SelectRenderable = [](auto renderable) {
-      selectedRenderable = renderable;
-      selectedLight = nullptr;
-      selectedCamera = nullptr;
-    };
-
-    auto SelectLight = [](auto light) {
-      selectedRenderable = nullptr;
-      selectedLight = light;
-      selectedCamera = nullptr;
-    };
-
-    auto SelectCamera = [](auto camera) {
-      selectedRenderable = nullptr;
-      selectedLight = nullptr;
-      selectedCamera = camera;
-    };
-
-    auto DrawSceneObjectList = [](auto tableName, auto GetObjects, auto OnSelect) {
-      if (ImGui::BeginTable(tableName, 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
-      {
-        DrawTableRows(GetObjects, OnSelect);
-        ImGui::EndTable();
-      }
-    };
-
-    //ImGui::SetCursorPos(pos);
     ImGui::SetNextWindowPos(pos);
     ImGui::SetNextWindowSize(size);
-    ImGui::BeginTabBar("Scene objects");
+    ImGui::BeginTabBar(name);
     {
-      DebugWindowPosSize(L"tab");
-
-      if (ImGui::TabItemButton("Renderables", (currentSceneObjectTab == RightPanelSceneTabOptions::Renderables) ? ImGuiTabItemFlags_SetSelected:ImGuiTabItemFlags_None)) { currentSceneObjectTab = RightPanelSceneTabOptions::Renderables; }
-      if (ImGui::TabItemButton("Lights", (currentSceneObjectTab == RightPanelSceneTabOptions::Lights) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None)) { currentSceneObjectTab = RightPanelSceneTabOptions::Lights; }
-      if (ImGui::TabItemButton("Cameras", (currentSceneObjectTab == RightPanelSceneTabOptions::Cameras) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None)) { currentSceneObjectTab = RightPanelSceneTabOptions::Cameras; }
-
-      if (currentSceneObjectTab == RightPanelSceneTabOptions::Renderables) { DrawSceneObjectList("Renderables-Table", GetRenderables, SelectRenderable); }
-      if (currentSceneObjectTab == RightPanelSceneTabOptions::Lights) { DrawSceneObjectList("Lights-Table", GetNamedLights, SelectLight); }
-      if (currentSceneObjectTab == RightPanelSceneTabOptions::Cameras) { DrawSceneObjectList("Cameras-Table", GetNamedCameras, SelectCamera); }
-    }
-    ImGui::EndTabBar();
-  }
-
-
-  MaterialPtr selectedMaterial = nullptr;
-  Model3DPtr selectedModel3D = nullptr;
-  ShaderPtr selectedShader = nullptr;
-  SoundPtr selectedSound = nullptr;
-  RightPanelTemplatesTabOptions currentTemplateTab = RightPanelTemplatesTabOptions::Material;
-
-  void DrawRightPanelTemplatesTab(ImVec2 pos, ImVec2 size)
-  {
-    auto SelectMaterial = [](auto material) {
-      selectedMaterial = material;
-      selectedModel3D = nullptr;
-      selectedShader = nullptr;
-      selectedSound = nullptr;
-    };
-
-    auto Select3DModel = [](auto model3D) {
-      selectedMaterial = nullptr;
-      selectedModel3D = model3D;
-      selectedShader = nullptr;
-      selectedSound = nullptr;
-    };
-
-    auto SelectShader = [](auto shader) {
-      selectedMaterial = nullptr;
-      selectedModel3D = nullptr;
-      selectedShader = shader;
-      selectedSound = nullptr;
-    };
-
-    auto SelectSound = [](auto sound) {
-      selectedMaterial = nullptr;
-      selectedModel3D = nullptr;
-      selectedShader = nullptr;
-      selectedSound = sound;
-    };
-
-    auto DrawTemplatesList = [](auto tableName, auto GetObjects, auto OnSelect) {
-      if (ImGui::BeginTable(tableName, 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
-      {
-        DrawTableRows(GetObjects, OnSelect);
-        ImGui::EndTable();
+      for (auto& [type, name] : TabToStr) {
+        ImGuiTabItemFlags_ flag = (tab == type) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+        if (ImGui::TabItemButton(WStringToString(name).c_str(), flag)) { tab = type; }
       }
-    };
-
-    //ImGui::SetCursorPos(pos);
-   // ImGui::SetNextWindowPos(pos);
-    //ImGui::SetNextWindowSize(size);
-    ImGui::BeginTabBar("Templates");
-    {
-      if (ImGui::TabItemButton("Material")) { currentTemplateTab = RightPanelTemplatesTabOptions::Material; }
-      if (ImGui::TabItemButton("Model3D")) { currentTemplateTab = RightPanelTemplatesTabOptions::Model3D; }
-      if (ImGui::TabItemButton("Shader")) { currentTemplateTab = RightPanelTemplatesTabOptions::Shader; }
-      if (ImGui::TabItemButton("Sound")) { currentTemplateTab = RightPanelTemplatesTabOptions::Sound; }
-      
-      if (currentTemplateTab == RightPanelTemplatesTabOptions::Material) { DrawTemplatesList("Material-Table", GetNamedMaterials, SelectMaterial); }
-      if (currentTemplateTab == RightPanelTemplatesTabOptions::Model3D) { DrawTemplatesList("Model3D-Table", GetNamedModels3D, Select3DModel); }
-      if (currentTemplateTab == RightPanelTemplatesTabOptions::Shader) { DrawTemplatesList("Shader-Table", GetNamedShaders, SelectShader); }
-      if (currentTemplateTab == RightPanelTemplatesTabOptions::Sound) { DrawTemplatesList("Sound-Table", GetNamedSounds, SelectSound); }
-      
+      DrawListPanel(WStringToString(TabToStr.at(tab) + L"-table").c_str(), GetTabList.at(tab), [](std::wstring name) {});
     }
     ImGui::EndTabBar();
   }
 
   float titleBarHeight = 19.0f;
   float rightPanelWidth = 400.0f;
+  _SceneObjects sceneObjectTab = _SceneObjects::Renderables;
+  _Templates templatesTab = _Templates::Materials;
   void DrawRightPanel() {
     
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -400,13 +313,13 @@ namespace Editor {
     );
     {
       ImVec2 sceneObjectsPanelPos = ImVec2(rightPanelPos.x + 5.0f, rightPanelPos.y + 30.0f);
-      ImVec2 sceneObjectsPanelSize = ImVec2(rightPanelSize.x, rightPanelSize.y * 0.5f - 60.0f);
-      DrawRightPanelSceneObjectsTab(sceneObjectsPanelPos, sceneObjectsPanelSize);
+      ImVec2 sceneObjectsPanelSize = ImVec2(rightPanelSize.x, rightPanelSize.y * 0.5f - 30.0f);
+      DrawTabPanel(sceneObjectsPanelPos, sceneObjectsPanelSize, "Scene Objects", sceneObjectTab, SceneObjectsToStr, GetSceneObjects);
 
-      ImVec2 templatesPanelPos = ImVec2(rightPanelPos.x + 5.0f, sceneObjectsPanelPos.y + sceneObjectsPanelSize.y);
-      ImVec2 templatesPanelSize = ImVec2(rightPanelSize.x, rightPanelSize.y * 0.5f - 60.0f);
-      DrawRightPanelTemplatesTab(templatesPanelPos, templatesPanelSize);
-
+      ImVec2 templatesPanelPos = ImVec2(rightPanelPos.x + 5.0f, sceneObjectsPanelPos.y + sceneObjectsPanelSize.y + 20.0f);
+      ImVec2 templatesPanelSize = ImVec2(rightPanelSize.x, rightPanelSize.y * 0.5f - 30.0f);
+      ImGui::SetCursorPos(ImVec2(0.0f, sceneObjectsPanelSize.y+30.0f));
+      DrawTabPanel(templatesPanelPos, templatesPanelSize, "Templatess", templatesTab, TemplatesToStr, GetTemplates);
     }
     ImGui::End();
   }

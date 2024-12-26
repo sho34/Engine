@@ -51,4 +51,9 @@ namespace Templates::Mesh {
 		return (it != meshTemplates.end()) ? it->second : nullptr;
 	}
 
+	std::vector<std::wstring> GetMeshesNames() {
+		std::vector<std::wstring> names;
+		std::transform(meshTemplates.begin(), meshTemplates.end(), std::back_inserter(names), [](std::pair<std::wstring, MeshPtr> pair) { return pair.first; });
+		return names;
+	}
 };

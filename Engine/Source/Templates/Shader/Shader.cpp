@@ -123,6 +123,12 @@ namespace Templates::Shader {
 		return shaderTemplates;
 	}
 
+	std::vector<std::wstring> GetShadersNames() {
+		std::vector<std::wstring> names;
+		std::transform(shaderTemplates.begin(), shaderTemplates.end(), std::back_inserter(names), [](std::pair<std::wstring, std::shared_ptr<Shader>> pair) { return pair.first; });
+		return names;
+	}
+
 #if defined(_DEBUG)
 	nlohmann::json json()
 	{

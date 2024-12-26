@@ -39,6 +39,7 @@ namespace Templates::Model3D {
 	void ReleaseModel3DTemplates();
 	std::shared_ptr<Model3D> GetModel3DTemplate(std::wstring model3DName);
 	std::map<std::wstring, std::shared_ptr<Model3D>> GetNamedModels3D();
+	std::vector<std::wstring> GetModels3DNames();
 
 #if defined(_EDITOR)
 	nlohmann::json json();

@@ -10,6 +10,12 @@ namespace Scene::SoundEffect {
   std::map<std::wstring, std::shared_ptr<SoundEffect>> GetSoundsEffects() { return soundsEffects; }
   std::vector<SoundEffectPtr> Get3DSoundsEffects() { return sounds3DEffects; }
 
+  std::vector<std::wstring> GetSoundEffectsNames() {
+    std::vector<std::wstring> names;
+    std::transform(soundsEffects.begin(), soundsEffects.end(), std::back_inserter(names), [](const std::pair<std::wstring, std::shared_ptr<SoundEffect>> pair) { return pair.second->name; });
+    return names;
+  }
+
   std::shared_ptr<SoundEffect> CreateSoundEffect(nlohmann::json soundj)
   {
     SoundEffectPtr fx = std::make_shared<SoundEffect>();

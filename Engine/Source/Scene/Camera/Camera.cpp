@@ -91,6 +91,12 @@ namespace Scene::Camera {
 		return cameraByIndex;
 	}
 
+	std::vector<std::wstring> GetCamerasNames() {
+		std::vector<std::wstring> names;
+		std::transform(cameraByIndex.begin(), cameraByIndex.end(), std::back_inserter(names), [](CameraPtr cam) { return cam->name; });
+		return names;
+	}
+
 	std::map<std::wstring, std::shared_ptr<Camera>> GetNamedCameras() {
 		return cameraByNames;
 	}

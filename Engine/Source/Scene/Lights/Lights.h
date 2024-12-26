@@ -146,6 +146,7 @@ namespace Scene::Lights {
 	std::shared_ptr<Light> CreateLight(nlohmann::json light);
 	std::vector<std::shared_ptr<Light>> GetLights();
 	std::shared_ptr<Light> GetLight(std::wstring lightName);
+	std::vector<std::wstring> GetLightsNames();
 	std::map<std::wstring, std::shared_ptr<Light>> GetNamedLights();
 	void DestroyLights();
 	

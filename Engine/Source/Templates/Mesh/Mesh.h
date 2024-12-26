@@ -21,6 +21,7 @@ namespace Templates::Mesh {
 	Concurrency::task<void> CreatePrimitiveMeshTemplate(std::wstring meshName, LoadMeshCallback loadFn = nullptr);
 	void ReleaseMeshTemplates();
 	std::shared_ptr<Mesh> GetMeshTemplate(std::wstring meshName);
+	std::vector<std::wstring> GetMeshesNames();
 };
 typedef Templates::Mesh::Mesh MeshT;
 typedef std::shared_ptr<MeshT> MeshPtr;

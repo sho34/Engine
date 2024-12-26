@@ -248,6 +248,12 @@ namespace Templates::Model3D {
     return model3DTemplates;
   }
 
+  std::vector<std::wstring> GetModels3DNames() {
+    std::vector<std::wstring> names;
+    std::transform(model3DTemplates.begin(), model3DTemplates.end(), std::back_inserter(names), [](std::pair<std::wstring, std::shared_ptr<Model3D>> pair) { return pair.first; });
+    return names;
+  }
+
 #if defined(_EDITOR)
   nlohmann::json json()
   {

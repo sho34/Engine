@@ -41,6 +41,7 @@ namespace Templates::Shader {
 	Concurrency::task<void> BindToShaderTemplate(const std::wstring& shaderTemplateName, void* target, NotificationCallbacks callbacks);
 	std::shared_ptr<Shader>* GetShaderTemplate(std::wstring shaderTemplateName);
 	std::map<std::wstring, std::shared_ptr<Shader>> GetNamedShaders();
+	std::vector<std::wstring> GetShadersNames();
 
 #if defined(_EDITOR)
 	nlohmann::json json();

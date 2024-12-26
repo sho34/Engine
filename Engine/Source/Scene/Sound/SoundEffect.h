@@ -23,8 +23,8 @@ namespace Scene::SoundEffect {
 
 	std::map<std::wstring, std::shared_ptr<SoundEffect>> GetSoundsEffects();
 	std::vector<std::shared_ptr<SoundEffect>> Get3DSoundsEffects();
+	std::vector<std::wstring> GetSoundEffectsNames();
 	std::shared_ptr<SoundEffect> CreateSoundEffect(nlohmann::json soundj);
-
 	void DestroySoundEffects();
 }
 

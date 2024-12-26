@@ -235,6 +235,12 @@ namespace Scene::Lights {
 		return lightsByName[lightName];
 	}
 
+	std::vector<std::wstring> GetLightsNames() {
+		std::vector<std::wstring> names;
+		std::transform(lights.begin(), lights.end(), std::back_inserter(names), [](LightPtr l) { return l->name; });
+		return names;
+	}
+
 	std::map<std::wstring, std::shared_ptr<Light>> GetNamedLights() {
 		return lightsByName;
 	}

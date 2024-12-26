@@ -370,6 +370,12 @@ namespace Scene::Renderable {
 
   std::map<std::wstring, std::shared_ptr<Renderable>>& GetAnimables() { return animables; }
 
+  std::vector<std::wstring> GetRenderablesNames() {
+    std::vector<std::wstring> names;
+    std::transform(renderables.begin(), renderables.end(), std::back_inserter(names), [](const std::pair<std::wstring, std::shared_ptr<Renderable>> pair) { return pair.second->name; });
+    return names;
+  }
+
   void DestroyRenderables()
   {
     for (auto& [name, renderable] : renderables) {

@@ -117,6 +117,7 @@ namespace Scene::Renderable
 	//access
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetRenderables();
 	std::map<std::wstring, std::shared_ptr<Renderable>>& GetAnimables();
+	std::vector<std::wstring> GetRenderablesNames();
 
 	//destroy
 	void DestroyRenderables();

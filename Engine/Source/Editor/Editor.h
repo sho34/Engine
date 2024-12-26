@@ -4,32 +4,6 @@
 
 namespace Editor {
 
-	enum RightPanelSceneTabOptions {
-		Renderables,
-		Lights,
-		Cameras
-	};
-
-	static std::wstring RightPanelSceneTabOptionsStr[] = {
-		L"Renderables",
-		L"Lights",
-		L"Cameras"
-	};
-
-	enum RightPanelTemplatesTabOptions {
-		Material,
-		Model3D,
-		Shader,
-		Sound
-	};
-
-	static std::wstring RightPanelTemplatesTabOptionsStr[] = {
-		L"Material",
-		L"Model3D",
-		L"Shader",
-		L"Sound"
-	};
-
 	void InitEditor();
 	void DestroyEditor();
 	bool WndProcHandlerEditor(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -37,8 +11,6 @@ namespace Editor {
 	void DrawEditor();
 	void DrawApplicationBar();
 
-	void DrawRightPanelSceneObjectsTab(ImVec2 pos, ImVec2 size);
-	void DrawRightPanelTemplatesTab(ImVec2 pos, ImVec2 size);
 	void DrawRightPanel();
 
 	void OpenFile();

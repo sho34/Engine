@@ -19,6 +19,12 @@ namespace Templates::Sound {
 		return soundTemplates;
 	}
 
+	std::vector<std::wstring> GetSoundsNames() {
+		std::vector<std::wstring> names;
+		std::transform(soundTemplates.begin(), soundTemplates.end(), std::back_inserter(names), [](std::pair<std::wstring, std::shared_ptr<Sound>> pair) { return pair.first; });
+		return names;
+	}
+
 	void ReleaseSoundTemplates()
 	{
 		for (auto& [name, sound] : soundTemplates) {
