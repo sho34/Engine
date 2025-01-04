@@ -9,7 +9,7 @@
 
 namespace Templates::Material {
 
-	std::map<std::wstring, MaterialPtr> materialTemplates;
+	std::map<std::string, MaterialPtr> materialTemplates;
 	TemplatesNotification<MaterialPtr*> materialChangeNotifications;
 
 	static void OnShaderCompilationStart(void* materialPtr) {
@@ -31,7 +31,7 @@ namespace Templates::Material {
 
 	static void OnShaderDestroy(void* materialPtr, void* shaderPtr) {}
 
-	INT FindCBufferIndexInMaterial(const MaterialPtr& material, std::wstring bufferName)
+	INT FindCBufferIndexInMaterial(const MaterialPtr& material, std::string bufferName)
 	{
 		//get the buffer on which lights exists if exists
 		auto& vsDef = material->shader->vertexShader->cbufferVariablesDef;
@@ -94,13 +94,13 @@ namespace Templates::Material {
 		}
 	}
 
-	std::shared_ptr<Material>* CreateNewMaterial(std::wstring materialName, MaterialDefinition materialDefinition) {
+	std::shared_ptr<Material>* CreateNewMaterial(std::string name, MaterialDefinition materialDefinition) {
 		auto material = std::make_shared<Material>();
 		material->loading = true;
 		material->materialDefinition = materialDefinition;
-		material->materialName = materialName;
-		materialTemplates.insert(std::pair<std::wstring, MaterialPtr>(materialName, material));
-		return &materialTemplates.find(materialName)->second;
+		material->name = name;
+		materialTemplates.insert(std::pair<std::string, MaterialPtr>(name, material));
+		return &materialTemplates.find(name)->second;
 	}
 
 	void ReleaseMaterialTemplates()
@@ -177,7 +177,7 @@ namespace Templates::Material {
 			}
 		}
 
-		std::set<std::wstring> unmapped;
+		std::set<std::string> unmapped;
 		//write the default values from the shader to the mapped memory
 		for (auto& [varName, mapping] : material->shader->defaultValues.mappedValues) {
 
@@ -213,7 +213,7 @@ namespace Templates::Material {
 			if (shdef == material->shader->defaultValues.mappedValues.end()) continue;
 			if (cbdef == material->shader->vertexShader->cbufferVariablesDef->end()) continue;
 
-			material->variablesMapping.insert(std::pair<std::wstring, MaterialVariableMapping>(
+			material->variablesMapping.insert(std::pair<std::string, MaterialVariableMapping>(
 				varName, MaterialVariableMapping({
 					.variableType = shdef->second.variableType,
 					.mapping = cbdef->second
@@ -237,15 +237,15 @@ namespace Templates::Material {
 		material->samplers = material->materialDefinition.samplers;
 	}
 
-	Concurrency::task<void> CreateMaterialTemplate(std::wstring materialName, MaterialDefinition materialDefinition, LoadMaterialFn loadFn)
+	Concurrency::task<void> CreateMaterialTemplate(std::string name, MaterialDefinition materialDefinition, LoadMaterialFn loadFn)
 	{
-		auto currentMaterial = GetMaterialTemplate(materialName);
+		auto currentMaterial = GetMaterialTemplate(name);
 		if (currentMaterial != nullptr) {
 			if(loadFn) loadFn(currentMaterial);
 			return concurrency::create_task([] {});
 		}
 
-		auto material = CreateNewMaterial(materialName, materialDefinition);
+		auto material = CreateNewMaterial(name, materialDefinition);
 
 		return concurrency::create_task([material] {
 			using namespace Scene;
@@ -262,9 +262,9 @@ namespace Templates::Material {
 		});
 	}
 
-	Concurrency::task<void> BindToMaterialTemplate(const std::wstring& materialName, void* target, NotificationCallbacks callbacks)
+	Concurrency::task<void> BindToMaterialTemplate(const std::string& name, void* target, NotificationCallbacks callbacks)
 	{
-		auto material = GetMaterialTemplatePtr(materialName);
+		auto material = GetMaterialTemplatePtr(name);
 		assert(material != nullptr);
 
 		if (materialChangeNotifications.contains(material)) return concurrency::create_task([] {});
@@ -278,26 +278,112 @@ namespace Templates::Material {
 		});
 	}
 
-	std::shared_ptr<Material> GetMaterialTemplate(std::wstring materialName)
+	std::shared_ptr<Material> GetMaterialTemplate(std::string name)
 	{
-		auto it = materialTemplates.find(materialName);
+		auto it = materialTemplates.find(name);
 		return (it != materialTemplates.end()) ? it->second : nullptr;
 	}
 
-	std::shared_ptr<Material>* GetMaterialTemplatePtr(std::wstring materialName) {
-		auto it = materialTemplates.find(materialName);
+	std::shared_ptr<Material>* GetMaterialTemplatePtr(std::string name) {
+		auto it = materialTemplates.find(name);
 		return (it != materialTemplates.end()) ? &it->second : nullptr;
 	}
 
-	std::map<std::wstring, std::shared_ptr<Material>> GetNamedMaterials() {
+	std::map<std::string, std::shared_ptr<Material>> GetNamedMaterials() {
 		return materialTemplates;
 	}
 
-	std::vector<std::wstring> GetMaterialsNames() {
-		std::vector<std::wstring> names;
-		std::transform(materialTemplates.begin(), materialTemplates.end(), std::back_inserter(names), [](std::pair<std::wstring, std::shared_ptr<Material>> pair) { return pair.first; });
+	std::vector<std::string> GetMaterialsNames() {
+		std::vector<std::string> names;
+		std::transform(materialTemplates.begin(), materialTemplates.end(), std::back_inserter(names), [](std::pair<std::string, std::shared_ptr<Material>> pair) { return pair.first; });
 		return names;
 	}
+
+	std::vector<std::string> GetMaterialsNamesMatchingClass(VertexClass vertexClass) {
+		
+		std::vector<D3D12_INPUT_ELEMENT_DESC> vertexInputLayout = vertexInputLayoutsMap.at(vertexClass);
+		std::vector<std::string> vertexClassSignature;
+
+		std::transform(vertexInputLayout.begin(), vertexInputLayout.end(), std::back_inserter(vertexClassSignature), [](const D3D12_INPUT_ELEMENT_DESC& desc) { return desc.SemanticName; });
+
+		std::map<std::string, std::shared_ptr<Material>> filteredMaterials;
+		std::copy_if(materialTemplates.begin(), materialTemplates.end(), std::inserter(filteredMaterials, filteredMaterials.end()), [vertexClassSignature](const std::pair<std::string, std::shared_ptr<Material>> pair) {
+			if (pair.first.starts_with("ShadowMap")) return false;
+			std::vector<std::string> vsSemantics = pair.second->shader->vertexShader->vsSemantics;
+			return std::is_permutation(
+				vsSemantics.begin(),
+				vsSemantics.end(),
+				vertexClassSignature.begin(),
+				vertexClassSignature.end()
+			);
+		});
+
+		std::vector<std::string> names;
+		std::transform(filteredMaterials.begin(), filteredMaterials.end(), std::back_inserter(names), [](std::pair<std::string, std::shared_ptr<Material>> pair) { return pair.first; });
+		return names;
+	}
+
+	std::vector<std::string> GetShadowMapMaterialsNamesMatchingClass(VertexClass vertexClass) {
+		std::vector<D3D12_INPUT_ELEMENT_DESC> vertexInputLayout = shadowMapVertexInputLayoutsMap.at(vertexClass);
+		std::vector<std::string> vertexClassSignature;
+
+		std::transform(vertexInputLayout.begin(), vertexInputLayout.end(), std::back_inserter(vertexClassSignature), [](const D3D12_INPUT_ELEMENT_DESC& desc) { return desc.SemanticName; });
+
+		std::map<std::string, std::shared_ptr<Material>> filteredMaterials;
+		std::copy_if(materialTemplates.begin(), materialTemplates.end(), std::inserter(filteredMaterials, filteredMaterials.end()), [vertexClassSignature](const std::pair<std::string, std::shared_ptr<Material>> pair) {
+			if (!pair.first.starts_with("ShadowMap")) return false;
+			std::vector<std::string> vsSemantics = pair.second->shader->vertexShader->vsSemantics;
+			return std::is_permutation(
+				vsSemantics.begin(),
+				vsSemantics.end(),
+				vertexClassSignature.begin(),
+				vertexClassSignature.end()
+			);
+			});
+
+		std::vector<std::string> names;
+		std::transform(filteredMaterials.begin(), filteredMaterials.end(), std::back_inserter(names), [](std::pair<std::string, std::shared_ptr<Material>> pair) { return pair.first; });
+		return names;
+	}
+
+#if defined(_EDITOR)
+	void SelectMaterial(std::string name, void* &ptr) {
+		ptr = materialTemplates.at(name).get();
+	}
+	void DrawMaterialPanel(void*& ptr, ImVec2 pos, ImVec2 size)
+	{
+		/*
+		Material* mat = (Material*)(ptr);
+		bool pop = false;
+		std::string panelName = "panel-material-"+WStringToString(mat->materialName);
+		ImGui::SetNextWindowPos(pos);
+		ImGui::SetNextWindowSize(size);
+		//ImGui::PushStyleColor(ImGuiCol_WindowBg,ImVec4(1.0f,1.0f,1.0f,1.0f));
+		ImGui::Begin(panelName.c_str(), (bool*)1,
+			ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+			ImGuiWindowFlags_NoSavedSettings);
+		{
+			if (ImGui::SmallButton("<-")) {
+				pop = true;
+			}
+			ImGui::SameLine();
+			ImGui::Text(WStringToString(mat->materialName).c_str());
+		}
+		ImGui::NewLine();
+		//ImGui::TableSetupColumn();
+		ImGui::End();
+		//ImGui::PopStyleColor();
+		if (pop) { ptr = nullptr; }
+		*/
+	}
+
+	std::string GetMaterialName(void* ptr)
+	{
+		Material* mat = (Material*)ptr;
+		return mat->name;
+	}
+#endif
 
 	static std::mutex buildTexturesMutex;
 	void BuildMaterialTextures(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Material>& material)
@@ -309,7 +395,7 @@ namespace Templates::Material {
 				CreateTextureResource(
 					renderer->d3dDevice,
 					renderer->commandList,
-					(LPWSTR)texture.texturePath.c_str(),
+					texture.texturePath,
 					texture.texture,
 					texture.textureUpload,
 					texture.textureViewDesc,
@@ -321,7 +407,7 @@ namespace Templates::Material {
 				CreateTextureArrayResource(
 					renderer->d3dDevice,
 					renderer->commandList,
-					(LPWSTR)texture.texturePath.c_str(),
+					texture.texturePath,
 					texture.texture,
 					texture.textureUpload,
 					texture.textureViewDesc,
@@ -343,8 +429,8 @@ namespace Templates::Material {
 		std::transform(textures.begin(), textures.end(), std::back_inserter(jtextures), [](TextureDefinition def) {
 			nlohmann::json texture = nlohmann::json({});
 
-			texture["texturePath"] = WStringToString(def.texturePath);
-			texture["textureFormat"] = WStringToString(texturesFormatsToString[def.textureFormat]);
+			texture["texturePath"] = def.texturePath;
+			texture["textureFormat"] = texturesFormatsToString[def.textureFormat];
 			texture["numFrames"] = def.numFrames;
 
 			return texture;
@@ -359,20 +445,25 @@ namespace Templates::Material {
 
 		for (auto& [name, material] : materialTemplates) {
 			if (material->materialDefinition.systemCreated) continue;
-			std::string jname = WStringToString(name);
-			j[jname] = nlohmann::json({});
-			j[jname]["shaderTemplate"] = WStringToString(material->materialDefinition.shaderTemplate);
-			j[jname]["mappedValues"] = TransformMappingToJson(material->materialDefinition.mappedValues);
+
+			j[name] = nlohmann::json({});
+			j[name]["shaderTemplate"] = material->materialDefinition.shaderTemplate;
+			j[name]["mappedValues"] = TransformMappingToJson(material->materialDefinition.mappedValues);
+
 			if (material->materialDefinition.textures.size() > 0) {
-				j[jname]["textures"] = TransformTexturesDefinitionToJson(material->materialDefinition.textures);
+				j[name]["textures"] = TransformTexturesDefinitionToJson(material->materialDefinition.textures);
 			}
+
 			if (material->materialDefinition.samplers.size() > 0) {
-				j[jname]["samplers"] = nlohmann::json::array();
+				j[name]["samplers"] = nlohmann::json::array();
+
 				for (auto& sampler : material->materialDefinition.samplers) {
-					j[jname]["samplers"].push_back(sampler.json());
+					j[name]["samplers"].push_back(sampler.json());
 				}
+
 			}
-			j[jname]["twoSided"] = material->materialDefinition.twoSided;
+
+			j[name]["twoSided"] = material->materialDefinition.twoSided;
 		}
 		return j;
 	}
@@ -383,8 +474,8 @@ namespace Templates::Material {
 
 		std::transform(jtextures.begin(), jtextures.end(), std::back_inserter(textures), [](nlohmann::json texture) {
 			return TextureDefinition({
-				.texturePath = StringToWString(texture["texturePath"]),
-				.textureFormat = stringToTextureFormat[StringToWString(texture["textureFormat"])],
+				.texturePath = texture["texturePath"],
+				.textureFormat = stringToTextureFormat[texture["textureFormat"]],
 				.numFrames = texture["numFrames"]
 			});
 		});
@@ -397,26 +488,26 @@ namespace Templates::Material {
 
 		std::transform(jsamplers.begin(), jsamplers.end(), std::back_inserter(samplers), [](nlohmann::json sampler) {
 			MaterialSamplerDesc desc;
-			desc.Filter = stringToFilter[StringToWString(sampler["Filter"])];
-			desc.AddressU = stringToTextureAddressMode[StringToWString(sampler["AddressU"])];
-			desc.AddressV = stringToTextureAddressMode[StringToWString(sampler["AddressV"])];
-			desc.AddressW = stringToTextureAddressMode[StringToWString(sampler["AddressW"])];
+			desc.Filter = stringToFilter[sampler["Filter"]];
+			desc.AddressU = stringToTextureAddressMode[sampler["AddressU"]];
+			desc.AddressV = stringToTextureAddressMode[sampler["AddressV"]];
+			desc.AddressW = stringToTextureAddressMode[sampler["AddressW"]];
 			desc.MipLODBias = sampler["MipLODBias"];
 			desc.MaxAnisotropy = sampler["MaxAnisotropy"];
-			desc.ComparisonFunc = stringToComparisonFunc[StringToWString(sampler["ComparisonFunc"])];
-			desc.BorderColor = stringToBorderColor[StringToWString(sampler["BorderColor"])];
+			desc.ComparisonFunc = stringToComparisonFunc[sampler["ComparisonFunc"]];
+			desc.BorderColor = stringToBorderColor[sampler["BorderColor"]];
 			desc.MinLOD = sampler["MinLOD"];
 			desc.MaxLOD = sampler["MaxLOD"];
 			desc.ShaderRegister = sampler["ShaderRegister"];
 			desc.RegisterSpace = sampler["RegisterSpace"];
-			desc.ShaderVisibility = stringToShaderVisibility[StringToWString(sampler["ShaderVisibility"])];
+			desc.ShaderVisibility = stringToShaderVisibility[sampler["ShaderVisibility"]];
 			return desc;
 		});
 
 		return samplers;
 	}
 
-	Concurrency::task<void> json(std::wstring name, nlohmann::json materialj)
+	Concurrency::task<void> json(std::string name, nlohmann::json materialj)
 	{
 		auto currentMaterial = GetMaterialTemplate(name);
 		if (currentMaterial != nullptr) {
@@ -424,7 +515,7 @@ namespace Templates::Material {
 		}
 
 		MaterialDefinition materialDefinition = {
-			.shaderTemplate = StringToWString(materialj["shaderTemplate"]),
+			.shaderTemplate = materialj["shaderTemplate"],
 			.mappedValues = TransformJsonToMapping(materialj["mappedValues"]),
 		};
 

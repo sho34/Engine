@@ -1,5 +1,7 @@
 #pragma once
 
+namespace Scene::Renderable { struct Renderable; }
+
 namespace Scene::Level
 {
 
@@ -19,6 +21,12 @@ namespace Scene::Level
 	void CreateLights(nlohmann::json lights);
 	void CreateSounds(nlohmann::json sounds);
 	void CreateUI(nlohmann::json ui);
+
+#if defined(_EDITOR)
+	void PushRenderableToReloadQueue(std::shared_ptr<Scene::Renderable::Renderable> renderable);
+	bool ReloadQueueIsEmpty();
+	void ProcessReloadQueue();
+#endif
 
 	//destroy scene objects
 	void DestroySceneObjects();

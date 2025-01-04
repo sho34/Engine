@@ -6,9 +6,9 @@
 extern std::mutex rendererMutex;
 namespace Templates::Mesh {
 
-	static std::map<std::wstring, MeshPtr> meshTemplates;
+	static std::map<std::string, MeshPtr> meshTemplates;
 
-	Concurrency::task<void> CreatePrimitiveMeshTemplate(std::wstring meshName, LoadMeshCallback loadFn)
+	Concurrency::task<void> CreatePrimitiveMeshTemplate(std::string meshName, LoadMeshCallback loadFn)
 	{
 		auto currentMesh = GetMeshTemplate(meshName);
 		if (currentMesh != nullptr) {
@@ -22,7 +22,7 @@ namespace Templates::Mesh {
 			MeshPtr mesh = std::make_shared<Mesh>();
 			mesh->name = meshName;
 			mesh->loading = true;
-			meshTemplates.insert(std::pair<std::wstring, MeshPtr>(meshName, mesh));
+			meshTemplates.insert(std::pair<std::string, MeshPtr>(meshName, mesh));
 
 			LoadPrimitiveIntoMeshFunctions[meshName](mesh).wait();
 			return mesh;
@@ -45,15 +45,33 @@ namespace Templates::Mesh {
 		meshTemplates.clear();
 	}
 
-	MeshPtr GetMeshTemplate(const std::wstring meshName)
+	MeshPtr GetMeshTemplate(const std::string meshName)
 	{
 		auto it = meshTemplates.find(meshName);
 		return (it != meshTemplates.end()) ? it->second : nullptr;
 	}
 
-	std::vector<std::wstring> GetMeshesNames() {
-		std::vector<std::wstring> names;
-		std::transform(meshTemplates.begin(), meshTemplates.end(), std::back_inserter(names), [](std::pair<std::wstring, MeshPtr> pair) { return pair.first; });
+	std::vector<std::string> GetMeshesNames() {
+		std::vector<std::string> names;
+		std::transform(meshTemplates.begin(), meshTemplates.end(), std::back_inserter(names), [](std::pair<std::string, MeshPtr> pair) { return pair.first; });
 		return names;
 	}
+
+#if defined(_EDITOR)
+
+	void SelectMesh(std::string meshName, void*& ptr) {
+		ptr = meshTemplates.at(meshName).get();
+	}
+
+	void DrawMeshPanel(void*& ptr, ImVec2 pos, ImVec2 size)
+	{
+	}
+
+	std::string GetMeshName(void* ptr)
+	{
+		Mesh* mesh = (Mesh*)ptr;
+		return mesh->name;
+	}
+
+#endif
 };

@@ -1,13 +1,13 @@
 #pragma once
 
-#include <string>
 #include "../Shader/ShaderImpl.h"
+#include "../../Renderer/VertexFormats.h"
 
 struct Renderer;
 
 namespace Templates::Material {
 
-	static const std::wstring templateName = L"materials.json";
+	static const std::string templateName = "materials.json";
 
 	struct MaterialSamplerDesc : D3D12_STATIC_SAMPLER_DESC {
 		MaterialSamplerDesc() {
@@ -53,33 +53,33 @@ namespace Templates::Material {
 #if defined(_EDITOR)
 		nlohmann::json json() {
 			nlohmann::json j = nlohmann::json({});
-			j["Filter"] = WStringToString(filterToString[Filter]);
-			j["AddressU"] = WStringToString(textureAddressModeToString[AddressU]);
-			j["AddressV"] = WStringToString(textureAddressModeToString[AddressV]);
-			j["AddressW"] = WStringToString(textureAddressModeToString[AddressW]);
+			j["Filter"] = filterToString[Filter];
+			j["AddressU"] = textureAddressModeToString[AddressU];
+			j["AddressV"] = textureAddressModeToString[AddressV];
+			j["AddressW"] = textureAddressModeToString[AddressW];
 			j["MipLODBias"] = MipLODBias;
 			j["MaxAnisotropy"] = MaxAnisotropy;
-			j["ComparisonFunc"] = WStringToString(comparisonFuncToString[ComparisonFunc]);
-			j["BorderColor"] = WStringToString(borderColorToString[BorderColor]);
+			j["ComparisonFunc"] = comparisonFuncToString[ComparisonFunc];
+			j["BorderColor"] = borderColorToString[BorderColor];
 			j["MinLOD"] = MinLOD;
 			j["MaxLOD"] = MaxLOD;
 			j["ShaderRegister"] = ShaderRegister;
 			j["RegisterSpace"] = RegisterSpace;
-			j["ShaderVisibility"] = WStringToString(shaderVisibilityToString[ShaderVisibility]);
+			j["ShaderVisibility"] = shaderVisibilityToString[ShaderVisibility];
 			return j;
 		}
 #endif
 	};
 
 	struct TextureDefinition {
-		std::wstring texturePath;
+		std::string texturePath;
 		DXGI_FORMAT textureFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 		UINT numFrames = 0U;
 	};
 
 	struct MaterialDefinition {
 		//vertex & pixel shader 
-		std::wstring shaderTemplate = L"";
+		std::string shaderTemplate = "";
 
 		bool systemCreated = false;
 
@@ -98,7 +98,7 @@ namespace Templates::Material {
 
 	struct MaterialTextures
 	{
-		std::wstring texturePath;
+		std::string texturePath;
 		DXGI_FORMAT textureFormat;
 		UINT numFrames;
 		D3D12_SHADER_RESOURCE_VIEW_DESC textureViewDesc;
@@ -114,7 +114,7 @@ namespace Templates::Material {
 		MaterialDefinition materialDefinition;
 
 		//name
-		std::wstring materialName;
+		std::string name;
 
 		//vertex & pixel shader
 		ShaderPtr shader;
@@ -136,22 +136,28 @@ namespace Templates::Material {
 
 	typedef void LoadMaterialFn(std::shared_ptr<Material> material);
 
-	std::shared_ptr<Material>* CreateNewMaterial(std::wstring materialName, MaterialDefinition materialDefinition);
+	std::shared_ptr<Material>* CreateNewMaterial(std::string name, MaterialDefinition materialDefinition);
 	void ReleaseMaterialTemplates();
 	void BuildMaterialProperties(std::shared_ptr<Material>& material);
 
-	Concurrency::task<void> CreateMaterialTemplate(std::wstring materialName, MaterialDefinition materialDefinition, LoadMaterialFn loadFn = nullptr);
-	Concurrency::task<void> BindToMaterialTemplate(const std::wstring& materialName, void* target, NotificationCallbacks callbacks);
-	std::shared_ptr<Material> GetMaterialTemplate(std::wstring materialName);
-	std::shared_ptr<Material>* GetMaterialTemplatePtr(std::wstring materialName);
-	std::vector<std::wstring> GetMaterialsNames();
-	std::map<std::wstring, std::shared_ptr<Material>> GetNamedMaterials();
+	Concurrency::task<void> CreateMaterialTemplate(std::string name, MaterialDefinition materialDefinition, LoadMaterialFn loadFn = nullptr);
+	Concurrency::task<void> BindToMaterialTemplate(const std::string& name, void* target, NotificationCallbacks callbacks);
+	std::shared_ptr<Material> GetMaterialTemplate(std::string name);
+	std::shared_ptr<Material>* GetMaterialTemplatePtr(std::string name);
+	std::vector<std::string> GetMaterialsNames();
+	std::vector<std::string> GetMaterialsNamesMatchingClass(VertexClass vertexClass);
+	std::vector<std::string> GetShadowMapMaterialsNamesMatchingClass(VertexClass vertexClass);
+#if defined(_EDITOR)
+	void SelectMaterial(std::string materialName, void* &ptr);
+	void DrawMaterialPanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	std::string GetMaterialName(void* ptr);
+#endif
 	void BuildMaterialTextures(const std::shared_ptr<Renderer>& renderer, std::shared_ptr<Material>& material);
 	
 #if defined(_EDITOR)
 	nlohmann::json json();
 #endif
-	Concurrency::task<void> json(std::wstring, nlohmann::json);
+	Concurrency::task<void> json(std::string, nlohmann::json);
 
 };
 typedef Templates::Material::Material MaterialT;

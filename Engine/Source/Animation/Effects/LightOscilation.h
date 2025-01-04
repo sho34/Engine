@@ -5,7 +5,7 @@ namespace Scene::Lights { struct Light; };
 typedef std::shared_ptr<Scene::Lights::Light> LightPtr;
 namespace Animation::Effects {
 
-	static const std::wstring LightOscilationEffect = L"LightOscilation";
+	static const std::string LightOscilationEffect = "LightOscilation";
 
 	struct LightOscilation
 	{

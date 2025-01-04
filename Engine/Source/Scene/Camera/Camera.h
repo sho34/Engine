@@ -9,7 +9,7 @@ using namespace DeviceUtils::ConstantsBuffer;
 namespace Scene::Lights { struct Light; };
 namespace Scene::Camera {
 
-  static const std::wstring CameraConstantBufferName = L"camera";
+  static const std::string CameraConstantBufferName = "camera";
   static XMVECTOR	up = { 0.0f, 1.0f, 0.0f, 0.0f };
   static XMVECTOR	right = { 1.0f, 0.0f, 0.0f, 0.0f };
 
@@ -18,19 +18,19 @@ namespace Scene::Camera {
     Perspective
   };
 
-  static std::vector<std::wstring> ProjectionsTypesStr = {
-    L"Orthographic",
-    L"Perspective"
+  static std::vector<std::string> ProjectionsTypesStr = {
+    "Orthographic",
+    "Perspective"
   };
 
-  static std::map<ProjectionsTypes, std::wstring> ProjectionTypesToStr = {
-    { Orthographic, L"Orthographic" },
-    { Perspective, L"Perspective" }
+  static std::map<ProjectionsTypes, std::string> ProjectionTypesToStr = {
+    { Orthographic, "Orthographic" },
+    { Perspective, "Perspective" }
   };
 
-  static std::map<std::wstring, ProjectionsTypes> StrToProjectionTypes = {
-    { L"Orthographic", Orthographic },
-    { L"Perspective", Perspective }
+  static std::map<std::string, ProjectionsTypes> StrToProjectionTypes = {
+    { "Orthographic", Orthographic },
+    { "Perspective", Perspective }
   };
 
   struct CameraAttributes {
@@ -41,7 +41,7 @@ namespace Scene::Camera {
 
   struct Camera
   {
-    std::wstring name = L"";
+    std::string name = "";
     bool fitWindow = false;
     ProjectionsTypes projectionType = Perspective;
     union {
@@ -84,12 +84,17 @@ namespace Scene::Camera {
 
   std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraDefinition);
   std::vector<std::shared_ptr<Camera>> GetCameras();
-  std::vector<std::wstring> GetCamerasNames();
-  std::map<std::wstring,std::shared_ptr<Camera>> GetNamedCameras();
+  std::vector<std::string> GetCamerasNames();
+#if defined(_EDITOR)
+  void SelectCamera(std::string cameraName, void*& ptr);
+  void DrawCameraPanel(void*& ptr, ImVec2 pos, ImVec2 size);
+  std::string GetCameraName(void* ptr);
+#endif
   void DestroyCameras();
   size_t GetNumCameras();
   std::shared_ptr<Camera> GetCamera(UINT index);
-  std::shared_ptr<Camera> GetCamera(std::wstring name);
+  std::shared_ptr<Camera> GetCamera(std::string name);
+
 };
 
 typedef Scene::Camera::Camera CameraT;

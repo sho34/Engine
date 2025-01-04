@@ -26,10 +26,10 @@ namespace Primitives {
 }
 
 typedef Concurrency::task<void> (*LoadPrimitiveIntoMeshPtr)(MeshPtr& mesh);
-static std::map<std::wstring, LoadPrimitiveIntoMeshPtr> LoadPrimitiveIntoMeshFunctions = {
-	{ L"utahteapot", Primitives::LoadPrimitiveIntoMesh<UtahTeapot> },
-	{ L"cube", Primitives::LoadPrimitiveIntoMesh<Cube> },
-	{ L"pyramid", Primitives::LoadPrimitiveIntoMesh<Pentahedron> },
-	{ L"floor", Primitives::LoadPrimitiveIntoMesh<Floor> },
-	{ L"decal", Primitives::LoadPrimitiveIntoMesh<Decal> }
+static std::map<std::string, LoadPrimitiveIntoMeshPtr> LoadPrimitiveIntoMeshFunctions = {
+	{ "utahteapot", Primitives::LoadPrimitiveIntoMesh<UtahTeapot> },
+	{ "cube", Primitives::LoadPrimitiveIntoMesh<Cube> },
+	{ "pyramid", Primitives::LoadPrimitiveIntoMesh<Pentahedron> },
+	{ "floor", Primitives::LoadPrimitiveIntoMesh<Floor> },
+	{ "decal", Primitives::LoadPrimitiveIntoMesh<Decal> }
 };

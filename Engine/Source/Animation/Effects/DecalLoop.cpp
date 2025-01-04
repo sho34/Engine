@@ -30,7 +30,7 @@ namespace Animation::Effects {
 	void WriteDecalLoopConstantsBuffers(UINT backbufferIndex)
 	{
 		for (auto& [renderable, decal] : decalLoopEffects) {
-			renderable->WriteConstantsBuffer(L"frameIndex", decal->currentFrame, backbufferIndex);
+			renderable->WriteConstantsBuffer("frameIndex", decal->currentFrame, backbufferIndex);
 		}
 	}
 

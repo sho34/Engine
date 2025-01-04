@@ -4,13 +4,13 @@
 namespace Templates {
 
 #if defined(_EDITOR)
-	void SaveTemplates(const std::wstring folder, const std::wstring fileName, nlohmann::json data) {
+	void SaveTemplates(const std::string folder, const std::string fileName, nlohmann::json data) {
 		//first create the directory if needed
 		std::filesystem::path directory(folder);
 		std::filesystem::create_directory(directory);
 
 		//then create the json level file
-		const std::wstring finalFilename = folder + fileName;
+		const std::string finalFilename = folder + fileName;
 		std::filesystem::path path(finalFilename);
 		std::string pathStr = path.generic_string();
 		std::ofstream file;
@@ -22,11 +22,11 @@ namespace Templates {
 
 #endif
 
-	void LoadTemplates(const std::wstring folder, const std::wstring fileName, TemplateLoader loader)
+	void LoadTemplates(const std::string folder, const std::string fileName, TemplateLoader loader)
 	{
 		//first create the directory if needed
 		std::filesystem::path directory(folder);
-		const std::wstring finalFilename = folder + fileName;
+		const std::string finalFilename = folder + fileName;
 		std::filesystem::path path(finalFilename);
 		std::string pathStr = path.generic_string();
 		std::ifstream file(pathStr);
@@ -35,7 +35,7 @@ namespace Templates {
 
 		std::vector<concurrency::task<void>> tasks;
 		for (auto& [key, value] : data.items()) {
-			tasks.push_back(loader(StringToWString(key), value));
+			tasks.push_back(loader(key, value));
 		}
 
 		when_all(tasks.begin(), tasks.end()).wait();

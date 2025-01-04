@@ -267,6 +267,7 @@
     <ClInclude Include="Audio\Audio.h" />
     <ClInclude Include="Editor\DefaultLevel.h" />
     <ClInclude Include="Editor\Editor.h" />
+    <ClInclude Include="Editor\IconsFontAwesome5.h" />
     <ClInclude Include="Scene\Camera\CameraImpl.h" />
     <ClInclude Include="Scene\Level.h" />
     <ClInclude Include="Primitives\Decal.h" />
@@ -283,7 +284,6 @@
     <ClInclude Include="Templates\Sound\SoundImpl.h" />
     <ClInclude Include="Templates\Templates.h" />
     <ClInclude Include="Templates\TemplatesImpl.h" />
-    <ClInclude Include="UI\String2D.h" />
     <ClInclude Include="Templates\Model3D\Model3D.h" />
     <ClInclude Include="Scene\Lights\AmbientLight.h" />
     <ClInclude Include="Scene\Lights\DirectionalLight.h" />
@@ -396,7 +396,6 @@
     <ClCompile Include="Scene\Level.cpp" />
     <ClCompile Include="Scene\Sound\SoundEffect.cpp" />
     <ClCompile Include="Templates\Templates.cpp" />
-    <ClCompile Include="UI\String2D.cpp" />
     <ClCompile Include="Templates\Model3D\Model3D.cpp" />
     <ClCompile Include="Scene\Lights\Lights.cpp" />
     <ClCompile Include="Scene\Camera\Camera.cpp" />

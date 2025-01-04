@@ -21,9 +21,9 @@ namespace Scene::Camera { struct Camera; };
 struct Renderer;
 namespace Scene::Lights {
 
-	static const std::wstring LightConstantBufferName = L"lights";
-	static const std::wstring ShadowMapConstantBufferName = L"shadowMaps";
-	static const std::wstring ShadowMapLightsShaderResourveViewName = L"shadowMapsTextures";
+	static const std::string LightConstantBufferName = "lights";
+	static const std::string ShadowMapConstantBufferName = "shadowMaps";
+	static const std::string ShadowMapLightsShaderResourveViewName = "shadowMapsTextures";
 	static const UINT MaxLights = 100U;
 
 	enum LightType {
@@ -33,25 +33,25 @@ namespace Scene::Lights {
 		Point
 	};
 
-	static std::vector<std::wstring> LightTypesStr = {
-		L"Ambient",
-		L"Directional",
-		L"Spot",
-		L"Point"
+	static std::vector<std::string> LightTypesStr = {
+		"Ambient",
+		"Directional",
+		"Spot",
+		"Point"
 	};
 
-	static std::map<LightType, std::wstring> LightTypeToStr = {
-		{ Ambient,  L"Ambient" },
-		{ Directional, L"Directional" },
-		{ Spot, L"Spot" },
-		{ Point, L"Point" }
+	static std::map<LightType, std::string> LightTypeToStr = {
+		{ Ambient, "Ambient" },
+		{ Directional, "Directional" },
+		{ Spot, "Spot" },
+		{ Point, "Point" }
 	};
 
-	static std::map<std::wstring, LightType> StrToLightType = {
-		{ L"Ambient",	Ambient },
-		{ L"Directional",	Directional },
-		{ L"Spot", Spot },
-		{ L"Point",	Point }
+	static std::map<std::string, LightType> StrToLightType = {
+		{ "Ambient",	Ambient },
+		{ "Directional",	Directional },
+		{ "Spot", Spot },
+		{ "Point",	Point }
 	};
 
 	struct LightAttributes {
@@ -69,7 +69,7 @@ namespace Scene::Lights {
 	};
 
 	struct LightDefinition {
-		std::wstring name = L"Light";
+		std::string name = "Light";
 		LightType lightType = Ambient;
 		AmbientLight ambient = {};
 		DirectionalLight directional = {};
@@ -97,7 +97,7 @@ namespace Scene::Lights {
 		~Light() { this_ptr = nullptr; } //will this work?
 		std::shared_ptr<Light> this_ptr = nullptr; //dumb but efective
 
-		std::wstring name = L"";
+		std::string name = "";
 		LightType lightType = Ambient;
 
 		union {
@@ -145,9 +145,13 @@ namespace Scene::Lights {
 
 	std::shared_ptr<Light> CreateLight(nlohmann::json light);
 	std::vector<std::shared_ptr<Light>> GetLights();
-	std::shared_ptr<Light> GetLight(std::wstring lightName);
-	std::vector<std::wstring> GetLightsNames();
-	std::map<std::wstring, std::shared_ptr<Light>> GetNamedLights();
+	std::shared_ptr<Light> GetLight(std::string lightName);
+	std::vector<std::string> GetLightsNames();
+#if defined(_EDITOR)
+	void SelectLight(std::string lightName, void*& ptr);
+	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	std::string GetLightName(void* ptr);
+#endif
 	void DestroyLights();
 	
 	void CreateDirectionalLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params);

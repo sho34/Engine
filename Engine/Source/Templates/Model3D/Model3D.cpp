@@ -14,7 +14,7 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace Templates::Model3D {
 
-  static std::map<std::wstring, Model3DPtr> model3DTemplates;
+  static std::map<std::string, Model3DPtr> model3DTemplates;
 
   template<typename T>
   void CopyVertexPos(T& vertexData, aiVector3D& pos) {
@@ -116,8 +116,7 @@ namespace Templates::Model3D {
 
       auto bone = mesh->mBones[meshBoneIndex];
       std::string boneName = bone->mName.C_Str();
-      std::wstring boneNameW(boneName.begin(), boneName.end());
-      UINT boneId = static_cast<UINT>(std::distance(bones.begin(), bones.find(boneNameW)));
+      UINT boneId = static_cast<UINT>(std::distance(bones.begin(), bones.find(boneName)));
 
       for (UINT weightIndex = 0; weightIndex < bone->mNumWeights; weightIndex++) {
         auto weight = bone->mWeights[weightIndex];
@@ -140,21 +139,19 @@ namespace Templates::Model3D {
     }
   }
 
-  void PushToMaterialDefinitionTextures(aiString& textureName, std::filesystem::path& relativePath, Templates::Material::MaterialDefinition& matDef, std::wstring fallbackTexture = L"", DXGI_FORMAT textureFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+  void PushToMaterialDefinitionTextures(aiString& aiTextureName, std::filesystem::path& relativePath, Templates::Material::MaterialDefinition& matDef, std::string fallbackTexture = "", DXGI_FORMAT textureFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
   {
-    if (textureName.length > 0) {
-      std::string textureNameA = textureName.C_Str();
-      std::wstring textureNameW(textureNameA.begin(), textureNameA.end());
-      std::filesystem::path texturePath = relativePath.parent_path().append(textureNameW).replace_extension(".dds");
-      matDef.textures.push_back({ .texturePath = texturePath.c_str(), .textureFormat = textureFormat });
+    if (aiTextureName.length > 0) {
+      std::filesystem::path texturePath = relativePath.parent_path().append(aiTextureName.C_Str()).replace_extension(".dds");
+      matDef.textures.push_back({ .texturePath = texturePath.string(), .textureFormat = textureFormat});
     }
-    else if(fallbackTexture != L"")
+    else if(fallbackTexture != "")
     {
       matDef.textures.push_back({ .texturePath = fallbackTexture, .textureFormat = textureFormat });
     }
   }
 
-  void CreateModel3DMaterial(std::wstring materialName, std::wstring materialShader, std::filesystem::path relativePath, aiMaterial* material){
+  void CreateModel3DMaterial(std::string materialName, std::string materialShader, std::filesystem::path relativePath, aiMaterial* material){
 
     using namespace Templates::Material;
 
@@ -166,52 +163,52 @@ namespace Templates::Model3D {
 
     ai_real shininess;
     material->Get(AI_MATKEY_SHININESS, shininess);
-    matDef.mappedValues[L"specularExponent"] ={ MaterialVariablesTypes::MAT_VAR_FLOAT, shininess };
+    matDef.mappedValues["specularExponent"] ={ MaterialVariablesTypes::MAT_VAR_FLOAT, shininess };
 
     ai_real metallic;
     material->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
-    matDef.mappedValues[L"metallicFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, metallic };
+    matDef.mappedValues["metallicFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, metallic };
 
     ai_real roughness;
     material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
-    matDef.mappedValues[L"roughnessFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, roughness };
+    matDef.mappedValues["roughnessFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, roughness };
 
     aiString alphaMode;
     material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode);
     if (strcmp(alphaMode.C_Str(), "OPAQUE")==0) {
-      matDef.mappedValues[L"alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, 1.0f };
+      matDef.mappedValues["alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, 1.0f };
     }
     else
     {
       ai_real alphaCut;
       material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, alphaCut);
-      matDef.mappedValues[L"alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, alphaCut };
+      matDef.mappedValues["alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, alphaCut };
     }
 
     aiString diffuseName;
     material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
-    PushToMaterialDefinitionTextures(diffuseName, relativePath, matDef, L"Assets/textures/gridmap.dds");
+    PushToMaterialDefinitionTextures(diffuseName, relativePath, matDef, "Assets/textures/gridmap.dds");
 
     aiString normalMapName;
     material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
-    PushToMaterialDefinitionTextures(normalMapName, relativePath, matDef, L"Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
+    PushToMaterialDefinitionTextures(normalMapName, relativePath, matDef, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
 
     aiString metallicRoughnessName;
     material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
-    PushToMaterialDefinitionTextures(metallicRoughnessName, relativePath, matDef, L"", DXGI_FORMAT_R8G8B8A8_UNORM);
+    PushToMaterialDefinitionTextures(metallicRoughnessName, relativePath, matDef, "", DXGI_FORMAT_R8G8B8A8_UNORM);
 
     CreateMaterialTemplate(materialName, matDef).wait();
 
   }
 
-  std::wstring getMeshName(std::wstring model3DName, UINT meshIndex)
+  std::string BuildMeshName(std::string model3DName, UINT meshIndex)
   {
-    return L"mesh." + model3DName + L"." + std::to_wstring(meshIndex);
+    return "mesh." + model3DName + "." + std::to_string(meshIndex);
   }
 
-  std::wstring getMaterialName(std::wstring model3DName, UINT meshIndex)
+  std::string BuildMaterialName(std::string model3DName, UINT meshIndex)
   {
-    return L"mat." + model3DName + L"." + std::to_wstring(meshIndex);
+    return "mat." + model3DName + "." + std::to_string(meshIndex);
   }
 
   void ReleaseModel3DTemplates()
@@ -239,32 +236,46 @@ namespace Templates::Model3D {
     model3DTemplates.clear();
   }
 
-  std::shared_ptr<Model3D> GetModel3DTemplate(std::wstring model3DName) {
+  std::shared_ptr<Model3D> GetModel3DTemplate(std::string model3DName) {
     auto it = model3DTemplates.find(model3DName);
     return (it != model3DTemplates.end()) ? it->second : nullptr;
   }
 
-  std::map<std::wstring, std::shared_ptr<Model3D>> GetNamedModels3D() {
+  std::map<std::string, std::shared_ptr<Model3D>> GetNamedModels3D() {
     return model3DTemplates;
   }
 
-  std::vector<std::wstring> GetModels3DNames() {
-    std::vector<std::wstring> names;
-    std::transform(model3DTemplates.begin(), model3DTemplates.end(), std::back_inserter(names), [](std::pair<std::wstring, std::shared_ptr<Model3D>> pair) { return pair.first; });
+  std::vector<std::string> GetModels3DNames() {
+    std::vector<std::string> names;
+    std::transform(model3DTemplates.begin(), model3DTemplates.end(), std::back_inserter(names), [](std::pair<std::string, std::shared_ptr<Model3D>> pair) { return pair.first; });
     return names;
   }
 
 #if defined(_EDITOR)
+  void SelectModel3D(std::string model3DName, void*& ptr) {
+    ptr = model3DTemplates.at(model3DName).get();
+  }
+
+  void DrawModel3DPanel(void*& ptr, ImVec2 pos, ImVec2 size)
+  {
+  }
+
+  std::string GetModel3DName(void* ptr)
+  {
+    Model3D* model = (Model3D*)ptr;
+    return model->name;
+  }
+
   nlohmann::json json()
   {
     nlohmann::json models = nlohmann::json({});
 
     for (auto& [name, model] : model3DTemplates) {
 
-      models[WStringToString(name)] = {
+      models[name] = {
         { "autoCreateMaterial", model->model3dDefinition.autoCreateMaterial },
-        { "materialsShader", WStringToString(model->model3dDefinition.materialsShader) },
-        { "assetPath", WStringToString(model->assetPath) }
+        { "materialsShader", model->model3dDefinition.materialsShader },
+        { "assetPath", model->assetPath }
       };
     }
 
@@ -272,14 +283,14 @@ namespace Templates::Model3D {
   }
 #endif
 
-  Concurrency::task<void> json(std::wstring name, nlohmann::json model3dj)
+  Concurrency::task<void> json(std::string name, nlohmann::json model3dj)
   {
-    const std::wstring assetPath = StringToWString(model3dj["assetPath"]);
-    const std::wstring filename = assetsRootFolder + assetPath;
+    const std::string assetPath = model3dj["assetPath"];
+    const std::string filename = assetsRootFolder + assetPath;
 
     Model3DDefinition params = {
       .autoCreateMaterial = model3dj["autoCreateMaterial"],
-      .materialsShader = StringToWString(model3dj["materialsShader"])
+      .materialsShader = model3dj["materialsShader"]
     };
 
     return concurrency::create_task([filename, assetPath, name, params] {
@@ -288,9 +299,10 @@ namespace Templates::Model3D {
 
       Model3DPtr model = std::make_shared<Model3D>();
       model->loading = true;
+      model->name = name;
       model->assetPath = assetPath;
       model->model3dDefinition = params;
-      model3DTemplates.insert(std::pair<std::wstring, Model3DPtr>(name, model));
+      model3DTemplates.insert(std::pair<std::string, Model3DPtr>(name, model));
 
       std::filesystem::path path(filename);
 
@@ -330,7 +342,7 @@ namespace Templates::Model3D {
 
         using namespace Templates::Mesh;
         MeshPtr mesh = std::make_shared<MeshT>();
-        std::wstring meshName = getMeshName(name,meshIndex);
+        std::string meshName = BuildMeshName(name,meshIndex);
         mesh->loading = true;
         mesh->name = meshName;
         mesh->vertexClass = model->vertexClass;
@@ -339,7 +351,7 @@ namespace Templates::Model3D {
         InitializeIndexBufferView(renderer->d3dDevice, renderer->commandList, model->indices.back().data(), static_cast<UINT>(model->indices.back().size()), mesh->ibvData);
 
         if (params.autoCreateMaterial) {
-          std::wstring materialName = getMaterialName(name,meshIndex);
+          std::string materialName = BuildMaterialName(name,meshIndex);
           using namespace Templates::Material;
           if (GetMaterialTemplate(materialName) == nullptr) {
             CreateModel3DMaterial(materialName, params.materialsShader, path.relative_path(), aiModel->mMaterials[aMesh->mMaterialIndex]);

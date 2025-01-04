@@ -37,8 +37,8 @@ namespace Scene::Lights {
 
 	Concurrency::task<void> CreateLightsResources() {
 		return Concurrency::create_task([]() {
-			lightsCbv = CreateConstantsBufferViewData(renderer, sizeof(LightPool), L"lightsCbv");
-			shadowMapsCbv = CreateConstantsBufferViewData(renderer, sizeof(LightAttributes)*MaxLights, L"shadowMapsCbv");
+			lightsCbv = CreateConstantsBufferViewData(renderer, sizeof(LightPool), "lightsCbv");
+			shadowMapsCbv = CreateConstantsBufferViewData(renderer, sizeof(LightAttributes)*MaxLights, "shadowMapsCbv");
 		}).then([]() {
 			for (UINT i = 0; i < MaxLights; i++) {
 				AllocCSUDescriptor(shadowMapSrvCpuDescriptorHandle[i], shadowMapSrvGpuDescriptorHandle[i]);
@@ -161,15 +161,15 @@ namespace Scene::Lights {
 
 	}
 
-	static std::map<std::wstring, LightPtr> lightsByName;
+	static std::map<std::string, LightPtr> lightsByName;
 	static std::vector<LightPtr> lights;
 
 	std::shared_ptr<Light> CreateLight(nlohmann::json lightj) {
 
 		LightPtr light = std::make_shared<LightT>();
 		light->this_ptr = light;
-		light->name = StringToWString(lightj["name"]);
-		light->lightType = StrToLightType[StringToWString(lightj["lightType"])];
+		light->name = lightj["name"];
+		light->lightType = StrToLightType[lightj["lightType"]];
 
 		switch (light->lightType) {
 		case Ambient:
@@ -231,19 +231,29 @@ namespace Scene::Lights {
 
 	std::vector<std::shared_ptr<Light>> GetLights() { return lights; }
 
-	std::shared_ptr<Light> GetLight(std::wstring lightName)	{
+	std::shared_ptr<Light> GetLight(std::string lightName)	{
 		return lightsByName[lightName];
 	}
 
-	std::vector<std::wstring> GetLightsNames() {
-		std::vector<std::wstring> names;
+	std::vector<std::string> GetLightsNames() {
+		std::vector<std::string> names;
 		std::transform(lights.begin(), lights.end(), std::back_inserter(names), [](LightPtr l) { return l->name; });
 		return names;
 	}
 
-	std::map<std::wstring, std::shared_ptr<Light>> GetNamedLights() {
-		return lightsByName;
+#if defined(_EDITOR)
+	void SelectLight(std::string lightName, void*& ptr) {
+		ptr = lightsByName.at(lightName).get();
 	}
+	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size)
+	{
+	}
+	std::string GetLightName(void* ptr)
+	{
+		Light* l = (Light*)ptr;
+		return l->name;
+	}
+#endif
 
 	void DestroyLights()
 	{
@@ -288,7 +298,7 @@ namespace Scene::Lights {
 		light->directionalShadowMap.shadowMapTexelInvSize = { 1.0f / static_cast<FLOAT>(params["shadowMapWidth"]), 1.0f / static_cast<FLOAT>(params["shadowMapHeight"]) };
 		
 		auto camera = CreateCamera({
-			{ "name", WStringToString(light->name + L".cam") },
+			{ "name", light->name + ".cam" },
 			{ "projectionType", "Orthographic" },
 			{ "orthographic", {
 				{ "nearZ", params["nearZ"] },
@@ -297,7 +307,7 @@ namespace Scene::Lights {
 				{ "height", params["viewHeight"] },
 			}},
 			{ "rotation", { light->directional.rotation.x, light->directional.rotation.y } },
-			{ "light", WStringToString(light->name) }
+			{ "light", light->name }
 		});
 		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(camera->CameraFw()), -light->directional.distance);
 		camera->position = *(XMFLOAT3*)camPos.m128_f32;
@@ -316,7 +326,7 @@ namespace Scene::Lights {
 		using namespace Scene::Camera;
 
 		auto camera = CreateCamera({
-			{ "name", WStringToString(light->name + L".cam") },
+			{ "name", light->name + ".cam" },
 			{ "projectionType", "Perspective" },
 			{ "perspective", {
 				{ "fovAngleY", light->spot.coneAngle * 2.0f },
@@ -325,7 +335,7 @@ namespace Scene::Lights {
 			}},
 			{ "position", { light->spot.position.x, light->spot.position.y, light->spot.position.z }},
 			{ "rotation", { light->spot.rotation.x, light->spot.rotation.y }},
-			{ "light", WStringToString(light->name) }
+			{ "light", light->name }
 		});
 		camera->perspective.updateProjectionMatrix(params["viewWidth"], params["viewHeight"]);
 		camera->CreateConstantsBufferView(renderer);
@@ -344,7 +354,7 @@ namespace Scene::Lights {
 		light->pointShadowMap.shadowMapProjectionMatrix = XMMatrixPerspectiveFovRH(DirectX::XM_PIDIV2, 1.0f, params["nearZ"], params["farZ"]);
 		for(UINT i = 0U; i < 6U; i++) {
 			auto camera = CreateCamera({
-				{ "name", WStringToString(light->name + L".cam." + std::to_wstring(i)) },
+				{ "name", light->name + ".cam." + std::to_string(i) },
 				{ "projectionType", "Perspective" },
 				{ "perspective", {
 					{ "fovAngleY", DirectX::XM_PIDIV2 },
@@ -352,7 +362,7 @@ namespace Scene::Lights {
 					{ "height", static_cast<float>(params["shadowMapHeight"]) },
 				}},
 				{ "position", { light->point.position.x, light->point.position.y, light->point.position.z }},
-				{ "light", WStringToString(light->name) }
+				{ "light", light->name }
 			});
 			camera->perspective.updateProjectionMatrix(static_cast<float>(params["shadowMapWidth"]), static_cast<float>(params["shadowMapHeight"]));
 			camera->CreateConstantsBufferView(renderer);
@@ -380,8 +390,8 @@ namespace Scene::Lights {
 		light->shadowMapDsvDescriptorHeap = CreateDescriptorHeap(renderer->d3dDevice, 1U, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 		light->shadowMapDsvCpuHandle = light->shadowMapDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 		light->shadowMapDescriptorSize = renderer->d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
-		std::wstring shadowMapHeapName = light->name.c_str(); shadowMapHeapName+=+L" ShadowMapHeap";
-		DX::SetName(light->shadowMapDsvDescriptorHeap, shadowMapHeapName.c_str());
+		std::string shadowMapHeapName = light->name.c_str(); shadowMapHeapName+=+" ShadowMapHeap";
+		DX::SetName(light->shadowMapDsvDescriptorHeap, StringToWString(shadowMapHeapName).c_str());
 
 		const CD3DX12_HEAP_PROPERTIES depthHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 
@@ -411,8 +421,8 @@ namespace Scene::Lights {
 		//create the GPU texture representation of the same DSV memory area
 		DX::ThrowIfFailed(renderer->d3dDevice->CreateCommittedResource(&depthHeapProperties, D3D12_HEAP_FLAG_NONE,
 			&depthStencilDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &shadowMapOptimizedClearValue, IID_PPV_ARGS(&light->shadowMap)));
-		std::wstring shadowMapTextureName = light->name.c_str(); shadowMapTextureName+=L" ShadowMapTexture";
-		DX::SetName(light->shadowMap, shadowMapTextureName.c_str());
+		std::string shadowMapTextureName = light->name.c_str(); shadowMapTextureName+=" ShadowMapTexture";
+		DX::SetName(light->shadowMap, StringToWString(shadowMapTextureName).c_str());
 		shadowMapsRenderTargets.push_back(light->shadowMap);
 		
 		renderer->d3dDevice->CreateDepthStencilView(light->shadowMap, &shadowMapDepthStencilViewDesc, light->shadowMapDsvCpuHandle);
@@ -492,13 +502,8 @@ namespace Scene::Lights {
 	nlohmann::json Light::json() {
 		nlohmann::json j = nlohmann::json({});
 
-		std::string jname;
-		std::transform(name.begin(), name.end(), std::back_inserter(jname), [](wchar_t c) { return (char)c; });
-		j["name"] = jname;
-
-		std::string jlightType;
-		std::transform(LightTypesStr[lightType].begin(), LightTypesStr[lightType].end(), std::back_inserter(jlightType), [](wchar_t c) { return (char)c; });
-		j["lightType"] = jlightType;
+		j["name"] = name;
+		j["lightType"] = LightTypesStr[lightType];
 
 		auto buildJsonAmbientLight = [this](auto& j) {
 			j["ambient"]["color"] = { ambient.color.x, ambient.color.y, ambient.color.z };

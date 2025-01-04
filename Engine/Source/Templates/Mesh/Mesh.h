@@ -8,7 +8,7 @@ namespace Templates::Mesh {
 	
 	struct Mesh
 	{
-		std::wstring name;
+		std::string name;
 		VertexClass vertexClass;
 		VertexBufferViewDataT vbvData;
 		IndexBufferViewDataT	ibvData;
@@ -18,10 +18,15 @@ namespace Templates::Mesh {
 	typedef void LoadMeshCallback(std::shared_ptr<Mesh>& mesh);
 	typedef Concurrency::task<void> LoadPrimitiveIntoMesh(std::shared_ptr<Mesh>& mesh);
 
-	Concurrency::task<void> CreatePrimitiveMeshTemplate(std::wstring meshName, LoadMeshCallback loadFn = nullptr);
+	Concurrency::task<void> CreatePrimitiveMeshTemplate(std::string meshName, LoadMeshCallback loadFn = nullptr);
 	void ReleaseMeshTemplates();
-	std::shared_ptr<Mesh> GetMeshTemplate(std::wstring meshName);
-	std::vector<std::wstring> GetMeshesNames();
+	std::shared_ptr<Mesh> GetMeshTemplate(std::string meshName);
+	std::vector<std::string> GetMeshesNames();
+#if defined(_EDITOR)
+	void SelectMesh(std::string meshName, void*& ptr);
+	void DrawMeshPanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	std::string GetMeshName(void* ptr);
+#endif
 };
 typedef Templates::Mesh::Mesh MeshT;
 typedef std::shared_ptr<MeshT> MeshPtr;

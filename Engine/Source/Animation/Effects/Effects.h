@@ -15,17 +15,17 @@ namespace Animation::Effects {
 	typedef void (*CreateRenderableEffectPtr)(RenderablePtr& renderable, void* constructionData);
 	typedef void (*CreateLightEffectPtr)(LightPtr& light, void* constructionData);
 
-	static std::map<std::wstring, CreateRenderableEffectPtr> CreateRenderableEffects = {
+	static std::map<std::string, CreateRenderableEffectPtr> CreateRenderableEffects = {
 		{ DecalLoopEffect, CreateDecalLoop },
 	};
-	static std::map<std::wstring, CreateLightEffectPtr> CreateLightEffects = {
+	static std::map<std::string, CreateLightEffectPtr> CreateLightEffects = {
 		{ LightOscilationEffect, CreateLightOscilation },
 	};
 
 	//step
 	typedef void (*StepEffectPtr)(FLOAT delta);
 
-	static std::map<std::wstring, StepEffectPtr> StepEffects = {
+	static std::map<std::string, StepEffectPtr> StepEffects = {
 		{ DecalLoopEffect, StepDecalLoop },
 		{ LightOscilationEffect, StepLightOscilation },
 	};
@@ -35,7 +35,7 @@ namespace Animation::Effects {
 	//write cbv
 	typedef void (*WriteEffectsConstantsBuffersPtr)(UINT backbufferIndex);
 
-	static std::map<std::wstring, WriteEffectsConstantsBuffersPtr> WriteEffectsConstantsBuffers = {
+	static std::map<std::string, WriteEffectsConstantsBuffersPtr> WriteEffectsConstantsBuffers = {
 		{ DecalLoopEffect, WriteDecalLoopConstantsBuffers },
 	};
 
@@ -44,7 +44,7 @@ namespace Animation::Effects {
 	//destroy
 	typedef void (*DestroyEffectPtr)();
 
-	static std::map<std::wstring, DestroyEffectPtr> DestroyEffects = {
+	static std::map<std::string, DestroyEffectPtr> DestroyEffects = {
 		{ DecalLoopEffect, DestroyDecalLoops },
 		{ LightOscilationEffect, DestroyLightOscilations }
 	};
@@ -57,11 +57,11 @@ namespace Animation::Effects {
 	typedef void(*GetRenderableEffectsJson)(RenderablePtr& renderable, nlohmann::json& j);
 	typedef void(*GetLightEffectsJson)(LightPtr& light, nlohmann::json& j);
 	
-	static std::map<std::wstring, GetRenderableEffectsJson> RenderableEffectsJson = {
+	static std::map<std::string, GetRenderableEffectsJson> RenderableEffectsJson = {
 		{ DecalLoopEffect, DecalLoopJson }
 	};
 
-	static std::map<std::wstring, GetLightEffectsJson> LightEffectsJson = {
+	static std::map<std::string, GetLightEffectsJson> LightEffectsJson = {
 		{ LightOscilationEffect, LightOscilationJson }
 	};
 

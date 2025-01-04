@@ -10,17 +10,17 @@ struct aiScene;
 
 namespace Animation {
 
-	static const std::wstring AnimationConstantBufferName = L"animation";
+	static const std::string AnimationConstantBufferName = "animation";
 	static const UINT MAX_BONES = 256U;
 	typedef XMMATRIX BonesMatrices[MAX_BONES];
 
 	using namespace DirectX;
 
-	typedef std::map<std::wstring, FLOAT> AnimationLengthMap;
-	typedef std::map<std::wstring, XMMATRIX> BonesTransformations;
+	typedef std::map<std::string, FLOAT> AnimationLengthMap;
+	typedef std::map<std::string, XMMATRIX> BonesTransformations;
 
 	struct HierarchyNode {
-		std::wstring name;
+		std::string name;
 		XMMATRIX transformation;
 		UINT numChildren = 0;
 		HierarchyNode* children = nullptr;
@@ -36,8 +36,8 @@ namespace Animation {
 		std::vector<KeyFrame> scaling;
 		std::vector<KeyFrame> rotation;
 	};
-	typedef std::map<std::wstring, BoneKeys> BonesKeysMap;
-	typedef std::map<std::wstring, BonesKeysMap> AnimationBonesKeys;
+	typedef std::map<std::string, BoneKeys> BonesKeysMap;
+	typedef std::map<std::string, BonesKeysMap> AnimationBonesKeys;
 
 	typedef std::pair<HierarchyNode*, bool> MultiplyCmd;
 	typedef std::queue<MultiplyCmd> MultiplyCmdQueue;

@@ -15,7 +15,7 @@ struct CBufferParameter {
 	UINT registerId;
 	UINT numCBuffers;
 };
-typedef std::map<std::wstring, CBufferParameter> CBufferParametersDefinition;
+typedef std::map<std::string, CBufferParameter> CBufferParametersDefinition;
 typedef std::shared_ptr<CBufferParametersDefinition> CBufferParametersDefinitionPtr;
 
 //define the Textures binding
@@ -23,7 +23,7 @@ struct TextureParameter {
 	UINT registerId;
 	UINT numTextures;
 };
-typedef std::map<std::wstring, TextureParameter> TextureParametersDefinition;
+typedef std::map<std::string, TextureParameter> TextureParametersDefinition;
 typedef std::shared_ptr<TextureParametersDefinition> TextureParametersDefinitionPtr;
 
 //define the Samplers binding
@@ -31,7 +31,7 @@ struct SamplerParameter {
 	UINT registerId;
 	UINT numSamplers;
 };
-typedef std::map<std::wstring, SamplerParameter> SamplerParametersDefinition;
+typedef std::map<std::string, SamplerParameter> SamplerParametersDefinition;
 typedef std::shared_ptr<SamplerParametersDefinition> SamplerParametersDefinitionPtr;
 
 //define the layout of the cbuffer definition
@@ -40,11 +40,12 @@ struct CBufferVariable {
 	size_t size;
 	size_t offset;
 };
-typedef std::map<std::wstring,CBufferVariable> CBufferVariablesDefinition;
+typedef std::map<std::string,CBufferVariable> CBufferVariablesDefinition;
 typedef std::shared_ptr<CBufferVariablesDefinition> CBufferVariablesDefinitionPtr;
 
 struct ShaderCompilerOutput {
 	ShaderByteCodePtr byteCode;
+	std::vector<std::string> vsSemantics;
 	CBufferParametersDefinitionPtr cbufferParametersDef;
 	TextureParametersDefinitionPtr texturesParametersDef;
 	SamplerParametersDefinitionPtr samplersParametersDef;

@@ -17,33 +17,12 @@ namespace DX
 		}
 	}
 
-	/*
 	// Función que lee desde un archivo binario de forma asincrónica.
-	inline Concurrency::task<std::vector<byte>> ReadDataAsync(const std::wstring& filename)
-	{
-		using namespace Windows::Storage;
-		using namespace Concurrency;
-
-		auto folder = Windows::ApplicationModel::Package::Current->InstalledLocation;
-
-		return create_task(folder->GetFileAsync(Platform::StringReference(filename.c_str()))).then([](StorageFile^ file)
-		{
-			return FileIO::ReadBufferAsync(file);
-		}).then([](Streams::IBuffer^ fileBuffer) -> std::vector<byte>
-		{
-			std::vector<byte> returnBuffer;
-			returnBuffer.resize(fileBuffer->Length);
-			Streams::DataReader::FromBuffer(fileBuffer)->ReadBytes(Platform::ArrayReference<byte>(returnBuffer.data(), fileBuffer->Length));
-			return returnBuffer;
-		});
-	}*/
-
-	// Función que lee desde un archivo binario de forma asincrónica.
-	inline Concurrency::task<std::vector<byte>> ReadDataAsync(const std::wstring& filename)
+	inline Concurrency::task<std::vector<byte>> ReadDataAsync(const std::string& filename)
 	{
 		using namespace Concurrency;
 			
-		HANDLE fileHandle = CreateFileW(filename.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		HANDLE fileHandle = CreateFileA(filename.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		LARGE_INTEGER fileSize;
 		GetFileSizeEx(fileHandle, &fileSize);
 		std::vector<byte> returnBuffer;
@@ -54,10 +33,10 @@ namespace DX
 		return Concurrency::task_from_result<std::vector<byte>>(returnBuffer);
 	}
 
-	inline Concurrency::task<std::vector<byte>> ReadShader(const std::wstring& shaderName,const std::string target) {
+	inline Concurrency::task<std::vector<byte>> ReadShader(const std::string& shaderName,const std::string target) {
 		using namespace Concurrency;
 
-		const std::wstring filename = L"Shaders/" + shaderName + L".hlsl";
+		const std::string filename = "Shaders/" + shaderName + ".hlsl";
 #if defined(_DEBUG)
 		// Enable better shader debugging with the graphics debugging tools.
 		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -67,7 +46,7 @@ namespace DX
 		compileFlags |= D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 		ComPtr<ID3DBlob> shaderBlob;
 		ComPtr<ID3DBlob> shaderError;
-		DX::ThrowIfFailed(D3DCompileFromFile(filename.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", target.c_str(), compileFlags, 0, &shaderBlob, &shaderError));
+		DX::ThrowIfFailed(D3DCompileFromFile(StringToWString(filename).c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", target.c_str(), compileFlags, 0, &shaderBlob, &shaderError));
 
 		std::vector<byte> returnBuffer(shaderBlob->GetBufferSize());
 		memcpy(&returnBuffer[0], shaderBlob->GetBufferPointer(), returnBuffer.size());
@@ -88,6 +67,7 @@ namespace DX
 	{
 		pObject->SetName(name);
 	}
+
 #else
 	inline void SetName(ID3D12Object*, LPCWSTR)
 	{
@@ -96,30 +76,30 @@ namespace DX
 
 	inline void MatrixDump(DirectX::XMMATRIX& wvp)
 	{
-		std::wstring row1 = L"[" +
-			std::to_wstring(wvp.r[0].m128_f32[0]) + L"," +
-			std::to_wstring(wvp.r[0].m128_f32[1]) + L"," +
-			std::to_wstring(wvp.r[0].m128_f32[2]) + L"," +
-			std::to_wstring(wvp.r[0].m128_f32[3]) + L"]";
-		std::wstring row2 = L"[" +
-			std::to_wstring(wvp.r[1].m128_f32[0]) + L"," +
-			std::to_wstring(wvp.r[1].m128_f32[1]) + L"," +
-			std::to_wstring(wvp.r[1].m128_f32[2]) + L"," +
-			std::to_wstring(wvp.r[1].m128_f32[3]) + L"]";
-		std::wstring row3 = L"[" +
-			std::to_wstring(wvp.r[2].m128_f32[0]) + L"," +
-			std::to_wstring(wvp.r[2].m128_f32[1]) + L"," +
-			std::to_wstring(wvp.r[2].m128_f32[2]) + L"," +
-			std::to_wstring(wvp.r[2].m128_f32[3]) + L"]";
-		std::wstring row4 = L"[" +
-			std::to_wstring(wvp.r[3].m128_f32[0]) + L"," +
-			std::to_wstring(wvp.r[3].m128_f32[1]) + L"," +
-			std::to_wstring(wvp.r[3].m128_f32[2]) + L"," +
-			std::to_wstring(wvp.r[3].m128_f32[3]) + L"]";
-		std::wstring matrixDump = row1 + L"\n" + row2 + L"\n" + row3 + L"\n" + row4 + L"\n";
+		std::string row1 = "[" +
+			std::to_string(wvp.r[0].m128_f32[0]) + "," +
+			std::to_string(wvp.r[0].m128_f32[1]) + "," +
+			std::to_string(wvp.r[0].m128_f32[2]) + "," +
+			std::to_string(wvp.r[0].m128_f32[3]) + "]";
+		std::string row2 = "[" +
+			std::to_string(wvp.r[1].m128_f32[0]) + "," +
+			std::to_string(wvp.r[1].m128_f32[1]) + "," +
+			std::to_string(wvp.r[1].m128_f32[2]) + "," +
+			std::to_string(wvp.r[1].m128_f32[3]) + "]";
+		std::string row3 = "[" +
+			std::to_string(wvp.r[2].m128_f32[0]) + "," +
+			std::to_string(wvp.r[2].m128_f32[1]) + "," +
+			std::to_string(wvp.r[2].m128_f32[2]) + "," +
+			std::to_string(wvp.r[2].m128_f32[3]) + "]";
+		std::string row4 = "[" +
+			std::to_string(wvp.r[3].m128_f32[0]) + "," +
+			std::to_string(wvp.r[3].m128_f32[1]) + "," +
+			std::to_string(wvp.r[3].m128_f32[2]) + "," +
+			std::to_string(wvp.r[3].m128_f32[3]) + "]";
+		std::string matrixDump = row1 + "\n" + row2 + "\n" + row3 + "\n" + row4 + "\n";
 
-		OutputDebugStringW(L"Matrix\n");
-		OutputDebugStringW(matrixDump.c_str());
+		OutputDebugStringA("Matrix\n");
+		OutputDebugStringA(matrixDump.c_str());
 	}
 }
 

@@ -10,20 +10,20 @@ namespace Scene::Camera {
 	using namespace DeviceUtils::ConstantsBuffer;
 
 	std::vector<CameraPtr> cameraByIndex;
-	std::map<std::wstring, CameraPtr> cameraByNames;
+	std::map<std::string, CameraPtr> cameraByNames;
 
 	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraDefinition)
 	{
 		CameraPtr camera = std::make_unique<CameraT>();
 		if (cameraDefinition["name"] == "") {
-			camera->name = L"cam." + std::to_wstring(cameraByIndex.size());
+			camera->name = "cam." + std::to_string(cameraByIndex.size());
 		} else {
-			camera->name = StringToWString(cameraDefinition["name"]);
+			camera->name = cameraDefinition["name"];
 		}
 		assert(!cameraByNames.contains(camera->name));
 
 		replaceFromJson(camera->fitWindow,cameraDefinition,"fitWindow");
-		camera->projectionType = StrToProjectionTypes[StringToWString(cameraDefinition["projectionType"])];
+		camera->projectionType = StrToProjectionTypes[cameraDefinition["projectionType"]];
 		bool fitToWindow = (cameraDefinition.contains("fitWindow") && cameraDefinition["fitWindow"]);
 		switch (camera->projectionType) {
 		case ProjectionsTypes::Perspective:
@@ -76,7 +76,7 @@ namespace Scene::Camera {
 		}
 
 		if (cameraDefinition.contains("light")) {
-			camera->light = GetLight(StringToWString(cameraDefinition["light"]));
+			camera->light = GetLight(cameraDefinition["light"]);
 		}
 
 		camera->CreateConstantsBufferView(renderer);
@@ -91,15 +91,29 @@ namespace Scene::Camera {
 		return cameraByIndex;
 	}
 
-	std::vector<std::wstring> GetCamerasNames() {
-		std::vector<std::wstring> names;
+	std::vector<std::string> GetCamerasNames() {
+		std::vector<std::string> names;
 		std::transform(cameraByIndex.begin(), cameraByIndex.end(), std::back_inserter(names), [](CameraPtr cam) { return cam->name; });
 		return names;
 	}
 
-	std::map<std::wstring, std::shared_ptr<Camera>> GetNamedCameras() {
+	std::map<std::string, std::shared_ptr<Camera>> GetNamedCameras() {
 		return cameraByNames;
 	}
+
+#if defined(_EDITOR)
+	void SelectCamera(std::string cameraName, void*& ptr) {
+		ptr = cameraByNames.at(cameraName).get();
+	}
+	void DrawCameraPanel(void*& ptr, ImVec2 pos, ImVec2 size)
+	{
+	}
+	std::string GetCameraName(void* ptr)
+	{
+		Camera* cam = (Camera*)ptr;
+		return cam->name;
+	}
+#endif
 
 	void DestroyCameras()
 	{
@@ -119,7 +133,7 @@ namespace Scene::Camera {
 
 	void Camera::CreateConstantsBufferView(const std::shared_ptr<Renderer>& renderer)
 	{
-		cameraCbv = CreateConstantsBufferViewData(renderer, sizeof(CameraAttributes) * renderer->numFrames, L"camera");
+		cameraCbv = CreateConstantsBufferViewData(renderer, sizeof(CameraAttributes) * renderer->numFrames, "camera");
 	}
 
 	void Camera::UpdateConstantsBuffer(UINT backbufferIndex)
@@ -298,15 +312,15 @@ namespace Scene::Camera {
 
 	size_t GetNumCameras() { return cameraByIndex.size(); }
 	CameraPtr GetCamera(UINT index) { return cameraByIndex[index]; }
-	CameraPtr GetCamera(std::wstring name) { return cameraByNames[name]; }
+	CameraPtr GetCamera(std::string name) { return cameraByNames.at(name); }
 
 #if defined(_EDITOR)
 	nlohmann::json Camera::json() {
 		nlohmann::json j = nlohmann::json({});
 
-		j["name"] = WStringToString(name);
+		j["name"] =name;
 		j["fitWindow"] = fitWindow;
-		j["projectionType"] = WStringToString(ProjectionsTypesStr[projectionType]);
+		j["projectionType"] = ProjectionsTypesStr[projectionType];
 
 		auto buildOrthographicJsonCamera = [this](auto& j) {
 			j["orthographic"]["nearZ"] = orthographic.nearZ;
@@ -342,6 +356,7 @@ namespace Scene::Camera {
 
 		return j;
 	}
+
 #endif
 
 }

@@ -20,11 +20,10 @@ namespace Animation {
 
 				auto bone = mesh->mBones[meshBoneIndex];
 				std::string boneName = bone->mName.C_Str();
-				std::wstring boneNameW(boneName.begin(), boneName.end());
 
 				//if the bone slot hasn't been created yet, create it
-				if (bonesOffsets.find(boneNameW) == bonesOffsets.end()) {
-					bonesOffsets[boneNameW] = XMMATRIX(&bone->mOffsetMatrix.a1);
+				if (bonesOffsets.find(boneName) == bonesOffsets.end()) {
+					bonesOffsets[boneName] = XMMATRIX(&bone->mOffsetMatrix.a1);
 				}
 
 			}
@@ -34,18 +33,16 @@ namespace Animation {
 	void BuildAnimationBonesKeys(const aiScene* model, AnimationBonesKeys& animationBonesKeys) {
 		for (auto anim = model->mAnimations; anim < (model->mAnimations + model->mNumAnimations); anim++) {
 			std::string animName = (*anim)->mName.C_Str();
-			std::wstring animNameW(animName.begin(), animName.end());
 			for (auto channel = (*anim)->mChannels; channel < ((*anim)->mChannels + (*anim)->mNumChannels); channel++) {
 				std::string nodeName = (*channel)->mNodeName.C_Str();
-				std::wstring nodeNameW(nodeName.begin(), nodeName.end());
 				for (auto position = (*channel)->mPositionKeys; position < ((*channel)->mPositionKeys + (*channel)->mNumPositionKeys); position++) {
-					animationBonesKeys[animNameW][nodeNameW].positions.push_back({ static_cast<FLOAT>(position->mTime), { position->mValue.x, position->mValue.y, position->mValue.z } });
+					animationBonesKeys[animName][nodeName].positions.push_back({ static_cast<FLOAT>(position->mTime), { position->mValue.x, position->mValue.y, position->mValue.z } });
 				}
 				for (auto rotation = (*channel)->mRotationKeys; rotation < ((*channel)->mRotationKeys + (*channel)->mNumRotationKeys); rotation++) {
-					animationBonesKeys[animNameW][nodeNameW].rotation.push_back({ static_cast<FLOAT>(rotation->mTime), { rotation->mValue.x, rotation->mValue.y, rotation->mValue.z, rotation->mValue.w } });
+					animationBonesKeys[animName][nodeName].rotation.push_back({ static_cast<FLOAT>(rotation->mTime), { rotation->mValue.x, rotation->mValue.y, rotation->mValue.z, rotation->mValue.w } });
 				}
 				for (auto scale = (*channel)->mScalingKeys; scale < ((*channel)->mScalingKeys + (*channel)->mNumScalingKeys); scale++) {
-					animationBonesKeys[animNameW][nodeNameW].scaling.push_back({ static_cast<FLOAT>(scale->mTime), { scale->mValue.x, scale->mValue.y, scale->mValue.z } });
+					animationBonesKeys[animName][nodeName].scaling.push_back({ static_cast<FLOAT>(scale->mTime), { scale->mValue.x, scale->mValue.y, scale->mValue.z } });
 				}
 			}
 		}
@@ -55,8 +52,7 @@ namespace Animation {
 		nodeInHierarchy->numChildren = 0;
 		nodeInHierarchy->children = nullptr;
 		std::string nodeName = node->mName.C_Str();
-		std::wstring nodeNameW(nodeName.begin(), nodeName.end());
-		nodeInHierarchy->name = nodeNameW;
+		nodeInHierarchy->name = nodeName;
 		nodeInHierarchy->transformation = XMMATRIX(&node->mTransformation.a1);
 		if (node->mNumChildren > 0) {
 			multiplyNavigator.push(MultiplyCmd(nodeInHierarchy, true));
@@ -85,12 +81,11 @@ namespace Animation {
   {
     std::shared_ptr<Animated> animated = std::make_shared<Animated>();
     
-    animated->animationsLength[L""] = 0.0f;
+    animated->animationsLength[""] = 0.0f;
     for (UINT animationIndex = 0U; animationIndex < aiModel->mNumAnimations; animationIndex++) {
       auto animation = aiModel->mAnimations[animationIndex];
       std::string animName = animation->mName.C_Str();
-      std::wstring animNameW(animName.begin(), animName.end());
-      animated->animationsLength[animNameW] = static_cast<FLOAT>(aiModel->mAnimations[animationIndex]->mDuration);
+      animated->animationsLength[animName] = static_cast<FLOAT>(aiModel->mAnimations[animationIndex]->mDuration);
     }
 
     XMVECTOR det;

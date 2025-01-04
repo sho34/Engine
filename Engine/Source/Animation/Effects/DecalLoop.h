@@ -4,7 +4,7 @@ namespace Scene::Renderable { struct Renderable; };
 typedef std::shared_ptr<Scene::Renderable::Renderable> RenderablePtr;
 namespace Animation::Effects {
 
-	static const std::wstring DecalLoopEffect = L"DecalLoop";
+	static const std::string DecalLoopEffect = "DecalLoop";
 
 	struct DecalLoop
 	{

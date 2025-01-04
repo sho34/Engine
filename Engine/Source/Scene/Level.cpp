@@ -22,6 +22,8 @@ using namespace Editor;
 #endif
 
 extern std::shared_ptr<Renderer> renderer;
+std::queue<std::shared_ptr<Scene::Renderable::Renderable>> renderablesToReload;
+
 namespace Scene::Level {
 
   nlohmann::json levelToLoad;
@@ -145,6 +147,40 @@ namespace Scene::Level {
       .drawRect = { 60.0f, WinHeight - 90, 560.0f, WinHeight - 90 + 30.0f }
       });
       */
+  }
+
+  void PushRenderableToReloadQueue(std::shared_ptr<Scene::Renderable::Renderable> renderable)
+  {
+    renderablesToReload.push(renderable);
+  }
+
+  bool ReloadQueueIsEmpty() {
+    return renderablesToReload.empty();
+  }
+
+  void ProcessReloadQueue() {
+
+    renderer->ResetCommands();
+    renderer->SetCSUDescriptorHeap();
+
+    renderer->SetRenderTargets();
+
+    while (!renderablesToReload.empty()) {
+      RenderablePtr renderable = renderablesToReload.front();
+      renderable->Initialize(Renderer::GetPtr());
+      renderable->loading = false;
+      renderablesToReload.pop();
+    }
+
+#if defined(_EDITOR)
+    Editor::DrawEditor();
+#endif
+
+    //before switching to 2D mode the commandQueue must be executed
+    renderer->ExecuteCommands();
+    renderer->Set2DRenderTarget();
+    renderer->Present();
+
   }
 
   void DestroySceneObjects()

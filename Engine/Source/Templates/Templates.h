@@ -3,10 +3,10 @@
 namespace Templates {
 
 #if defined(_EDITOR)
-	void SaveTemplates(const std::wstring folder, const std::wstring fileName, nlohmann::json data);
+	void SaveTemplates(const std::string folder, const std::string fileName, nlohmann::json data);
 #endif
 
-	typedef Concurrency::task<void> (*TemplateLoader)(std::wstring, nlohmann::json);
-	void LoadTemplates(const std::wstring folder, const std::wstring fileName, TemplateLoader loader);
+	typedef Concurrency::task<void> (*TemplateLoader)(std::string, nlohmann::json);
+	void LoadTemplates(const std::string folder, const std::string fileName, TemplateLoader loader);
 }
 

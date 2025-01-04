@@ -65,7 +65,7 @@ namespace DeviceUtils::ConstantsBuffer
 	}
 
 	static std::mutex constantsBufferMutex;
-	std::shared_ptr<ConstantsBufferViewData> CreateConstantsBufferViewData(const std::shared_ptr<Renderer>& renderer, size_t bufferSize, std::wstring cbName)
+	std::shared_ptr<ConstantsBufferViewData> CreateConstantsBufferViewData(const std::shared_ptr<Renderer>& renderer, size_t bufferSize, std::string cbName)
 	{
 		std::lock_guard<std::mutex> lock(constantsBufferMutex);
 		ConstantsBufferViewDataPtr cbvData = std::make_shared<ConstantsBufferViewData>(bufferSize);
@@ -97,7 +97,7 @@ namespace DeviceUtils::ConstantsBuffer
 			constantsBufferGpuMap[cbvData].push_back(gpu_xhandle);
 #if defined(_DEBUG)
 			if (n == 0) {
-				std::wstring cbufferName = (L"ConstantsBuffer[" + cbName + L":" + std::to_wstring(cpu_xhandle.ptr) + L"]");
+				std::wstring cbufferName = (L"ConstantsBuffer[" + StringToWString(cbName) + L":" + std::to_wstring(cpu_xhandle.ptr) + L"]");
 				cbvData->constantBuffer->SetName(cbufferName.c_str());
 			}
 #endif

@@ -46,7 +46,6 @@ void MapLightingResources();
 void GameInputLoop();
 void AnimableStep(double elapsedSeconds);
 void AudioStep();
-//void UIStep();
 void RenderLoop();
 
 void ReleaseGPUResources();
@@ -97,6 +96,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 void AppStep() {
   if (isLoadingLevel()) {
     callLoadLevelFn();
+  }
+  else if(!ReloadQueueIsEmpty()) {
+    ProcessReloadQueue();
   } else {
     timer.Tick([&]() {});
     GameInputLoop();
@@ -106,11 +108,6 @@ void AppStep() {
       RenderLoop();
     }
     AudioStep();
-    /*
-#if !defined(_EDITOR)
-    UIStep();
-#endif
-*/
   }
 }
 
@@ -167,7 +164,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   
   //initialize the shader compiler and changes monitor
   BuildShaderCompiler();
-  MonitorShaderChanges(L"Shaders");
+  MonitorShaderChanges("Shaders");
 
   //Initialize the audio system
   InitAudio();
@@ -189,9 +186,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
   //create the basic scene objects
   LoadDefaultLevel();
 
-  //CreateSounds();
-  //CreateUI();
-
   //kick the audio listener update
   AudioStep();
 
@@ -205,8 +199,6 @@ void DestroyInstance()
 {
 
   Flush(renderer->commandQueue, renderer->fence, renderer->fenceValue, renderer->fenceEvent);
-
-  //DestroyUI2DStrings();
 
   DestroySceneObjects();
 
@@ -237,7 +229,7 @@ void LoadSystemTemplates() {
   auto loadingTasks = {
   concurrency::create_task([] {
     auto createShaderTasks = {
-      Templates::Shader::json(L"Teapot", R"( {
+      Templates::Shader::json("Teapot", R"( {
         "systemCreated" : true,
         "mappedValues": [
           { "value": [ 0.11764706671237946, 0.5647059082984924, 1.0 ], "variable": "baseColor", "variableType": "FLOAT3" },
@@ -245,7 +237,7 @@ void LoadSystemTemplates() {
         ],
         "shaderFileName": "BaseLighting"
       })"_json),
-      Templates::Shader::json(L"Floor", R"( {
+      Templates::Shader::json("Floor", R"( {
         "systemCreated" : true,
         "mappedValues": [
           { "value": [ 0.0, 0.0, 0.0 ], "variable": "baseColor", "variableType": "FLOAT3" },
@@ -253,27 +245,27 @@ void LoadSystemTemplates() {
         ],
         "shaderFileName": "Grid"
       })"_json),
-      Templates::Shader::json(L"ShadowMap", R"( { "systemCreated" : true })"_json),
-      Templates::Shader::json(L"ShadowMapAlpha", R"( { "systemCreated" : true })"_json),
-      Templates::Shader::json(L"ShadowMapAlphaSkinning", R"( { "systemCreated" : true })"_json),
+      Templates::Shader::json("ShadowMap", R"( { "systemCreated" : true })"_json),
+      Templates::Shader::json("ShadowMapAlpha", R"( { "systemCreated" : true })"_json),
+      Templates::Shader::json("ShadowMapAlphaSkinning", R"( { "systemCreated" : true })"_json),
     };
     return when_all(std::begin(createShaderTasks), std::end(createShaderTasks));
   }).then([] {
     auto createMaterialTasks = {
-      Templates::Material::json(L"Teapot", R"({ "shaderTemplate":"Teapot", "systemCreated":true })"_json),
-      Templates::Material::json(L"Floor", R"({ "shaderTemplate":"Floor", "systemCreated":true })"_json),
-      Templates::Material::json(L"ShadowMap", R"({ "shaderTemplate":"ShadowMap", "systemCreated":true })"_json),
-      Templates::Material::json(L"ShadowMapAlpha", R"({ "shaderTemplate":"ShadowMapAlpha", "systemCreated":true })"_json),
-      Templates::Material::json(L"ShadowMapAlphaSkinning", R"({ "shaderTemplate":"ShadowMapAlphaSkinning", "systemCreated":true })"_json),
+      Templates::Material::json("Teapot", R"({ "shaderTemplate":"Teapot", "systemCreated":true })"_json),
+      Templates::Material::json("Floor", R"({ "shaderTemplate":"Floor", "systemCreated":true })"_json),
+      Templates::Material::json("ShadowMap", R"({ "shaderTemplate":"ShadowMap", "systemCreated":true })"_json),
+      Templates::Material::json("ShadowMapAlpha", R"({ "shaderTemplate":"ShadowMapAlpha", "systemCreated":true })"_json),
+      Templates::Material::json("ShadowMapAlphaSkinning", R"({ "shaderTemplate":"ShadowMapAlphaSkinning", "systemCreated":true })"_json),
     };
     return when_all(std::begin(createMaterialTasks), std::end(createMaterialTasks));
   }).then([]() {
     auto createMeshesTasks = {
-      CreatePrimitiveMeshTemplate(L"floor"),
-      CreatePrimitiveMeshTemplate(L"utahteapot"),
-      CreatePrimitiveMeshTemplate(L"cube"),
-      CreatePrimitiveMeshTemplate(L"pyramid"),
-      CreatePrimitiveMeshTemplate(L"decal"),
+      CreatePrimitiveMeshTemplate("floor"),
+      CreatePrimitiveMeshTemplate("utahteapot"),
+      CreatePrimitiveMeshTemplate("cube"),
+      CreatePrimitiveMeshTemplate("pyramid"),
+      CreatePrimitiveMeshTemplate("decal"),
     };
     return when_all(std::begin(createMeshesTasks), std::end(createMeshesTasks));
   })
@@ -296,15 +288,15 @@ void LoadTemplates() {
 void MapLightingResources() {
   CreateLightsResources().then([] {
     const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial = {
-      { VertexClass::POS, GetMaterialTemplate(L"ShadowMap") },
-      { VertexClass::POS_COLOR, GetMaterialTemplate(L"ShadowMap") },
-      { VertexClass::POS_TEXCOORD0, GetMaterialTemplate(L"ShadowMapAlpha") },
-      { VertexClass::POS_TEXCOORD0_SKINNING, GetMaterialTemplate(L"ShadowMapAlphaSkinning") },
-      { VertexClass::POS_NORMAL, GetMaterialTemplate(L"ShadowMap") },
-      { VertexClass::POS_NORMAL_TEXCOORD0, GetMaterialTemplate(L"ShadowMapAlpha") },
-      { VertexClass::POS_NORMAL_TANGENT_TEXCOORD0, GetMaterialTemplate(L"ShadowMapAlpha") },
-      { VertexClass::POS_NORMAL_TANGENT_TEXCOORD0_SKINNING, GetMaterialTemplate(L"ShadowMapAlphaSkinning") },
-      { VertexClass::POS_NORMAL_TANGENT_BITANGENT_TEXCOORD0, GetMaterialTemplate(L"ShadowMapAlpha") },
+      { VertexClass::POS, GetMaterialTemplate("ShadowMap") },
+      { VertexClass::POS_COLOR, GetMaterialTemplate("ShadowMap") },
+      { VertexClass::POS_TEXCOORD0, GetMaterialTemplate("ShadowMapAlpha") },
+      { VertexClass::POS_TEXCOORD0_SKINNING, GetMaterialTemplate("ShadowMapAlphaSkinning") },
+      { VertexClass::POS_NORMAL, GetMaterialTemplate("ShadowMap") },
+      { VertexClass::POS_NORMAL_TEXCOORD0, GetMaterialTemplate("ShadowMapAlpha") },
+      { VertexClass::POS_NORMAL_TANGENT_TEXCOORD0, GetMaterialTemplate("ShadowMapAlpha") },
+      { VertexClass::POS_NORMAL_TANGENT_TEXCOORD0_SKINNING, GetMaterialTemplate("ShadowMapAlphaSkinning") },
+      { VertexClass::POS_NORMAL_TANGENT_BITANGENT_TEXCOORD0, GetMaterialTemplate("ShadowMapAlpha") },
     };
     return CreateShadowMapPipeline(shadowMapsInputLayoutMaterial);
   }).wait();
@@ -386,22 +378,6 @@ void AudioStep() {
   UpdateAudio();
 }
 
-/*
-void UIStep() {
-  using namespace UI;
-
-  GetUI2DString(L"fpsText")->text = L"FPS:" + std::to_wstring(timer.GetFramesPerSecond());
-
-  CameraPtr camera = Scene::Camera::GetCamera(currentCamera);
-
-  GetUI2DString(L"currentCamera")->text = camera->name;
-
-  if (knight != nullptr) {
-    GetUI2DString(L"animation")->text = L"Animation:" + knight->currentAnimation;
-  }
-}
-*/
-
 void RenderLoop()
 {
   if (!inFullScreen)
@@ -446,8 +422,8 @@ void RenderLoop()
         }
       };
 
-      std::wstring shadowMapEvent = L"ShadowMap:" + l->name;
-      PIXBeginEvent(renderer->commandList.p, 0, shadowMapEvent.c_str());
+      std::string shadowMapEvent = "ShadowMap:" + l->name;
+      PIXBeginEvent(renderer->commandList.p, 0, StringToWString(shadowMapEvent).c_str());
 
       RenderShadowMap(l, renderSceneShadowMap);
 

@@ -14,7 +14,7 @@ namespace ShaderCompiler {
 	
 	//shader compilation source (shaderName + it's shader type)
 	struct Source {
-		const std::wstring shaderName;
+		const std::string shaderName;
 		ShaderType shaderType;
 		bool operator<(const Source& other) const {
 			return std::tie(shaderName, shaderType) < std::tie(other.shaderName, other.shaderType);
@@ -23,17 +23,17 @@ namespace ShaderCompiler {
 	
 
 	//Dependencies of hlsl+shaderType(Source) file to many .h files
-	typedef std::unordered_set<std::wstring> ShaderDependencies;
+	typedef std::unordered_set<std::string> ShaderDependencies;
 
 	//a custom handler to manage include files
 	struct CustomIncludeHandler : IDxcIncludeHandler {
 
-		std::wstring shaderRootFolder;
+		std::string shaderRootFolder;
 		ComPtr<IDxcUtils> pUtils;
 
 		ShaderDependencies& includedFiles;
 
-		CustomIncludeHandler(ShaderDependencies& includedFiles, std::wstring shaderRootFolder, ComPtr<IDxcUtils> pUtils):includedFiles(includedFiles) {
+		CustomIncludeHandler(ShaderDependencies& includedFiles, std::string shaderRootFolder, ComPtr<IDxcUtils> pUtils):includedFiles(includedFiles) {
 			this->shaderRootFolder = shaderRootFolder;
 			this->pUtils = pUtils;
 		};
@@ -45,16 +45,16 @@ namespace ShaderCompiler {
 	};
 
 	Concurrency::task<ShaderCompilerOutputPtr> Compile(Source& params);
-	Concurrency::task<void> Bind(const std::wstring& shaderName, ShaderType shaderType, void* target, NotificationCallbacks callbacks);
+	Concurrency::task<void> Bind(const std::string& shaderName, ShaderType shaderType, void* target, NotificationCallbacks callbacks);
 	
 	//compile queue definition
 	struct CompileQueue
 	{
 		CompileQueue(){
-			queue = std::queue<std::wstring>();
+			queue = std::queue<std::string>();
 		}
 
-		void push(const std::wstring& value) {
+		void push(const std::string& value) {
 			std::lock_guard<std::mutex> lock(mutex);
 			if (queue.size()==0 || queue.front() != value) {
 				queue.push(value);
@@ -66,7 +66,7 @@ namespace ShaderCompiler {
 			queue.pop();
 		}
 
-		std::wstring front() {
+		std::string front() {
 			std::lock_guard<std::mutex> lock(mutex);
 			return queue.front();
 		}
@@ -76,7 +76,7 @@ namespace ShaderCompiler {
 			return queue.size();
 		}
 
-		std::queue<std::wstring> queue;
+		std::queue<std::string> queue;
 		mutable std::mutex mutex;
 	};
 	
@@ -84,5 +84,5 @@ namespace ShaderCompiler {
 	static ComPtr<IDxcCompiler3> pCompiler;
 	static ComPtr<IDxcUtils> pUtils;
 	void BuildShaderCompiler();
-	void MonitorShaderChanges(std::wstring folder);
+	void MonitorShaderChanges(std::string folder);
 };

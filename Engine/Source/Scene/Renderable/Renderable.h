@@ -21,32 +21,15 @@ namespace Scene::Renderable
 	typedef std::pair<MeshPtr, CComPtr<ID3D12PipelineState>> MeshPipelineStatePair;
 	typedef std::map<MeshPtr, CComPtr<ID3D12PipelineState>> MeshPipelineStateMap;
 
-	struct RenderableDefinition
-	{
-		std::wstring name = L"";
-		MeshMaterialMap meshMaterials;
-		MeshMaterialMap meshMaterialsShadowMap;
-		ModelMaterialPair modelMaterials;
-		ModelMaterialPair modelMaterialsShadowMap;
-
-		XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
-		XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
-		XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
-
-		std::set<UINT> skipMeshes;
-	};
-
 	struct Renderable
 	{
 		~Renderable() { this_ptr = nullptr; } //will this work?
 		std::shared_ptr<Renderable> this_ptr = nullptr; //dumb but efective
 
-		RenderableDefinition definition;
-
 		bool loading = true;
 
-		std::wstring name = L"";
-		std::wstring model3DName = L"";
+		std::string name = "";
+		std::string model3DName = "";
 		MeshMaterialMap meshMaterials;
 		MeshMaterialMap meshMaterialsShadowMap;
 
@@ -59,18 +42,23 @@ namespace Scene::Renderable
 		XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
 
 		std::set<MeshPtr> skipMeshes;
+#if defined(_EDITOR)
+		std::vector<MeshPtr> meshesVector;
+#endif
 
 		std::shared_ptr<Animation::Animated> animations = nullptr;
 		Animation::BonesTransformations bonesTransformation;
-		std::wstring currentAnimation = L"";
+		std::string currentAnimation = "";
 		float currentAnimationTime = 0.0f;
+		float animationTimeFactor = 1.0f;
+		bool playingAnimation = false;
 
 		//initialization
 		void Initialize(const std::shared_ptr<Renderer>& renderer);
 		
 		//constants buffer
 		template<typename T>
-		void WriteToConstantsBufferSpace(std::wstring constantName, T& data, UINT index, CBufferVariablesDefinitionPtr& cbufferDef, auto& cbvData, UINT slot = 0U, size_t offset=0ULL) {
+		void WriteToConstantsBufferSpace(std::string constantName, T& data, UINT index, CBufferVariablesDefinitionPtr& cbufferDef, auto& cbvData, UINT slot = 0U, size_t offset=0ULL) {
 			
 			if (loading) return;
 
@@ -79,7 +67,7 @@ namespace Scene::Renderable
 
 		}
 		template<typename T>
-		void WriteConstantsBuffer(std::wstring constantName, T& data, UINT backbufferIndex, UINT slot = 0U , size_t offset = 0ULL) {
+		void WriteConstantsBuffer(std::string constantName, T& data, UINT backbufferIndex, UINT slot = 0U , size_t offset = 0ULL) {
 			
 			if (loading) return;
 
@@ -102,11 +90,15 @@ namespace Scene::Renderable
 		void RenderShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Scene::Lights::Light>& light, UINT cameraIndex);
 
 		//animations
-		void SetCurrentAnimation(std::wstring animation, float animationTime = 0.0f);
+		void SetCurrentAnimation(std::string animation, float animationTime = 0.0f, float timeFactor = 1.0f, bool autoPlay = true);
 		void StepAnimation(double elapsedSeconds);
 
 #if defined(_EDITOR)
 		nlohmann::json json();
+		void DrawEditorInformationAttributes();
+		void DrawEditorWorldAttributes();
+		void DrawEditorAnimationAttributes();
+		void DrawEditorMeshesAttributes();
 #endif
 
 	};
@@ -115,9 +107,14 @@ namespace Scene::Renderable
 	std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej);
 	
 	//access
-	std::map<std::wstring, std::shared_ptr<Renderable>>& GetRenderables();
-	std::map<std::wstring, std::shared_ptr<Renderable>>& GetAnimables();
-	std::vector<std::wstring> GetRenderablesNames();
+	std::map<std::string, std::shared_ptr<Renderable>>& GetRenderables();
+	std::map<std::string, std::shared_ptr<Renderable>>& GetAnimables();
+	std::vector<std::string> GetRenderablesNames();
+#if defined(_EDITOR)
+	void SelectRenderable(std::string renderableName, void*& ptr);
+	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	std::string GetRenderableName(void* ptr);
+#endif
 
 	//destroy
 	void DestroyRenderables();

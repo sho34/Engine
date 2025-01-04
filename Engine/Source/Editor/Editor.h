@@ -14,7 +14,7 @@ namespace Editor {
 	void DrawRightPanel();
 
 	void OpenFile();
-	void SaveLevelToFile(std::wstring levelFileName);
+	void SaveLevelToFile(std::string levelFileName);
 	void SaveLevelAs();
 	void SaveTemplates();
 }

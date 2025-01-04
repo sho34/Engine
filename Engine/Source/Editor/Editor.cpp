@@ -16,7 +16,7 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 namespace Editor {
 
-  std::wstring currentLevelName = defaultLevelName;
+  std::string currentLevelName = defaultLevelName;
 
   bool dragDrop = false;
   INT lastMouseX;
@@ -27,9 +27,22 @@ namespace Editor {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->AddFontDefault();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+    float baseFontSize = 13.0f; 
+    float iconFontSize = baseFontSize * 2.0f / 3.0f;
+
+    static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_16_FA, 0 };
+    ImFontConfig icons_config;
+    icons_config.MergeMode = true;
+    icons_config.PixelSnapH = true;
+    icons_config.GlyphMinAdvanceX = iconFontSize;
+    std::filesystem::path fontPath("Fonts");
+    fontPath /= FONT_ICON_FILE_NAME_FAS;
+    io.Fonts->AddFontFromFileTTF(fontPath.string().c_str(), iconFontSize, &icons_config, icons_ranges);
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
@@ -176,23 +189,23 @@ namespace Editor {
     {
       if (ImGui::BeginMenu("File"))
       {
-        ImGui::MenuItem("New");
+        ImGui::MenuItem(ICON_FA_FILE "New");
         ImGui::Separator();
-        if (ImGui::MenuItem("Open")) {
+        if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "Open")) {
           OpenFile();
         }
-        if (ImGui::MenuItem("Save")) {
+        if (ImGui::MenuItem(ICON_FA_SAVE "Save")) {
           SaveLevelToFile(currentLevelName);
         }
-        if (ImGui::MenuItem("Save As..")) {
+        if (ImGui::MenuItem(ICON_FA_SAVE "Save As..")) {
           SaveLevelAs();
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Save Templates")) {
+        if (ImGui::MenuItem(ICON_FA_SAVE "Save Templates")) {
           SaveTemplates();
         }
         ImGui::Separator();
-        if (ImGui::MenuItem("Exit")) // It would be nice if this was a "X" like in the windows title bar set off to the far right
+        if (ImGui::MenuItem(ICON_FA_TIMES "Exit")) // It would be nice if this was a "X" like in the windows title bar set off to the far right
         {
           appDone = true;
         }
@@ -216,8 +229,8 @@ namespace Editor {
       };
 
       WinButtonDef windowsButtons[] = {
-        { .label = "X", .x = viewport->WorkSize.x - 1.0f * 19.0f, .onClick = []() {appDone = true; } },
-        { .label = "O", .x = viewport->WorkSize.x - 2.0f * 19.0f, .onClick = []() {
+        { .label = ICON_FA_TIMES, .x = viewport->WorkSize.x - 1.0f * 19.0f, .onClick = []() {appDone = true; } },
+        {.label = ICON_FA_WINDOW_MAXIMIZE, .x = viewport->WorkSize.x - 2.0f * 19.0f, .onClick = []() {
           HWND desktopHwnd = GetDesktopWindow();
           RECT desktopRect;
           GetClientRect(desktopHwnd, &desktopRect);
@@ -225,7 +238,7 @@ namespace Editor {
           int winHeight = desktopRect.bottom - 40;
           SetWindowPos(hWnd, HWND_TOP, 0, 0, winWidth, winHeight, 0);
         } },
-        { .label = "_", .x = viewport->WorkSize.x - 3.0f * 19.0f, .onClick = []() { ShowWindow(hWnd, SW_MINIMIZE); } },
+        { .label = ICON_FA_WINDOW_MINIMIZE, .x = viewport->WorkSize.x - 3.0f * 19.0f, .onClick = []() { ShowWindow(hWnd, SW_MINIMIZE); } },
       };
 
       dragRect.right = static_cast<LONG>(windowsButtons[_countof(windowsButtons) - 1].x);
@@ -240,29 +253,27 @@ namespace Editor {
     HandleApplicationDragTitleBar(dragRect);
   }
 
-  void DebugWindowPosSize(std::wstring name) {
+  void DebugWindowPosSize(std::string name) {
     ImVec2 spos = ImGui::GetCursorScreenPos();
     ImVec2 ravail = ImGui::GetContentRegionAvail();
 
-    std::wstring str = name + L"\npos:(" + std::to_wstring(spos.x) + L"," + std::to_wstring(spos.y) + L")\nsize:(" + std::to_wstring(ravail.x) + L"," + std::to_wstring(ravail.y) + L")\n\n";
+    std::string str = name + "\npos:(" + std::to_string(spos.x) + "," + std::to_string(spos.y) + ")\nsize:(" + std::to_string(ravail.x) + "," + std::to_string(ravail.y) + ")\n\n";
 
-    OutputDebugString(str.c_str());
+    OutputDebugStringA(str.c_str());
   }
 
-  void DebugPosSize(std::wstring name, ImVec2 pos, ImVec2 size) {
-    std::wstring str = name + L"\npos:(" + std::to_wstring(pos.x) + L"," + std::to_wstring(pos.y) + L")\nsize:(" + std::to_wstring(size.x) + L"," + std::to_wstring(size.y) + L")\n\n";
+  void DebugPosSize(std::string name, ImVec2 pos, ImVec2 size) {
+    std::string str = name + "\npos:(" + std::to_string(pos.x) + "," + std::to_string(pos.y) + ")\nsize:(" + std::to_string(size.x) + "," + std::to_string(size.y) + ")\n\n";
 
-    OutputDebugString(str.c_str());
+    OutputDebugStringA(str.c_str());
   }
 
   auto DrawTableRows(auto GetObjects, auto OnSelect) {
     int row = 0;
-    for (auto nameW : GetObjects()) {
+    for (auto name : GetObjects()) {
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(0);
-      std::string name = WStringToString(nameW);
-      for(int i = 0 ; i < 20; i++)
-      if (ImGui::TextLink(name.c_str())) { OnSelect(nameW); }
+      if (ImGui::TextLink(name.c_str())) { OnSelect(name); }
     }
   }
 
@@ -276,50 +287,104 @@ namespace Editor {
 
   template<typename T>
   void DrawTabPanel(ImVec2 pos, ImVec2 size, const char* name, T& tab,
-    std::unordered_map<T, std::wstring> TabToStr,
-    std::map<T, std::function<std::vector<std::wstring>()>> GetTabList 
+    std::unordered_map<T, std::string> TabToStr,
+    std::map<T, std::function<std::vector<std::string>()>> GetTabList,
+    void* &selected,
+    std::map<T, std::function<void(std::string, void*&)>> OnSelect
     )
   {
     ImGui::SetNextWindowPos(pos);
     ImGui::SetNextWindowSize(size);
-    ImGui::BeginTabBar(name);
+    std::string panelName = "panel-" + TabToStr.at(tab);
+    ImGui::BeginChild(panelName.c_str());
     {
-      for (auto& [type, name] : TabToStr) {
-        ImGuiTabItemFlags_ flag = (tab == type) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
-        if (ImGui::TabItemButton(WStringToString(name).c_str(), flag)) { tab = type; }
+      std::string tabBarName = "tabBar-" + std::string(name);
+      ImGui::BeginTabBar(tabBarName.c_str());
+      {
+        for (auto& [type, name] : TabToStr) {
+          ImGuiTabItemFlags_ flag = (tab == type) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+          if (ImGui::TabItemButton(name.c_str(), flag)) { tab = type; }
+        }
+        DrawListPanel((TabToStr.at(tab) + "-table").c_str(), GetTabList.at(tab),
+          [tab, &selected, OnSelect](std::string name) {
+            OnSelect.at(tab)(name, selected);
+          });
       }
-      DrawListPanel(WStringToString(TabToStr.at(tab) + L"-table").c_str(), GetTabList.at(tab), [](std::wstring name) {});
+      ImGui::EndTabBar();
     }
-    ImGui::EndTabBar();
+    ImGui::EndChild();
   }
 
-  float titleBarHeight = 19.0f;
-  float rightPanelWidth = 400.0f;
-  _SceneObjects sceneObjectTab = _SceneObjects::Renderables;
-  _Templates templatesTab = _Templates::Materials;
+  template<typename T>
+  void DrawDetailPanel(ImVec2 pos, ImVec2 size, T& tab,
+    void*& selected,
+    std::unordered_map<T, std::string> SelectedPrefix,
+    std::map<T, std::function<std::string(void*)>> GetSelectedName,
+    std::map<T, std::function<void(void*&, ImVec2, ImVec2)>> DrawSelectedPanel
+    )
+  {
+    bool pop = false;
+    std::string panelName = "panel-" + SelectedPrefix.at(tab);// + GetSelectedName.at(tab)(selected);
+    ImGui::SetNextWindowPos(pos);
+    ImGui::SetNextWindowSize(size);
+    ImGui::BeginChild(panelName.c_str());
+    {
+      if (ImGui::SmallButton("<<")) { pop = true; }
+      ImGui::SameLine();
+      ImGui::Text(GetSelectedName.at(tab)(selected).c_str());
+
+      ImGui::NewLine();
+      DrawSelectedPanel.at(tab)(selected, pos, size);
+    }
+    ImGui::EndChild();
+    if (pop) { selected = nullptr; }
+  }
+
+  _SceneObjects soTab = _SceneObjects::Renderables;
+  _Templates tempTab = _Templates::Materials;
+  void* selSO = nullptr;
+  void* selTemp = nullptr;
+  float titleBH = 19.0f;
+  float panW = 400.0f;
+  ImGuiWindowFlags panFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+
   void DrawRightPanel() {
     
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
-    ImVec2 rightPanelPos = ImVec2(viewport->Size.x - rightPanelWidth, titleBarHeight);
-    ImVec2 rightPanelSize = ImVec2(rightPanelWidth, viewport->Size.y - titleBarHeight);
+    ImVec2 panPos = ImVec2(viewport->Size.x - panW, titleBH);
+    ImVec2 panSize = ImVec2(panW, viewport->Size.y - titleBH+10.0f);
 
-    ImGui::SetNextWindowPos(rightPanelPos);
-    ImGui::SetNextWindowSize(rightPanelSize);
-    ImGui::Begin("Right panel",(bool*)1, 
-      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-      ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
-      ImGuiWindowFlags_NoSavedSettings
-    );
+    ImGui::SetNextWindowPos(panPos);
+    ImGui::SetNextWindowSize(panSize);
+    ImGui::Begin("Right panel",(bool*)1, panFlags);
     {
-      ImVec2 sceneObjectsPanelPos = ImVec2(rightPanelPos.x + 5.0f, rightPanelPos.y + 30.0f);
-      ImVec2 sceneObjectsPanelSize = ImVec2(rightPanelSize.x, rightPanelSize.y * 0.5f - 30.0f);
-      DrawTabPanel(sceneObjectsPanelPos, sceneObjectsPanelSize, "Scene Objects", sceneObjectTab, SceneObjectsToStr, GetSceneObjects);
+      ImVec2 soPos = ImVec2(panPos.x, panPos.y);
+      ImVec2 tempPos = ImVec2(panPos.x, panSize.y * 0.5f + 20.0f);
+      ImVec2 soSize = ImVec2(panSize.x, panSize.y * 0.5f);
+      ImVec2 tempSize = ImVec2(panSize.x, panSize.y * 0.5f - 20.0f);
 
-      ImVec2 templatesPanelPos = ImVec2(rightPanelPos.x + 5.0f, sceneObjectsPanelPos.y + sceneObjectsPanelSize.y + 20.0f);
-      ImVec2 templatesPanelSize = ImVec2(rightPanelSize.x, rightPanelSize.y * 0.5f - 30.0f);
-      ImGui::SetCursorPos(ImVec2(0.0f, sceneObjectsPanelSize.y+30.0f));
-      DrawTabPanel(templatesPanelPos, templatesPanelSize, "Templatess", templatesTab, TemplatesToStr, GetTemplates);
+      if (selSO == nullptr) { 
+        DrawTabPanel(soPos, soSize, "Scene Objects", soTab,
+          SceneObjectsToStr, GetSceneObjects, selSO, SetSelectedSceneObject
+        );
+      } else {
+        DrawDetailPanel(soPos, soSize, soTab, selSO,
+          SceneObjectsToStr, GetSceneObjectName, DrawSceneObjectPanel
+        );
+      }
+      
+      //ImGui::SetCursorPos(ImVec2(0.0f, nextCursorPosY));
+      if (selTemp == nullptr) {
+        DrawTabPanel(tempPos, tempSize, "Templates", tempTab,
+          TemplatesToStr, GetTemplates, selTemp, SetSelectedTemplate
+        );
+      } else {
+        DrawDetailPanel(tempPos, tempSize, tempTab, selTemp,
+          TemplatesToStr, GetTemplateName, DrawTemplatePanel
+        );
+      }
     }
     ImGui::End();
   }
@@ -418,12 +483,17 @@ namespace Editor {
       std::filesystem::path jsonFilePath = path;
       jsonFilePath.replace_extension(".json");
 
+      soTab = _SceneObjects::Renderables;
+      tempTab = _Templates::Materials;
+      selSO = nullptr;
+      selTemp = nullptr;
+
       LoadLevel(jsonFilePath);
     });
     load.detach();
   }
 
-  void SaveLevelToFile(std::wstring levelFileName) {
+  void SaveLevelToFile(std::string levelFileName) {
     using namespace nlohmann;
 
     nlohmann::json level;
@@ -456,8 +526,8 @@ namespace Editor {
 
     std::string levelString =  level.dump(4);
 
-    const std::wstring levelsRootFolder = L"Levels/";
-    const std::wstring filename = levelsRootFolder + levelFileName;
+    const std::string levelsRootFolder = "Levels/";
+    const std::string filename = levelsRootFolder + levelFileName;
 
     //first create the directory if needed
     std::filesystem::path directory(levelsRootFolder);
@@ -555,7 +625,7 @@ namespace Editor {
 
     std::thread saveAs([]() {
       //first create the directory if needed
-      std::filesystem::path directory(defaultLevelsFolder);
+      std::filesystem::path directory(StringToWString(defaultLevelsFolder));
       std::filesystem::create_directory(directory);
 
       std::wstring path = L"";
@@ -567,7 +637,7 @@ namespace Editor {
       std::filesystem::path jsonFilePath = path;
       jsonFilePath.replace_extension(".json");
 
-      SaveLevelToFile(jsonFilePath.filename());
+      SaveLevelToFile(WStringToString(jsonFilePath.filename()));
     });
     saveAs.detach();
   }

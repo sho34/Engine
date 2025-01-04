@@ -50,11 +50,11 @@ namespace DeviceUtils::Resources {
 		}
 	}
 
-	static std::map<std::wstring, CComPtr<ID3D12Resource>> texturesCache;
-	static std::map<std::wstring, UINT> texturesCacheMipMaps;
+	static std::unordered_map<std::string, CComPtr<ID3D12Resource>> texturesCache;
+	static std::unordered_map<std::string, UINT> texturesCacheMipMaps;
 
 	void CreateTextureResource(CComPtr<ID3D12Device2>& d3dDevice, CComPtr<ID3D12GraphicsCommandList2>& commandList,
-		const LPWSTR path, CComPtr<ID3D12Resource>& texture, CComPtr<ID3D12Resource>& textureUpload, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, DXGI_FORMAT textureFormat) {
+		std::string path, CComPtr<ID3D12Resource>& texture, CComPtr<ID3D12Resource>& textureUpload, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, DXGI_FORMAT textureFormat) {
 
 		UINT nMipMaps = 0U;
 		if (texturesCache.find(path) != texturesCache.end()) {
@@ -68,7 +68,7 @@ namespace DeviceUtils::Resources {
 			//para simplificar las cosas usamos el formato de imagenes dds y lo cargamos a travez de DirecXTK12
 			std::unique_ptr<uint8_t[]> ddsData;
 			std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-			DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, path, &texture, ddsData, subresources));
+			DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, StringToWString(path).c_str(), &texture, ddsData, subresources));
 
 			//obtain the size of the buffer which is SUM(1->n):mipmap(i)->width*height*4
 			//obtener el porte del buffer el cual es SUM(1->n):mipmap(i)->width*height*4
@@ -108,7 +108,7 @@ namespace DeviceUtils::Resources {
 	}
 
 	void CreateTextureArrayResource(CComPtr<ID3D12Device2>& d3dDevice, CComPtr<ID3D12GraphicsCommandList2>& commandList,
-		const LPWSTR path, CComPtr<ID3D12Resource>& texture, CComPtr<ID3D12Resource>& textureUpload, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, UINT numFrames, DXGI_FORMAT textureFormat) {
+		std::string path, CComPtr<ID3D12Resource>& texture, CComPtr<ID3D12Resource>& textureUpload, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc, UINT numFrames, DXGI_FORMAT textureFormat) {
 
 		UINT nMipMaps = 0U;
 		if (texturesCache.find(path) != texturesCache.end()) {
@@ -122,7 +122,7 @@ namespace DeviceUtils::Resources {
 			//para simplificar las cosas usamos el formato de imagenes dds y lo cargamos a travez de DirecXTK12
 			std::unique_ptr<uint8_t[]> ddsData;
 			std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-			DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, path, &texture.p, ddsData, subresources));
+			DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, StringToWString(path).c_str(), &texture.p, ddsData, subresources));
 
 			//obtain the size of the buffer which is numFrames*SUM(1->n):mipmap(i)->width*height*4
 			//obtener el porte del buffer el cual es numFrames*SUM(1->n):mipmap(i)->width*height*4

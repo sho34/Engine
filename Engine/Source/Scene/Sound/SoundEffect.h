@@ -7,7 +7,7 @@ namespace Scene::SoundEffect {
 		std::shared_ptr<Templates::Sound::Sound> soundTemplate;
 		std::unique_ptr<SoundEffectInstance> soundInstance;
 
-		std::wstring name = L"";
+		std::string name = "";
 		float volume = 1.0f;
 		bool autoPlay = false;
 		XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
@@ -21,9 +21,14 @@ namespace Scene::SoundEffect {
 #endif
 	};
 
-	std::map<std::wstring, std::shared_ptr<SoundEffect>> GetSoundsEffects();
+	std::map<std::string, std::shared_ptr<SoundEffect>> GetSoundsEffects();
 	std::vector<std::shared_ptr<SoundEffect>> Get3DSoundsEffects();
-	std::vector<std::wstring> GetSoundEffectsNames();
+	std::vector<std::string> GetSoundEffectsNames();
+#if defined(_EDITOR)
+	void SelectSoundEffect(std::string soundEffectName, void*& ptr);
+	void DrawSoundEffectPanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	std::string GetSoundEffectName(void* ptr);
+#endif
 	std::shared_ptr<SoundEffect> CreateSoundEffect(nlohmann::json soundj);
 	void DestroySoundEffects();
 }

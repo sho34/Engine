@@ -9,12 +9,12 @@
 
 namespace Templates::Shader {
 
-	static const std::wstring templateName = L"shaders.json";
+	static const std::string templateName = "shaders.json";
 
 	struct ShaderDefaultValues
 	{
 		//shader filename
-		std::wstring shaderFileName = L"";
+		std::string shaderFileName = "";
 
 		//system created flag
 		bool systemCreated = false;
@@ -25,8 +25,9 @@ namespace Templates::Shader {
 
 	struct Shader
 	{
-		static std::map<ShaderType, std::wstring> shaderEntryPoint;
-		static std::map<ShaderType, std::wstring> shaderTarget;
+		std::string name;
+		static std::map<ShaderType, std::string> shaderEntryPoint;
+		static std::map<ShaderType, std::string> shaderTarget;
 
 		ShaderCompilerOutputPtr vertexShader;
 		ShaderCompilerOutputPtr pixelShader;
@@ -36,17 +37,20 @@ namespace Templates::Shader {
 
 	typedef void LoadShaderFn(std::shared_ptr<Shader>* shader);
 
-	Concurrency::task<void> CreateShaderTemplate(std::wstring shaderTemplateName, ShaderDefaultValues defaultValues = {}, LoadShaderFn loadFn = nullptr);
+	Concurrency::task<void> CreateShaderTemplate(std::string shaderTemplateName, ShaderDefaultValues defaultValues = {}, LoadShaderFn loadFn = nullptr);
 	void ReleaseShaderTemplates();
-	Concurrency::task<void> BindToShaderTemplate(const std::wstring& shaderTemplateName, void* target, NotificationCallbacks callbacks);
-	std::shared_ptr<Shader>* GetShaderTemplate(std::wstring shaderTemplateName);
-	std::map<std::wstring, std::shared_ptr<Shader>> GetNamedShaders();
-	std::vector<std::wstring> GetShadersNames();
+	Concurrency::task<void> BindToShaderTemplate(const std::string& shaderTemplateName, void* target, NotificationCallbacks callbacks);
+	std::shared_ptr<Shader>* GetShaderTemplate(std::string shaderTemplateName);
+	std::map<std::string, std::shared_ptr<Shader>> GetNamedShaders();
+	std::vector<std::string> GetShadersNames();
 
 #if defined(_EDITOR)
+	void SelectShader(std::string shaderName, void*& ptr);
+	void DrawShaderPanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	std::string GetShaderName(void* ptr);
 	nlohmann::json json();
 #endif
-	Concurrency::task<void> json(std::wstring, nlohmann::json);
+	Concurrency::task<void> json(std::string, nlohmann::json);
 
 }
 typedef Templates::Shader::Shader ShaderT;

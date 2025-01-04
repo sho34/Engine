@@ -15,6 +15,7 @@
 #include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
 #include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
 #if defined(_EDITOR)
+#include "../Level.h"
 #include "../../Animation/Effects/Effects.h"
 #endif
 
@@ -36,8 +37,8 @@ namespace Scene::Renderable {
 
   static void OnMaterialDestroy(void* renderablePtr, void* materialPtr) { }
 
-  std::map<std::wstring, std::shared_ptr<Renderable>> renderables;
-  std::map<std::wstring, std::shared_ptr<Renderable>> animables;
+  std::map<std::string, std::shared_ptr<Renderable>> renderables;
+  std::map<std::string, std::shared_ptr<Renderable>> animables;
 
   void Renderable::Initialize(const std::shared_ptr<Renderer>& renderer)
   {
@@ -82,7 +83,7 @@ namespace Scene::Renderable {
         auto pipelineState = CreatePipelineState(renderer->d3dDevice, mesh->vertexClass, material, rootSignature);
         meshPipelineStates[mesh] = pipelineState;
 
-        BindToMaterialTemplate(material->materialName, this, {
+        BindToMaterialTemplate(material->name, this, {
           .onLoadStart = OnMaterialChangeStart,
           .onLoadComplete = OnMaterialChangeComplete,
           .onDestroy = OnMaterialDestroy
@@ -100,7 +101,7 @@ namespace Scene::Renderable {
     XMMATRIX positionM = XMMatrixTranslationFromVector({ position.x, position.y, position.z });
     XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
 
-    WriteConstantsBuffer(L"world", world, backbufferIndex);
+    WriteConstantsBuffer("world", world, backbufferIndex);
 
     if (animations) {
       using namespace Animation;
@@ -245,28 +246,38 @@ namespace Scene::Renderable {
     }
   }
 
-  void Renderable::SetCurrentAnimation(std::wstring animation, float animationTime)
+  void Renderable::SetCurrentAnimation(std::string animation, float animationTime, float timeFactor, bool autoPlay)
   {
     currentAnimation = animation;
     currentAnimationTime = animationTime;
+    animationTimeFactor = timeFactor;
+    playingAnimation = autoPlay;
   }
 
   void Renderable::StepAnimation(double elapsedSeconds)
   {
-    currentAnimationTime += static_cast<float>(elapsedSeconds) * 1000.0f;
-
+    currentAnimationTime += playingAnimation ? animationTimeFactor * static_cast<float>(elapsedSeconds) * 1000.0f : 0.0f;
     float animationLength = animations->animationsLength[currentAnimation];
-    float animationTime = (animationLength != 0.0f) ? fmodf(currentAnimationTime, animationLength) : 0.0f;
+
+    if (animationTimeFactor > 0.0f) {
+      if (currentAnimationTime >= animationLength) {
+        currentAnimationTime = fmodf(currentAnimationTime, animationLength);
+      }
+    } else if (animationTimeFactor < 0.0f) {
+      if (currentAnimationTime < 0.0f) {
+        currentAnimationTime = animationLength - fmodf(currentAnimationTime, animationLength);
+      }
+    }
 
     using namespace Animation;
-    TraverseMultiplycationQueue(animationTime, animations->multiplyNavigator, animations->animationsBonesKeys[currentAnimation], bonesTransformation, animations->bonesOffsets, animations->rootNodeInverseTransform, XMMatrixIdentity());
+    TraverseMultiplycationQueue(currentAnimationTime, animations->multiplyNavigator, animations->animationsBonesKeys[currentAnimation], bonesTransformation, animations->bonesOffsets, animations->rootNodeInverseTransform, XMMatrixIdentity());
   }
 
 #if defined(_EDITOR)
   nlohmann::json Renderable::json() {
     nlohmann::json j = nlohmann::json({});
 
-    j["name"] = WStringToString(name);
+    j["name"] = name;
     j["position"] = { position.x, position.y, position.z };
     j["scale"] = { scale.x, scale.y, scale.z };
     j["rotation"] = { rotation.x, rotation.y, rotation.z };
@@ -274,20 +285,20 @@ namespace Scene::Renderable {
     auto buildJsonMeshMaterials = [](auto& j, std::string objectName, MeshMaterialMap& meshMatMap){
       j[objectName] = nlohmann::json::array();
       for (auto& [mesh, material] : meshMatMap) {
-        j[objectName].push_back({ {"mesh", WStringToString(mesh->name)}, {"material", WStringToString(material->materialName) } });
+        j[objectName].push_back({ {"mesh", mesh->name }, {"material", material->name } });
       }
     };
 
-    if (model3DName == L"") {
+    if (model3DName == "") {
       buildJsonMeshMaterials(j, "meshMaterials", meshMaterials);
       buildJsonMeshMaterials(j, "meshMaterialsShadowMap", meshMaterialsShadowMap);
     } else {
-      j["model"] = WStringToString(model3DName);
+      j["model"] = model3DName;
     }
 
     j["skipMeshes"] = nlohmann::json::array();
-    for (auto meshIdx : definition.skipMeshes) {
-      j["skipMeshes"].push_back(meshIdx);
+    for (MeshPtr mesh : skipMeshes) {
+      j["skipMeshes"].push_back(mesh->name);
     }
 
     using namespace Animation::Effects;
@@ -303,7 +314,7 @@ namespace Scene::Renderable {
   MeshMaterialMap TranformJsonToMeshMaterialMap(nlohmann::json j) {
     MeshMaterialMap map;
     std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [](const nlohmann::json& value) {
-      return MeshMaterialPair(GetMeshTemplate(StringToWString(value["mesh"])), GetMaterialTemplate(StringToWString(value["material"])));
+      return MeshMaterialPair(GetMeshTemplate(value["mesh"]), GetMaterialTemplate(value["material"]));
     });
     return map;
   }
@@ -318,47 +329,53 @@ namespace Scene::Renderable {
     std::set<MeshPtr> skipMeshes;
     std::shared_ptr<Animated> animation = nullptr;
 
-    RenderableDefinition renderableParams = {
-      .name = StringToWString(renderablej["name"]),
-      .position = JsonToFloat3(renderablej["position"]),
-      .scale = JsonToFloat3(renderablej["scale"]),
-      .rotation = JsonToFloat3(renderablej["rotation"]),
-      .skipMeshes = TransformJsonArrayToSet(renderablej["skipMeshes"])
-    };
+    std::string name = renderablej["name"];
+    XMFLOAT3 position = JsonToFloat3(renderablej["position"]);
+    XMFLOAT3 scale = JsonToFloat3(renderablej["scale"]);
+    XMFLOAT3 rotation = JsonToFloat3(renderablej["rotation"]);
+    std::set<std::string> meshesToSkip = TransformJsonArrayToSet<std::string>(renderablej["skipMeshes"]);
 
-    std::wstring model3DName = L"";
+    MeshMaterialMap meshMaterials;
+    MeshMaterialMap meshMaterialsShadowMap;
+    std::vector<MeshPtr> meshesVector;
+
+    std::string model3DName = "";
     if (!renderablej["meshMaterials"].empty()) {
-      renderableParams.meshMaterials = TranformJsonToMeshMaterialMap(renderablej["meshMaterials"]);
-      renderableParams.meshMaterialsShadowMap = TranformJsonToMeshMaterialMap(renderablej["meshMaterialsShadowMap"]);
-    }
-    else {
+      meshMaterials = TranformJsonToMeshMaterialMap(renderablej["meshMaterials"]);
+      meshMaterialsShadowMap = TranformJsonToMeshMaterialMap(renderablej["meshMaterialsShadowMap"]);
+    } else {
       using namespace Templates::Model3D;
-      model3DName = StringToWString(renderablej["model"]);
+      model3DName = renderablej["model"];
       Model3DPtr model = GetModel3DTemplate(model3DName);
       animation = model->animations;
-      auto shadowMapMaterial = model->animations ? GetMaterialTemplate(L"ShadowMapAlphaSkinning") : GetMaterialTemplate(L"ShadowMapAlpha");
+      MaterialPtr shadowMapMaterial = model->animations ? GetMaterialTemplate("ShadowMapAlphaSkinning") : GetMaterialTemplate("ShadowMapAlpha");
       for (UINT meshIndex = 0; meshIndex < model->meshes.size(); meshIndex++) {
-        auto mesh = model->meshes[meshIndex];
-        renderableParams.meshMaterials.insert_or_assign(mesh, GetMaterialTemplate(getMaterialName(model3DName, meshIndex)));
-        renderableParams.meshMaterialsShadowMap.insert_or_assign(mesh, shadowMapMaterial);
+        MeshPtr mesh = model->meshes[meshIndex];
+#if defined(_EDITOR)
+        meshesVector.push_back(mesh);
+#endif
+        meshMaterials.insert_or_assign(mesh, GetMaterialTemplate(BuildMaterialName(model3DName, meshIndex)));
+        meshMaterialsShadowMap.insert_or_assign(mesh, shadowMapMaterial);
+        if (meshesToSkip.contains(mesh->name)) {
+          skipMeshes.insert(mesh);
+        }
       }
     }
 
-    auto meshMaterials = renderableParams.meshMaterials;
-    auto meshMaterialsShadowMap = renderableParams.meshMaterialsShadowMap;
-
     auto r = std::make_shared<RenderableT>(RenderableT{
-      .definition = renderableParams,
-      .name = renderableParams.name,
+      .name = name,
       .model3DName = model3DName,
       .meshMaterials = meshMaterials,
       .meshMaterialsShadowMap = meshMaterialsShadowMap,
-      .position = renderableParams.position,
-      .scale = renderableParams.scale,
-      .rotation = renderableParams.rotation,
+      .position = position,
+      .scale = scale,
+      .rotation = rotation,
       .skipMeshes = skipMeshes,
+#if defined(_EDITOR)
+      .meshesVector = meshesVector,
+#endif
       .animations = animation,
-      });
+    });
     r->this_ptr = r;
     r->Initialize(renderer);// .wait();
     renderables[r->name] = r;
@@ -366,15 +383,300 @@ namespace Scene::Renderable {
     return r;
   }
 
-  std::map<std::wstring, std::shared_ptr<Renderable>>& GetRenderables() { return renderables; }
+  std::map<std::string, std::shared_ptr<Renderable>>& GetRenderables() { return renderables; }
 
-  std::map<std::wstring, std::shared_ptr<Renderable>>& GetAnimables() { return animables; }
+  std::map<std::string, std::shared_ptr<Renderable>>& GetAnimables() { return animables; }
 
-  std::vector<std::wstring> GetRenderablesNames() {
-    std::vector<std::wstring> names;
-    std::transform(renderables.begin(), renderables.end(), std::back_inserter(names), [](const std::pair<std::wstring, std::shared_ptr<Renderable>> pair) { return pair.second->name; });
+  std::vector<std::string> GetRenderablesNames() {
+    std::vector<std::string> names;
+    std::transform(renderables.begin(), renderables.end(), std::back_inserter(names), [](const std::pair<std::string, std::shared_ptr<Renderable>> pair) { return pair.second->name; });
     return names;
   }
+
+#if defined(_EDITOR)
+  void SelectRenderable(std::string renderableName, void*& ptr) {
+    ptr = renderables.at(renderableName).get();
+  }
+
+  int resizeCb(ImGuiInputTextCallbackData* data) {
+    if (data->EventFlag == ImGuiInputTextFlags_CallbackResize)
+    {
+      std::string* str = (std::string*)data->UserData;
+      //IM_ASSERT(str->begin() == data->Buf);
+      str->resize(data->BufSize); // NB: On resizing calls, generally data->BufSize == data->BufTextLen + 1
+      data->Buf = &*str->begin();
+    }
+    return 0;
+  }
+
+  void Renderable::DrawEditorInformationAttributes() {
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    std::string tableName = "renderable-information-atts";
+    if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
+    {
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      std::string currentName = name;
+      if (ImGui::InputText("name", &currentName)) {
+
+        if (!renderables.contains(currentName)) {
+          renderables[currentName] = renderables[name];
+          renderables.erase(name);
+        }
+
+        if (!animables.contains(currentName) && animables.contains(name)) {
+          animables[currentName] = animables[name];
+          animables.erase(name);
+        }
+
+        name = currentName;
+      }
+      ImGui::EndTable();
+    }
+    
+  }
+
+  void Renderable::DrawEditorWorldAttributes() {
+
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    std::string tableName = "renderable-world-atts";
+    if (ImGui::BeginTable(tableName.c_str(), 4, ImGuiTableFlags_NoSavedSettings))
+    {
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::PushID("position");
+      ImGui::Text("position");
+      ImGui::TableSetColumnIndex(1);
+      ImGui::InputFloat("x", &position.x);
+      ImGui::TableSetColumnIndex(2);
+      ImGui::InputFloat("y", &position.y);
+      ImGui::TableSetColumnIndex(3);
+      ImGui::InputFloat("z", &position.z);
+      ImGui::PopID();
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::PushID("rotation");
+      ImGui::Text("rotation");
+      ImGui::TableSetColumnIndex(1);
+      ImGui::InputFloat("roll", &rotation.x);
+      ImGui::TableSetColumnIndex(2);
+      ImGui::InputFloat("pitch", &rotation.y);
+      ImGui::TableSetColumnIndex(3);
+      ImGui::InputFloat("yaw", &rotation.z);
+      ImGui::PopID();
+
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::PushID("scale");
+      ImGui::Text("scale");
+      ImGui::TableSetColumnIndex(1);
+      ImGui::InputFloat("x", &scale.x);
+      ImGui::TableSetColumnIndex(2);
+      ImGui::InputFloat("y", &scale.y);
+      ImGui::TableSetColumnIndex(3);
+      ImGui::InputFloat("z", &scale.z);
+      ImGui::PopID();
+
+      ImGui::EndTable();
+    }
+  }
+
+
+
+  void Renderable::DrawEditorAnimationAttributes() {
+    if (!animations) return;
+
+    ImGui::Text("animations");
+    std::vector<std::string> selectables = { " " };
+    for (auto& [name, length] : animations->animationsLength) {
+      if (name == "") continue;
+      selectables.push_back(name);
+    }
+
+    int current_item = 0;
+    if (currentAnimation != "") {
+      current_item = static_cast<int>(std::find(selectables.begin(), selectables.end(), currentAnimation) - selectables.begin());
+    }
+
+    DrawComboSelection(selectables[current_item], selectables, [this](std::string animName) {
+      SetCurrentAnimation(animName != " " ? animName : "");
+    });
+
+    if (ImGui::Button(ICON_FA_BACKWARD)) {
+      int animIdx = current_item - 1;
+      if (animIdx == -1) animIdx = static_cast<int>(selectables.size()) - 1;
+      std::string animName = selectables[animIdx];
+      SetCurrentAnimation(animName != " " ? animName : "");
+    }
+    ImGui::SameLine();
+
+    if (playingAnimation) {
+      if (ImGui::Button(ICON_FA_PAUSE)) {
+        playingAnimation = false;
+      }
+    } else {
+      if (ImGui::Button(ICON_FA_PLAY)) {
+        playingAnimation = true;
+      }
+    }
+    ImGui::SameLine();
+
+    if (ImGui::Button(ICON_FA_STOP)) {
+      playingAnimation = false;
+      currentAnimationTime = 0.0f;
+    }
+    ImGui::SameLine();
+    if (animationTimeFactor > 0.0f) {
+      if (ImGui::Button(ICON_FA_UNDO)) {
+        animationTimeFactor = -animationTimeFactor;
+      }
+    } else if (animationTimeFactor < 0.0f) {
+      if (ImGui::Button(ICON_FA_REDO)) {
+        animationTimeFactor = -animationTimeFactor;
+      }
+    } else {
+      if (ImGui::Button(ICON_FA_SYNC)) {
+        animationTimeFactor = 1.0f;
+      }
+    }
+    ImGui::SameLine();
+    
+    if (ImGui::Button(ICON_FA_FORWARD)) {
+      int animIdx = current_item + 1;
+      if (animIdx == selectables.size()) animIdx = 0;
+      std::string animName = selectables[animIdx];
+      SetCurrentAnimation(animName != " " ? animName : "");
+    }
+    ImGui::NewLine();
+  }
+
+  void Renderable::DrawEditorMeshesAttributes() {
+    
+    std::vector<std::string> modelsNames = GetModels3DNames();
+    std::vector<std::string> meshesNames = GetMeshesNames();
+
+    std::vector<std::string> selectables = { " " };
+    selectables.insert(selectables.end(), modelsNames.begin(), modelsNames.end());
+    selectables.insert(selectables.end(), meshesNames.begin(), meshesNames.end());
+
+    int current_item = 0;
+    int current_model = static_cast<int>(std::find(modelsNames.begin(), modelsNames.end(), model3DName) - modelsNames.begin());
+
+    if (current_model != modelsNames.size()) {
+      current_item = 1 + current_model;
+    } else if (meshMaterials.size() > 0) {
+      MeshPtr mesh = meshMaterials.begin()->first;
+      int current_mesh = static_cast<int>(std::find(meshesNames.begin(), meshesNames.end(), mesh->name) - meshesNames.begin());
+      if (current_mesh != meshesNames.size()) {
+        current_item = 1 + static_cast<int>(modelsNames.size()) + current_mesh;
+      }
+    }
+
+    if (ImGui::BeginCombo("model", selectables[current_item].c_str())) {
+
+      for (int i = 0; i < selectables.size(); i++) {
+        ImGui::Selectable(selectables[i].c_str(), current_item == i);
+      }
+
+      ImGui::EndCombo();
+    }
+
+    std::string tableName = "renderable-meshes-atts";
+    if (ImGui::BeginTable(tableName.c_str(), 4, ImGuiTableFlags_NoSavedSettings))
+    {
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(0);
+      ImGui::TableHeader("skip");
+      ImGui::TableSetColumnIndex(1);
+      ImGui::TableHeader("mesh");
+      ImGui::TableSetColumnIndex(2);
+      ImGui::TableHeader("material");
+      ImGui::TableSetColumnIndex(3);
+      ImGui::TableHeader("shadowmap material");
+
+      for (auto& mesh : meshesVector) {
+        ImGui::TableNextRow();
+
+        bool skip_v = skipMeshes.contains(mesh);
+        ImGui::TableSetColumnIndex(0);
+        std::string comboIdSkip = "mesh#" + mesh->name + "#skip";
+        ImGui::PushID(comboIdSkip.c_str());
+        if (ImGui::Checkbox("", &skip_v)) {
+          if (skip_v) {
+            skipMeshes.insert(mesh);
+          } else {
+            skipMeshes.erase(mesh);
+          }
+        }
+        ImGui::PopID();
+
+        ImGui::TableSetColumnIndex(1);
+        ImGui::Text(mesh->name.c_str());
+
+        ImGui::TableSetColumnIndex(2);
+        std::string comboId = "mesh#" + mesh->name + "#material";
+        ImGui::PushID(comboId.c_str());
+        auto material = meshMaterials[mesh];
+        DrawComboSelection(material->name, GetMaterialsNamesMatchingClass(mesh->vertexClass), [this,mesh](std::string matName) {
+          loading = true;
+          MaterialPtr newMat = GetMaterialTemplate(matName);
+          meshMaterials[mesh] = newMat;
+          std::thread pushReload([this]() {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(200ms);
+            Scene::Level::PushRenderableToReloadQueue(this_ptr);
+          });
+          pushReload.detach();
+        });
+        ImGui::PopID();
+
+        ImGui::TableSetColumnIndex(3);
+        std::string comboIdSM = "mesh#" + mesh->name + "#materialShadowMap";
+        ImGui::PushID(comboIdSM.c_str());
+        auto materialShadowMap = meshMaterialsShadowMap[mesh];
+        DrawComboSelection(materialShadowMap->name, GetShadowMapMaterialsNamesMatchingClass(mesh->vertexClass), [this,mesh](std::string matName) {
+          loading = true;
+          MaterialPtr newMat = GetMaterialTemplate(matName);
+          meshMaterialsShadowMap[mesh] = newMat;
+          std::thread pushReload([this]() {
+            using namespace std::chrono_literals;
+            std::this_thread::sleep_for(200ms);
+            Scene::Level::PushRenderableToReloadQueue(this_ptr);
+          });
+          pushReload.detach();
+        });
+        ImGui::PopID();
+      }
+      
+      ImGui::EndTable();
+    }
+  }
+
+  void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size)
+  {
+    Renderable* renderable = (Renderable*)ptr;
+
+    std::string tableName = "renderable-panel";
+    if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+    {
+      renderable->DrawEditorInformationAttributes();
+      renderable->DrawEditorWorldAttributes();
+      renderable->DrawEditorAnimationAttributes();
+      renderable->DrawEditorMeshesAttributes();
+      ImGui::EndTable();
+    }
+  }
+
+  std::string GetRenderableName(void* ptr)
+  {
+    Renderable* renderable = (Renderable*)ptr;
+    return renderable->name;
+  }
+#endif
 
   void DestroyRenderables()
   {

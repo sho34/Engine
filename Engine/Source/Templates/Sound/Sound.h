@@ -2,25 +2,28 @@
 
 namespace Templates::Sound {
 
-	static const std::wstring templateName = L"audio.json";
+	static const std::string templateName = "audio.json";
 
 	struct Sound
 	{
 		bool systemCreated = false;
-		std::wstring name = L"";
-		std::wstring assetPath;
+		std::string name = "";
+		std::string assetPath;
 		std::unique_ptr<SoundEffect> sound;
 	};
 
-	std::shared_ptr<Sound>& GetSoundTemplate(std::wstring soundName);
-	std::map<std::wstring, std::shared_ptr<Sound>> GetNamedSounds();
-	std::vector<std::wstring> GetSoundsNames();
+	std::shared_ptr<Sound>& GetSoundTemplate(std::string soundName);
+	std::map<std::string, std::shared_ptr<Sound>> GetNamedSounds();
+	std::vector<std::string> GetSoundsNames();
 	void ReleaseSoundTemplates();
 
 #if defined(_EDITOR)
+	void SelectSound(std::string soundName, void*& ptr);
+	void DrawSoundPanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	std::string GetSoundName(void* ptr);
 	nlohmann::json json();
 #endif
-	Concurrency::task<void> json(std::wstring, nlohmann::json);
+	Concurrency::task<void> json(std::string, nlohmann::json);
 
 };
 

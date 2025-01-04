@@ -44,14 +44,14 @@ namespace DeviceUtils::RootSignature
 	}
 
 	auto GetRegistersNames = [](auto& paramsDef) {
-		std::vector<std::wstring> names;
+		std::vector<std::string> names;
 		std::transform(paramsDef->begin(), paramsDef->end(), std::back_inserter(names), [](auto& paramDef) {
 			return paramDef.first;
 		});
 		return names;
 	};
 
-	CBufferParameter* FindRegisterByName(auto& paramsVS, auto& paramsPS, std::wstring name) {
+	CBufferParameter* FindRegisterByName(auto& paramsVS, auto& paramsPS, std::string name) {
 		if (paramsVS->find(name) != paramsVS->end()) {
 			return &paramsVS->find(name)->second;
 		}
@@ -70,7 +70,7 @@ namespace DeviceUtils::RootSignature
 		auto cbuffersPS = GetRegistersNames(cbufferPSParamsDef);
 
 		//merge the cbuffer names
-		std::set<std::wstring> cbuffersNames;
+		std::set<std::string> cbuffersNames;
 		for (auto name : cbuffersVS) { cbuffersNames.insert(name); }
 		for (auto name : cbuffersPS) { cbuffersNames.insert(name); }
 

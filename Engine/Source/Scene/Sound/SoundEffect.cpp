@@ -4,30 +4,46 @@
 
 namespace Scene::SoundEffect {
   
-  std::map<std::wstring, SoundEffectPtr> soundsEffects;
+  std::map<std::string, SoundEffectPtr> soundsEffects;
   std::vector<SoundEffectPtr> sounds3DEffects;
 
-  std::map<std::wstring, std::shared_ptr<SoundEffect>> GetSoundsEffects() { return soundsEffects; }
+  std::map<std::string, std::shared_ptr<SoundEffect>> GetSoundsEffects() { return soundsEffects; }
   std::vector<SoundEffectPtr> Get3DSoundsEffects() { return sounds3DEffects; }
 
-  std::vector<std::wstring> GetSoundEffectsNames() {
-    std::vector<std::wstring> names;
-    std::transform(soundsEffects.begin(), soundsEffects.end(), std::back_inserter(names), [](const std::pair<std::wstring, std::shared_ptr<SoundEffect>> pair) { return pair.second->name; });
+  std::vector<std::string> GetSoundEffectsNames() {
+    std::vector<std::string> names;
+    std::transform(soundsEffects.begin(), soundsEffects.end(), std::back_inserter(names), [](const std::pair<std::string, std::shared_ptr<SoundEffect>> pair) { return pair.second->name; });
     return names;
   }
+
+#if defined(_EDITOR)
+  void SelectSoundEffect(std::string soundEffectName, void*& ptr) {
+    ptr = soundsEffects.at(soundEffectName).get();
+  }
+
+  void DrawSoundEffectPanel(void*& ptr, ImVec2 pos, ImVec2 size)
+  {
+  }
+
+  std::string GetSoundEffectName(void* ptr)
+  {
+    SoundEffect* soundEffect = (SoundEffect*)ptr;
+    return soundEffect->name;
+  }
+#endif
 
   std::shared_ptr<SoundEffect> CreateSoundEffect(nlohmann::json soundj)
   {
     SoundEffectPtr fx = std::make_shared<SoundEffect>();
 
-    std::wstring name = StringToWString(soundj["name"]);
-    std::wstring templateName = StringToWString(soundj["sound"]);
+    std::string name = soundj["name"];
+    std::string templateName = soundj["sound"];
     fx->name = name;
     fx->soundTemplate = GetSoundTemplate(templateName);
 
     SOUND_EFFECT_INSTANCE_FLAGS instanceCreationFlags = SoundEffectInstance_Default;
     if (soundj.contains("instanceFlags")) {
-      instanceCreationFlags = stringToSoundEffectInstanceFlag[StringToWString(soundj["instanceFlags"])];
+      instanceCreationFlags = stringToSoundEffectInstanceFlag[soundj["instanceFlags"]];
     }
     fx->instanceFlags = instanceCreationFlags;
     fx->soundInstance = fx->soundTemplate->sound->CreateInstance(instanceCreationFlags);
@@ -55,12 +71,12 @@ namespace Scene::SoundEffect {
 #if defined(_EDITOR)
   nlohmann::json SoundEffect::json() {
     nlohmann::json soundj = {
-      { "name", WStringToString(name) },
-      { "sound", WStringToString(soundTemplate->name) },
+      { "name", name },
+      { "sound", soundTemplate->name },
       { "volume", volume },
       { "autoPlay", autoPlay },
       { "position", { position.x, position.y, position.z } },
-      { "instanceFlags", WStringToString(soundEffectInstanceFlagToString[instanceFlags]) }
+      { "instanceFlags", soundEffectInstanceFlagToString[instanceFlags] }
     };
     return soundj;
   }
