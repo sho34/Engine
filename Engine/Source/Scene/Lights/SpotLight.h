@@ -5,14 +5,14 @@
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-namespace Scene::Lights {
+namespace Scene {
 
 	struct SpotLightShadowMapParams
 	{
-		UINT shadowMapWidth;
-		UINT shadowMapHeight;
-		FLOAT viewWidth;
-		FLOAT viewHeight;
+		UINT shadowMapWidth = 1024U;
+		UINT shadowMapHeight = 1024U;
+		FLOAT viewWidth = 1000.0f;
+		FLOAT viewHeight = 1000.0f;
 		FLOAT nearZ = 0.01f;
 		FLOAT farZ = 1000.0f;
 	};
@@ -25,27 +25,20 @@ namespace Scene::Lights {
 		XMFLOAT2 shadowMapTexelInvSize;
 	};
 
-	struct SpotLight {
-
+	struct SpotLight
+	{
 		XMFLOAT3	color;
 		XMFLOAT3	position;
 		union {
 			XMFLOAT2	rotation;
-			struct {
-				FLOAT azimuthalAngle;
-				FLOAT polarAngle;
-			};
+			FLOAT rot[2];
+			struct { FLOAT azimuthalAngle, polarAngle; };
 		};
 		FLOAT			coneAngle;
 		union {
 			XMFLOAT3	attenuation;
-			struct {
-				FLOAT constant;
-				FLOAT linear;
-				FLOAT quadratic;
-			};
+			FLOAT att[3];
+			struct { FLOAT constant, linear, quadratic; };
 		};
-
 	};
-
 }

@@ -1,11 +1,21 @@
 #pragma once
 
 #include "../../../d3dx12.h"
-#include "../../../Templates/Material/MaterialImpl.h"
+#include "../../../Templates/Material/Material.h"
 
-namespace DeviceUtils::RootSignature
+namespace DeviceUtils
 {
-	CComPtr<ID3D12RootSignature> CreateRootSignature(CComPtr<ID3D12Device2> d3dDevice, const MaterialPtr& material);
-	std::map<INT, CD3DX12_DESCRIPTOR_RANGE> GetRootSignatureRanges(const MaterialPtr& material);
-	std::vector<D3D12_STATIC_SAMPLER_DESC> GetRootSignatureSamplerDesc(const MaterialPtr& material);
+	using namespace Templates;
+	CComPtr<ID3D12RootSignature> CreateRootSignature(
+		std::string name,
+		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,
+		ShaderConstantsBufferParametersMap& cbufferPSParamsDef,
+		ShaderTextureParametersMap& srvPSParamsDef,
+		ShaderSamplerParametersMap& samplersDef,
+		std::vector<MaterialSamplerDesc>& matSamplers);
+	std::map<INT, CD3DX12_DESCRIPTOR_RANGE> GetRootSignatureRanges(
+		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,
+		ShaderConstantsBufferParametersMap& cbufferPSParamsDef,
+		ShaderTextureParametersMap& srvPSParamsDef);
+	std::vector<D3D12_STATIC_SAMPLER_DESC> GetRootSignatureSamplerDesc(ShaderSamplerParametersMap& samplersDef, std::vector<MaterialSamplerDesc>& matSamplers);
 };

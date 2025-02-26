@@ -1,124 +1,235 @@
 #pragma once
-#include "../../Renderer/Renderer.h"
-#include "../../Templates/Model3D/Model3DImpl.h"
+#include <atlbase.h>
+#include <nlohmann/json.hpp>
+#include <set>
+#include <DirectXCollision.h>
+#include "../../Templates/Model3D/Model3D.h"
+#include "../../Templates/Mesh/Mesh.h"
+#include "../../Templates/Material/Material.h"
 #include "../../Animation/Animated.h"
+#include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
 
-namespace Scene::Lights { struct Light; };
-namespace Scene::Camera { struct Camera; };
-namespace Scene::Renderable 
+namespace Scene { struct Camera; struct Light; };
+namespace Scene
 {
-	typedef std::pair<MeshPtr, MaterialPtr> MeshMaterialPair;
-	typedef std::map<MeshPtr, MaterialPtr> MeshMaterialMap;
+	using namespace Templates;
+	using namespace DeviceUtils;
 
-	typedef std::pair<Model3DPtr, std::vector<MaterialPtr>> ModelMaterialPair;
+#if defined(_EDITOR)
+	enum RenderableFlags
+	{
+		RenderableFlags_CreateMeshes = 0x1,
+		RenderableFlags_CreateMeshesFromModel3D = 0x2,
+		RenderableFlags_DestroyMeshes = 0x4,
+		RenderableFlags_RebuildMeshes = RenderableFlags_CreateMeshes | RenderableFlags_DestroyMeshes,
+		RenderableFlags_RebuildMeshesFromModel3D = RenderableFlags_CreateMeshesFromModel3D | RenderableFlags_DestroyMeshes,
+		RenderableFlags_SwapMaterialsFromMesh = 0x8,
+	};
+#endif
 
-	typedef std::pair<MeshPtr, std::vector<ConstantsBufferViewDataPtr>> MeshConstantBufferPair;
-	typedef std::map<MeshPtr, std::vector<ConstantsBufferViewDataPtr>> MeshConstantsBufferMap;
+	//Mesh Instance to Material Instance
+	typedef std::pair<std::shared_ptr<MeshInstance>, std::shared_ptr<MaterialInstance>> MeshMaterialPair;
+	typedef std::map<std::shared_ptr<MeshInstance>, std::shared_ptr<MaterialInstance>> MeshMaterialMap;
+	//MeshInstance to ConstantsBuffer
+	typedef std::pair<std::shared_ptr<MeshInstance>, std::vector<std::shared_ptr<ConstantsBuffer>>> MeshConstantBufferPair;
+	typedef std::map<std::shared_ptr<MeshInstance>, std::vector<std::shared_ptr<ConstantsBuffer>>> MeshConstantsBufferMap;
+	//MeshInstance to RootSignature
+	typedef std::pair<std::shared_ptr<MeshInstance>, CComPtr<ID3D12RootSignature>> MeshRootSignaturePair;
+	typedef std::map<std::shared_ptr<MeshInstance>, CComPtr<ID3D12RootSignature>> MeshRootSignatureMap;
+	//MeshInstance to PipelineState
+	typedef std::pair<std::shared_ptr<MeshInstance>, CComPtr<ID3D12PipelineState>> MeshPipelineStatePair;
+	typedef std::map<std::shared_ptr<MeshInstance>, CComPtr<ID3D12PipelineState>> MeshPipelineStateMap;
 
-	typedef std::pair<MeshPtr, CComPtr<ID3D12RootSignature>> MeshRootSignaturePair;
-	typedef std::map<MeshPtr, CComPtr<ID3D12RootSignature>> MeshRootSignatureMap;
+	inline void TranformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, bool uniqueMaterialInstance = false);
 
-	typedef std::pair<MeshPtr, CComPtr<ID3D12PipelineState>> MeshPipelineStatePair;
-	typedef std::map<MeshPtr, CComPtr<ID3D12PipelineState>> MeshPipelineStateMap;
+	inline void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
 
 	struct Renderable
 	{
-		~Renderable() { this_ptr = nullptr; } //will this work?
+		~Renderable() { Destroy(); } //will this work?
 		std::shared_ptr<Renderable> this_ptr = nullptr; //dumb but efective
 
-		bool loading = true;
+		nlohmann::json json;
 
 		std::string name = "";
-		std::string model3DName = "";
-		MeshMaterialMap meshMaterials;
-		MeshMaterialMap meshMaterialsShadowMap;
-
-		MeshConstantsBufferMap meshConstantsBuffer;
-		MeshRootSignatureMap meshRootSignatures;
-		MeshPipelineStateMap meshPipelineStates;
 
 		XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
 		XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
-		XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
+		union {
+			XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
+			struct { FLOAT roll, pitch, yaw; };
+			FLOAT rot[3];
+		};
 
-		std::set<MeshPtr> skipMeshes;
-#if defined(_EDITOR)
-		std::vector<MeshPtr> meshesVector;
-#endif
+		//draw
+		bool visible = true;
+		bool hidden = false;
+		D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
-		std::shared_ptr<Animation::Animated> animations = nullptr;
+		//Model3D
+		std::shared_ptr<Model3DInstance> model3D = nullptr;
+
+		//meshes
+		std::set<unsigned int> skipMeshes;
+		std::vector<std::shared_ptr<MeshInstance>> meshes;
+		std::vector<std::shared_ptr<MeshInstance>> meshesShadowMap;
+
+		//Materials
+		MeshMaterialMap meshMaterials;
+		MeshMaterialMap meshShadowMapMaterials;
+		bool uniqueMaterialInstance = false;
+
+		//CONSTANTS BUFFER
+		MeshConstantsBufferMap meshConstantsBuffer;
+		MeshConstantsBufferMap meshShadowMapConstantsBuffer;
+
+		//ROOT SIGNATURE
+		MeshRootSignatureMap meshRootSignatures;
+		MeshRootSignatureMap meshShadowMapRootSignatures;
+
+		//PIPELINE STATE
+		MeshPipelineStateMap meshPipelineStates;
+		MeshPipelineStateMap meshShadowMapPipelineStates;
+
+		//ANIMATION
+		std::shared_ptr<Model3DInstance> animable = nullptr;
 		Animation::BonesTransformations bonesTransformation;
 		std::string currentAnimation = "";
 		float currentAnimationTime = 0.0f;
 		float animationTimeFactor = 1.0f;
 		bool playingAnimation = false;
 
-		//initialization
-		void Initialize(const std::shared_ptr<Renderer>& renderer);
-		
-		//constants buffer
+		BoundingBox boundingBox;
+
+#if defined(_EDITOR)
+		unsigned int renderableUpdateFlags = 0U;
+		std::map<std::shared_ptr<MeshInstance>, std::string> materialSwaps;
+		std::string model3DSwap;
+		std::string meshSwap;
+#endif
+
+		//CREATE
+		void SetMeshMaterial(std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material);
+		void CreateFromModel3D(std::string model3DName);
+		void CreateMeshesComponents();
+		void CreateMeshConstantsBuffers(std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshShadowMapConstantsBuffers(std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshRootSignatures(std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshShadowMapRootSignatures(std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshPipelineState(std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshShadowMapPipelineState(std::shared_ptr<MeshInstance> mesh);
+		void CreateBoundingBox();
+
+		//READ&GET
+		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
+
+		//UPDATE
+#if defined(_EDITOR)
+		void CleanMeshes();
+		void SwapMaterials();
+		void SwapMeshes();
+		void SwapModel3D();
+#endif
+		void WriteMaterialVariablesToConstantsBufferSpace(std::shared_ptr<MaterialInstance>& material, std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int cbvFrameIndex);
 		template<typename T>
-		void WriteToConstantsBufferSpace(std::string constantName, T& data, UINT index, CBufferVariablesDefinitionPtr& cbufferDef, auto& cbvData, UINT slot = 0U, size_t offset=0ULL) {
-			
-			if (loading) return;
+		void WriteConstantsBuffer(std::string constantName, T& data, unsigned int backbufferIndex, unsigned int slot = 0U, size_t offset = 0ULL) {
 
-			auto constantDef = cbufferDef->find(constantName);
-			if (constantDef != cbufferDef->end()) cbvData[constantDef->second.bufferIndex]->push<T>(data, index, constantDef->second.offset + constantDef->second.size * slot + offset);
+			for (auto& [mesh, cbv] : meshConstantsBuffer)
+			{
+				auto& mat = meshMaterials.at(mesh);
+				auto& vsVars = mat->vertexShader->constantsBuffersVariables;
+				auto& psVars = mat->pixelShader->constantsBuffersVariables;
 
+				if (vsVars.contains(constantName)) {
+					auto& vsVar = vsVars.at(constantName);
+					cbv[vsVar.bufferIndex]->push<T>(data, backbufferIndex, vsVar.offset + vsVar.size * slot + offset);
+				}
+				if (psVars.contains(constantName)) {
+					auto& psVar = psVars.at(constantName);
+					cbv[psVar.bufferIndex]->push<T>(data, backbufferIndex, psVar.offset + psVar.size * slot + offset);
+				}
+			}
 		}
+
 		template<typename T>
-		void WriteConstantsBuffer(std::string constantName, T& data, UINT backbufferIndex, UINT slot = 0U , size_t offset = 0ULL) {
-			
-			if (loading) return;
+		void WriteShadowMapConstantsBuffer(std::string constantName, T& data, unsigned int backbufferIndex, unsigned int slot = 0U, size_t offset = 0ULL) {
 
-			for (auto& [mesh, cbv] : meshConstantsBuffer) {
-				MaterialPtr material = meshMaterials[mesh];
-				if (material->loading) continue;
+			for (auto& [mesh, cbv] : meshShadowMapConstantsBuffer)
+			{
+				auto& mat = meshShadowMapMaterials.at(mesh);
+				auto& vsVars = mat->vertexShader->constantsBuffersVariables;
+				auto& psVars = mat->pixelShader->constantsBuffersVariables;
 
-				auto& cbufferDefVS = material->shader->vertexShader->cbufferVariablesDef;
-				WriteToConstantsBufferSpace(constantName, data, backbufferIndex, cbufferDefVS, cbv, slot, offset);
-
-				auto& cbufferDefPS = material->shader->pixelShader->cbufferVariablesDef;
-				WriteToConstantsBufferSpace(constantName, data, backbufferIndex, cbufferDefPS, cbv, slot, offset);
+				if (vsVars.contains(constantName)) {
+					auto& vsVar = vsVars.at(constantName);
+					cbv[vsVar.bufferIndex]->push<T>(data, backbufferIndex, vsVar.offset + vsVar.size * slot + offset);
+				}
+				if (psVars.contains(constantName)) {
+					auto& psVar = psVars.at(constantName);
+					cbv[psVar.bufferIndex]->push<T>(data, backbufferIndex, psVar.offset + psVar.size * slot + offset);
+				}
 			}
 
+			//if (loading) return;
+			//
+			//for (auto& [mesh, cbv] : meshConstantsBuffer) {
+			//	MaterialPtr material = meshMaterials[mesh];
+			//	if (material->loading) continue;
+			//
+			//	auto& cbufferDefVS = material->shader->vertexShader->constantsBuffersVariables;
+			//	WriteToConstantsBufferSpace(constantName, data, backbufferIndex, cbufferDefVS, cbv, slot, offset);
+			//
+			//	auto& cbufferDefPS = material->shader->pixelShader->constantsBuffersVariables;
+			//	WriteToConstantsBufferSpace(constantName, data, backbufferIndex, cbufferDefPS, cbv, slot, offset);
+			//}
 		};
-		void WriteConstantsBuffer(UINT backbufferIndex);
 
-		//rendering
-		void Render(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Scene::Camera::Camera>& camera);
-		void RenderShadowMap(const std::shared_ptr<Renderer>& renderer, const std::shared_ptr<Scene::Lights::Light>& light, UINT cameraIndex);
+		void WirteAnimationConstantsBuffer(unsigned int backbufferIndex);
+		void WriteConstantsBuffer(unsigned int backbufferIndex);
+		void WriteShadowMapConstantsBuffer(unsigned int backbufferIndex);
 
-		//animations
 		void SetCurrentAnimation(std::string animation, float animationTime = 0.0f, float timeFactor = 1.0f, bool autoPlay = true);
 		void StepAnimation(double elapsedSeconds);
 
+		//DESTROY
+		void Destroy();
+
+		//RENDER
+		void Render(std::shared_ptr<Camera> camera = nullptr);
+		void RenderShadowMap(const std::shared_ptr<Light>& light, unsigned int cameraIndex);
+
+		//EDITOR
 #if defined(_EDITOR)
-		nlohmann::json json();
+		//nlohmann::json json();
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorAnimationAttributes();
 		void DrawEditorMeshesAttributes();
 #endif
-
 	};
 
-	//create
+	//CREATE
 	std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej);
-	
-	//access
+
+	//READ
 	std::map<std::string, std::shared_ptr<Renderable>>& GetRenderables();
 	std::map<std::string, std::shared_ptr<Renderable>>& GetAnimables();
+#if defined(_EDITOR)
 	std::vector<std::string> GetRenderablesNames();
+#endif
+
+	//UPDATE
+	void RenderablesStep();
+
+	//EDITOR
 #if defined(_EDITOR)
 	void SelectRenderable(std::string renderableName, void*& ptr);
-	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	void DeSelectRenderable(void*& ptr);
+	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetRenderableName(void* ptr);
 #endif
 
-	//destroy
+	//DELETE
+	void DestroyRenderable(std::shared_ptr<Renderable>& renderable);
 	void DestroyRenderables();
 }
-typedef Scene::Renderable::Renderable RenderableT;
-typedef std::shared_ptr<RenderableT> RenderablePtr;
-typedef Scene::Renderable::MeshMaterialMap RenderableMapT;

@@ -1,83 +1,82 @@
 #include "pch.h"
 #include "ConstantsBuffer.h"
 #include "../D3D12Device/Builder.h"
+#include "../DescriptorHeap/DescriptorHeap.h"
+#include "../../Renderer.h"
 #include "../../../Common/DirectXHelper.h"
 
-namespace DeviceUtils::ConstantsBuffer
+extern std::shared_ptr<Renderer> renderer;
+
+namespace DeviceUtils
 {
-	static ConstantsBufferCpuHandleMap constantsBufferCpuMap;
-	static ConstantsBufferGpuHandleMap constantsBufferGpuMap;
+	std::shared_ptr<DescriptorHeap> csuDescriptorHeap;
+	std::vector<std::shared_ptr<ConstantsBuffer>> constantsBuffers;
 
-	static unsigned int csuDescriptorSize;
-	static CComPtr<ID3D12DescriptorHeap> csuDescriptorHeap; //CBV_SRV_UAV
+	void ConstantsBuffer::SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot, unsigned int backBufferIndex)
+	{
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot, gpu_xhandle[backBufferIndex]);
+		cbvSlot++;
+	}
 
-	static std::set<UINT> csuUsedDescriptorHandle;
-	static std::map<UINT,CD3DX12_CPU_DESCRIPTOR_HANDLE> csuCpuDescriptorHandleMap;
-	static std::map<UINT,CD3DX12_GPU_DESCRIPTOR_HANDLE> csuGpuDescriptorHandleMap;
+	void ConstantsBuffer::Destroy()
+	{
+		constantBuffer = nullptr;
+		for (unsigned int i = 0; i < cpu_xhandle.size(); i++)
+		{
+			FreeCSUDescriptor(cpu_xhandle[i], gpu_xhandle[i]);
+		}
+		mappedConstantBuffer = nullptr;
+		cpu_xhandle.clear();
+		gpu_xhandle.clear();
+	}
 
-	void CreateCSUDescriptorHeap(CComPtr<ID3D12Device2>& d3dDevice, UINT numFrames) {
-		csuDescriptorHeap = D3D12Device::CreateDescriptorHeap(d3dDevice, numFrames * csuNumDescriptorsInFrame, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
-		csuDescriptorSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		CCNAME_D3D12_OBJECT(csuDescriptorHeap);
+	void CreateCSUDescriptorHeap(unsigned int numFrames) {
+		csuDescriptorHeap = std::make_shared<DescriptorHeap>();
+		csuDescriptorHeap->CreateDescriptorHeap(renderer->d3dDevice, numFrames * csuNumDescriptorsInFrame, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	}
 
 	void DestroyCSUDescriptorHeap()
 	{
-		csuDescriptorHeap.Release();
-		csuDescriptorHeap = nullptr;
+		csuDescriptorHeap->DestroyDescriptorHeap();
 	}
 
-	UINT GetCSUDescriptorSize()
+	unsigned int GetCSUDescriptorSize()
 	{
-		return csuDescriptorSize;
+		return csuDescriptorHeap->descriptorSize;
 	}
 
-	CComPtr<ID3D12DescriptorHeap>& GetCSUDescriptorHeap() 
+	CComPtr<ID3D12DescriptorHeap>& GetCSUDescriptorHeap()
 	{
-		return csuDescriptorHeap;
+		return csuDescriptorHeap->descriptorHeap;
 	}
 
 	void AllocCSUDescriptor(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
 	{
-		UINT slotIndex = 0U;
-		for (; slotIndex < csuNumDescriptorsInFrame; slotIndex++) {
-			if (!csuUsedDescriptorHandle.contains(slotIndex)) break;
-		}
-		assert(slotIndex != csuNumDescriptorsInFrame);
-
-		csuUsedDescriptorHandle.insert(slotIndex);
-
-		cpuHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(csuDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-		gpuHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(csuDescriptorHeap->GetGPUDescriptorHandleForHeapStart());
-		cpuHandle.Offset(slotIndex,GetCSUDescriptorSize());
-		gpuHandle.Offset(slotIndex,GetCSUDescriptorSize());
+		csuDescriptorHeap->AllocDescriptor(cpuHandle, gpuHandle);
 	}
 
-	void FreeCSUDescriptor(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle) {
-
-		CD3DX12_CPU_DESCRIPTOR_HANDLE startHandle = CD3DX12_CPU_DESCRIPTOR_HANDLE(csuDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-		
-		UINT slotIndex = static_cast<UINT>(cpuHandle.ptr - startHandle.ptr) / GetCSUDescriptorSize();
-		csuUsedDescriptorHandle.erase(slotIndex);
-
-		cpuHandle.ptr = 0;
-		gpuHandle.ptr = 0;
-	}
-
-	static std::mutex constantsBufferMutex;
-	std::shared_ptr<ConstantsBufferViewData> CreateConstantsBufferViewData(const std::shared_ptr<Renderer>& renderer, size_t bufferSize, std::string cbName)
+	void FreeCSUDescriptor(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
 	{
-		std::lock_guard<std::mutex> lock(constantsBufferMutex);
-		ConstantsBufferViewDataPtr cbvData = std::make_shared<ConstantsBufferViewData>(bufferSize);
+		csuDescriptorHeap->FreeDescriptor(cpuHandle, gpuHandle);
+	}
+
+	//static std::mutex constantsBufferMutex;
+	std::shared_ptr<ConstantsBuffer> CreateConstantsBuffer(size_t bufferSize, std::string cbName)
+	{
+		//std::lock_guard<std::mutex> lock(constantsBufferMutex);
+		std::shared_ptr<ConstantsBuffer> cbvData = std::make_shared<ConstantsBuffer>(bufferSize, cbName);
 
 		//create the d3d12 cbuffer
 		CD3DX12_RESOURCE_DESC constantBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(renderer->numFrames * cbvData->alignedConstantBufferSize);
 		CD3DX12_HEAP_PROPERTIES uploadHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
 		DX::ThrowIfFailed(renderer->d3dDevice->CreateCommittedResource(
-			&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, 
+			&uploadHeapProperties, D3D12_HEAP_FLAG_NONE,
 			&constantBufferDesc, D3D12_RESOURCE_STATE_GENERIC_READ,
 			nullptr, IID_PPV_ARGS(&cbvData->constantBuffer)
 		));
+
+		CCNAME_D3D12_OBJECT_N(cbvData->constantBuffer, cbName);
+		LogCComPtrAddress(cbName, cbvData->constantBuffer);
 
 		//create the views for the constants buffer and get the handles to the views
 		D3D12_GPU_VIRTUAL_ADDRESS cbvGpuAddress = cbvData->constantBuffer->GetGPUVirtualAddress();
@@ -85,7 +84,7 @@ namespace DeviceUtils::ConstantsBuffer
 			D3D12_CONSTANT_BUFFER_VIEW_DESC desc;
 			desc.BufferLocation = cbvGpuAddress;
 			desc.SizeInBytes = cbvData->alignedConstantBufferSize;
-			
+
 			CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_xhandle;
 			CD3DX12_GPU_DESCRIPTOR_HANDLE gpu_xhandle;
 			AllocCSUDescriptor(cpu_xhandle, gpu_xhandle);
@@ -93,14 +92,8 @@ namespace DeviceUtils::ConstantsBuffer
 			renderer->d3dDevice->CreateConstantBufferView(&desc, cpu_xhandle);
 			cbvGpuAddress += desc.SizeInBytes;
 
-			constantsBufferCpuMap[cbvData].push_back(cpu_xhandle);
-			constantsBufferGpuMap[cbvData].push_back(gpu_xhandle);
-#if defined(_DEBUG)
-			if (n == 0) {
-				std::wstring cbufferName = (L"ConstantsBuffer[" + StringToWString(cbName) + L":" + std::to_wstring(cpu_xhandle.ptr) + L"]");
-				cbvData->constantBuffer->SetName(cbufferName.c_str());
-			}
-#endif
+			cbvData->cpu_xhandle.push_back(cpu_xhandle);
+			cbvData->gpu_xhandle.push_back(gpu_xhandle);
 		}
 
 		//map the CPU memory to the GPU and then mapped memory
@@ -109,42 +102,30 @@ namespace DeviceUtils::ConstantsBuffer
 		DX::ThrowIfFailed(cbvData->constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&cbvData->mappedConstantBuffer)));
 		ZeroMemory(cbvData->mappedConstantBuffer, renderer->numFrames * cbvData->alignedConstantBufferSize);
 
+		constantsBuffers.push_back(cbvData);
+
 		return cbvData;
 	}
 
-	void DestroyConstantsBufferViewData()
+	void DestroyConstantsBuffer(std::shared_ptr<ConstantsBuffer>& cbuffer)
 	{
-		for (auto& [cbvData,cpuHandlers] : constantsBufferCpuMap)
-		{
-			for (int i = 0; i < constantsBufferCpuMap[cbvData].size(); i++) {
-				FreeCSUDescriptor(constantsBufferCpuMap[cbvData][i], constantsBufferGpuMap[cbvData][i]);
-			}
-			cbvData->constantBuffer.Release();
-			cbvData->constantBuffer = nullptr;
-		}
-		constantsBufferCpuMap.clear();
-		constantsBufferGpuMap.clear();
+		DEBUG_PTR_COUNT(cbuffer);
+		nostd::vector_erase(constantsBuffers, cbuffer);
+		cbuffer = nullptr;
 	}
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(std::shared_ptr<ConstantsBufferViewData> cbvData, UINT index)
+	void DestroyConstantsBuffer()
 	{
-		return constantsBufferCpuMap[cbvData][index];
+		constantsBuffers.clear();
 	}
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(std::shared_ptr<ConstantsBufferViewData> cbvData, UINT index)
+	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(const std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int index)
 	{
-		return constantsBufferGpuMap[cbvData][index];
+		return cbvData->cpu_xhandle[index];
 	}
 
-	void WriteMaterialVariablesToConstantsBufferSpace(MaterialPtr& material, std::shared_ptr<ConstantsBufferViewData>& cbvData, UINT cbvFrameIndex)
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(const std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int index)
 	{
-		for (auto& [varName, varMapping] : material->variablesMapping) {
-
-			UINT8* source = *material->variablesBuffer[varMapping.mapping.bufferIndex] + varMapping.mapping.offset;
-			UINT8* destination = cbvData->mappedConstantBuffer + (cbvFrameIndex * cbvData->alignedConstantBufferSize) + varMapping.mapping.offset;
-			memcpy(destination,  source, varMapping.mapping.size);
-			int i = 0;
-		}
+		return cbvData->gpu_xhandle[index];
 	}
-
 }

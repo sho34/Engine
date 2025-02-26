@@ -1,370 +1,307 @@
 #include "pch.h"
 #include "Model3D.h"
-#include "../Mesh/MeshImpl.h"
-#include "../Material/MaterialImpl.h"
+#include "../Mesh/Mesh.h"
 #include "../../Renderer/VertexFormats.h"
 #include "../../Animation/Animated.h"
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/GltfMaterial.h>
+#include <d3d12.h>
+#include <nlohmann/json.hpp>
 
-extern std::mutex rendererMutex;
-extern std::shared_ptr<Renderer> renderer;
+using namespace DeviceUtils;
 
-namespace Templates::Model3D {
+namespace Templates {
 
-  static std::map<std::string, Model3DPtr> model3DTemplates;
+	std::map<std::string, nlohmann::json> model3DTemplates;
+	std::map<std::string, std::shared_ptr<Model3DInstance>> model3DInstances;
+	std::map<std::shared_ptr<Model3DInstance>, unsigned int> model3DInstancesRefCount;
 
-  template<typename T>
-  void CopyVertexPos(T& vertexData, aiVector3D& pos) {
-    vertexData.Position.x = pos[0]; vertexData.Position.y = pos[1]; vertexData.Position.z = pos[2];
-  }
+	//CREATE
+	void CreateModel3D(std::string name, nlohmann::json json)
+	{
+		if (model3DTemplates.contains(name)) return;
+		model3DTemplates.insert_or_assign(name, json);
+	}
 
-  template<typename T>
-  void CopyVertexNormal(T& vertexData, aiVector3D& normal) {
-    vertexData.Normal.x = normal[0]; vertexData.Normal.y = normal[1]; vertexData.Normal.z = normal[2];
-  }
+	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name)
+	{
+		nlohmann::json mdl = model3DTemplates.at(name);
 
-  template<typename T>
-  void CopyVertexTangent(T& vertexData, aiVector3D& tangent) {
-    vertexData.Tangent.x = tangent[0]; vertexData.Tangent.y = tangent[1]; vertexData.Tangent.z = tangent[2];
-  }
+		std::string filename = Model3D::assetsRootFolder + std::string(mdl.at("path"));
 
-  template<typename T>
-  void CopyVertexBiTangent(T& vertexData, aiVector3D& bitangent) {
-    vertexData.BiTangent.x = bitangent[0]; vertexData.BiTangent.y = bitangent[1]; vertexData.BiTangent.z = bitangent[2];
-  }
+		std::filesystem::path path(filename);
 
-  template<typename T>
-  void CopyVertexTexCoord0(T& vertexData, aiVector3D& texcoord) {
-    vertexData.TexCoord.x = texcoord[0]; vertexData.TexCoord.y = texcoord[1];
-  }
+		Assimp::Importer importer;
+		const aiScene* aiModel = importer.ReadFile(path.string(),
+			aiProcess_JoinIdenticalVertices | aiProcess_GenNormals | aiProcess_CalcTangentSpace |
+			aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes
+		);
 
-  template<VertexClass T>
-  std::shared_ptr<byte*> LoadVertices(aiMesh* mesh) { return nullptr; }
+		if (!aiModel)
+		{
+			OutputDebugStringA(importer.GetErrorString());
+			assert(!aiModel);
+		}
 
-  template<>
-  std::shared_ptr<byte*> LoadVertices<POS_NORMAL_TANGENT_TEXCOORD0>(aiMesh* mesh) {
+		//fill the length of the animations so they can be looped
+		if (aiModel->mNumAnimations > 0U)
+		{
+			using namespace Animation;
+			model->animations = CreateAnimatedFromAssimp(aiModel);
+		}
 
-    const size_t size = sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0>) * mesh->mNumVertices;
-    std::shared_ptr<byte*> vertices = std::make_shared<byte*>(new byte[size]);
+		model->vertexClass = !model->animations ? POS_NORMAL_TANGENT_TEXCOORD0 : POS_NORMAL_TANGENT_TEXCOORD0_SKINNING;
+		size_t vertexSize = !model->animations ? sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0>) : sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>);
 
-    std::shared_ptr<Vertex<POS_NORMAL_TANGENT_TEXCOORD0>*> vertexData = reinterpret_cast<const std::shared_ptr<Vertex<POS_NORMAL_TANGENT_TEXCOORD0>*>&>(vertices);
-    
-    //copy every vertex in the mesh
-    for (UINT vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++) {
-      
-      CopyVertexPos((*vertexData)[vertexIndex], mesh->mVertices[vertexIndex]);
-      CopyVertexNormal((*vertexData)[vertexIndex], mesh->mNormals[vertexIndex]);
-      CopyVertexTangent((*vertexData)[vertexIndex], mesh->mTangents[vertexIndex]);
-      //CopyVertexBiTangent((*vertexData)[vertexIndex], mesh->mBitangents[vertexIndex]);
-      CopyVertexTexCoord0((*vertexData)[vertexIndex], mesh->mTextureCoords[0][vertexIndex]);
+		//go through all the meshes in the model
+		for (unsigned int meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++)
+		{
+			auto aMesh = aiModel->mMeshes[meshIndex];
 
-    }
+			model->vertices.push_back(std::vector<byte>(vertexSize * aMesh->mNumVertices));
+			std::vector<byte>& vertexData = model->vertices.back();
+			VerticesLoader.at(model->vertexClass)(aMesh, vertexData);
 
-    return vertices;
-  }
+			std::vector<unsigned int> indicesData;
+			LoadIndices(aMesh, indicesData);
 
-  template<>
-  std::shared_ptr<byte*> LoadVertices<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>(aiMesh* mesh) {
-    const size_t size = sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>) * mesh->mNumVertices;
-    std::shared_ptr<byte*> vertices = std::make_shared<byte*>(new byte[size]);
+			if (model->animations) {
+				LoadBonesInVertices(aMesh, model->animations->bonesOffsets, reinterpret_cast<Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>*>(vertexData.data()));
+			}
 
-    std::shared_ptr<Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>*> vertexData = reinterpret_cast<const std::shared_ptr<Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>*>&>(vertices);
+			unsigned int indicesCount = aMesh->mNumFaces * aMesh->mFaces[0].mNumIndices;
+			std::shared_ptr<MeshInstance> mesh = GetMeshInstance(GetModel3DMeshInstanceName(name, meshIndex), model->vertexClass, vertexData.data(), static_cast<unsigned int>(vertexSize), aMesh->mNumVertices, indicesData.data(), indicesCount);
 
-    //copy every vertex in the mesh
-    for (UINT vertexIndex = 0; vertexIndex < mesh->mNumVertices; vertexIndex++) {
+			CreateBoundingBox(mesh->boundingBox, aMesh);
 
-      CopyVertexPos((*vertexData)[vertexIndex], mesh->mVertices[vertexIndex]);
-      CopyVertexNormal((*vertexData)[vertexIndex], mesh->mNormals[vertexIndex]);
-      CopyVertexTangent((*vertexData)[vertexIndex], mesh->mTangents[vertexIndex]);
-      //CopyVertexBiTangent((*vertexData)[vertexIndex], mesh->mBitangents[vertexIndex]);
-      CopyVertexTexCoord0((*vertexData)[vertexIndex], mesh->mTextureCoords[0][vertexIndex]);
-      
-      //put some values to the bone weight and ids(will be override after)
-      (*vertexData)[vertexIndex].BoneIds = { 0, 0, 0, 0 };
-      (*vertexData)[vertexIndex].BoneWeights = { 0.0f, 0.0f, 0.0f, 0.0f };
-    }
+			model->meshes.push_back(mesh);
 
-    return vertices;
-  }
+			std::shared_ptr<MaterialInstance> materialInstance = nullptr;
 
-  std::map<VertexClass, std::shared_ptr<byte*>(*)(aiMesh*)> VerticesLoader = {
-    {POS_NORMAL_TANGENT_TEXCOORD0, LoadVertices<POS_NORMAL_TANGENT_TEXCOORD0> },
-    {POS_NORMAL_TANGENT_TEXCOORD0_SKINNING, LoadVertices<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING> },
-  };
+			if (mdl.at("autoCreateMaterial"))
+			{
+				std::string materialName = GetModel3DMaterialInstanceName(name, meshIndex);
+				nlohmann::json materialTemplate = GetMaterialTemplate(materialName);
 
-  std::vector<UINT32> LoadIndices(aiMesh* mesh) {
-    UINT totalIndices = mesh->mNumFaces * mesh->mFaces[0].mNumIndices;
-    std::vector<UINT32> indicesData;
-    //UINT faceIndex = 0;
-    for (UINT meshFaceIndex = 0; meshFaceIndex < mesh->mNumFaces; meshFaceIndex++) {
-      for (UINT index = 0; index < mesh->mFaces[meshFaceIndex].mNumIndices; index++) {
-        indicesData.push_back(static_cast<UINT32>(mesh->mFaces[meshFaceIndex].mIndices[index]));
-      }
-    }
-    return indicesData;
-  }
+				if (materialTemplate.empty())
+				{
+					nlohmann::json materialJson = CreateModel3DMaterialJson(mdl.at("materialsShader"), path.relative_path(), aiModel->mMaterials[aMesh->mMaterialIndex]);
+					CreateMaterial(materialName, materialJson);
+				}
 
-  void LoadBonesInVertices(aiMesh* mesh, Animation::BonesTransformations& bones, std::shared_ptr<byte*>& vertices) {
+				materialInstance = GetMaterialInstance(materialName, std::vector<MaterialTexture>(), mesh);
+			}
+			else
+			{
+				materialInstance = GetMaterialInstance(mdl.at("materials").at(meshIndex), std::vector<MaterialTexture>(), mesh);
+			}
 
-    std::shared_ptr<Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>*> vertexData = reinterpret_cast<const std::shared_ptr<Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>*>&>(vertices);
+			model->materials.push_back(materialInstance);
+		}
 
-    std::vector<UINT> numBonesPerVertex(mesh->mNumVertices, 0U);
-    for (UINT meshBoneIndex = 0; meshBoneIndex < mesh->mNumBones; meshBoneIndex++) {
+		importer.FreeScene();
+	}
 
-      auto bone = mesh->mBones[meshBoneIndex];
-      std::string boneName = bone->mName.C_Str();
-      UINT boneId = static_cast<UINT>(std::distance(bones.begin(), bones.find(boneName)));
+	void PushAssimpTextureToJson(nlohmann::json& j, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+	{
+		std::string textureJsonPath = fallbackTexture;
 
-      for (UINT weightIndex = 0; weightIndex < bone->mNumWeights; weightIndex++) {
-        auto weight = bone->mWeights[weightIndex];
+		if (aiTextureName.length > 0)
+		{
+			textureJsonPath = relativePath.parent_path().append(aiTextureName.C_Str()).replace_extension(".dds").string();
+		}
 
-        //skip bones with 0 weight
-        if (weight.mWeight == 0.0f)
-          continue;
+		if (textureJsonPath != "")
+		{
+			j["textures"].push_back({ {"path", textureJsonPath}, {"format", dxgiFormatsToString.at(format)}, {"numFrames", 0} });
+		}
+	};
 
-        UINT offset = numBonesPerVertex[weight.mVertexId];
-        if (offset >= 4) continue;
+	nlohmann::json CreateModel3DMaterialJson(std::string shader, std::filesystem::path relativePath, aiMaterial* material)
+	{
+		nlohmann::json matJson = { {"pipelineState",{}} };
 
-        //use offset to put the value in the propper slot (x:0, y:1, z:2, w:3)
-        uint32_t* boneIdSlot = &(*vertexData)[weight.mVertexId].BoneIds.x + offset;
-        float* weightSlot = &(*vertexData)[weight.mVertexId].BoneWeights.x + offset;
+		matJson["shader"] = shader;
 
-        *boneIdSlot = boneId;
-        *weightSlot = weight.mWeight;
-        numBonesPerVertex[weight.mVertexId]++;
-      }
-    }
-  }
+		bool twoSided;
+		material->Get(AI_MATKEY_TWOSIDED, twoSided);
+		matJson["pipelineState"]["RasterizerState"]["CullMode"] = cullModeToString.at((twoSided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK));
 
-  void PushToMaterialDefinitionTextures(aiString& aiTextureName, std::filesystem::path& relativePath, Templates::Material::MaterialDefinition& matDef, std::string fallbackTexture = "", DXGI_FORMAT textureFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
-  {
-    if (aiTextureName.length > 0) {
-      std::filesystem::path texturePath = relativePath.parent_path().append(aiTextureName.C_Str()).replace_extension(".dds");
-      matDef.textures.push_back({ .texturePath = texturePath.string(), .textureFormat = textureFormat});
-    }
-    else if(fallbackTexture != "")
-    {
-      matDef.textures.push_back({ .texturePath = fallbackTexture, .textureFormat = textureFormat });
-    }
-  }
+		MaterialInitialValueMap matInitialValue;
 
-  void CreateModel3DMaterial(std::string materialName, std::string materialShader, std::filesystem::path relativePath, aiMaterial* material){
+		ai_real shininess;
+		material->Get(AI_MATKEY_SHININESS, shininess);
+		matInitialValue["specularExponent"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, shininess };
 
-    using namespace Templates::Material;
+		ai_real metallic;
+		material->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
+		matInitialValue["metallicFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, metallic };
 
-    MaterialDefinition matDef = {
-      .shaderTemplate = materialShader
-    };
+		ai_real roughness;
+		material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+		matInitialValue["roughnessFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, roughness };
 
-    material->Get(AI_MATKEY_TWOSIDED, matDef.twoSided);
+		aiString alphaMode;
+		material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode);
+		if (strcmp(alphaMode.C_Str(), "OPAQUE") == 0)
+		{
+			matInitialValue["alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, 1.0f };
+		}
+		else
+		{
+			ai_real alphaCut;
+			material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, alphaCut);
+			matInitialValue["alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, alphaCut };
+		}
 
-    ai_real shininess;
-    material->Get(AI_MATKEY_SHININESS, shininess);
-    matDef.mappedValues["specularExponent"] ={ MaterialVariablesTypes::MAT_VAR_FLOAT, shininess };
+		matJson["mappedValues"] = TransformMaterialValueMappingToJson(matInitialValue);
 
-    ai_real metallic;
-    material->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
-    matDef.mappedValues["metallicFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, metallic };
+		aiString diffuseName;
+		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
+		//pushAiMaterialToTextures(diffuseName, "Assets/textures/gridmap.dds");
+		PushAssimpTextureToJson(matJson, relativePath, diffuseName, "Assets/textures/gridmap.dds");
 
-    ai_real roughness;
-    material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
-    matDef.mappedValues["roughnessFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, roughness };
+		aiString normalMapName;
+		material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
+		//pushAiMaterialToTextures(normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
+		PushAssimpTextureToJson(matJson, relativePath, normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
 
-    aiString alphaMode;
-    material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode);
-    if (strcmp(alphaMode.C_Str(), "OPAQUE")==0) {
-      matDef.mappedValues["alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, 1.0f };
-    }
-    else
-    {
-      ai_real alphaCut;
-      material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, alphaCut);
-      matDef.mappedValues["alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, alphaCut };
-    }
+		aiString metallicRoughnessName;
+		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
+		//pushAiMaterialToTextures(metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
+		PushAssimpTextureToJson(matJson, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
 
-    aiString diffuseName;
-    material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
-    PushToMaterialDefinitionTextures(diffuseName, relativePath, matDef, "Assets/textures/gridmap.dds");
+		matJson["samplers"] = { MaterialSamplerDesc().json() };
 
-    aiString normalMapName;
-    material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
-    PushToMaterialDefinitionTextures(normalMapName, relativePath, matDef, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
+		return matJson;
+	}
 
-    aiString metallicRoughnessName;
-    material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
-    PushToMaterialDefinitionTextures(metallicRoughnessName, relativePath, matDef, "", DXGI_FORMAT_R8G8B8A8_UNORM);
+	void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh)
+	{
+		XMFLOAT3 center = {
+			0.5f * (aMesh->mAABB.mMin[0] + aMesh->mAABB.mMax[0]),
+			0.5f * (aMesh->mAABB.mMin[1] + aMesh->mAABB.mMax[1]),
+			0.5f * (aMesh->mAABB.mMin[2] + aMesh->mAABB.mMax[2]),
+		};
 
-    CreateMaterialTemplate(materialName, matDef).wait();
+		XMFLOAT3 extents = {
+			0.5f * fabs(aMesh->mAABB.mMin[0] - aMesh->mAABB.mMax[0]),
+			0.5f * fabs(aMesh->mAABB.mMin[1] - aMesh->mAABB.mMax[1]),
+			0.5f * fabs(aMesh->mAABB.mMin[2] - aMesh->mAABB.mMax[2]),
+		};
 
-  }
+		boundingBox = BoundingBox(center, extents);
+	}
 
-  std::string BuildMeshName(std::string model3DName, UINT meshIndex)
-  {
-    return "mesh." + model3DName + "." + std::to_string(meshIndex);
-  }
+	//READ&GET
+	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name)
+	{
+		if (!model3DTemplates.contains(name)) return nullptr;
 
-  std::string BuildMaterialName(std::string model3DName, UINT meshIndex)
-  {
-    return "mat." + model3DName + "." + std::to_string(meshIndex);
-  }
+		std::shared_ptr<Model3DInstance> model = nullptr;
 
-  void ReleaseModel3DTemplates()
-  {
-    for (auto& [name, model] : model3DTemplates) {
+		if (model3DInstances.contains(name))
+		{
+			model = model3DInstances.at(name);
+		}
+		else
+		{
+			model = std::make_shared<Model3DInstance>();
+			LoadModel3DInstance(model, name);
+			model3DInstances.insert_or_assign(name, model);
+			model3DInstancesRefCount.insert_or_assign(model, 0U);
+		}
+		model3DInstancesRefCount.find(model)->second++;
+		return model;
+	}
 
-      for (auto& vert : model->vertices) {
-        delete* vert;
-      }
-      model->indices.clear();
+	std::vector<std::string> GetModels3DNames() {
+		return nostd::GetKeysFromMap(model3DTemplates);
+	}
 
-      for (auto& mesh : model->meshes) {
-        mesh->vbvData.vertexBuffer = nullptr;
-        mesh->vbvData.vertexBufferUpload = nullptr;
-        mesh->ibvData.indexBuffer = nullptr;
-        mesh->ibvData.indexBufferUpload = nullptr;
-      }
-      model->meshes.clear();
+	std::string GetModel3DMeshInstanceName(std::string name, unsigned int index) {
+		return "mesh." + name + "." + std::to_string(index);
+	}
 
-      if (model->animations) {
-        DestroyNodesHierarchy(&model->animations->rootHierarchy);
-      }
-    }
+	std::string GetModel3DMaterialInstanceName(std::string name, unsigned int index) {
+		return "mat." + name + "." + std::to_string(index);
+	}
 
-    model3DTemplates.clear();
-  }
+	//UPDATE
 
-  std::shared_ptr<Model3D> GetModel3DTemplate(std::string model3DName) {
-    auto it = model3DTemplates.find(model3DName);
-    return (it != model3DTemplates.end()) ? it->second : nullptr;
-  }
+	//DESTROY
 
-  std::map<std::string, std::shared_ptr<Model3D>> GetNamedModels3D() {
-    return model3DTemplates;
-  }
-
-  std::vector<std::string> GetModels3DNames() {
-    std::vector<std::string> names;
-    std::transform(model3DTemplates.begin(), model3DTemplates.end(), std::back_inserter(names), [](std::pair<std::string, std::shared_ptr<Model3D>> pair) { return pair.first; });
-    return names;
-  }
+	//EDITOR
+	void ReleaseModel3DTemplates()
+	{
+		model3DInstancesRefCount.clear();
+		model3DInstances.clear();
+		model3DTemplates.clear();
+	}
 
 #if defined(_EDITOR)
-  void SelectModel3D(std::string model3DName, void*& ptr) {
-    ptr = model3DTemplates.at(model3DName).get();
-  }
+	void DrawModel3DPanel(std::string& model, ImVec2 pos, ImVec2 size, bool pop)
+	{
+	}
 
-  void DrawModel3DPanel(void*& ptr, ImVec2 pos, ImVec2 size)
-  {
-  }
+	std::string GetModel3DInstanceTemplateName(std::shared_ptr<Model3DInstance> model3D)
+	{
+		return nostd::GetKeyFromValueInMap(model3DInstances, model3D);
+	}
 
-  std::string GetModel3DName(void* ptr)
-  {
-    Model3D* model = (Model3D*)ptr;
-    return model->name;
-  }
+	/*
+	nlohmann::json json()
+	{
+		nlohmann::json models = nlohmann::json({});
 
-  nlohmann::json json()
-  {
-    nlohmann::json models = nlohmann::json({});
+		for (auto& [name, model] : model3DTemplates) {
 
-    for (auto& [name, model] : model3DTemplates) {
+			models[name] = {
+				{ "autoCreateMaterial", model->model3dDefinition.autoCreateMaterial },
+				{ "materialsShader", model->model3dDefinition.materialsShader },
+				{ "assetPath", model->assetPath }
+			};
+		}
 
-      models[name] = {
-        { "autoCreateMaterial", model->model3dDefinition.autoCreateMaterial },
-        { "materialsShader", model->model3dDefinition.materialsShader },
-        { "assetPath", model->assetPath }
-      };
-    }
-
-    return models;
-  }
+		return models;
+	}
+	*/
 #endif
 
-  Concurrency::task<void> json(std::string name, nlohmann::json model3dj)
-  {
-    const std::string assetPath = model3dj["assetPath"];
-    const std::string filename = assetsRootFolder + assetPath;
+	BoundingBox Model3DInstance::GetAnimatedBoundingBox(XMMATRIX* bones)
+	{
+		XMFLOAT3 aaMin = { 0.0f, 0.0f, 0.0f };
+		XMFLOAT3 aaMax = { 0.0f, 0.0f, 0.0f };
+		for (unsigned int i = 0; i < static_cast<unsigned int>(vertices.size()); i++) {
+			unsigned int nVertices = static_cast<unsigned int>(vertices[i].size() / sizeof(VertexPosNormalTangentTexCoordSkinning));
+			VertexPosNormalTangentTexCoordSkinning* vertex = reinterpret_cast<VertexPosNormalTangentTexCoordSkinning*>(vertices[i].data());
+			for (unsigned int v = 0; v < nVertices; v++) {
+				XMVECTOR Position = { vertex[v].Position.x, vertex[v].Position.y, vertex[v].Position.z, 1.0f };
+				XMUINT4 BoneIds = vertex[v].BoneIds;
+				XMFLOAT4 BoneWeights = vertex[v].BoneWeights;
 
-    Model3DDefinition params = {
-      .autoCreateMaterial = model3dj["autoCreateMaterial"],
-      .materialsShader = model3dj["materialsShader"]
-    };
+				XMMATRIX boneTransform = XMMatrixTranspose(bones[BoneIds.x] * BoneWeights.x +
+					bones[BoneIds.y] * BoneWeights.y +
+					bones[BoneIds.z] * BoneWeights.z +
+					bones[BoneIds.w] * BoneWeights.w);
 
-    return concurrency::create_task([filename, assetPath, name, params] {
+				XMVECTOR skinnedPos = XMVector3Transform(Position, boneTransform);
 
-      std::lock_guard<std::mutex> lock(rendererMutex);
+				aaMin = { fmin(aaMin.x,skinnedPos.m128_f32[0]), fmin(aaMin.y,skinnedPos.m128_f32[1]), fmin(aaMin.z,skinnedPos.m128_f32[2]) };
+				aaMax = { fmax(aaMax.x,skinnedPos.m128_f32[0]), fmax(aaMax.y,skinnedPos.m128_f32[1]), fmax(aaMax.z,skinnedPos.m128_f32[2]) };
+			}
+		}
 
-      Model3DPtr model = std::make_shared<Model3D>();
-      model->loading = true;
-      model->name = name;
-      model->assetPath = assetPath;
-      model->model3dDefinition = params;
-      model3DTemplates.insert(std::pair<std::string, Model3DPtr>(name, model));
+		XMFLOAT3 center = {
+			0.5f * (aaMin.x + aaMax.x),
+			0.5f * (aaMin.y + aaMax.y),
+			0.5f * (aaMin.z + aaMax.z),
+		};
 
-      std::filesystem::path path(filename);
+		XMFLOAT3 extents = {
+			0.5f * fabs(aaMin.x - aaMax.x),
+			0.5f * fabs(aaMin.y - aaMax.y),
+			0.5f * fabs(aaMin.z - aaMax.z),
+		};
 
-      Assimp::Importer importer;
-      const aiScene* aiModel = importer.ReadFile(path.string(),
-        aiProcess_JoinIdenticalVertices | aiProcess_GenNormals |
-        aiProcess_CalcTangentSpace | aiProcess_Triangulate |
-        aiProcess_FlipUVs
-      );
-
-      if (!aiModel) {
-        OutputDebugStringA(importer.GetErrorString());
-        assert(!aiModel);
-      }
-
-      //fill the length of the animations so they can be looped
-      if (aiModel->mNumAnimations > 0U) {
-        using namespace Animation;
-        model->animations = CreateAnimatedFromAssimp(aiModel);
-      }
-
-      model->vertexClass = !model->animations ? POS_NORMAL_TANGENT_TEXCOORD0 : POS_NORMAL_TANGENT_TEXCOORD0_SKINNING;
-      size_t vertexSize = !model->animations ? sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0>) : sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>);
-
-      //go through all the meshes in the model
-      for (UINT meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++) {
-
-        auto aMesh = aiModel->mMeshes[meshIndex];
-
-        model->vertices.push_back(VerticesLoader[model->vertexClass](aMesh));
-        model->numVertices.push_back(aMesh->mNumVertices);
-        model->indices.push_back(LoadIndices(aMesh));
-
-        if (model->animations) {
-          LoadBonesInVertices(aMesh, model->animations->bonesOffsets, model->vertices.back());
-        }
-
-        using namespace Templates::Mesh;
-        MeshPtr mesh = std::make_shared<MeshT>();
-        std::string meshName = BuildMeshName(name,meshIndex);
-        mesh->loading = true;
-        mesh->name = meshName;
-        mesh->vertexClass = model->vertexClass;
-
-        InitializeVertexBufferView(renderer->d3dDevice, renderer->commandList, *model->vertices.back(), static_cast<UINT>(vertexSize), model->numVertices.back(), mesh->vbvData);
-        InitializeIndexBufferView(renderer->d3dDevice, renderer->commandList, model->indices.back().data(), static_cast<UINT>(model->indices.back().size()), mesh->ibvData);
-
-        if (params.autoCreateMaterial) {
-          std::string materialName = BuildMaterialName(name,meshIndex);
-          using namespace Templates::Material;
-          if (GetMaterialTemplate(materialName) == nullptr) {
-            CreateModel3DMaterial(materialName, params.materialsShader, path.relative_path(), aiModel->mMaterials[aMesh->mMaterialIndex]);
-          }
-        }
-
-        model->meshes.push_back(mesh);
-        mesh->loading = false;
-      }
-
-      importer.FreeScene();
-
-    });
-  }
-
+		return BoundingBox(center, extents);
+	}
 }

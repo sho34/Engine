@@ -3,9 +3,9 @@
 #if defined(_EDITOR)
 
 namespace Editor::DefaultLevel {
-  using namespace nlohmann::literals;
+	using namespace nlohmann::literals;
 
-  static const nlohmann::json renderables = R"(
+	static const nlohmann::json renderables = R"(
     [
       {
         "meshMaterials": [ { "material": "Floor", "mesh" : "floor" } ],
@@ -33,12 +33,17 @@ namespace Editor::DefaultLevel {
         "position": [ -2.0, -0.6000000238418579, 2.0 ],
         "rotation": [ 0.0, 0.0, 0.0 ],
         "scale": [ 0.009999999776482582, 0.009999999776482582, 0.009999999776482582 ],
-        "skipMeshes": []
+        "skipMeshes": [],
+        "pipelineState":{
+          "RasterizerState":{
+            "CullMode":"FRONT"
+          }
+        }
       }
     ]
   )"_json;
 
-  static const nlohmann::json cameras = R"(
+	static const nlohmann::json cameras = R"(
     [
       {
         "fitWindow":true,
@@ -52,13 +57,13 @@ namespace Editor::DefaultLevel {
         },
         "position": [ -5.699999809265137, 2.200000047683716, 3.799999952316284 ],
         "projectionType" : "Perspective",
-        "rotation" : [ 1.5707963705062866, -0.19634954631328583 ],
+        "rotation" : [ 1.5707963705062866, -0.19634954631328583, 0.0 ],
         "speed" : 0.05000000074505806
       }
     ]
   )"_json;
 
-  static const nlohmann::json lights = R"( 
+	static const nlohmann::json lights = R"( 
     [
       {
         "ambient": { "color": [ 0.05000000074505806, 0.05000000074505806, 0.05000000074505806 ] },

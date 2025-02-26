@@ -1,20 +1,16 @@
 #include "pch.h"
 #include "Level.h"
 //scene objects
-#include "Renderable/RenderableImpl.h"
-#include "Camera/CameraImpl.h"
-#include "Lights/LightsImpl.h"
-#include "Sound/SoundEffectImpl.h"
+#include "Scene.h"
 //audio
-#include "../Audio/Audio.h"
-using namespace Audio;
+#include "../Audio/AudioSystem.h"
+using namespace AudioSystem;
 //effects
-#include "../Animation/Effects/Effects.h"
-#include "../Animation/Effects/DecalLoop.h"
-#include "../Animation/Effects/LightOscilation.h"
+#include "../Effects/Effects.h"
+//#include "../Effects/DecalLoop.h"
+//#include "../Effects/LightOscilation.h"
 //renderer
 #include "../Renderer/Renderer.h"
-//editor stuff
 #if defined(_EDITOR)
 #include "../Editor/Editor.h"
 #include "../Editor/DefaultLevel.h"
@@ -22,191 +18,63 @@ using namespace Editor;
 #endif
 
 extern std::shared_ptr<Renderer> renderer;
-std::queue<std::shared_ptr<Scene::Renderable::Renderable>> renderablesToReload;
 
 namespace Scene::Level {
+	using namespace Scene;
 
-  nlohmann::json levelToLoad;
-
-  bool loadingLevel = false;
-  bool isLoadingLevel() { return loadingLevel; }
-  std::function<void()> loadLevelFn = nullptr;
-  void callLoadLevelFn() { loadLevelFn(); }
-
-#if defined(_EDITOR)
-  void LoadDefaultLevel()
-  {
-    loadingLevel = true;
-
-    CreateRenderables(DefaultLevel::renderables);
-    CreateCameras(DefaultLevel::cameras);
-    CreateLights(DefaultLevel::lights);
-
-    loadingLevel = false;
-  }
-#endif
-
-  void LoadLevel(std::filesystem::path level)
-  {
-    std::string pathStr = level.generic_string();
-    std::ifstream file(pathStr);
-    nlohmann::json data = nlohmann::json::parse(file);
-    file.close();
-
-    levelToLoad = data;
-    loadLevelFn = LoadScene;
-    loadingLevel = true;
-
-  }
-
-  void LoadScene() {
-    renderer->ResetCommands();
-    renderer->SetCSUDescriptorHeap();
-
-    renderer->SetRenderTargets();
-
-    DestroySceneObjects();
-
-    if (levelToLoad.contains("renderables")) {
-      CreateRenderables(levelToLoad["renderables"]);
-    }
-
-    if (levelToLoad.contains("cameras")) {
-      CreateCameras(levelToLoad["cameras"]);
-    }
-
-    if (levelToLoad.contains("lights")) {
-      CreateLights(levelToLoad["lights"]);
-    }
-
-    if (levelToLoad.contains("sounds")) {
-      CreateSounds(levelToLoad["sounds"]);
-    }
-
-    loadingLevel = false;
-    loadLevelFn = nullptr;
+	void LoadSceneObjects(nlohmann::json j, std::string type, std::function<void(nlohmann::json)> loadCallback)
+	{
+		if (j.contains(type)) std::for_each(j[type].begin(), j[type].end(), loadCallback);
+	}
 
 #if defined(_EDITOR)
-    Editor::DrawEditor();
+	void LoadDefaultLevel()
+	{
+		LoadSceneObjects(DefaultLevel::renderables, "renderables", CreateRenderable);
+		LoadSceneObjects(DefaultLevel::cameras, "cameras", CreateCamera);
+		LoadSceneObjects(DefaultLevel::lights, "lights", CreateLight);
+	}
 #endif
 
-    //before switching to 2D mode the commandQueue must be executed
-    renderer->ExecuteCommands();
-    renderer->Set2DRenderTarget();
-    renderer->Present();
-  }
+	void LoadLevel(std::filesystem::path level)
+	{
+		std::string pathStr = defaultLevelsFolder + level.generic_string() + ".json";
+		std::ifstream file(pathStr);
+		nlohmann::json data = nlohmann::json::parse(file);
 
-  void CreateRenderables(nlohmann::json renderables) {
-    for (auto& renderable : renderables) {
-      CreateRenderable(renderable);
-    }
-  }
+		DestroySceneObjects();
 
-  void CreateCameras(nlohmann::json cameras) {
-    for (auto& cam : cameras) {
-      CreateCamera(cam);
-    }
-  }
+		LoadSceneObjects(data, "renderables", CreateRenderable);
+		LoadSceneObjects(data, "cameras", CreateCamera);
+		LoadSceneObjects(data, "lights", CreateLight);
+		LoadSceneObjects(data, "sounds", CreateSoundEffect);
 
-  void CreateLights(nlohmann::json lights) {
-    for (auto& light : lights) {
-      CreateLight(light);
-    }
-  }
+		file.close();
+	}
 
-  void CreateSounds(nlohmann::json sounds) {
-    for (auto& sound : sounds) {
-      CreateSoundEffect(sound);
-    }
-  }
+	void DestroySceneObjects()
+	{
+		using namespace Scene;
+		using namespace Effects;
+		using namespace Animation;
 
-  void CreateUI(nlohmann::json ui) {
-    /*
-    using namespace UI;
+		//Destroy the effects
+		EffectsDestroy();
 
-    CreateUI2DString(L"fpsText", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
-      .text = L"FPS:",
-      .fontSize = 32.0f,
-      .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
-      .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
-      .drawRect = { 10.0f, 10.0f, 250.0f, 30.0f },
-      });
+		//Destroy sound instances
+		DestroySoundEffects();
 
-    CreateUI2DString(L"currentCamera", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
-      .fontSize = 32.0f,
-      .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
-      .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
-      .drawRect = { 200.0f, 10.0f, 700.0f, 310.0f }
-      });
+		//Destroy the lights
+		DestroyLights();
+		DestroyShadowMaps();
 
-    FLOAT WinHeight = static_cast<FLOAT>(hWndRect.bottom - hWndRect.top);
-    CreateUI2DString(L"animation", renderer->d2d1DeviceContext, renderer->dWriteFactory, {
-      .fontSize = 22,
-      .textAlignment = DWRITE_TEXT_ALIGNMENT_LEADING,
-      .paragraphAlignment = DWRITE_PARAGRAPH_ALIGNMENT_NEAR,
-      .drawRect = { 60.0f, WinHeight - 90, 560.0f, WinHeight - 90 + 30.0f }
-      });
-      */
-  }
+		//Destroy the cameras
+		DestroyCameras();
 
-  void PushRenderableToReloadQueue(std::shared_ptr<Scene::Renderable::Renderable> renderable)
-  {
-    renderablesToReload.push(renderable);
-  }
+		//Destroy animated
+		DestroyAnimated();
 
-  bool ReloadQueueIsEmpty() {
-    return renderablesToReload.empty();
-  }
-
-  void ProcessReloadQueue() {
-
-    renderer->ResetCommands();
-    renderer->SetCSUDescriptorHeap();
-
-    renderer->SetRenderTargets();
-
-    while (!renderablesToReload.empty()) {
-      RenderablePtr renderable = renderablesToReload.front();
-      renderable->Initialize(Renderer::GetPtr());
-      renderable->loading = false;
-      renderablesToReload.pop();
-    }
-
-#if defined(_EDITOR)
-    Editor::DrawEditor();
-#endif
-
-    //before switching to 2D mode the commandQueue must be executed
-    renderer->ExecuteCommands();
-    renderer->Set2DRenderTarget();
-    renderer->Present();
-
-  }
-
-  void DestroySceneObjects()
-  {
-    using namespace Animation::Effects;
-    EffectsDestroy();
-
-    //Destroy sound instances
-    using namespace Scene::SoundEffect;
-    DestroySoundEffects();
-
-    //Destroy the lights
-    using namespace Scene::Lights;
-    DestroyLights();
-
-    //Destroy the cameras
-    using namespace Scene::Camera;
-    DestroyCameras();
-
-    //Destroy animated
-    using namespace Animation;
-    DestroyAnimated();
-
-    //Destroy the renderables
-    using namespace Scene::Renderable;
-    DestroyRenderables();
-  }
-
+		//Destroy the renderables
+		DestroyRenderables();
+	}
 }

@@ -1,58 +1,62 @@
 #include "pch.h"
 #include "ShaderCompiler.h"
 #include "../../Common/DirectXHelper.h"
-#include "../../Renderer/Renderer.h"
-#include "../../Scene/Lights/Lights.h"
-#include "../../Scene/Camera/Camera.h"
-#include "../../Animation/Animated.h"
-#include <d3d12shader.h>
+//#include "../../Renderer/Renderer.h"
+//#include "../../Scene/Lights/Lights.h"
+//#include "../../Scene/Camera/Camera.h"
+//#include "../../Animation/Animated.h"
 
 namespace ShaderCompiler {
-	
+
+	std::map<ShaderType, std::wstring> shaderEntryPoint =
+	{
+		{	ShaderType::VERTEX_SHADER, L"main_vs"	},
+		{	ShaderType::PIXEL_SHADER, L"main_ps"	},
+	};
+
+	std::map<ShaderType, std::wstring> shaderTarget =
+	{
+		{	ShaderType::VERTEX_SHADER, L"vs_6_1"	},
+		{	ShaderType::PIXEL_SHADER, L"ps_6_1" },
+	};
+
 	//Source to Shader
-	static std::map<Source, ShaderCompilerOutputPtr> shaderOutputRefs;
+	std::map<std::string, std::set<Source>> shaderFilesPermutations;
+	std::map<Source, std::shared_ptr<ShaderBinary>> shaderOutputMap;
+	std::map<std::shared_ptr<ShaderBinary>, unsigned int> shaderOutputRefCount;
+
 	//Dependencies of hlsl+shaderType(Source) file to many .h files
 	typedef std::map<Source, ShaderDependencies> ShaderIncludesDependencies;
-	static ShaderIncludesDependencies dependencies;
+	ShaderIncludesDependencies dependencies;
+
 	//Notifications 
-	static TemplatesNotification<ShaderCompilerOutputPtr*> shaderCompilationNotifications;
+	TemplatesNotification<std::shared_ptr<ShaderBinary>*> shaderCompilationNotifications;
 
-	HRESULT __stdcall CustomIncludeHandler::LoadSource(LPCWSTR pFilename, IDxcBlob** ppIncludeSource)
+	std::shared_ptr<ShaderBinary> ShaderCompiler::GetShaderBinary(Source& params)
 	{
-		ComPtr<IDxcBlobEncoding> pEncoding;
-		std::filesystem::path path(pFilename);
-		std::filesystem::path canonicalPath = std::filesystem::weakly_canonical(path);
-		std::string wpath = canonicalPath.string();
-
-		if (includedFiles.find(wpath) != includedFiles.end())
+		if (shaderOutputMap.contains(params))
 		{
-			// Return empty string blob if this file has been included before
-			static const char nullStr[] = " ";
-			pUtils->CreateBlobFromPinned(nullStr, ARRAYSIZE(nullStr), DXC_CP_ACP, pEncoding.GetAddressOf());
-			*ppIncludeSource = pEncoding.Detach();
-			return S_OK;
+			auto& binary = shaderOutputMap.at(params);
+			shaderOutputRefCount.at(binary)++;
+			return binary;
 		}
-
-		const std::wstring filename = StringToWString(shaderRootFolder) + pFilename;
-		HRESULT hr = pUtils->LoadFile(filename.c_str(), nullptr, pEncoding.GetAddressOf());
-		if (SUCCEEDED(hr))
+		else
 		{
-			includedFiles.insert(wpath);
-			*ppIncludeSource = pEncoding.Detach();
+			auto binary = Compile(params);
+			shaderOutputMap.insert_or_assign(params, binary);
+			shaderOutputRefCount.insert_or_assign(binary, 1U);
+			return binary;
 		}
-		return hr;
 	}
 
 	static std::mutex compileMutex;
-	Concurrency::task<ShaderCompilerOutputPtr> ShaderCompiler::Compile(Source& params) {
+	std::shared_ptr<ShaderBinary> ShaderCompiler::Compile(Source& params) {
+
 		std::lock_guard<std::mutex> lock(compileMutex);
 		//read the shader
-		const std::string shaderRootFolder = "Shaders/";
+
 		const std::string filename = shaderRootFolder + params.shaderName + ".hlsl";
-		ShaderByteCode shaderSource;
-		DX::ReadDataAsync(filename.c_str()).then([&shaderSource](std::vector<byte> fileData) {
-			shaderSource = fileData;
-		}).wait();
+		ShaderByteCode shaderSource = DX::ReadDataAsync(filename.c_str()).get();
 
 		//create a blob for the shader source code
 		ComPtr<IDxcBlobEncoding> pSource;
@@ -61,11 +65,9 @@ namespace ShaderCompiler {
 		//build the arguments
 		std::vector<LPCWSTR> arguments;
 		arguments.push_back(L"-E");// -E for the entry point (eg. 'main')
-		std::wstring entryPoint = StringToWString(ShaderT::shaderEntryPoint[params.shaderType]);
-		arguments.push_back(entryPoint.c_str());
+		arguments.push_back(shaderEntryPoint[params.shaderType].c_str());
 		arguments.push_back(L"-T");// -T for the target profile (eg. 'ps_6_6')
-		std::wstring profile = StringToWString(ShaderT::shaderTarget[params.shaderType]);
-		arguments.push_back(profile.c_str());
+		arguments.push_back(shaderTarget[params.shaderType].c_str());
 
 #ifndef _DEBUG
 		arguments.push_back(L"-Qstrip_debug"); //remove debug info(PDB)
@@ -81,12 +83,20 @@ namespace ShaderCompiler {
 
 		arguments.push_back(DXC_ARG_PACK_MATRIX_ROW_MAJOR);
 
+		std::vector<std::wstring> wdefines;
+		std::transform(params.defines.begin(), params.defines.end(), std::back_inserter(wdefines), [](std::string def) { return nostd::StringToWString(def); });
+
+		for (const std::wstring& def : wdefines) {
+			arguments.push_back(L"-D");
+			arguments.push_back(def.c_str());
+		}
+
 		DxcBuffer sourceBuffer{ .Ptr = pSource->GetBufferPointer(), .Size = pSource->GetBufferSize(), .Encoding = 0 };
 
 		//compile the shader
 		ComPtr<IDxcResult> pCompileResult;
 		dependencies[params].clear();
-		ShaderCompiler::CustomIncludeHandler includeHandler(dependencies[params], shaderRootFolder, pUtils);
+		CustomIncludeHandler includeHandler(dependencies[params], shaderRootFolder, pUtils);
 		DX::ThrowIfFailed(pCompiler->Compile(&sourceBuffer, arguments.data(), (UINT32)arguments.size(), &includeHandler, IID_PPV_ARGS(pCompileResult.GetAddressOf())));
 
 		//get the errors
@@ -94,7 +104,7 @@ namespace ShaderCompiler {
 		pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pErrors.GetAddressOf()), nullptr);
 		if (pErrors && pErrors->GetStringLength() > 0) {
 			OutputDebugStringA((char*)pErrors->GetBufferPointer());
-			return Concurrency::task_from_result<ShaderCompilerOutputPtr>(shaderOutputRefs[params]); //return the old shader if there were errors
+			return shaderOutputMap.at(params); //return the old shader if there were errors
 		}
 
 		// Get shader reflection data.
@@ -110,259 +120,178 @@ namespace ShaderCompiler {
 		D3D12_SHADER_DESC shaderDesc{};
 		shaderReflection->GetDesc(&shaderDesc);
 
-		std::vector<std::string> vsSemantics;
-		CBufferParametersDefinitionPtr cbufferParametersDef = std::make_shared<CBufferParametersDefinition>();
-		TextureParametersDefinitionPtr texturesParametersDef = std::make_shared<TextureParametersDefinition>();
-		SamplerParametersDefinitionPtr samplersParametersDef = std::make_shared<SamplerParametersDefinition>();
+		std::shared_ptr<ShaderBinary> shaderBinary = std::make_shared<ShaderBinary>();
 
-		using namespace Scene;
+		shaderBinary->shaderSource = params;
+		shaderBinary->CreateVSSemantics(shaderReflection, shaderDesc);
+		shaderBinary->CreateResourcesBinding(shaderReflection, shaderDesc);
+		shaderBinary->CreateConstantsBuffersVariables(shaderReflection, shaderDesc);
+		shaderBinary->CreateByteCode(pCompileResult);
 
-		INT cameraCBVRegister = -1;
-		INT lightCBVRegister = -1;
-		INT animationCBVRegister = -1;
-		INT lightsShadowMapCBVRegister = -1;
-		INT lightsShadowMapSRVRegister = -1;
-
-		if (params.shaderType == VERTEX_SHADER) {
-			for (uint32_t paramIdx = 0; paramIdx < shaderDesc.InputParameters; paramIdx++) {
-				D3D12_SIGNATURE_PARAMETER_DESC signatureDesc{};
-				shaderReflection->GetInputParameterDesc(paramIdx, &signatureDesc);
-				vsSemantics.push_back(signatureDesc.SemanticName);
-			}
-		}
-
-		for (uint32_t paramIdx = 0; paramIdx < shaderDesc.BoundResources; paramIdx++) {
-			D3D12_SHADER_INPUT_BIND_DESC bindDesc{};
-			shaderReflection->GetResourceBindingDesc(paramIdx, &bindDesc);
-
-			std::string resourceName(bindDesc.Name);
-
-			cameraCBVRegister = (resourceName == Camera::CameraConstantBufferName)? bindDesc.BindPoint : cameraCBVRegister;
-			lightCBVRegister = (resourceName == Lights::LightConstantBufferName)? bindDesc.BindPoint : lightCBVRegister;
-			animationCBVRegister = (resourceName == Animation::AnimationConstantBufferName) ? bindDesc.BindPoint : animationCBVRegister;
-			lightsShadowMapCBVRegister = (resourceName == Lights::ShadowMapConstantBufferName) ? bindDesc.BindPoint : lightsShadowMapCBVRegister;
-			lightsShadowMapSRVRegister = (resourceName == Lights::ShadowMapLightsShaderResourveViewName) ? bindDesc.BindPoint : lightsShadowMapSRVRegister;
-
-			if (bindDesc.Type == D3D_SIT_CBUFFER) {
-				cbufferParametersDef->insert({ resourceName, {
-					.registerId = bindDesc.BindPoint,
-					.numCBuffers = bindDesc.BindCount,
-				}});
-			} else if (bindDesc.Type == D3D_SIT_TEXTURE) {
-				texturesParametersDef->insert({ resourceName, {
-					.registerId = bindDesc.BindPoint,
-					.numTextures = bindDesc.BindCount>0?bindDesc.BindCount:bindDesc.NumSamples, //if N > 0 -> N else -1
-				}});
-			} else if (bindDesc.Type == D3D_SIT_SAMPLER) {
-				samplersParametersDef->insert({ resourceName, {
-					.registerId = bindDesc.BindPoint,
-					.numSamplers = bindDesc.BindCount,
-				} });
-			}
-		}
-
-		CBufferVariablesDefinitionPtr cbufferVariablesDef = std::make_shared<CBufferVariablesDefinition>();
-		
-		std::vector<size_t> cbufferSize = {};
-		for (uint32_t paramIdx = 0; paramIdx < shaderDesc.ConstantBuffers; paramIdx++) {
-			auto cbReflection = shaderReflection->GetConstantBufferByIndex(paramIdx);
-			D3D12_SHADER_BUFFER_DESC paramDesc{};
-			cbReflection->GetDesc(&paramDesc);
-
-			std::string cbufferName(paramDesc.Name);
-			bool isCameraParam = cbufferName == Camera::CameraConstantBufferName;
-			bool isLightParam = cbufferName == Lights::LightConstantBufferName;
-			bool isAnimationParam = cbufferName == Animation::AnimationConstantBufferName;
-			bool isShadowMapParam = cbufferName == Lights::ShadowMapConstantBufferName;
-			if (isCameraParam || isLightParam || isAnimationParam || isShadowMapParam) continue;
-
-			for (UINT varIdx = 0; varIdx < paramDesc.Variables; varIdx++) {
-				ID3D12ShaderReflectionVariable* varReflection = cbReflection->GetVariableByIndex(varIdx);
-				D3D12_SHADER_VARIABLE_DESC varDesc;
-				varReflection->GetDesc(&varDesc);
-
-				std::string varName(varDesc.Name);
-
-				cbufferVariablesDef->insert(std::pair<std::string, CBufferVariable>(varName, CBufferVariable({
-					.bufferIndex = paramIdx,
-					.size = varDesc.Size,
-					.offset = varDesc.StartOffset,
-				})));
-			}
-			cbufferSize.push_back(paramDesc.Size);
-		}
-
-		// Get compilation result
-		ComPtr<IDxcBlob> code;
-		pCompileResult->GetResult(&code);
-
-		//create a new shader and copy the generated code into it's byteCode
-		ShaderCompilerOutputPtr shaderOutput = std::make_shared<ShaderCompilerOutput>(ShaderCompilerOutput({
-			.byteCode = std::make_shared<ShaderByteCode>(code->GetBufferSize()),
-			.vsSemantics = vsSemantics,
-			.cbufferParametersDef = cbufferParametersDef,
-			.texturesParametersDef = texturesParametersDef,
-			.samplersParametersDef = samplersParametersDef,
-			.cbufferVariablesDef = cbufferVariablesDef,
-			.cbufferSize = cbufferSize,
-			.shaderType = params.shaderType,
-			.cameraCBVRegister = cameraCBVRegister,
-			.lightCBVRegister = lightCBVRegister,
-			.animationCBVRegister = animationCBVRegister,
-			.lightsShadowMapCBVRegister = lightsShadowMapCBVRegister,
-			.lightsShadowMapSRVRegister = lightsShadowMapSRVRegister
-		}));
-		memcpy_s(&(*shaderOutput->byteCode.get())[0], code->GetBufferSize(), code->GetBufferPointer(), code->GetBufferSize());
-		return Concurrency::task_from_result<ShaderCompilerOutputPtr>(shaderOutput);
+		return shaderBinary;
 	}
 
-	static std::mutex bindMutex;
-	Concurrency::task<void> Bind(const std::string& shaderName, ShaderType shaderType, void* target, NotificationCallbacks callbacks)
+	void DestroyShaderBinary(std::shared_ptr<ShaderBinary>& shaderBinary)
 	{
-		return concurrency::create_task([shaderName, shaderType, target, callbacks] {
-			std::lock_guard<std::mutex> lock(bindMutex);
-			Source params = { shaderName, shaderType };
-
-			ShaderCompilerOutputPtr output = Compile(params).get();
-			shaderOutputRefs[params] = output;
-
-			auto shaderOutRef = &shaderOutputRefs[params];
-
-			ChangesNotifications notifications = {
-				{ NotificationTarget({ .target = target }), callbacks }
-			};
-			shaderCompilationNotifications[shaderOutRef] = notifications;
-			if (shaderCompilationNotifications.contains(shaderOutRef)) {
-				NotifyOnLoadComplete(shaderOutRef, notifications);
+		shaderOutputRefCount.at(shaderBinary)--;
+		if (shaderOutputRefCount.at(shaderBinary) == 0U)
+		{
+			for (auto it = shaderOutputMap.begin(); it != shaderOutputMap.end();)
+			{
+				if (it->second == shaderBinary) {
+					it = shaderOutputMap.erase(it);
+				}
+				else
+				{
+					it++;
+				}
 			}
-		});
+			shaderOutputRefCount.erase(shaderBinary);
+			shaderBinary = nullptr;
+		}
 	}
 
 	void BuildShaderCompiler() {
 		DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(pUtils.GetAddressOf()));
 		DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler));
 	}
-	
-	static CompileQueue changesQueue;
+
+	static CompilerQueue changesQueue;
 	void MonitorShaderChanges(std::string folder) {
-		
-		std::thread monitor([folder]() {
-			HANDLE file = CreateFileA(folder.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+		return;
+		std::thread monitor([folder]()
+			{
+				HANDLE file = CreateFileA(folder.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
 
-			if (file == INVALID_HANDLE_VALUE || file == NULL) {
-				OutputDebugStringA("ERROR: Invalid HANDLE value.\n");
-				ExitProcess(GetLastError());
-			}
-
-			OVERLAPPED overlapped;
-			overlapped.hEvent = CreateEvent(NULL, FALSE, 0, NULL);
-
-			uint8_t change_buf[1024];
-			BOOL success = ReadDirectoryChangesW(
-				file, change_buf, 1024, TRUE,
-				FILE_NOTIFY_CHANGE_LAST_WRITE,
-				NULL, &overlapped, NULL);
-
-			while (true) {
-				DWORD result = WaitForSingleObject(overlapped.hEvent, 0);
-
-				if (result == WAIT_OBJECT_0) {
-					DWORD bytes_transferred;
-					GetOverlappedResult(file, &overlapped, &bytes_transferred, FALSE);
-
-					FILE_NOTIFY_INFORMATION* event = (FILE_NOTIFY_INFORMATION*)change_buf;
-
-					for (;;) {
-						DWORD name_len = event->FileNameLength / sizeof(wchar_t);
-
-						switch (event->Action) {
-						case FILE_ACTION_MODIFIED: {
-							std::string shaderFile = WStringToString(std::wstring(event->FileName, event->FileNameLength / sizeof(event->FileName[0])));
-							changesQueue.push(shaderFile);
-						} break;
-						default: {
-							printf("Unknown action!\n");
-						} break;
-						}
-
-						// Are there more events to handle?
-						if (event->NextEntryOffset) {
-							*((uint8_t**)&event) += event->NextEntryOffset;
-						}
-						else {
-							break;
-						}
-					}
+				if (file == INVALID_HANDLE_VALUE || file == NULL) {
+					OutputDebugStringA("ERROR: Invalid HANDLE value.\n");
+					ExitProcess(GetLastError());
 				}
-				// Queue the next event
+
+				OVERLAPPED overlapped;
+				overlapped.hEvent = CreateEvent(NULL, FALSE, 0, NULL);
+
+				uint8_t change_buf[1024];
 				BOOL success = ReadDirectoryChangesW(
 					file, change_buf, 1024, TRUE,
 					FILE_NOTIFY_CHANGE_LAST_WRITE,
 					NULL, &overlapped, NULL);
-			}
-		});
-		
-		std::thread compilation([]() {
-			using namespace std::chrono_literals;
-			while (TRUE) {
-				while (changesQueue.size() > 0) {
-					std::filesystem::path filePath(changesQueue.front());
-					std::string fileExtension = filePath.extension().string();
 
-					std::string output = "Modified: " + filePath.string() + "\n";
-					OutputDebugStringA(output.c_str());
+				while (true) {
+					DWORD result = WaitForSingleObject(overlapped.hEvent, 0);
 
-					auto buildShader = [fileExtension](const std::string& shaderName) {
-						Source sources[] = {
-							{ .shaderName = shaderName, .shaderType = VERTEX_SHADER },
-							{ .shaderName = shaderName, .shaderType = PIXEL_SHADER }
-						};
+					if (result == WAIT_OBJECT_0) {
+						DWORD bytes_transferred;
+						GetOverlappedResult(file, &overlapped, &bytes_transferred, FALSE);
 
-						auto shaderOutputOldRef = &shaderOutputRefs.find(sources[0])->second;
+						FILE_NOTIFY_INFORMATION* event = (FILE_NOTIFY_INFORMATION*)change_buf;
 
-						if (shaderCompilationNotifications.contains(shaderOutputOldRef)) {
-							NotifyOnLoadStart<ShaderCompilerOutputPtr*>(shaderCompilationNotifications[shaderOutputOldRef]);
-						}
+						for (;;) {
+							DWORD name_len = event->FileNameLength / sizeof(wchar_t);
 
-						for (auto& source : sources) {
-							auto output = Compile(source).get();
-							auto& shaderOutputRef = shaderOutputRefs[source];
-							if (shaderOutputRef.get() != output.get()) {
-								shaderOutputRef->CopyFrom(output);
+							switch (event->Action) {
+							case FILE_ACTION_MODIFIED: {
+								std::string shaderFile = nostd::WStringToString(std::wstring(event->FileName, event->FileNameLength / sizeof(event->FileName[0])));
+								changesQueue.push(shaderFile);
+							} break;
+							default: {
+								printf("Unknown action!\n");
+							} break;
 							}
 
-							if (shaderCompilationNotifications.contains(&shaderOutputRef)) {
-								auto& notifications = shaderCompilationNotifications[&shaderOutputRef];
-								NotifyOnLoadComplete(&shaderOutputRef, notifications);
+							// Are there more events to handle?
+							if (event->NextEntryOffset) {
+								*((uint8_t**)&event) += event->NextEntryOffset;
+							}
+							else {
+								break;
 							}
 						}
-					};
-
-					auto buildShaderFromDependency = [buildShader](const std::string& shaderDependency) {
-						std::set<std::string> shaderNames;
-						for (auto& [src, deps] : dependencies) {
-							if (deps.contains(shaderDependency)) {
-								shaderNames.insert(src.shaderName);
-							}
-						}
-						for (auto shaderName : shaderNames) {
-							buildShader(shaderName);
-						}
-					};
-
-					if (!_stricmp(fileExtension.c_str(), ".hlsl")) {
-						buildShader(filePath.stem().string().c_str());
-					} else if (!_stricmp(fileExtension.c_str(), ".h")) {
-						buildShaderFromDependency(filePath.string().c_str());
 					}
-
-					changesQueue.pop();
+					// Queue the next event
+					BOOL success = ReadDirectoryChangesW(
+						file, change_buf, 1024, TRUE,
+						FILE_NOTIFY_CHANGE_LAST_WRITE,
+						NULL, &overlapped, NULL);
 				}
-				std::this_thread::sleep_for(200ms);
 			}
-		});
-			
+		);
+
+		std::thread compilation([]()
+			{
+				using namespace std::chrono_literals;
+				while (TRUE)
+				{
+					while (changesQueue.size() > 0)
+					{
+
+						/*
+						std::filesystem::path filePath(changesQueue.front());
+						std::string fileExtension = filePath.extension().string();
+
+						std::string output = "Modified: " + filePath.string() + "\n";
+						OutputDebugStringA(output.c_str());
+
+						auto buildShader = [fileExtension](const std::string& shaderName)
+							{
+								Source sources[] = {
+									{.shaderName = shaderName, .shaderType = VERTEX_SHADER },
+									{.shaderName = shaderName, .shaderType = PIXEL_SHADER }
+								};
+
+								auto shaderOutputOldRef = &shaderOutputRefs.find(sources[0])->second;
+
+								if (shaderCompilationNotifications.contains(shaderOutputOldRef)) {
+									NotifyOnLoadStart<std::shared_ptr<ShaderBinary>*>(shaderCompilationNotifications[shaderOutputOldRef]);
+								}
+
+								for (auto& source : sources) {
+									auto output = Compile(source).get();
+									auto& shaderOutputRef = shaderOutputRefs[source];
+									if (shaderOutputRef.get() != output.get()) {
+										shaderOutputRef->CopyFrom(output);
+									}
+
+									if (shaderCompilationNotifications.contains(&shaderOutputRef)) {
+										auto& notifications = shaderCompilationNotifications[&shaderOutputRef];
+										NotifyOnLoadComplete(&shaderOutputRef, notifications);
+									}
+								}
+							};
+
+						auto buildShaderFromDependency = [buildShader](const std::string& shaderDependency) {
+							std::set<std::string> shaderNames;
+							for (auto& [src, deps] : dependencies) {
+								if (deps.contains(shaderDependency)) {
+									shaderNames.insert(src.shaderName);
+								}
+							}
+							for (auto shaderName : shaderNames) {
+								buildShader(shaderName);
+							}
+							};
+
+						if (!_stricmp(fileExtension.c_str(), ".hlsl")) {
+							buildShader(filePath.stem().string().c_str());
+						}
+						else if (!_stricmp(fileExtension.c_str(), ".h")) {
+							buildShaderFromDependency(filePath.string().c_str());
+						}
+						*/
+						changesQueue.pop();
+					}
+					std::this_thread::sleep_for(200ms);
+				}
+			}
+		);
+
 		monitor.detach();
 		compilation.detach();
+	}
+
+	void DestroyShaderCompiler()
+	{
+		pCompiler = nullptr;
+		pUtils = nullptr;
 	}
 }

@@ -3,16 +3,7 @@
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-namespace Scene::Lights {
-
-	struct DirectionalLightShadowMapParams {
-		UINT shadowMapWidth;
-		UINT shadowMapHeight;
-		FLOAT viewWidth;
-		FLOAT viewHeight;
-		FLOAT nearZ = 0.01f;
-		FLOAT farZ = 1000.0f;
-	};
+namespace Scene {
 
 	struct DirectionalLightShadowMap {
 		D3D12_RECT shadowMapScissorRect;
@@ -21,17 +12,15 @@ namespace Scene::Lights {
 		XMFLOAT2 shadowMapTexelInvSize;
 	};
 
-	static float constexpr defaultDirectionalLightDistance = 30.0f;
 	struct DirectionalLight {
+		static float constexpr defaultDirectionalLightDistance = 30.0f;
 
 		XMFLOAT3 color;
 		FLOAT distance = defaultDirectionalLightDistance;
 		union {
 			XMFLOAT2	rotation;
-			struct {
-				FLOAT azimuthalAngle;
-				FLOAT polarAngle;
-			};
+			FLOAT rot[2];
+			struct { FLOAT azimuthalAngle, polarAngle; };
 		};
 	};
 

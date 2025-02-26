@@ -108,10 +108,10 @@
     <ClInclude Include="Templates\Shader\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Compiler\ShaderCompilerOutput.h">
+    <ClInclude Include="Resources\ShaderByteCode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Types.h">
+    <ClInclude Include="pch\Application.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Renderable\Renderable.h">
@@ -180,22 +180,19 @@
     <ClInclude Include="Primitives\Decal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Animation\Effects\Effects.h">
+    <ClInclude Include="Effects\Effects.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Animation\Effects\DecalLoop.h">
+    <ClInclude Include="Effects\DecalLoop.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Animation\Effects\LightOscilation.h">
+    <ClInclude Include="Effects\LightOscilation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\Audio.h">
+    <ClInclude Include="Audio\AudioSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Editor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Templates\Templates.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Editor\DefaultLevel.h">
@@ -204,46 +201,73 @@
     <ClInclude Include="Scene\Level.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Compiler\ShaderCompilerImpl.h">
+    <ClInclude Include="Scene\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Templates\Material\MaterialImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Templates\Shader\ShaderImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Templates\Model3D\Model3DImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Templates\Mesh\MeshImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Templates\Sound\SoundImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\CameraImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Lights\LightsImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Renderable\RenderableImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\SceneImpl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Templates\TemplatesImpl.h">
+    <ClInclude Include="Templates\Templates.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Sound\SoundEffect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Sound\SoundEffectImpl.h">
+    <ClInclude Include="Editor\IconsFontAwesome5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\IconsFontAwesome5.h">
+    <ClInclude Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\RenderPass\RenderPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\Lights\ShadowMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\BoxLines.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\Editor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\Json.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\Notifications.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\NoStd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material\Variables.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\DXTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\TemplateFlags.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compiler\CompilerQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material\SamplerDesc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material\Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\Debug.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -314,16 +338,16 @@
     <ClCompile Include="Animation\Animated.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Animation\Effects\Effects.cpp">
+    <ClCompile Include="Effects\Effects.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Animation\Effects\DecalLoop.cpp">
+    <ClCompile Include="Effects\DecalLoop.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Animation\Effects\LightOscilation.cpp">
+    <ClCompile Include="Effects\LightOscilation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Audio.cpp">
+    <ClCompile Include="Audio\AudioSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Editor.cpp">
@@ -336,6 +360,36 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Sound\SoundEffect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\RenderPass\RenderPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Lights\ShadowMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Compiler\CustomIncludeHandler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Resources\ShaderByteCode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Material\Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\Scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\VertexFormats.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Material\Variables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

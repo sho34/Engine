@@ -1,54 +1,57 @@
 #pragma once
 
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <assimp/GltfMaterial.h>
 #include "../../Renderer/VertexFormats.h"
-#include "../Mesh/MeshImpl.h"
+#include "../Mesh/Mesh.h"
+#include "../Material/Material.h"
+#include "../../Animation/Animated.h"
 
 namespace Animation { struct Animated; };
-namespace Templates::Model3D {
+namespace Templates {
 
-	static const std::string templateName = "model3d.json";
-	static const std::string assetsRootFolder = "Assets/models/";
-
-	struct Model3DDefinition {
-		bool autoCreateMaterial = true;
-		std::string materialsShader = "";
-	};
-
-	struct Model3D
+	namespace Model3D
 	{
-		bool loading = true;
-		std::string name;
-		std::string assetPath;
+		inline static const std::string templateName = "model3d.json";
+		inline static const std::string assetsRootFolder = "Assets/models/";
+	}
 
-		Model3DDefinition model3dDefinition;
+	struct Model3DInstance
+	{
+		VertexClass vertexClass;
+		std::vector<std::vector<byte>> vertices;
+		std::vector<std::shared_ptr<MeshInstance>> meshes;
+		std::vector<std::shared_ptr<MaterialInstance>> materials;
 
 		//animation
 		std::shared_ptr<Animation::Animated> animations = nullptr;
-
-		VertexClass vertexClass;
-		std::vector<std::shared_ptr<byte*>> vertices;
-		std::vector<UINT> numVertices;
-
-		std::vector<std::vector<UINT32>> indices;
-
-		std::vector<MeshPtr> meshes;
+		BoundingBox GetAnimatedBoundingBox(XMMATRIX* bones);
 	};
 
-	std::string BuildMeshName(std::string model3DName, UINT meshIndex);
-	std::string BuildMaterialName(std::string model3DName, UINT meshIndex);
+	//CREATE
+	void CreateModel3D(std::string name, nlohmann::json json);
+	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name);
 
-	void ReleaseModel3DTemplates();
-	std::shared_ptr<Model3D> GetModel3DTemplate(std::string model3DName);
+	nlohmann::json CreateModel3DMaterialJson(std::string shader, std::filesystem::path relativePath, aiMaterial* material);
+	void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh);
+
+	//READ&GET
+	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name);
 	std::vector<std::string> GetModels3DNames();
+	std::string GetModel3DMeshInstanceName(std::string name, unsigned int index);
+	std::string GetModel3DMaterialInstanceName(std::string name, unsigned int index);
 
+	//UPDATE
+
+	//DESTROY
+	void ReleaseModel3DTemplates();
+
+	//EDITOR
 #if defined(_EDITOR)
-	void SelectModel3D(std::string model3DName, void*& ptr);
-	void DrawModel3DPanel(void*& ptr, ImVec2 pos, ImVec2 size);
-	std::string GetModel3DName(void* ptr);
-	nlohmann::json json();
+	void DrawModel3DPanel(std::string& model, ImVec2 pos, ImVec2 size, bool pop);
+	std::string GetModel3DInstanceTemplateName(std::shared_ptr<Model3DInstance> model3D);
+	//nlohmann::json json();
 #endif
-
-	Concurrency::task<void> json(std::string, nlohmann::json);
 }
-typedef Templates::Model3D::Model3D Model3DT;
-typedef std::shared_ptr<Model3DT> Model3DPtr;

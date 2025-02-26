@@ -1,47 +1,114 @@
 #include "pch.h"
 #include "Sound.h"
-#include "../../Audio/Audio.h"
+#include <map>
+#include <Audio.h>
+#include <nlohmann/json.hpp>
+#include "../../Audio/AudioSystem.h"
+#include "../../pch/NoStd.h"
 
-std::map<std::string, SoundPtr> soundTemplates;
+using namespace AudioSystem;
+using namespace DirectX;
+namespace Templates {
 
-using namespace Audio;
-namespace Templates::Sound {
+	std::map<std::string, nlohmann::json> soundTemplates;
+	//std::map<std::string, std::shared_ptr<Sound>> soundTemplates;
+	std::map<std::string, std::shared_ptr<DirectX::SoundEffect>> soundEffects;
 
-	std::mutex soundCreateMutex;
+	//CREATE
+	void CreateSound(std::string name, nlohmann::json json)
+	{
+		if (soundTemplates.contains(name)) return;
+		soundTemplates.insert_or_assign(name, json);
+		/*
+		if (GetSoundTemplate(name)) return;
 
-	std::shared_ptr<Sound>& GetSoundTemplate(std::string soundName) {
-		assert(soundTemplates.contains(soundName));
-
-		return soundTemplates[soundName];
+		std::shared_ptr<Sound> sound = std::make_shared<Sound>();
+		sound->name = name;
+		sound->path = soundj["path"];
+		soundTemplates.insert_or_assign(name, sound);
+		*/
 	}
 
-	std::map<std::string, std::shared_ptr<Sound>> GetNamedSounds() {
-		return soundTemplates;
+	std::unique_ptr<DirectX::SoundEffectInstance> GetSoundEffectInstance(std::string name, SOUND_EFFECT_INSTANCE_FLAGS flags)
+	{
+		std::shared_ptr<DirectX::SoundEffect> soundEffect = nullptr;
+		if (soundEffects.contains(name))
+		{
+			soundEffect = soundEffects.at(name);
+		}
+		else
+		{
+			nlohmann::json json = soundTemplates.at(name);
+			std::shared_ptr<DirectX::SoundEffect> soundEffect = std::make_shared<DirectX::SoundEffect>(GetAudioEngine().get(), nostd::StringToWString(json.at("path")).c_str());
+			soundEffects.insert_or_assign(name, soundEffect);
+		}
+
+		return soundEffects.at(name)->CreateInstance(flags);
 	}
+
+	/*
+	{
+		if (soundEffects.contains(name)) return soundEffects.at(name);
+
+	std::shared_ptr<DirectX::SoundEffect> GetSoundEffect(std::string name)
+		std::shared_ptr<Sound> sound = GetSoundTemplate(name);
+		std::shared_ptr<DirectX::SoundEffect> soundEffect = std::make_shared<DirectX::SoundEffect>(GetAudioEngine().get(), nostd::StringToWString(sound->path).c_str());
+		soundEffects.insert_or_assign(name, soundEffect);
+		return soundEffect;
+	}
+	*/
+
+	//READ&GET
+	/*
+	std::shared_ptr<Sound> GetSoundTemplate(std::string name) {
+		return nostd::GetValueFromMap(soundTemplates, name);
+	}
+	*/
 
 	std::vector<std::string> GetSoundsNames() {
-		std::vector<std::string> names;
-		std::transform(soundTemplates.begin(), soundTemplates.end(), std::back_inserter(names), [](std::pair<std::string, std::shared_ptr<Sound>> pair) { return pair.first; });
-		return names;
+		return nostd::GetKeysFromMap(soundTemplates);
 	}
 
+	//UPDATE
+
+	//DESTROY
 	void ReleaseSoundTemplates()
 	{
+		/*
 		for (auto& [name, sound] : soundTemplates) {
 			sound->sound = nullptr;
 		}
+		*/
 		soundTemplates.clear();
 	}
 
+	/*
+	void DestroySoundEffect(std::shared_ptr<DirectX::SoundEffect>& soundEffect)
+	{
+		nostd::EraseByValue(soundEffects, soundEffect);
+		soundEffect = nullptr;
+	}
+	*/
+
+	//EDITOR
+
+
+
+	/*
+	std::mutex soundCreateMutex;
+	*/
 #if defined(_EDITOR)
+	/*
 	void SelectSound(std::string soundName, void*& ptr) {
 		ptr = soundTemplates.at(soundName).get();
 	}
+	*/
 
-	void DrawSoundPanel(void*& ptr, ImVec2 pos, ImVec2 size)
+	void DrawSoundPanel(std::string& sound, ImVec2 pos, ImVec2 size, bool pop)
 	{
 	}
 
+	/*
 	std::string GetSoundName(void* ptr)
 	{
 		Sound* sound = (Sound*)ptr;
@@ -58,24 +125,7 @@ namespace Templates::Sound {
 		}
 		return j;
 	}
+	*/
 #endif
 
-	Concurrency::task<void> json(std::string name, nlohmann::json soundj)
-	{
-		assert(!soundTemplates.contains(name));
-
-		std::string assetPath = soundj["assetPath"];
-
-		return concurrency::create_task([name, assetPath] {
-			std::lock_guard<std::mutex> lock(soundCreateMutex);
-
-			SoundPtr sound = std::make_shared<SoundT>();
-			sound->name = name;
-			sound->assetPath = assetPath;
-			sound->sound = std::make_unique<SoundEffect>(GetAudio().get(), StringToWString(assetPath).c_str());
-
-			soundTemplates.insert_or_assign(name, sound);
-			assert(soundTemplates.contains(name));
-		});
-	}
 }

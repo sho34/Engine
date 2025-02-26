@@ -1,10 +1,12 @@
 #include "pch.h"
 #include "Templates.h"
 
-namespace Templates {
-
+namespace Templates
+{
 #if defined(_EDITOR)
-	void SaveTemplates(const std::string folder, const std::string fileName, nlohmann::json data) {
+
+	void SaveTemplates(const std::string folder, const std::string fileName, nlohmann::json data)
+	{
 		//first create the directory if needed
 		std::filesystem::path directory(folder);
 		std::filesystem::create_directory(directory);
@@ -22,7 +24,7 @@ namespace Templates {
 
 #endif
 
-	void LoadTemplates(const std::string folder, const std::string fileName, TemplateLoader loader)
+	void LoadTemplates(const std::string folder, const std::string fileName, std::function<void(std::string, nlohmann::json)> loader)
 	{
 		//first create the directory if needed
 		std::filesystem::path directory(folder);
@@ -33,12 +35,18 @@ namespace Templates {
 		nlohmann::json data = nlohmann::json::parse(file);
 		file.close();
 
-		std::vector<concurrency::task<void>> tasks;
-		for (auto& [key, value] : data.items()) {
-			tasks.push_back(loader(key, value));
+		for (auto& [key, value] : data.items())
+		{
+			loader(key, value);
 		}
-
-		when_all(tasks.begin(), tasks.end()).wait();
 	}
 
+	void DestroyTemplates()
+	{
+		ReleaseSoundTemplates();
+		ReleaseModel3DTemplates();
+		ReleaseMeshTemplates();
+		ReleaseMaterialTemplates();
+		ReleaseShaderTemplates();
+	}
 }

@@ -15,12 +15,12 @@ void SceneLighting(
   SpotLighting spotL;
   PointLighting pointL;
 
-  uint smi = 0; //shadow map index
   for (uint i = 0; i < lights.numLights; i++)
   {
     float3 diffuseLightContribution = 0.xxx;
     float3 specularLightContribution = 0.xxx;
     float shadowMapFactor = 1;
+	uint smi = lights.atts[i].shadowMapIndex;
 
     switch (lights.atts[i].lightType)
     {
@@ -35,7 +35,6 @@ void SceneLighting(
       if (lights.atts[i].hasShadowMap)
       {
         directionalL.Shadow(shadowMaps.atts[smi], worldPos, shadowMapsTextures[smi], sampler0, shadowMapFactor);
-        smi++;
       }
     }
     break;
@@ -44,7 +43,6 @@ void SceneLighting(
 		spotL.Compute(lights.atts[i], normal, viewDir, worldPos, albedoColor, f0, f90, roughness, diffuseLightContribution, specularLightContribution);
       if (lights.atts[i].hasShadowMap) {
         spotL.Shadow(shadowMaps.atts[smi], worldPos, shadowMapsTextures[smi], sampler0, shadowMapFactor);
-        smi++;
       }
     }
     break;
@@ -54,7 +52,6 @@ void SceneLighting(
       if (lights.atts[i].hasShadowMap)
       {
         pointL.Shadow(shadowMaps.atts[smi], worldPos, shadowMapsTextures[smi], sampler0, shadowMapFactor);
-        smi++;
       }
     }
     break;

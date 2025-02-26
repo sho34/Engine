@@ -16,6 +16,8 @@ struct LightAttributes
   float4 atts2;
   float3 atts3;
   bool hasShadowMap;
+  unsigned int shadowMapIndex;
+  float3 _pad;
 };
 
 struct Lights

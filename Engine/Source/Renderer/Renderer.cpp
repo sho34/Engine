@@ -7,22 +7,19 @@
 #include "DeviceUtils/RootSignature/RootSignature.h"
 #include "DeviceUtils/PipelineState/PipelineState.h"
 #include "DeviceUtils/RenderTarget/RenderTarget.h"
-
-std::mutex rendererMutex;
+#include "DeviceUtils/RenderToTexture/RenderToTexture.h"
 
 static std::shared_ptr<Renderer> renderer = nullptr;
-std::shared_ptr<Renderer> Renderer::GetPtr() { return renderer; }
 
 #if defined(_DEBUG)
 CComPtr<ID3D12Debug1> debugController;
 CComPtr<ID3D12DebugDevice1> debugDevice;
 #endif
 
-void Renderer::Initialize(HWND coreHwnd){
+//CREATE
+void Renderer::Initialize(HWND coreHwnd) {
 	renderer = shared_from_this();
-	using namespace DeviceUtils::D3D12Device;
-	using namespace DeviceUtils::RenderTarget;
-	using namespace DeviceUtils::ConstantsBuffer;
+	using namespace DeviceUtils;
 
 	hwnd = coreHwnd;
 
@@ -31,6 +28,14 @@ void Renderer::Initialize(HWND coreHwnd){
 	if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 	{
 		debugController->EnableDebugLayer();
+
+		ComPtr<IDXGIInfoQueue> dxgiInfoQueue;
+		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(dxgiInfoQueue.GetAddressOf()))))
+		{
+			//m_dxgiFactoryFlags = DXGI_CREATE_FACTORY_DEBUG;
+			dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR, true);
+			dxgiInfoQueue->SetBreakOnSeverity(DXGI_DEBUG_ALL, DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION, true);
+		}
 	}
 #endif
 
@@ -44,109 +49,48 @@ void Renderer::Initialize(HWND coreHwnd){
 	commandQueue = CreateCommandQueue(d3dDevice);
 	swapChain = CreateSwapChain(hwnd, commandQueue, numFrames);
 	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-	rtvDescriptorHeap = CreateDescriptorHeap(d3dDevice, numFrames);
-	rtvDescriptorSize = d3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	dsvDescriptorHeap = CreateDescriptorHeap(d3dDevice, 1, D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-	CCNAME_D3D12_OBJECT(d3dDevice);
-	CCNAME_D3D12_OBJECT(commandQueue);
-	CCNAME_D3D12_OBJECT(rtvDescriptorHeap);
-	CCNAME_D3D12_OBJECT(dsvDescriptorHeap);
+	CCNAME_D3D12_OBJECT_N(d3dDevice, std::string("Renderer"));
+	CCNAME_D3D12_OBJECT_N(commandQueue, std::string("Renderer"));
 
-	CreateCSUDescriptorHeap(d3dDevice, numFrames);
-	
-	UpdateRenderTargetViews(d3dDevice, swapChain, rtvDescriptorHeap, renderTargets, numFrames);
-	RECT rect;
-	GetWindowRect(hwnd, &rect);
-	int width = rect.right - rect.left;
-	int height = rect.bottom - rect.top;
-	UpdateDepthStencilView(d3dDevice, dsvDescriptorHeap, depthStencil, width, height);
-	
+	CreateCSUDescriptorHeap(numFrames);
+
+	CreateRenderToTextureDescriptorHeap();
+
 	for (int i = 0; i < numFrames; ++i) {
 		commandAllocators[i] = CreateCommandAllocator(d3dDevice);
 		commandAllocators[i]->SetName((L"commandAllocator[" + std::to_wstring(i) + L"]").c_str());
 	}
-	
+
 	commandList = CreateCommandList(d3dDevice, commandAllocators[backBufferIndex]);
 	CCNAME_D3D12_OBJECT(commandList);
 
-	fence = CreateFence(d3dDevice);
+	fence = CreateFence(d3dDevice, "Renderer");
 	fenceEvent = CreateEventHandle();
+
 	UpdateViewportPerspective();
-
-	//D3D11On12
-	CreateD3D11On12Device(d3dDevice, commandQueue, d3d11Device, d3d11on12Device, d3d11DeviceContext, dxgiDevice);
-
-	//D2D1
-	CreateD2D1Device(dxgiDevice, d2d1Factory, d2d1Device, d2d1DeviceContext);
-	DX::ThrowIfFailed(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&dWriteFactory)));
-	UpdateD2D1RenderTargets(d3d11on12Device, d2d1DeviceContext, renderTargets, wrappedBackBuffers, d2dRenderTargets, numFrames);
 }
 
+//DESTROY
 void Renderer::Destroy() {
+	Flush();
+
 	fence.Release();
 	fence = nullptr;
-
-	//release d2d
-	dWriteFactory.Release();
-	dWriteFactory = nullptr;
-	
-	for (int i = 0; i < numFrames; i++) {
-		d2dRenderTargets[i].Release();
-		d2dRenderTargets[i] = nullptr;
-	}
-
-	d2d1DeviceContext.Release();
-	d2d1DeviceContext = nullptr;
-
-	d2d1Device.Release();
-	d2d1Device = nullptr;
-
-	d2d1Factory.Release();
-	d2d1Factory = nullptr;
-
-	for (int i = 0; i < numFrames; i++) {
-
-		wrappedBackBuffers[i].Release();
-		wrappedBackBuffers[i] = nullptr;
-	}
-	dxgiDevice.Release();
-	dxgiDevice = nullptr;
-
-	d3d11DeviceContext.Release();
-	d3d11DeviceContext = nullptr;
-
-	d3d11on12Device.Release();
-	d3d11on12Device = nullptr;
-
-	d3d11Device.Release();
-	d3d11Device = nullptr;
 
 	//release d3d12
 	commandList.Release();
 	commandList = nullptr;
-	
+
 	for (int i = 0; i < numFrames; i++) {
 		commandAllocators[i].Release();
 		commandAllocators[i] = nullptr;
 	}
 
-	depthStencil.Release();
-	depthStencil = nullptr;
+	DestroyRenderToTextureDescriptorHeap();
 
-	for (int i = 0; i < numFrames; i++) {
-		renderTargets[i].Release();
-		renderTargets[i] = nullptr;
-	}
-
-	using namespace DeviceUtils::ConstantsBuffer;
+	using namespace DeviceUtils;
 	DestroyCSUDescriptorHeap();
-
-	dsvDescriptorHeap.Release();
-	dsvDescriptorHeap = nullptr;
-
-	rtvDescriptorHeap.Release();
-	rtvDescriptorHeap = nullptr;
 
 	swapChain.Release();
 	swapChain = nullptr;
@@ -175,32 +119,23 @@ void Renderer::UpdateViewportPerspective() {
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
 
-	float aspectRatio = static_cast<FLOAT>(width) / static_cast<FLOAT>(height);
+	//float aspectRatio = static_cast<FLOAT>(width) / static_cast<FLOAT>(height);
 	scissorRect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
 	screenViewport = { 0.0f, 0.0f, static_cast<FLOAT>(width), static_cast<FLOAT>(height), 0.0f, 1.0f };
 }
 
-void Renderer::Resize(UINT width, UINT height) {
-	using namespace DeviceUtils::D3D12Device;
-	using namespace DeviceUtils::RenderTarget;
+void Renderer::Resize(unsigned int width, unsigned int height) {
+	using namespace DeviceUtils;
 
-	Flush(commandQueue, fence, fenceValue, fenceEvent);
+	Flush();
 
-	for (UINT i = 0; i < numFrames; ++i)
+	for (unsigned int i = 0; i < numFrames; ++i)
 	{
-		renderTargets[i].Release();
 		frameFenceValues[i] = frameFenceValues[backBufferIndex];
 	}
-	depthStencil.Release();
 
-	//free d3d11on12 & d2d resources
-	for (UINT i = 0; i < numFrames; ++i)
-	{
-		wrappedBackBuffers[i].Release();
-		d2dRenderTargets[i].Release();
-	}
-	d2d1DeviceContext->SetTarget(nullptr);
-	d3d11DeviceContext->Flush();
+	scissorRect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
+	screenViewport = { 0.0f, 0.0f, static_cast<FLOAT>(width), static_cast<FLOAT>(height), 0.0f, 1.0f };
 
 	DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 	DX::ThrowIfFailed(swapChain->GetDesc(&swapChainDesc));
@@ -208,13 +143,6 @@ void Renderer::Resize(UINT width, UINT height) {
 		swapChainDesc.BufferDesc.Format, swapChainDesc.Flags));
 
 	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
-
-	UpdateRenderTargetViews(d3dDevice, swapChain, rtvDescriptorHeap, renderTargets, numFrames);
-	UpdateDepthStencilView(d3dDevice, dsvDescriptorHeap, depthStencil, width, height);
-	UpdateViewportPerspective();
-
-	//d2d1 render targets
-	UpdateD2D1RenderTargets(d3d11on12Device, d2d1DeviceContext, renderTargets, wrappedBackBuffers, d2dRenderTargets, numFrames);
 }
 
 void Renderer::ResetCommands() {
@@ -224,59 +152,19 @@ void Renderer::ResetCommands() {
 }
 
 void Renderer::SetCSUDescriptorHeap() {
-	using namespace DeviceUtils::ConstantsBuffer;
 	ID3D12DescriptorHeap* ppHeaps[] = { GetCSUDescriptorHeap() };
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 }
 
-void Renderer::SetShadowMapTarget(CComPtr<ID3D12Resource>& shadowMap, D3D12_CPU_DESCRIPTOR_HANDLE shadowMapCpuHandle, D3D12_RECT	shadowMapScissorRect, D3D12_VIEWPORT shadowMapViewport) {
-	commandList->RSSetViewports(1, &shadowMapViewport);
-	commandList->RSSetScissorRects(1, &shadowMapScissorRect);
-	commandList->ClearDepthStencilView(shadowMapCpuHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-	commandList->OMSetRenderTargets(0, NULL, false, &shadowMapCpuHandle);
-}
-
-void Renderer::SetRenderTargets() {
-	auto backBuffer = renderTargets[backBufferIndex];
-
-	CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	commandList->ResourceBarrier(1, &barrier);
-
-	commandList->RSSetViewports(1, &screenViewport);
-	commandList->RSSetScissorRects(1, &scissorRect);
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtv(rtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart(), backBufferIndex, rtvDescriptorSize);
-	commandList->ClearRenderTargetView(rtv, DirectX::Colors::CornflowerBlue, 0, nullptr);
-
-	CD3DX12_CPU_DESCRIPTOR_HANDLE dsv(dsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-	commandList->ClearDepthStencilView(dsv, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
-
-	commandList->OMSetRenderTargets(1, &rtv, false, &dsv);
-}
-
 void Renderer::ExecuteCommands()
 {
-	//auto backBuffer = renderTargets[backBufferIndex];
-	//CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
-	//commandList->ResourceBarrier(1, &barrier);
-
 	DX::ThrowIfFailed(commandList->Close());
 	ID3D12CommandList* const commandLists[] = { commandList };
 	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
 }
 
-void Renderer::Set2DRenderTarget() {
-
-	d3d11on12Device->AcquireWrappedResources(&wrappedBackBuffers[backBufferIndex].p, 1);
-	d2d1DeviceContext->SetTarget(d2dRenderTargets[backBufferIndex]);
-}
-
 void Renderer::Present() {
-	using namespace DeviceUtils::D3D12Device;
-
-	//flush d3d11on12
-	d3d11on12Device->ReleaseWrappedResources(&wrappedBackBuffers[backBufferIndex].p, 1);
-	d3d11DeviceContext->Flush();
+	using namespace DeviceUtils;
 
 	//present
 	DX::ThrowIfFailed(swapChain->Present(1, 0));
@@ -287,11 +175,24 @@ void Renderer::Present() {
 	WaitForFenceValue(fence, frameFenceValues[backBufferIndex], fenceEvent);
 }
 
-void Renderer::CloseCommandsAndFlush() {
-	using namespace DeviceUtils::D3D12Device;
+void Renderer::Flush()
+{
+	DeviceUtils::Flush(commandQueue, fence, fenceValue, fenceEvent);
+}
 
+void Renderer::CloseCommandsAndFlush() {
 	commandList->Close();
 	ID3D12CommandList* const commandLists[] = { commandList };
 	commandQueue->ExecuteCommandLists(_countof(commandLists), commandLists);
-	Flush(commandQueue, fence, fenceValue, fenceEvent);
+	Flush();
+}
+
+void Renderer::RenderCriticalFrame(std::function<void()> callback)
+{
+	ResetCommands();
+	SetCSUDescriptorHeap();
+
+	callback();
+
+	CloseCommandsAndFlush();
 }

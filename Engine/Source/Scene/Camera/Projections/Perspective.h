@@ -4,7 +4,7 @@
 
 using namespace DirectX;
 
-namespace Scene::Camera::Projections {
+namespace Scene::CameraProjections {
 
 	struct Perspective {
 		static constexpr float defaultFovAngleY = (70.0f * XM_PI / 180.0f);
@@ -14,9 +14,18 @@ namespace Scene::Camera::Projections {
 		float nearZ = defaultNearZ;
 		float farZ = defaultFarZ;
 		float fovAngleY = defaultFovAngleY;
-		float width = 0;
-		float height = 0;
+		float width = 1000.0f;
+		float height = 1000.0f;
 		XMMATRIX projectionMatrix;
+
+		void Copy(Perspective& other) {
+			nearZ = other.nearZ;
+			farZ = other.farZ;
+			fovAngleY = other.fovAngleY;
+			width = other.width;
+			height = other.height;
+			projectionMatrix = other.projectionMatrix;
+		}
 
 		inline void updateProjectionMatrix() {
 			float aspectRatio = static_cast<float>(width) / static_cast<float>(height);

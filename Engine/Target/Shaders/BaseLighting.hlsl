@@ -5,7 +5,19 @@
 struct VertexShaderInput
 {
     float3 pos : POSITION;
-    float3 normal : NORMAL;
+	#ifdef _HAS_NORMAL
+	float3 normal : NORMAL;
+	#endif
+	#ifdef _HAS_TANGENT
+	float3 tangent : TANGENT;
+	#endif
+	#ifdef _HAS_TEXCOORD0
+	float2 uv : TEXCOORD0;
+	#endif
+	#ifdef _HAS_SKINNING
+	uint4 boneIds : BLENDINDICES;
+	float4 boneWeights : BLENDWEIGHT;
+	#endif
 };
 
 struct PixelShaderInput

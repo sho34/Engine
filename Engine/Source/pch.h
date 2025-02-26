@@ -18,6 +18,7 @@
 #include <wrl.h>
 #include <wrl/client.h>
 #include <atlbase.h>
+#include <widemath.h>
 
 //concurrency
 #include <ppl.h>
@@ -28,10 +29,11 @@
 #include <DirectXColors.h>
 
 #include <d3d12.h>
-#include <d3d11on12.h>
-#include <dwrite_2.h>
-#include <d2d1_3.h>
+//#include <d3d11on12.h>
+//#include <dwrite_2.h>
+//#include <d2d1_3.h>
 #include <dxgi1_6.h>
+#include <d3d12shader.h>
 #include "d3dx12.h"
 
 #if defined(_DEBUG)
@@ -51,6 +53,10 @@
 #include <Mouse.h>
 #include <Audio.h>
 #include <SimpleMath.h>
+#include <PrimitiveBatch.h>
+#include <VertexTypes.h>
+#include <Effects.h>
+#include <EffectPipelineStateDescription.h>
 
 //std stuff
 #include <string_view>
@@ -77,6 +83,11 @@
 #include <ostream>
 #include <istream>
 #include <sstream>
+#include <regex>
+#include <limits>
+#include <algorithm>
+#include <random>
+#include <iterator>
 
 #if defined(_EDITOR)
 #include "imgui.h"
@@ -87,7 +98,10 @@
 #include "Editor/IconsFontAwesome5.h"
 #endif
 
+//json
 #include <nlohmann/json.hpp>
+//tween
+#include <tween.hpp>
 
 template<typename... Args> void whatis();
 template<typename T> void whatis(T);
@@ -97,4 +111,13 @@ using namespace DirectX;
 using namespace DirectX::SimpleMath;
 using namespace Concurrency;
 
-#include "Types.h"
+#include "pch/TemplateFlags.h"
+#include "pch/Application.h"
+#include "pch/Notifications.h"
+#include "pch/Json.h"
+#include "pch/NoStd.h"
+#include "pch/DXTypes.h"
+#include "pch/Debug.h"
+#if defined(_EDITOR)
+#include "pch/Editor.h"
+#endif

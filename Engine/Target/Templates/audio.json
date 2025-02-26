@@ -1,8 +1,8 @@
 {
     "fireplace": {
-        "assetPath": "Assets/sounds/fireplace.wav"
+        "path": "Assets/sounds/fireplace.wav"
     },
     "music": {
-        "assetPath": "Assets/sounds/music.wav"
+        "path": "Assets/sounds/music.wav"
     }
 }

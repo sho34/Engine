@@ -1,10 +1,10 @@
 #include "pch.h"
 #include "Interop.h"
 #include "../../../Common/DirectXHelper.h"
+#include <wrl.h>
 
-namespace DeviceUtils::D3D12Device
+namespace DeviceUtils
 {
-
 	UINT64 Signal(CComPtr<ID3D12CommandQueue> commandQueue, CComPtr<ID3D12Fence> fence, UINT64& fenceValue)
 	{
 		UINT64 fenceValueForSignal = ++fenceValue;
@@ -23,12 +23,9 @@ namespace DeviceUtils::D3D12Device
 		}
 	}
 
-	void Flush(CComPtr<ID3D12CommandQueue> commandQueue, CComPtr<ID3D12Fence> fence,
-		UINT64& fenceValue, HANDLE fenceEvent)
+	void Flush(CComPtr<ID3D12CommandQueue> commandQueue, CComPtr<ID3D12Fence> fence, UINT64& fenceValue, HANDLE fenceEvent)
 	{
 		UINT64 fenceValueForSignal = Signal(commandQueue, fence, fenceValue);
 		WaitForFenceValue(fence, fenceValueForSignal, fenceEvent);
 	}
-
-
 }

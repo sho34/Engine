@@ -2,7 +2,7 @@
 #include "Builder.h"
 #include "../../../Common/DirectXHelper.h"
 
-namespace DeviceUtils::D3D12Device {
+namespace DeviceUtils {
 
 	CComPtr<IDXGIAdapter4> GetAdapter() {
 
@@ -66,10 +66,10 @@ namespace DeviceUtils::D3D12Device {
 			// Suppress individual messages by their ID
 			D3D12_MESSAGE_ID DenyIds[] = {
 				D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,				// I'm really not sure how to avoid this message.
-				D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,										// This warning occurs when using capture frame while graphics debugging.
-				D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,									// This warning occurs when using capture frame while graphics debugging.
-				D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,									// This occurs when there are uninitialized descriptors in a descriptor table, even when a shader does not access the missing descriptors.
-				D3D12_MESSAGE_ID_CREATERESOURCE_STATE_IGNORED,								// D3D11On12
+				//D3D12_MESSAGE_ID_MAP_INVALID_NULLRANGE,										// This warning occurs when using capture frame while graphics debugging.
+				//D3D12_MESSAGE_ID_UNMAP_INVALID_NULLRANGE,									// This warning occurs when using capture frame while graphics debugging.
+				//D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,									// This occurs when there are uninitialized descriptors in a descriptor table, even when a shader does not access the missing descriptors.
+				//D3D12_MESSAGE_ID_CREATERESOURCE_STATE_IGNORED,								// D3D11On12
 				//D3D12_MESSAGE_ID_CREATEGRAPHICSPIPELINESTATE_RENDERTARGETVIEW_NOT_SET		// Shadow Map of 5.1 sucks
 			};
 
@@ -169,10 +169,11 @@ namespace DeviceUtils::D3D12Device {
 		return commandList;
 	}
 
-	CComPtr<ID3D12Fence> CreateFence(CComPtr<ID3D12Device2> device)
+	CComPtr<ID3D12Fence> CreateFence(CComPtr<ID3D12Device2> device, std::string name)
 	{
 		CComPtr<ID3D12Fence> fence;
 		DX::ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
+		CCNAME_D3D12_OBJECT_N(fence, name);
 		return fence;
 	}
 
@@ -186,40 +187,4 @@ namespace DeviceUtils::D3D12Device {
 
 		return fenceEvent;
 	}
-
-	void CreateD3D11On12Device(CComPtr<ID3D12Device2> d3dDevice, CComPtr<ID3D12CommandQueue> commandQueue, CComPtr<ID3D11Device> d3d11Device, CComPtr<ID3D11On12Device>& d3d11on12Device, CComPtr<ID3D11DeviceContext>& d3d11DeviceContext, CComPtr<IDXGIDevice>& dxgiDevice) {
-		UINT d3d11DeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
-#if defined(_DEBUG)
-		// Enable the debug layer (requires the Graphics Tools "optional feature").
-		// NOTE: Enabling the debug layer after device creation will invalidate the active device.
-		{
-			//ComPtr<ID3D12Debug> debugController;
-			//if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
-			//{
-			//	debugController->EnableDebugLayer();
-
-				// Enable additional debug layers.
-				d3d11DeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-			//}
-		}
-#endif
-
-		DX::ThrowIfFailed(D3D11On12CreateDevice(d3dDevice, d3d11DeviceFlags,
-			nullptr, 0, reinterpret_cast<IUnknown**>(&commandQueue.p),
-			1, 0, &d3d11Device, &d3d11DeviceContext, nullptr));
-
-		DX::ThrowIfFailed(d3d11Device.QueryInterface(&d3d11on12Device));
-		DX::ThrowIfFailed(d3d11on12Device.QueryInterface(&dxgiDevice));
-	}
-
-	void CreateD2D1Device(CComPtr<IDXGIDevice> dxgiDevice, CComPtr<ID2D1Factory6>& d2d1Factory, CComPtr<ID2D1Device5>& d2d1Device, CComPtr<ID2D1DeviceContext5>& d2d1DeviceContext) {
-		D2D1_FACTORY_OPTIONS d2d1FactoryOptions = {};
-#if defined(_DEBUG)
-		d2d1FactoryOptions.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
-#endif
-		DX::ThrowIfFailed(D2D1CreateFactory(D2D1_FACTORY_TYPE_MULTI_THREADED, d2d1FactoryOptions, &d2d1Factory));
-		DX::ThrowIfFailed(d2d1Factory->CreateDevice(dxgiDevice, &d2d1Device));
-		DX::ThrowIfFailed(d2d1Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, &d2d1DeviceContext));
-	}
-
 }

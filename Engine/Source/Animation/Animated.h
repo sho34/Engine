@@ -1,37 +1,45 @@
 #pragma once
 
+#include <queue>
+#include <map>
+#include <DirectXMath.h>
+#include <assimp/scene.h>
 #include "../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 
-namespace Scene::Renderable { struct Renderable; };
-typedef std::shared_ptr<Scene::Renderable::Renderable> RenderablePtr;
-namespace Templates::Model3D { struct Model3D; };
-typedef std::shared_ptr<Templates::Model3D::Model3D> Model3DPtr;
+namespace Scene { struct Renderable; };
 struct aiScene;
 
-namespace Animation {
+using namespace DirectX;
 
+namespace Animation
+{
 	static const std::string AnimationConstantBufferName = "animation";
-	static const UINT MAX_BONES = 256U;
+	static const unsigned int MAX_BONES = 256U;
 	typedef XMMATRIX BonesMatrices[MAX_BONES];
 
 	using namespace DirectX;
+	using namespace DeviceUtils;
+	using namespace Scene;
 
-	typedef std::map<std::string, FLOAT> AnimationLengthMap;
+	typedef std::map<std::string, float> AnimationLengthMap;
 	typedef std::map<std::string, XMMATRIX> BonesTransformations;
 
-	struct HierarchyNode {
+	struct HierarchyNode
+	{
 		std::string name;
 		XMMATRIX transformation;
-		UINT numChildren = 0;
+		unsigned int numChildren = 0;
 		HierarchyNode* children = nullptr;
 	};
 
-	struct KeyFrame {
-		FLOAT time;
+	struct KeyFrame
+	{
+		float time;
 		XMVECTOR key;
 	};
 
-	struct BoneKeys {
+	struct BoneKeys
+	{
 		std::vector<KeyFrame> positions;
 		std::vector<KeyFrame> scaling;
 		std::vector<KeyFrame> rotation;
@@ -53,14 +61,18 @@ namespace Animation {
 		MultiplyCmdQueue multiplyNavigator;
 	};
 
+	void BuildBonesOffsets(const aiScene* aiModel, BonesTransformations& bonesOffsets);
+	void BuildAnimationBonesKeys(const aiScene* model, AnimationBonesKeys& animationBonesKeys);
+	void BuildNodesHierarchy(aiNode* node, HierarchyNode* nodeInHierarchy, MultiplyCmdQueue& multiplyNavigator);
 	std::shared_ptr<Animated> CreateAnimatedFromAssimp(const aiScene* aiModel);
 	void DestroyAnimated();
 	void DestroyNodesHierarchy(HierarchyNode* node);
 
-	void AttachAnimation(const std::shared_ptr<Renderer>& renderer, RenderablePtr& renderable, std::shared_ptr<Animated>& animated);
-	ConstantsBufferViewDataPtr GetAnimatedConstantBufferView(RenderablePtr& renderable);
-	void WriteBoneTransformationsToConstantsBuffer(RenderablePtr& renderable, BonesTransformations& bonesTransformation, UINT backbufferIndex);
-	
-	void TraverseMultiplycationQueue(FLOAT time, MultiplyCmdQueue& cmds, BonesKeysMap& boneKeys, BonesTransformations& bonesTransformation, BonesTransformations& bonesOffsets, XMMATRIX& rootNodeInverseTransform, XMMATRIX parentTransformation);
+	void AttachAnimation(const std::shared_ptr<Renderable>& renderable, std::shared_ptr<Animated>& animated);
+	std::shared_ptr<ConstantsBuffer> GetAnimatedConstantsBuffer(const std::shared_ptr<Renderable>& renderable);
+	void WriteBoneTransformationsToConstantsBuffer(const std::shared_ptr<Renderable>& renderable, BonesTransformations& bonesTransformation, unsigned int backbufferIndex);
+
+	void TraverseMultiplycationQueue(float time, std::string currentAnimation, std::shared_ptr<Animated>& animations, BonesTransformations& bonesTransformation);
+	void TraverseMultiplycationQueue(float time, MultiplyCmdQueue& cmds, BonesKeysMap& boneKeys, BonesTransformations& bonesTransformation, BonesTransformations& bonesOffsets, XMMATRIX& rootNodeInverseTransform, XMMATRIX parentTransformation);
 }
 

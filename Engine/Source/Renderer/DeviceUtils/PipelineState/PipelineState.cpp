@@ -1,12 +1,22 @@
 #include "pch.h"
 #include "PipelineState.h"
-#include "../../../Common/DirectXHelper.h"
+#include "../../Renderer.h"
 #include "../../VertexFormats.h"
+#include "../../../Common/DirectXHelper.h"
+#include <ios>
 
-namespace DeviceUtils::PipelineState
+extern std::shared_ptr<Renderer> renderer;
+namespace DeviceUtils
 {
-
-	CComPtr<ID3D12PipelineState> CreatePipelineState(CComPtr<ID3D12Device2>& d3dDevice, std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout, const MaterialPtr& material, CComPtr<ID3D12RootSignature>& rootSignature) {
+	CComPtr<ID3D12PipelineState> CreatePipelineState(
+		std::string name,
+		std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout,
+		ShaderByteCode& vsCode,
+		ShaderByteCode& psCode,
+		CComPtr<ID3D12RootSignature>& rootSignature,
+		const RenderablePipelineState& renderablePipelineState
+	)
+	{
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC state = {};
 
 		//input layout
@@ -16,35 +26,33 @@ namespace DeviceUtils::PipelineState
 		state.pRootSignature = rootSignature;
 
 		//shader based state
-		state.VS = CD3DX12_SHADER_BYTECODE(&material->shader->vertexShader->byteCode->at(0), material->shader->vertexShader->byteCode->size());
-		state.PS = CD3DX12_SHADER_BYTECODE(&material->shader->pixelShader->byteCode->at(0), material->shader->pixelShader->byteCode->size());
+		state.VS = CD3DX12_SHADER_BYTECODE(vsCode.data(), vsCode.size());
+		state.PS = CD3DX12_SHADER_BYTECODE(psCode.data(), psCode.size());
 
 		//material based state
-		state.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-		state.RasterizerState.CullMode = material->materialDefinition.twoSided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_FRONT;
-		state.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT); //should be material based
+		state.RasterizerState = renderablePipelineState.RasterizerState;
+		state.BlendState = renderablePipelineState.BlendState;
 		state.SampleDesc.Count = 1;
 
 		//render target based
 		state.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+		if (renderablePipelineState.depthStencilFormat == DXGI_FORMAT_UNKNOWN) { state.DepthStencilState.DepthEnable = false; }
 		state.SampleMask = UINT_MAX;
-		state.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-		state.NumRenderTargets = 1;
+		state.PrimitiveTopologyType = renderablePipelineState.PrimitiveTopologyType;
+		state.NumRenderTargets = static_cast<UINT>(max(1, renderablePipelineState.renderTargetsFormats.size()));
 		state.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-		state.DSVFormat = DXGI_FORMAT_D32_FLOAT;
+		for (unsigned int i = 0; i < renderablePipelineState.renderTargetsFormats.size(); i++)
+		{
+			state.RTVFormats[i] = renderablePipelineState.renderTargetsFormats[i];
+		}
+		state.DSVFormat = renderablePipelineState.depthStencilFormat;
 
 		CComPtr<ID3D12PipelineState> pipelineState;
-		DX::ThrowIfFailed(d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState)));
+		DX::ThrowIfFailed(renderer->d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState)));
 		CCNAME_D3D12_OBJECT(pipelineState);
+
+		LogCComPtrAddress(name, pipelineState);
+
 		return pipelineState;
 	}
-
-	CComPtr<ID3D12PipelineState> CreatePipelineState(CComPtr<ID3D12Device2>& d3dDevice, VertexClass vertexClass, const MaterialPtr& material, CComPtr<ID3D12RootSignature>& rootSignature) {
-		return CreatePipelineState(d3dDevice, vertexInputLayoutsMap[vertexClass], material, rootSignature);
-	}
-
-	CComPtr<ID3D12PipelineState> CreateShadowMapPipelineState(CComPtr<ID3D12Device2>& d3dDevice, VertexClass vertexClass, const MaterialPtr& material, CComPtr<ID3D12RootSignature>& rootSignature) {
-		return CreatePipelineState(d3dDevice, shadowMapVertexInputLayoutsMap[vertexClass], material, rootSignature);
-	}
-
 };

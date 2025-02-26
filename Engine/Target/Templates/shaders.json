@@ -7,11 +7,11 @@
                 "variableType": "UNSIGNED_INTEGER"
             }
         ],
-        "shaderFileName": "AnimatedDecal"
+        "fileName": "AnimatedDecal"
     },
     "Model3D": {
         "mappedValues": [],
-        "shaderFileName": "Model3D"
+        "fileName": "Model3D"
     },
     "NormalMappingLighting": {
         "mappedValues": [
@@ -21,11 +21,11 @@
                 "variableType": "FLOAT"
             }
         ],
-        "shaderFileName": "NormalMappingLighting"
+        "fileName": "NormalMappingLighting"
     },
-    "SkinningPBRLighting": {
+    "PBR": {
         "mappedValues": [],
-        "shaderFileName": "SkinningPBRLighting"
+        "fileName": "PBR"
     },
     "TexturedLighting": {
         "mappedValues": [
@@ -35,6 +35,6 @@
                 "variableType": "FLOAT"
             }
         ],
-        "shaderFileName": "TexturedLighting"
+        "fileName": "TexturedLighting"
     }
 }

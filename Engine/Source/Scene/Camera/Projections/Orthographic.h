@@ -4,7 +4,7 @@
 
 using namespace DirectX;
 
-namespace Scene::Camera::Projections {
+namespace Scene::CameraProjections {
 
 	struct Orthographic {
 		static constexpr float defaultNearZ = 0.01f;
@@ -12,9 +12,17 @@ namespace Scene::Camera::Projections {
 
 		float nearZ = defaultNearZ;
 		float farZ = defaultFarZ;
-		float width = 0;
-		float height = 0;
+		float width = 1000.0f;
+		float height = 1000.0f;
 		XMMATRIX projectionMatrix;
+
+		void Copy(Orthographic& other) {
+			nearZ = other.nearZ;
+			farZ = other.farZ;
+			width = other.width;
+			height = other.height;
+			projectionMatrix = other.projectionMatrix;
+		}
 
 		inline void updateProjectionMatrix() {
 			projectionMatrix = XMMatrixOrthographicRH(width, height, nearZ, farZ);

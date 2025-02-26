@@ -21,7 +21,7 @@ namespace DX
 	inline Concurrency::task<std::vector<byte>> ReadDataAsync(const std::string& filename)
 	{
 		using namespace Concurrency;
-			
+
 		HANDLE fileHandle = CreateFileA(filename.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 		LARGE_INTEGER fileSize;
 		GetFileSizeEx(fileHandle, &fileSize);
@@ -33,7 +33,7 @@ namespace DX
 		return Concurrency::task_from_result<std::vector<byte>>(returnBuffer);
 	}
 
-	inline Concurrency::task<std::vector<byte>> ReadShader(const std::string& shaderName,const std::string target) {
+	inline Concurrency::task<std::vector<byte>> ReadShader(const std::string& shaderName, const std::string target) {
 		using namespace Concurrency;
 
 		const std::string filename = "Shaders/" + shaderName + ".hlsl";
@@ -46,7 +46,7 @@ namespace DX
 		compileFlags |= D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
 		ComPtr<ID3DBlob> shaderBlob;
 		ComPtr<ID3DBlob> shaderError;
-		DX::ThrowIfFailed(D3DCompileFromFile(StringToWString(filename).c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", target.c_str(), compileFlags, 0, &shaderBlob, &shaderError));
+		DX::ThrowIfFailed(D3DCompileFromFile(nostd::StringToWString(filename).c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", target.c_str(), compileFlags, 0, &shaderBlob, &shaderError));
 
 		std::vector<byte> returnBuffer(shaderBlob->GetBufferSize());
 		memcpy(&returnBuffer[0], shaderBlob->GetBufferPointer(), returnBuffer.size());
@@ -61,7 +61,7 @@ namespace DX
 		return floorf(dips * dpi / dipsPerInch + 0.5f); // Redondear al entero más próximo.
 	}
 */
-	// Asignar un nombre al objeto para facilitar la depuración.
+// Asignar un nombre al objeto para facilitar la depuración.
 #if defined(_DEBUG)
 	inline void SetName(ID3D12Object* pObject, LPCWSTR name)
 	{
@@ -107,3 +107,16 @@ namespace DX
 // Asigna el nombre de la variable como nombre del objeto.
 #define NAME_D3D12_OBJECT(x) DX::SetName(x.Get(), L#x)
 #define CCNAME_D3D12_OBJECT(x) x->SetName(L#x)
+#define CCNAME_D3D12_OBJECT_N(x,name) x->SetName(nostd::StringToWString(""###x##":"+name).c_str())
+#define DEBUG_PTR_COUNT(x) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + x->name + "(" + std::to_string(x.use_count()) + ")\n").c_str());
+
+template<typename T>
+void LogCComPtrAddress(std::string name, CComPtr<T> p)
+{
+	std::string pAddressS;
+	std::stringstream pAddressSStream;
+	pAddressSStream << std::setw(16) << std::setfill('0') << std::hex << p.p;
+	pAddressSStream >> pAddressS;
+	std::string debugS = "Live " + std::string(typeid(T).name()) + "(" + name + ") at 0x" + pAddressS + "\n";
+	OutputDebugStringA(debugS.c_str());
+}

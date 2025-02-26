@@ -1,0 +1,26 @@
+{
+    "cameras": [
+        {
+            "name": "cam.0",
+            "perspective": {
+                "farZ": 100.0,
+                "fovAngleY": 1.2217305898666382,
+                "nearZ": 0.009999999776482582
+            },
+            "position": [
+                -5.699999809265137,
+                2.200000047683716,
+                3.799999952316284
+            ],
+            "projectionType": "Perspective",
+            "rotation": [
+                1.5707963705062866,
+                -0.19634954631328583
+            ],
+            "speed": 0.05000000074505806,
+			"fitWindow": true
+        }
+    ],
+    "lights": [],
+    "renderables": []
+}

@@ -3,75 +3,98 @@
 #include "../../Primitives/Primivites.h"
 #include "../../Renderer/Renderer.h"
 
-extern std::mutex rendererMutex;
-namespace Templates::Mesh {
+//extern std::mutex rendererMutex;
+namespace Templates {
 
-	static std::map<std::string, MeshPtr> meshTemplates;
+	std::set<std::string> meshTemplates;
+	std::map<std::string, std::shared_ptr<MeshInstance>> meshInstances;
+	std::map<std::shared_ptr<MeshInstance>, unsigned int> meshInstancesRefCount;
 
-	Concurrency::task<void> CreatePrimitiveMeshTemplate(std::string meshName, LoadMeshCallback loadFn)
+	//CREATE
+	void CreatePrimitiveMeshTemplate(const std::string name)
 	{
-		auto currentMesh = GetMeshTemplate(meshName);
-		if (currentMesh != nullptr) {
-			if (loadFn) loadFn(currentMesh);
-			return concurrency::create_task([] {});
-		}
-
-		return concurrency::create_task([meshName] {
-			std::lock_guard<std::mutex> lock(rendererMutex);
-
-			MeshPtr mesh = std::make_shared<Mesh>();
-			mesh->name = meshName;
-			mesh->loading = true;
-			meshTemplates.insert(std::pair<std::string, MeshPtr>(meshName, mesh));
-
-			LoadPrimitiveIntoMeshFunctions[meshName](mesh).wait();
-			return mesh;
-		}).then([loadFn](MeshPtr mesh) {
-			if (loadFn) loadFn(mesh);
-			mesh->loading = false;
-		});
+		meshTemplates.insert(name);
 	}
 
-	void ReleaseMeshTemplates()
+	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string name)
 	{
+		assert(meshTemplates.contains(name));
 
-		for (auto& [name, mesh] : meshTemplates) {
-			mesh->vbvData.vertexBuffer = nullptr;
-			mesh->vbvData.vertexBufferUpload = nullptr;
-			mesh->ibvData.indexBuffer = nullptr;
-			mesh->ibvData.indexBufferUpload = nullptr;
+		std::shared_ptr<MeshInstance> mesh = nullptr;
+
+		if (meshInstances.contains(name))
+		{
+			mesh = meshInstances.at(name);
+		}
+		else
+		{
+			mesh = std::make_shared<MeshInstance>();
+			mesh->name = name;
+			LoadPrimitiveIntoMeshFunctions.at(name)(mesh);
+			meshInstances.insert_or_assign(name, mesh);
+			meshInstancesRefCount.insert_or_assign(mesh, 0U);
 		}
 
+		meshInstancesRefCount.find(mesh)->second++;
+		return mesh;
+	}
+
+	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string name, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount)
+	{
+		std::shared_ptr<MeshInstance> mesh = nullptr;
+
+		if (meshInstances.contains(name))
+		{
+			mesh = meshInstances.at(name);
+		}
+		else
+		{
+			mesh = std::make_shared<MeshInstance>();
+			mesh->name = name;
+			mesh->vertexClass = vertexClass;
+			InitializeVertexBufferView(renderer->d3dDevice, renderer->commandList, vertexData, vertexSize, verticesCount, mesh->vbvData);
+			InitializeIndexBufferView(renderer->d3dDevice, renderer->commandList, indices, indicesCount, mesh->ibvData);
+			meshInstances.insert_or_assign(name, mesh);
+			meshInstancesRefCount.insert_or_assign(mesh, 0U);
+		}
+
+		meshInstancesRefCount.find(mesh)->second++;
+		return mesh;
+	}
+
+	//READ&GET
+	std::vector<std::string> GetMeshesNames() {
+		return nostd::GetKeysFromSet(meshTemplates);
+	}
+
+	//UPDATE
+
+	//DESTROY
+	void ReleaseMeshTemplates()
+	{
+		meshInstancesRefCount.clear();
+		meshInstances.clear();
 		meshTemplates.clear();
 	}
 
-	MeshPtr GetMeshTemplate(const std::string meshName)
+	void DestroyMeshInstance(std::shared_ptr<MeshInstance>& mesh)
 	{
-		auto it = meshTemplates.find(meshName);
-		return (it != meshTemplates.end()) ? it->second : nullptr;
+		if (!meshInstancesRefCount.contains(mesh)) return;
+
+		meshInstancesRefCount.at(mesh)--;
+		if (meshInstancesRefCount.at(mesh) == 0U)
+		{
+			std::string name = mesh->name;
+			meshInstancesRefCount.erase(mesh);
+			meshInstances.erase(name);
+		}
+		mesh = nullptr;
 	}
 
-	std::vector<std::string> GetMeshesNames() {
-		std::vector<std::string> names;
-		std::transform(meshTemplates.begin(), meshTemplates.end(), std::back_inserter(names), [](std::pair<std::string, MeshPtr> pair) { return pair.first; });
-		return names;
-	}
 
 #if defined(_EDITOR)
-
-	void SelectMesh(std::string meshName, void*& ptr) {
-		ptr = meshTemplates.at(meshName).get();
-	}
-
-	void DrawMeshPanel(void*& ptr, ImVec2 pos, ImVec2 size)
+	void DrawMeshPanel(std::string& mesh, ImVec2 pos, ImVec2 size, bool pop)
 	{
 	}
-
-	std::string GetMeshName(void* ptr)
-	{
-		Mesh* mesh = (Mesh*)ptr;
-		return mesh->name;
-	}
-
 #endif
 };

@@ -4,29 +4,51 @@
 #include "../../Renderer/DeviceUtils/VertexBuffer/VertexBuffer.h"
 #include "../../Renderer/DeviceUtils/IndexBuffer/IndexBuffer.h"
 
-namespace Templates::Mesh {
-	
+namespace Templates {
+
+	/*
 	struct Mesh
 	{
 		std::string name;
+		bool primitive = false;
+	};
+	*/
+
+	using namespace DeviceUtils;
+
+	struct MeshInstance
+	{
+		std::string name;
 		VertexClass vertexClass;
-		VertexBufferViewDataT vbvData;
-		IndexBufferViewDataT	ibvData;
-		bool loading = false;
+		VertexBufferViewData vbvData;
+		IndexBufferViewData	ibvData;
+		BoundingBox boundingBox;
 	};
 
-	typedef void LoadMeshCallback(std::shared_ptr<Mesh>& mesh);
-	typedef Concurrency::task<void> LoadPrimitiveIntoMesh(std::shared_ptr<Mesh>& mesh);
+	//CREATE
+	void CreatePrimitiveMeshTemplate(const std::string name);
+	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string name);
+	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string name, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount);
 
-	Concurrency::task<void> CreatePrimitiveMeshTemplate(std::string meshName, LoadMeshCallback loadFn = nullptr);
-	void ReleaseMeshTemplates();
-	std::shared_ptr<Mesh> GetMeshTemplate(std::string meshName);
+	//READ&GET
+	//std::shared_ptr<Mesh> GetMeshTemplate(std::string meshName);
 	std::vector<std::string> GetMeshesNames();
+
+	//UPDATE
+
+	//DESTROY
+	void ReleaseMeshTemplates();
+	void DestroyMeshInstance(std::shared_ptr<MeshInstance>& mesh);
+
+	//EDITOR
 #if defined(_EDITOR)
+	/*
 	void SelectMesh(std::string meshName, void*& ptr);
-	void DrawMeshPanel(void*& ptr, ImVec2 pos, ImVec2 size);
+	*/
+	void DrawMeshPanel(std::string& mesh, ImVec2 pos, ImVec2 size, bool pop);
+	/*
 	std::string GetMeshName(void* ptr);
+	*/
 #endif
+
 };
-typedef Templates::Mesh::Mesh MeshT;
-typedef std::shared_ptr<MeshT> MeshPtr;

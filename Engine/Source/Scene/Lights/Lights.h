@@ -7,7 +7,7 @@
 #include "PointLight.h"
 #include "../Renderable/Renderable.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
-#include <widemath.h>
+#include "ShadowMap.h"
 
 //let's explain a little bit here
 // 1.- One CVB of MaxLights Descriptors is created to write the data used
@@ -17,20 +17,47 @@
 // 3.- these DepthStencil resources for each light are then used to be mapped into
 // a CBV descriptor as SRV unbounded slots
 
-namespace Scene::Camera { struct Camera; };
-struct Renderer;
-namespace Scene::Lights {
+namespace Scene { struct Camera; };
+namespace RenderPass { struct RenderToTexturePass; };
 
-	static const std::string LightConstantBufferName = "lights";
-	static const std::string ShadowMapConstantBufferName = "shadowMaps";
-	static const std::string ShadowMapLightsShaderResourveViewName = "shadowMapsTextures";
-	static const UINT MaxLights = 100U;
+namespace Scene {
+
+	using namespace DirectX;
+	using namespace DeviceUtils;
+	using namespace RenderPass;
+
+#if defined(_EDITOR)
+	static const AmbientLight editorDefaultAmbient;
+	static const DirectionalLight editorDefaultDirectional = {
+		.color = *((XMFLOAT3*)&DirectX::Colors::White),
+		.azimuthalAngle = 0.0f,
+		.polarAngle = XM_PI
+	};
+	static const SpotLight editorDefaultSpot = {
+		.color = *((XMFLOAT3*)&DirectX::Colors::White),
+		.position = { 0.0f, 10.0f, 0.0f },
+		.azimuthalAngle = 0.0f,
+		.polarAngle = XM_PI,
+		.coneAngle = XMConvertToRadians(30.0f),
+		.attenuation = { 0.0f, 0.001f, 0.0001f }
+	};
+	static const PointLight editorDefaultPoint = {
+		.color = *((XMFLOAT3*)&DirectX::Colors::White),
+		.position = { 0.0f, 10.0f, 0.0f },
+		.attenuation = { 0.0f, 0.001f, 0.0001f }
+	};
+#endif
+
+	inline static const std::string LightConstantBufferName = "lights";
+	inline static const std::string ShadowMapConstantBufferName = "shadowMaps";
+	inline static const std::string ShadowMapLightsShaderResourveViewName = "shadowMapsTextures";
+	inline static const unsigned int MaxLights = 100U;
 
 	enum LightType {
-		Ambient,
-		Directional,
-		Spot,
-		Point
+		LT_Ambient,
+		LT_Directional,
+		LT_Spot,
+		LT_Point
 	};
 
 	static std::vector<std::string> LightTypesStr = {
@@ -41,26 +68,28 @@ namespace Scene::Lights {
 	};
 
 	static std::map<LightType, std::string> LightTypeToStr = {
-		{ Ambient, "Ambient" },
-		{ Directional, "Directional" },
-		{ Spot, "Spot" },
-		{ Point, "Point" }
+		{ LT_Ambient, "Ambient" },
+		{ LT_Directional, "Directional" },
+		{ LT_Spot, "Spot" },
+		{ LT_Point, "Point" }
 	};
 
 	static std::map<std::string, LightType> StrToLightType = {
-		{ "Ambient",	Ambient },
-		{ "Directional",	Directional },
-		{ "Spot", Spot },
-		{ "Point",	Point }
+		{ "Ambient",	LT_Ambient },
+		{ "Directional",	LT_Directional },
+		{ "Spot", LT_Spot },
+		{ "Point",	LT_Point }
 	};
 
 	struct LightAttributes {
-		LightType lightType;
-		XMFLOAT3 lightColor;
-		XMFLOAT4 atts1;
-		XMFLOAT4 atts2;
-		XMFLOAT3 atts3;
-		BOOL hasShadowMap;
+		LightType lightType; //8
+		XMFLOAT3 lightColor; //32
+		XMFLOAT4 atts1; //64
+		XMFLOAT4 atts2; //96
+		XMFLOAT3 atts3; //120
+		bool hasShadowMap; //128
+		unsigned int shadowMapIndex; //136
+		XMFLOAT3 _pad; //160
 	};
 
 	struct LightPool {
@@ -68,37 +97,22 @@ namespace Scene::Lights {
 		LightAttributes lights[MaxLights];
 	};
 
-	struct LightDefinition {
-		std::string name = "Light";
-		LightType lightType = Ambient;
-		AmbientLight ambient = {};
-		DirectionalLight directional = {};
-		SpotLight spot = {};
-		PointLight point = {};
-		bool hasShadowMap = false;
-		DirectionalLightShadowMapParams directionalLightShadowMapParams = {};
-		SpotLightShadowMapParams spotLightShadowMapParams = {};
-		PointLightShadowMapParams pointLightShadowMapParams = {};
-	};
-
-	struct ShadowMapAttributes {
-		XMMATRIX atts0;
-		XMMATRIX atts1;
-		XMMATRIX atts2;
-		XMMATRIX atts3;
-		XMMATRIX atts4;
-		XMMATRIX atts5;
-		XMFLOAT4 atts6;
-	};
-
 	struct Light
 	{
-		Light(){}
-		~Light() { this_ptr = nullptr; } //will this work?
+		Light() {
+#if defined(_EDITOR)
+			editorAmbient = editorDefaultAmbient;
+			editorDirectional = editorDefaultDirectional;
+			editorSpot = editorDefaultSpot;
+			editorPoint = editorDefaultPoint;
+#endif
+		}
+		~Light() {} //will this work? NO
+
 		std::shared_ptr<Light> this_ptr = nullptr; //dumb but efective
 
 		std::string name = "";
-		LightType lightType = Ambient;
+		LightType lightType = LT_Ambient;
 
 		union {
 			AmbientLight ambient;
@@ -113,60 +127,94 @@ namespace Scene::Lights {
 			PointLightShadowMap pointShadowMap;
 		};
 		bool hasShadowMaps = false;
-		nlohmann::json shadowMapParams;
+		ShadowMapParameters shadowMapParams;
 
-		//DSV Heap
-		UINT shadowMapDescriptorSize;
-		CComPtr<ID3D12DescriptorHeap> shadowMapDsvDescriptorHeap;
-		CD3DX12_CPU_DESCRIPTOR_HANDLE shadowMapDsvCpuHandle;
-		CComPtr<ID3D12Resource> shadowMap;
+		std::shared_ptr<RenderToTexturePass> shadowMapRenderPass;
+		unsigned int shadowMapIndex = 0xFFFFFFFF;
+#if defined(_EDITOR)
+		unsigned int shadowMapUpdateFlags = 0U;
+		std::vector<std::shared_ptr<RenderToTexturePass>> shadowMapMinMaxChainRenderPass;
+		std::vector<std::shared_ptr<Renderable>> shadowMapMinMaxChainRenderable;
+		std::shared_ptr<RenderToTexturePass> shadowMapMinMaxChainResultRenderPass = nullptr;
+		std::shared_ptr<Renderable> shadowMapMinMaxChainResultRenderable = nullptr;
+#endif
 
 		//Camera
-		std::vector<std::shared_ptr<Scene::Camera::Camera>> shadowMapCameras;
+		std::vector<std::shared_ptr<Scene::Camera>> shadowMapCameras;
 
+		//CREATE
+		void CreateShadowMap();
+		void CreateDirectionalLightShadowMap();
+		void CreateSpotLightShadowMap();
+		void CreatePointLightShadowMap();
+		void CreateShadowMapDepthStencilResource();
+		void CreateShadowMapShaderResourceView();
 #if defined(_EDITOR)
+		void CreateShadowMapMinMaxChain();
+#endif
+
+		//DESTROY
+		void DestroyShadowMap();
+		void DestroyShadowMapCameras();
+#if defined(_EDITOR)
+		void DestroyShadowMapMinMaxChain();
+#endif
+
+		//RENDER
+		void RenderShadowMap(std::function<void(unsigned int)> renderScene);
+#if defined(_EDITOR)
+		void RenderShadowMapMinMaxChain();
+#endif
+
+		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
+
+		//EDITOR
+#if defined(_EDITOR)
+		AmbientLight editorAmbient;
+		DirectionalLight editorDirectional;
+		SpotLight editorSpot;
+		PointLight editorPoint;
+
+		void DrawEditorInformationAttributes();
+		void DrawAmbientLightPanel();
+		void DrawDirectionalLightPanel();
+		void DrawSpotLightPanel();
+		void DrawPointLightPanel();
+		void ImDrawDirectionalShadowMap();
+		void ImDrawSpotShadowMap();
+		void ImDrawPointShadowMap();
+		void ImDrawShadowMapMinMaxChain();
 		nlohmann::json json();
 #endif
 	};
 
-	//lights and shadow map CBV data
-	ConstantsBufferViewDataPtr GetLightsConstantBufferView();
-	ConstantsBufferViewDataPtr GetShadowMapConstantBufferView();
-	CD3DX12_GPU_DESCRIPTOR_HANDLE& GetShadowMapGpuDescriptorHandleStart();
-
-	Concurrency::task<void> CreateLightsResources();
-	void DestroyLightsResources();
-
-	void UpdateConstantsBufferNumLights(UINT backbufferIndex, UINT numLights);
-	void UpdateConstantsBufferLightAttributes(std::shared_ptr<Light>& light, UINT backbufferIndex, UINT lightIndex);
-	void UpdateConstantsBufferShadowMapAttributes(std::shared_ptr<Light>& light, UINT backbufferIndex, UINT shadowMapIndex);
-
-	typedef void LoadLightFn(std::shared_ptr<Light> light);
-
+	//CREATE
+	void CreateLightsResources();
 	std::shared_ptr<Light> CreateLight(nlohmann::json light);
+
+	//READ&GET
 	std::vector<std::shared_ptr<Light>> GetLights();
 	std::shared_ptr<Light> GetLight(std::string lightName);
 	std::vector<std::string> GetLightsNames();
+	std::shared_ptr<ConstantsBuffer> GetLightsConstantsBuffer();
 #if defined(_EDITOR)
-	void SelectLight(std::string lightName, void*& ptr);
-	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size);
 	std::string GetLightName(void* ptr);
 #endif
+
+	//UPDATE
+	void LightsStep();
+	void UpdateConstantsBufferNumLights(unsigned int backbufferIndex, unsigned int numLights);
+	void UpdateConstantsBufferLightAttributes(const std::shared_ptr<Light>& light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex = 0U);
+
+	//DELETE
+	void DestroyLightsResources();
 	void DestroyLights();
-	
-	void CreateDirectionalLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params);
-	void CreateSpotLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params);
-	void CreatePointLightShadowMap(const std::shared_ptr<Light>& light, nlohmann::json params);
-	void CreateShadowMapDepthStencilResource(const std::shared_ptr<Light>& light);
-	void RenderShadowMap(std::shared_ptr<Light> light, std::function<void(UINT)> renderScene);
 
-	Concurrency::task<void> CreateShadowMapPipeline(const std::map<VertexClass, const MaterialPtr> shadowMapsInputLayoutMaterial);
-
-	std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>> GetShadowMapRenderAttributes(VertexClass vertexClass, const MaterialPtr material);
-	void DestroyShadowMapAttributes();
-	
+	//EDITOR
+#if defined(_EDITOR)
+	void SelectLight(std::string lightName, void*& ptr);
+	void DeSelectLight(void*& ptr);
+	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
+#endif
 };
-
-typedef Scene::Lights::Light LightT;
-typedef std::shared_ptr<LightT> LightPtr;
 

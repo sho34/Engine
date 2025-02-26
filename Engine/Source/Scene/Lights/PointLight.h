@@ -3,19 +3,7 @@
 using namespace Microsoft::WRL;
 using namespace DirectX;
 
-namespace Scene::Lights {
-
-	static constexpr XMVECTOR PointLightDirection[] = {
-		{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f,-1.0f, 0.0f, 0.0f },
-		{ 1.0f, 0.0f, 0.0f, 0.0f }, {-1.0f, 0.0f, 0.0f, 0.0f },
-		{ 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f,-1.0f, 0.0f },
-	};
-
-	static constexpr XMVECTOR PointLightUp[] = {
-		{ 0.0f, 0.0f,-1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f },
-		{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f },
-	};
+namespace Scene {
 
 	struct PointLightShadowMapParams
 	{
@@ -33,19 +21,26 @@ namespace Scene::Lights {
 		XMMATRIX shadowMapProjectionMatrix;
 	};
 
-	struct PointLight {
+	struct PointLight
+	{
+		static constexpr XMVECTOR PointLightDirection[] = {
+			{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f,-1.0f, 0.0f, 0.0f },
+			{ 1.0f, 0.0f, 0.0f, 0.0f }, {-1.0f, 0.0f, 0.0f, 0.0f },
+			{ 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f,-1.0f, 0.0f },
+		};
+		static constexpr XMVECTOR PointLightUp[] = {
+			{ 0.0f, 0.0f,-1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f },
+			{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f },
+			{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f },
+		};
 
 		XMFLOAT3	color;
 		XMFLOAT3	position;
 		union {
 			XMFLOAT3	attenuation;
-			struct {
-				FLOAT constant;
-				FLOAT linear;
-				FLOAT quadratic;
-			};
+			FLOAT att[3];
+			struct { FLOAT constant, linear, quadratic; };
 		};
-
 	};
 
 }
