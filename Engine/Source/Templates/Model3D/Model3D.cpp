@@ -87,11 +87,11 @@ namespace Templates {
 					CreateMaterial(materialName, materialJson);
 				}
 
-				materialInstance = GetMaterialInstance(materialName, std::vector<MaterialTexture>(), mesh);
+				materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh);
 			}
 			else
 			{
-				materialInstance = GetMaterialInstance(mdl.at("materials").at(meshIndex), std::vector<MaterialTexture>(), mesh);
+				materialInstance = GetMaterialInstance(mdl.at("materials").at(meshIndex), std::map<TextureType, MaterialTexture>(), mesh);
 			}
 
 			model->materials.push_back(materialInstance);
@@ -100,7 +100,7 @@ namespace Templates {
 		importer.FreeScene();
 	}
 
-	void PushAssimpTextureToJson(nlohmann::json& j, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+	void PushAssimpTextureToJson(nlohmann::json& j, TextureType textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
 	{
 		std::string textureJsonPath = fallbackTexture;
 
@@ -111,7 +111,11 @@ namespace Templates {
 
 		if (textureJsonPath != "")
 		{
-			j["textures"].push_back({ {"path", textureJsonPath}, {"format", dxgiFormatsToString.at(format)}, {"numFrames", 0} });
+			j["textures"][textureTypeToStr.at(textureType)] = {
+				{ "path", textureJsonPath },
+				{ "format", dxgiFormatsToString.at(format) },
+				{ "numFrames", 0 }
+			};
 		}
 	};
 
@@ -157,17 +161,17 @@ namespace Templates {
 		aiString diffuseName;
 		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
 		//pushAiMaterialToTextures(diffuseName, "Assets/textures/gridmap.dds");
-		PushAssimpTextureToJson(matJson, relativePath, diffuseName, "Assets/textures/gridmap.dds");
+		PushAssimpTextureToJson(matJson, TextureType_Base, relativePath, diffuseName, "Assets/textures/gridmap.dds");
 
 		aiString normalMapName;
 		material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
 		//pushAiMaterialToTextures(normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
-		PushAssimpTextureToJson(matJson, relativePath, normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
+		PushAssimpTextureToJson(matJson, TextureType_NormalMap, relativePath, normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
 
 		aiString metallicRoughnessName;
 		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
 		//pushAiMaterialToTextures(metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
-		PushAssimpTextureToJson(matJson, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
+		PushAssimpTextureToJson(matJson, TextureType_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
 
 		matJson["samplers"] = { MaterialSamplerDesc().json() };
 

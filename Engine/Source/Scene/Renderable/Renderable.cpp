@@ -47,7 +47,7 @@ namespace Scene {
 	{
 		std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [uniqueMaterialInstance](const nlohmann::json& value)
 			{
-				std::vector<MaterialTexture> textures;
+				std::map<TextureType, MaterialTexture> textures;
 				TransformJsonToMaterialTextures(textures, value, "textures");
 
 				std::shared_ptr<MeshInstance> mesh = GetMeshInstance(value["mesh"]);
@@ -219,7 +219,7 @@ namespace Scene {
 		meshMaterials.insert_or_assign(mesh, material);
 
 		//pick tuple textures if available
-		std::vector<MaterialTexture> textures;
+		std::map<TextureType, MaterialTexture> textures;
 		if (material->tupleTextures.size() > 0U)
 		{
 			textures = material->tupleTextures;
@@ -232,12 +232,13 @@ namespace Scene {
 		}
 
 		//truncate to first texture
-		if (textures.size() > 1ULL)
+		std::map<TextureType, MaterialTexture> shadowMapBaseTexture;
+		if (textures.contains(TextureType_Base))
 		{
-			textures.erase(textures.begin() + 1, textures.end());
+			shadowMapBaseTexture.insert_or_assign(TextureType_Base, textures.at(TextureType_Base));
 		}
 
-		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", textures, mesh);
+		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", shadowMapBaseTexture, mesh);
 		meshShadowMapMaterials.insert_or_assign(mesh, shadowMapMaterial);
 	}
 
@@ -532,7 +533,7 @@ namespace Scene {
 	{
 		for (auto& [mesh, materialName] : materialSwaps)
 		{
-			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialName, std::vector<MaterialTexture>(), mesh, uniqueMaterialInstance);
+			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh, uniqueMaterialInstance);
 			SetMeshMaterial(mesh, materialInstance);
 			CreateMeshConstantsBuffers(mesh);
 			CreateMeshRootSignatures(mesh);

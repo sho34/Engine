@@ -13,11 +13,10 @@
 
 namespace Templates {
 
-	//std::map<std::string, std::shared_ptr<Material>> materialTemplates;
 	std::map<std::string, nlohmann::json> materialTemplates;
 
 	//Material+Mesh = MaterialInstance
-	typedef std::pair<std::tuple<std::string, std::vector<MaterialTexture>>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
+	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
 	std::map<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> materialInstances;
 	std::map<std::shared_ptr<MaterialInstance>, unsigned int> materialInstancesRefCount;
 
@@ -54,7 +53,7 @@ namespace Templates {
 
 	static std::mt19937 g;
 
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::vector<MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, bool uniqueMaterialInstance)
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, bool uniqueMaterialInstance)
 	{
 		std::string instanceName = name;
 		if (uniqueMaterialInstance)
@@ -83,7 +82,7 @@ namespace Templates {
 		return material;
 	}
 
-	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::vector<MaterialTexture>& textures)
+	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures)
 	{
 		material->vertexClass = mesh->vertexClass;
 
@@ -92,14 +91,26 @@ namespace Templates {
 
 		using namespace ShaderCompiler;
 		std::string fileName = shader.contains("fileName") ? std::string(shader.at("fileName")) : std::string(mat.at("shader"));
-		Source compVS = { .shaderType = VERTEX_SHADER, .shaderName = fileName, .defines = VertexClassDefines.at(mesh->vertexClass) };
-		Source compPS = { .shaderType = PIXEL_SHADER, .shaderName = fileName, .defines = VertexClassDefines.at(mesh->vertexClass) };
+		std::vector<std::string> defines;
+		std::vector<std::string> vertexClassDefines = VertexClassDefines.at(mesh->vertexClass);
+		std::move(vertexClassDefines.begin(), vertexClassDefines.end(), std::back_inserter(defines));
+		if (mat.contains("textures"))
+		{
+			nlohmann::json jtextures = mat.at("textures");
+			for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
+			{
+				defines.push_back(textureTypeToShaderDefine.at(strToTextureType.at(it.key())));
+			}
+		}
+
+		Source compVS = { .shaderType = VERTEX_SHADER, .shaderName = fileName, .defines = defines };
+		Source compPS = { .shaderType = PIXEL_SHADER, .shaderName = fileName, .defines = defines };
 		material->material = name;
 		material->tupleTextures = textures;
 		material->vertexShader = GetShaderBinary(compVS);
 		material->pixelShader = GetShaderBinary(compPS);
 		TransformJsonToMaterialSamplers(material->samplers, mat, "samplers");
-		std::vector<MaterialTexture> matTextures;
+		std::map<TextureType, MaterialTexture> matTextures;
 		if (textures.size() > 0)
 		{
 			matTextures = textures;
@@ -118,7 +129,7 @@ namespace Templates {
 
 		DestroyShaderBinary(vertexShader);
 		DestroyShaderBinary(pixelShader);
-		for (auto& tex : textures)
+		for (auto& [type, tex] : textures)
 		{
 			DestroyMaterialTextureInstance(tex);
 		}
@@ -256,7 +267,7 @@ namespace Templates {
 		for (auto& [textureType, texParam] : pixelShader->texturesParameters)
 		{
 			if (texParam.numTextures == 0xFFFFFFFF) continue;
-			commandList->SetGraphicsRootDescriptorTable(cbvSlot, textures[texParam.registerId]->gpuHandle);
+			commandList->SetGraphicsRootDescriptorTable(cbvSlot, textures.at(textureType)->gpuHandle);
 			cbvSlot++;
 		}
 	}

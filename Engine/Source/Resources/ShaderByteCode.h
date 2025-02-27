@@ -69,6 +69,16 @@ inline static std::map<std::string, TextureType> strToTextureType = {
 	{ "DepthTexture", TextureType_DepthTexture },
 };
 
+inline static std::map<TextureType, std::string> textureTypeToShaderDefine = {
+	{ TextureType_Base, "_HAS_BASE_TEXTURE" },
+	{ TextureType_NormalMap, "_HAS_NORMALMAP_TEXTURE" },
+	{ TextureType_MetallicRoughness, "_HAS_METALLIC_ROUGHNESS_TEXTURE" },
+	{ TextureType_ShadowMaps, "_HAS_SHADOWMAPS_TEXTURES" },
+	{ TextureType_MinTexture, "_HAS_MIN_TEXTURE" },
+	{ TextureType_MaxTexture, "_HAS_MAX_TEXTURE" },
+	{ TextureType_DepthTexture, "_HAS_DEPTH_TEXTURE" },
+};
+
 //define the Textures binding
 struct ShaderTextureParameter {
 	unsigned int registerId;

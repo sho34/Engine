@@ -4,6 +4,7 @@
 #include "../../Renderer/Renderer.h"
 #include "../../Renderer/DeviceUtils/Resources/Resources.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
+#include "../../Resources/ShaderByteCode.h"
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -13,30 +14,31 @@ std::unordered_map<std::string, unsigned int> texturesCacheRefCount;
 std::unordered_map<MaterialTexture, std::shared_ptr<MaterialTextureInstance>> textureInstances;
 std::unordered_map<std::shared_ptr<MaterialTextureInstance>, unsigned int> textureInstancesRefCount;
 
-void TransformJsonToMaterialTextures(std::vector<MaterialTexture>& textures, nlohmann::json object, const std::string& key) {
+void TransformJsonToMaterialTextures(std::map<TextureType, MaterialTexture>& textures, nlohmann::json object, const std::string& key) {
 
 	if (!object.contains(key)) return;
 
 	nlohmann::json jtextures = object[key];
-	std::transform(jtextures.begin(), jtextures.end(), std::back_inserter(textures), [](nlohmann::json texture)
-		{
-			return MaterialTexture(
-				{
-					.path = texture["path"],
-					.format = stringToDxgiFormat[texture["format"]],
-					.numFrames = texture["numFrames"]
-				}
-			);
-		}
-	);
+
+	for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
+	{
+		textures.insert_or_assign(strToTextureType.at(it.key()), MaterialTexture(
+			{
+				.path = it.value()["path"],
+				.format = stringToDxgiFormat[it.value()["format"]],
+				.numFrames = it.value()["numFrames"]
+			}
+		));
+	}
 }
 
-std::vector<std::shared_ptr<MaterialTextureInstance>> GetTextures(const std::vector<MaterialTexture>& textures)
+std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> GetTextures(const std::map<TextureType, MaterialTexture>& textures)
 {
-	std::vector<std::shared_ptr<MaterialTextureInstance>> texInstances;
+	std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> texInstances;
 
-	std::transform(textures.begin(), textures.end(), std::back_inserter(texInstances), [](MaterialTexture texture)
+	std::transform(textures.begin(), textures.end(), std::inserter(texInstances, texInstances.end()), [](auto pair)
 		{
+			auto& texture = pair.second;
 			if (!textureInstances.contains(texture))
 			{
 				std::shared_ptr<MaterialTextureInstance> textureInstance = std::make_shared<MaterialTextureInstance>();
@@ -48,7 +50,7 @@ std::vector<std::shared_ptr<MaterialTextureInstance>> GetTextures(const std::vec
 			{
 				textureInstancesRefCount.at(textureInstances.at(texture))++;
 			}
-			return textureInstances.at(texture);
+			return std::pair<TextureType, std::shared_ptr<MaterialTextureInstance>>(pair.first, textureInstances.at(texture));
 		}
 	);
 

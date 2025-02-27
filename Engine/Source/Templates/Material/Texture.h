@@ -1,4 +1,5 @@
 #pragma once
+#include "../../Resources/ShaderByteCode.h"
 
 struct MaterialTexture
 {
@@ -48,8 +49,8 @@ struct MaterialTextureInstance
 	void Destroy();
 };
 
-void TransformJsonToMaterialTextures(std::vector<MaterialTexture>& textures, nlohmann::json object, const std::string& key);
+void TransformJsonToMaterialTextures(std::map<TextureType, MaterialTexture>& textures, nlohmann::json object, const std::string& key);
 
-std::vector<std::shared_ptr<MaterialTextureInstance>> GetTextures(const std::vector<MaterialTexture>& textures);
+std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> GetTextures(const std::map<TextureType, MaterialTexture>& textures);
 std::shared_ptr<MaterialTextureInstance> GetTextureFromGPUHandle(const MaterialTexture& texture);
 void DestroyMaterialTextureInstance(std::shared_ptr<MaterialTextureInstance>& texture);

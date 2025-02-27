@@ -265,8 +265,8 @@ namespace Scene {
 
 			std::string ShadowMapMinMaxChainMat1 = "ShadowMapMinMaxChainMat1[" + std::to_string(max(2U, width)) + "," + std::to_string(max(2U, height)) + "]";
 			std::string ShadowMapMinMaxChainMat2 = "ShadowMapMinMaxChainMat2[" + std::to_string(max(2U, width)) + "," + std::to_string(max(2U, height)) + "]";
-			shadowMapMinMaxChainMaterial->textures.push_back(GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapMinMaxChainMat1, .gpuHandle = shadowMapChainGpuHandle1 })));
-			shadowMapMinMaxChainMaterial->textures.push_back(GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapMinMaxChainMat2, .gpuHandle = shadowMapChainGpuHandle1 })));
+			shadowMapMinMaxChainMaterial->textures.insert_or_assign(TextureType_MinTexture, GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapMinMaxChainMat1, .gpuHandle = shadowMapChainGpuHandle1 })));
+			shadowMapMinMaxChainMaterial->textures.insert_or_assign(TextureType_MaxTexture, GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapMinMaxChainMat2, .gpuHandle = shadowMapChainGpuHandle1 })));
 
 			//get the new gpu handles 1&2 for the next chain
 			std::shared_ptr<RenderToTexturePass>& pass = shadowMapMinMaxChainRenderPass.back();
@@ -314,9 +314,9 @@ namespace Scene {
 		std::string ShadowMapResultChainMat1 = "ShadowMapMinMaxResult1";
 		std::string ShadowMapResultChainMat2 = "ShadowMapMinMaxResult2";
 		std::string ShadowMapResultChainMat3 = "ShadowMapMinMaxResult3";
-		shadowMapMinMaxChainResultMaterial->textures.push_back(GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapResultChainMat1, .gpuHandle = shadowMapChainGpuHandle })));
-		shadowMapMinMaxChainResultMaterial->textures.push_back(GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapResultChainMat2, .gpuHandle = lastMinMaxPass->renderToTexture[0]->gpuTextureHandle })));
-		shadowMapMinMaxChainResultMaterial->textures.push_back(GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapResultChainMat3, .gpuHandle = lastMinMaxPass->renderToTexture[1]->gpuTextureHandle })));
+		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureType_DepthTexture, GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapResultChainMat1, .gpuHandle = shadowMapChainGpuHandle })));
+		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureType_MinTexture, GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapResultChainMat2, .gpuHandle = lastMinMaxPass->renderToTexture[0]->gpuTextureHandle })));
+		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureType_MaxTexture, GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapResultChainMat3, .gpuHandle = lastMinMaxPass->renderToTexture[1]->gpuTextureHandle })));
 	}
 
 	bool SceneHasShadowMaps()
