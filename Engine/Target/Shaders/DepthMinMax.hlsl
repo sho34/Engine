@@ -13,8 +13,8 @@ struct PixelShaderInput
 	float2 uv3 : TEXCOORD3;
 };
 
-Texture2D texMin : register(t0);
-Texture2D texMax : register(t1);
+Texture2D MinTexture : register(t0);
+Texture2D MaxTexture : register(t1);
 SamplerState samp0 : register(s0);
 
 cbuffer renderable : register(b0)
@@ -56,8 +56,8 @@ float4 depthSampleArea(in float2 coords0, in float2 coords1, in float2 coords2, 
 PS_OUTPUT main_ps(PixelShaderInput input)
 {
 	PS_OUTPUT output;
-	float4 depmin = depthSampleArea(input.uv0, input.uv1, input.uv2, input.uv3, texMin, samp0);
-	float4 depmax = depthSampleArea(input.uv0, input.uv1, input.uv2, input.uv3, texMax, samp0);
+	float4 depmin = depthSampleArea(input.uv0, input.uv1, input.uv2, input.uv3, MinTexture, samp0);
+	float4 depmax = depthSampleArea(input.uv0, input.uv1, input.uv2, input.uv3, MaxTexture, samp0);
 	
 	output.Min = min(depmin.x,min(depmin.y,min(depmin.z,depmin.w)));
 	output.Max = max(depmax.x,max(depmax.y,max(depmax.z,depmax.w)));

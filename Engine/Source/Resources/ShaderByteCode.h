@@ -37,14 +37,45 @@ struct ShaderConstantsBufferParameter {
 typedef std::map<std::string, ShaderConstantsBufferParameter> ShaderConstantsBufferParametersMap;
 typedef std::pair<std::string, ShaderConstantsBufferParameter> ShaderConstantsBufferParametersPair;
 
+//Texture Type
+enum TextureType
+{
+	TextureType_Base,
+	TextureType_NormalMap,
+	TextureType_MetallicRoughness,
+	TextureType_ShadowMaps,
+	TextureType_MinTexture,
+	TextureType_MaxTexture,
+	TextureType_DepthTexture,
+};
+
+inline static std::map<TextureType, std::string> textureTypeToStr = {
+	{ TextureType_Base, "BaseTexture" },
+	{ TextureType_NormalMap, "NormalMapTexture" },
+	{ TextureType_MetallicRoughness, "MetallicRoughnessTexture" },
+	{ TextureType_ShadowMaps, "ShadowMapsTextures" },
+	{ TextureType_MinTexture, "MinTexture" },
+	{ TextureType_MaxTexture, "MaxTexture" },
+	{ TextureType_DepthTexture, "DepthTexture" },
+};
+
+inline static std::map<std::string, TextureType> strToTextureType = {
+	{ "BaseTexture", TextureType_Base },
+	{ "NormalMapTexture", TextureType_NormalMap },
+	{ "MetallicRoughnessTexture", TextureType_MetallicRoughness },
+	{ "ShadowMapsTextures", TextureType_ShadowMaps },
+	{ "MinTexture", TextureType_MinTexture },
+	{ "MaxTexture", TextureType_MaxTexture },
+	{ "DepthTexture", TextureType_DepthTexture },
+};
 
 //define the Textures binding
 struct ShaderTextureParameter {
 	unsigned int registerId;
 	unsigned int numTextures;
 };
-typedef std::map<std::string, ShaderTextureParameter> ShaderTextureParametersMap;
-typedef std::pair<std::string, ShaderTextureParameter> ShaderTextureParametersPair;
+typedef std::map<TextureType, ShaderTextureParameter> ShaderTextureParametersMap;
+typedef std::pair<TextureType, ShaderTextureParameter> ShaderTextureParametersPair;
 
 //define the Samplers binding
 struct ShaderSamplerParameter {

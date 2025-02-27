@@ -10,7 +10,7 @@ struct PixelShaderInput
 	float2 uv0 : TEXCOORD0;
 };
 
-Texture2D texture : register(t0);
+Texture2D BaseTexture : register(t0);
 SamplerState samp0 : register(s0);
 
 cbuffer renderable : register(b0)
@@ -32,6 +32,6 @@ PixelShaderInput main_vs(VertexShaderInput input)
 float4 main_ps(PixelShaderInput input) : SV_TARGET
 {
 	return (input.uv0.x<progress)?color1:color2;
-	//return float4(texture.Sample(samp0, input.uv0.xy).rgb,1.0f);
+	//return float4(BaseTexture.Sample(samp0, input.uv0.xy).rgb,1.0f);
 	//return lerp(color1,color2,progress);
 }

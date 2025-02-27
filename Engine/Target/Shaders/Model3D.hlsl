@@ -44,9 +44,9 @@ ConstantBuffer<Camera> camera : register(b1);
 ConstantBuffer<Lights> lights : register(b2);
 ConstantBuffer<ShadowMaps> shadowMaps : register(b3);
 
-Texture2D baseTexture : register(t0);
-Texture2D normalMapTexture : register(t1);
-Texture2D shadowMapsTextures[] : register(t2);
+Texture2D BaseTexture : register(t0);
+Texture2D NormalMapTexture : register(t1);
+Texture2D ShadowMapsTextures[] : register(t2);
 SamplerState sampler0 : register(s0);
 
 PixelShaderInput main_vs(VertexShaderInput input)
@@ -93,19 +93,19 @@ float4 main_ps(PixelShaderInput input) : SV_TARGET
     //shadowmaps textures (SRV)
     //sampler
     
-    normal = getNormal(normal, tangent, uv, normalMapTexture, sampler0);
+    normal = getNormal(normal, tangent, uv, NormalMapTexture, sampler0);
     
     SceneLighting(
         worldPos, normal, specularExponent,
         viewDir,
         lights,
         shadowMaps,
-        shadowMapsTextures,
+        ShadowMapsTextures,
         sampler0,
         diffuseFinalLightContribution, specularFinalLightContribution
     );
 
-    float3 texturesColor = baseTexture.Sample(sampler0, uv).rgb;
+    float3 texturesColor = BaseTexture.Sample(sampler0, uv).rgb;
     float3 outputColor = texturesColor*diffuseFinalLightContribution;
 	outputColor = saturate(outputColor);
 	outputColor+= specularFinalLightContribution;

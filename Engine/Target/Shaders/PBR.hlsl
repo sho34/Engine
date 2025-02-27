@@ -43,10 +43,10 @@ ConstantBuffer<ShadowMaps> shadowMaps : register(b3);
 ConstantBuffer<Animated3D> animation : register(b4);
 #endif
 
-Texture2D baseTexture : register(t0);
-Texture2D normalMapTexture : register(t1);
-Texture2D metallicRoughnessTexture : register(t2);
-Texture2D shadowMapsTextures[] : register(t3);
+Texture2D BaseTexture : register(t0);
+Texture2D NormalMapTexture : register(t1);
+Texture2D MetallicRoughnessTexture : register(t2);
+Texture2D ShadowMapsTextures[] : register(t3);
 SamplerState sampler0 : register(s0);
 
 PixelShaderInput main_vs(VertexShaderInput input)
@@ -100,7 +100,7 @@ float4 main_ps(PixelShaderInput input) : SV_TARGET
     float3 viewDir = normalize(camera.eyePosition.xyz - input.worldPos);
     float2 uv = input.uv;
 	
-	float4 baseColor = baseTexture.Sample(sampler0, uv);
+	float4 baseColor = BaseTexture.Sample(sampler0, uv);
 	
 	if(baseColor.a < alphaCut) {
 		discard;
@@ -109,9 +109,9 @@ float4 main_ps(PixelShaderInput input) : SV_TARGET
 	float3 diffuseFinalLightContribution = 0.xxx;
     float3 specularFinalLightContribution = 0.xxx;
 
-    normal = getNormal(normal, tangent, uv, normalMapTexture, sampler0);
+    normal = getNormal(normal, tangent, uv, NormalMapTexture, sampler0);
 
-	float3 ARM = metallicRoughnessTexture.Sample(sampler0, uv).xyz; //AO + Roughness + Metallic
+	float3 ARM = MetallicRoughnessTexture.Sample(sampler0, uv).xyz; //AO + Roughness + Metallic
 	
 	float roughness = ARM.y * roughnessFactor;
     roughness = clamp(roughness, c_MinRoughness, 1.0f);
@@ -140,7 +140,7 @@ float4 main_ps(PixelShaderInput input) : SV_TARGET
 		viewDir,
 		lights,
 		shadowMaps,
-		shadowMapsTextures,
+		ShadowMapsTextures,
 		sampler0,
 		diffuseFinalLightContribution, specularFinalLightContribution
 	);	

@@ -10,9 +10,9 @@ struct PixelShaderInput
 	float2 uv0 : TEXCOORD0;
 };
 
-Texture2D texDepth : register(t0);
-Texture2D texMin : register(t1);
-Texture2D texMax : register(t2);
+Texture2D DepthTexture : register(t0);
+Texture2D MinTexture : register(t1);
+Texture2D MaxTexture : register(t2);
 SamplerState samp0 : register(s0);
 
 cbuffer renderable : register(b0)
@@ -44,13 +44,13 @@ float4 depthSampleArea(in float2 coords0, in float2 coords1, in float2 coords2, 
 
 float4 main_ps(PixelShaderInput input) : SV_TARGET
 {
-	float4 depmin = depthSampleArea(float2(0.25f,0.25f), float2(0.75f,0.25f), float2(0.25f,0.75f), float2(0.75f,0.75f), texMin, samp0);
-	float4 depmax = depthSampleArea(float2(0.25f,0.25f), float2(0.75f,0.25f), float2(0.25f,0.75f), float2(0.75f,0.75f), texMax, samp0);
+	float4 depmin = depthSampleArea(float2(0.25f,0.25f), float2(0.75f,0.25f), float2(0.25f,0.75f), float2(0.75f,0.75f), MinTexture, samp0);
+	float4 depmax = depthSampleArea(float2(0.25f,0.25f), float2(0.75f,0.25f), float2(0.25f,0.75f), float2(0.75f,0.75f), MaxTexture, samp0);
 	
 	float Min = min(depmin.x,min(depmin.y,min(depmin.z,depmin.w)));
 	float Max = max(depmax.x,max(depmax.y,max(depmax.z,depmax.w)));
 	
-	float depth = texDepth.Sample(samp0, input.uv0.xy).r;
+	float depth = DepthTexture.Sample(samp0, input.uv0.xy).r;
 	
 	float ndepth = (depth - Min)/(Max - Min);
 	

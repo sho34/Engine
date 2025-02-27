@@ -21,7 +21,7 @@ cbuffer renderable : register(b0)
 
 ConstantBuffer<Camera> camera : register(b1);
 
-Texture2DArray tex : register(t0);
+Texture2DArray BaseTexture : register(t0);
 SamplerState samp0 : register(s0);
 
 PixelShaderInput main_vs(VertexShaderInput input)
@@ -42,7 +42,7 @@ PixelShaderInput main_vs(VertexShaderInput input)
 float4 main_ps(PixelShaderInput input) : SV_TARGET
 {
 	float4 color = 0.0f.xxxx;
-	color += tex.Sample(samp0, float3(input.uv,frameIndex));
+	color += BaseTexture.Sample(samp0, float3(input.uv,frameIndex));
 	if (color.a < alphaCut) {
 		discard;
 	}

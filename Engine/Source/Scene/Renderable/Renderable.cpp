@@ -687,7 +687,6 @@ namespace Scene {
 			auto& material = meshMaterials.at(mesh);
 			auto& rootSignature = meshRootSignatures.at(mesh);
 			auto& pipelineState = meshPipelineStates.at(mesh);
-			auto& texParams = material->pixelShader->texturesParameters;
 
 			commandList->SetGraphicsRootSignature(rootSignature);
 			commandList->SetPipelineState(pipelineState);
@@ -766,7 +765,6 @@ namespace Scene {
 			auto& material = meshShadowMapMaterials.at(mesh);
 			auto& rootSignature = meshShadowMapRootSignatures.at(mesh);
 			auto& pipelineState = meshShadowMapPipelineStates.at(mesh);
-			auto& texParams = material->pixelShader->texturesParameters;
 
 			//don't draw things without a camera, bad shader(sorry)
 			if (!material->ShaderBinaryHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) continue;

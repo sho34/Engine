@@ -50,7 +50,7 @@ namespace Scene {
 
 	inline static const std::string LightConstantBufferName = "lights";
 	inline static const std::string ShadowMapConstantBufferName = "shadowMaps";
-	inline static const std::string ShadowMapLightsShaderResourveViewName = "shadowMapsTextures";
+	inline static const std::string ShadowMapLightsShaderResourveViewName = textureTypeToStr.at(TextureType_ShadowMaps);
 	inline static const unsigned int MaxLights = 100U;
 
 	enum LightType {

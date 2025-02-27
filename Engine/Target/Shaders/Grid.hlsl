@@ -26,7 +26,7 @@ ConstantBuffer<Camera> camera : register(b1);
 ConstantBuffer<Lights> lights : register(b2);
 ConstantBuffer<ShadowMaps> shadowMaps : register(b3);
 
-Texture2D shadowMapsTextures[] : register(t0);
+Texture2D ShadowMapsTextures[] : register(t0);
 SamplerState sampler0 : register(s0);
 
 PixelShaderInput main_vs(VertexShaderInput input)
@@ -88,7 +88,7 @@ float4 main_ps(PixelShaderInput input) : SV_TARGET
         viewDir,
         lights,
         shadowMaps,
-        shadowMapsTextures,
+        ShadowMapsTextures,
         sampler0,
         diffuseFinalLightContribution, specularFinalLightContribution
     );

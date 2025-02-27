@@ -38,7 +38,7 @@ ConstantBuffer<Camera> camera : register(b1);
 ConstantBuffer<Animated3D> animation : register(b2);
 #endif
 
-Texture2D baseTexture : register(t0);
+Texture2D BaseTexture : register(t0);
 SamplerState sampler0 : register(s0);
 
 PixelShaderInput main_vs(VertexShaderInput input)
@@ -72,7 +72,7 @@ output.pos = pos;
 void main_ps(PixelShaderInput input) : SV_TARGET
 {
 #ifdef _HAS_TEXCOORD0
-    float4 texturesColor = baseTexture.Sample(sampler0, input.uv);
+    float4 texturesColor = BaseTexture.Sample(sampler0, input.uv);
 
     if (texturesColor.w < alphaCut)
     {

@@ -53,7 +53,8 @@ void ShaderBinary::CreateResourcesBinding(const ComPtr<ID3D12ShaderReflection>& 
 		}
 		else if (bindDesc.Type == D3D_SIT_TEXTURE)
 		{
-			texturesParameters.insert_or_assign(resourceName, ShaderTextureParameter({ .registerId = bindDesc.BindPoint, .numTextures = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
+			texturesParameters.insert_or_assign(strToTextureType.at(resourceName), ShaderTextureParameter({ .registerId = bindDesc.BindPoint, .numTextures = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
+			//texturesParameters.insert_or_assign(resourceName, ShaderTextureParameter({ .registerId = bindDesc.BindPoint, .numTextures = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
 		}
 		else if (bindDesc.Type == D3D_SIT_SAMPLER)
 		{

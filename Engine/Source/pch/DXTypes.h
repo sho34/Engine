@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <d3d12.h>
+
 static std::map<D3D12_DESCRIPTOR_HEAP_TYPE, std::string> heapTypeToString = {
 	{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, "CBV_SRV_UAV"},
 	{ D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, "SAMPLER"},

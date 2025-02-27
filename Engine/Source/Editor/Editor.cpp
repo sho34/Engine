@@ -302,18 +302,37 @@ namespace Editor {
 
 	auto DrawTableRows(auto GetObjects, auto OnSelect)
 	{
+		ImGui::TableSetupColumn("Delete", ImGuiTableColumnFlags_WidthFixed);
+		ImGui::TableSetupColumn("Object", ImGuiTableColumnFlags_WidthStretch);
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		ImGui::TableHeader("");
+		ImGui::TableSetColumnIndex(1);
+		ImGui::TableHeader("Object");
+
 		int row = 0;
 		for (auto name : GetObjects())
 		{
+			std::string rowName = "table-row-" + name;
+			ImGui::PushID(rowName.c_str());
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
+			if (ImGui::SmallButton(ICON_FA_TIMES)) {}
+			ImGui::TableSetColumnIndex(1);
 			if (ImGui::TextLink(name.c_str())) { OnSelect(name); }
+			ImGui::PopID();
 		}
 	}
 
 	auto DrawListPanel(const char* tableName, auto GetObjects, auto OnSelect)
 	{
-		if (ImGui::BeginTable(tableName, 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+		if (ImGui::SmallButton(ICON_FA_PLUS))
+		{
+
+		}
+
+		if (ImGui::BeginTable(tableName, 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
 		{
 			DrawTableRows(GetObjects, OnSelect);
 			ImGui::EndTable();
@@ -341,9 +360,11 @@ namespace Editor {
 					if (ImGui::TabItemButton(name.c_str(), flag)) { tab = type; }
 				}
 				DrawListPanel((TabToStr.at(tab) + "-table").c_str(), GetTabList.at(tab),
-					[tab, &selected, OnSelect](std::string name) {
+					[tab, &selected, OnSelect](std::string name)
+					{
 						OnSelect.at(tab)(name, selected);
-					});
+					}
+				);
 			}
 			ImGui::EndTabBar();
 		}
