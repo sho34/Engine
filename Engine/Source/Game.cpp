@@ -26,7 +26,11 @@ std::shared_ptr<Renderable> bootScreen;
 std::shared_ptr<Renderable> loadingScreenBar;
 std::shared_ptr<Camera> UICamera;
 std::shared_ptr<Camera> mainPassCamera;
-
+std::filesystem::path levelToLoad;
+namespace Editor {
+	extern void* selSO;
+	extern std::string selTemp;
+};
 extern std::shared_ptr<Renderer> renderer;
 
 template<typename T>
@@ -379,6 +383,22 @@ void EditorModeCreate()
 
 void EditorModeStep()
 {
+	if (!levelToLoad.empty())
+	{
+		renderer->Flush();
+		renderer->RenderCriticalFrame([]
+			{
+				DestroySceneObjects();
+				selSO = nullptr;
+				selTemp = "";
+				LoadLevel(levelToLoad);
+				levelToLoad = "";
+				CreateRenderableBoundingBox();
+			}
+		);
+		mainPassCamera = GetCamera("cam.0");
+		return;
+	}
 	WriteRenderableBoundingBoxConstantsBuffer();
 }
 

@@ -62,7 +62,6 @@ std::shared_ptr<MaterialTextureInstance> GetTextureFromGPUHandle(const MaterialT
 	if (!textureInstances.contains(texture))
 	{
 		std::shared_ptr<MaterialTextureInstance> textureInstance = std::make_shared<MaterialTextureInstance>();
-		//textureInstance->Load(texture);
 		textureInstance->textureName = texture.path;
 		textureInstance->gpuHandle = texture.gpuHandle;
 		textureInstances.insert_or_assign(texture, textureInstance);

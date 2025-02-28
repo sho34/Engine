@@ -5,6 +5,7 @@
 #include "Variables.h"
 #include "SamplerDesc.h"
 #include "Texture.h"
+#include <d3d12.h>
 
 namespace Templates { struct MeshInstance; }
 

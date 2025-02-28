@@ -22,6 +22,8 @@ namespace ShaderCompiler {
 
 	//Source to Shader
 	std::map<std::string, std::set<Source>> shaderFilesPermutations;
+
+	//can't put this under SharedRefTracker
 	std::map<Source, std::shared_ptr<ShaderBinary>> shaderOutputMap;
 	std::map<std::shared_ptr<ShaderBinary>, unsigned int> shaderOutputRefCount;
 

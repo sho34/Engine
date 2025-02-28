@@ -11,6 +11,7 @@ extern HWND hWnd;
 extern std::unique_ptr<DirectX::Mouse> mouse;
 extern std::shared_ptr<Renderer> renderer;
 extern std::string gameAppTitle;
+extern std::filesystem::path levelToLoad;
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -461,7 +462,6 @@ namespace Editor {
 
 	bool OpenFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr)
 	{
-		/*
 		IFileOpenDialog* p_file_open = nullptr;
 		bool are_all_operation_success = false;
 		while (!are_all_operation_success)
@@ -537,36 +537,33 @@ namespace Editor {
 		if (p_file_open)
 			p_file_open->Release();
 		return are_all_operation_success;
-		*/
-		return false;
 	}
 
 	void OpenFile()
 	{
-		/*
-		std::thread load([]() {
-			//first create the directory if needed
-			std::filesystem::path directory(defaultLevelsFolder);
-			std::filesystem::create_directory(directory);
+		std::thread load([]()
+			{
+				//first create the directory if needed
+				std::filesystem::path directory(defaultLevelsFolder);
+				std::filesystem::create_directory(directory);
 
-			std::wstring path = L"";
-			COMDLG_FILTERSPEC filters[] = { {.pszName = L"JSON files. (*.json)", .pszSpec = L"*.json" } };
-			std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
-			if (!OpenFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
-			if (path.empty()) return;
+				std::wstring path = L"";
+				COMDLG_FILTERSPEC filters[] = { {.pszName = L"JSON files. (*.json)", .pszSpec = L"*.json" } };
+				std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
+				if (!OpenFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
+				if (path.empty()) return;
 
-			std::filesystem::path jsonFilePath = path;
-			jsonFilePath.replace_extension(".json");
+				std::filesystem::path jsonFilePath = path;
+				jsonFilePath.replace_extension(".json");
 
-			soTab = _SceneObjects::Renderables;
-			tempTab = _Templates::Materials;
-			selSO = nullptr;
-			selTemp = nullptr;
+				soTab = _SceneObjects::SO_Renderables;
+				tempTab = _Templates::T_Materials;
 
-			LoadLevel(jsonFilePath);
-			});
+				//jsonFilePath.replace_extension("");
+				levelToLoad = jsonFilePath;
+			}
+		);
 		load.detach();
-		*/
 	}
 
 	void SaveLevelToFile(std::string levelFileName)

@@ -108,15 +108,23 @@ namespace DX
 #define NAME_D3D12_OBJECT(x) DX::SetName(x.Get(), L#x)
 #define CCNAME_D3D12_OBJECT(x) x->SetName(L#x)
 #define CCNAME_D3D12_OBJECT_N(x,name) x->SetName(nostd::StringToWString(""###x##":"+name).c_str())
+#if defined(_DEBUG)
 #define DEBUG_PTR_COUNT(x) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + x->name + "(" + std::to_string(x.use_count()) + ")\n").c_str());
+#define DEBUG_INSTANCE_REF_COUNT(instanceName,refCountMap,key) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + instanceName + "(" + std::to_string(refCountMap.find(key)->second) + ")\n").c_str());
+#else
+#define DEBUG_PTR_COUNT(x) 
+#define DEBUG_INSTANCE_REF_COUNT(instanceName,refCountMap,key) 
+#endif
 
 template<typename T>
 void LogCComPtrAddress(std::string name, CComPtr<T> p)
 {
+#if defined(_DEBUG)
 	std::string pAddressS;
 	std::stringstream pAddressSStream;
 	pAddressSStream << std::setw(16) << std::setfill('0') << std::hex << p.p;
 	pAddressSStream >> pAddressS;
 	std::string debugS = "Live " + std::string(typeid(T).name()) + "(" + name + ") at 0x" + pAddressS + "\n";
 	OutputDebugStringA(debugS.c_str());
+#endif
 }

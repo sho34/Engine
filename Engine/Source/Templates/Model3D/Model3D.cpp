@@ -10,9 +10,8 @@ using namespace DeviceUtils;
 
 namespace Templates {
 
-	std::map<std::string, nlohmann::json> model3DTemplates;
-	std::map<std::string, std::shared_ptr<Model3DInstance>> model3DInstances;
-	std::map<std::shared_ptr<Model3DInstance>, unsigned int> model3DInstancesRefCount;
+	static std::map<std::string, nlohmann::json> model3DTemplates;
+	static nostd::SharedRefTracker<std::string, Model3DInstance> refTracker;
 
 	//CREATE
 	void CreateModel3D(std::string name, nlohmann::json json)
@@ -23,6 +22,7 @@ namespace Templates {
 
 	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name)
 	{
+		model->name = name;
 		nlohmann::json mdl = model3DTemplates.at(name);
 
 		std::string filename = Model3D::assetsRootFolder + std::string(mdl.at("path"));
@@ -200,21 +200,13 @@ namespace Templates {
 	{
 		if (!model3DTemplates.contains(name)) return nullptr;
 
-		std::shared_ptr<Model3DInstance> model = nullptr;
-
-		if (model3DInstances.contains(name))
-		{
-			model = model3DInstances.at(name);
-		}
-		else
-		{
-			model = std::make_shared<Model3DInstance>();
-			LoadModel3DInstance(model, name);
-			model3DInstances.insert_or_assign(name, model);
-			model3DInstancesRefCount.insert_or_assign(model, 0U);
-		}
-		model3DInstancesRefCount.find(model)->second++;
-		return model;
+		return refTracker.AddRef(name, [name]()
+			{
+				std::shared_ptr<Model3DInstance> instance = std::make_shared<Model3DInstance>();
+				LoadModel3DInstance(instance, name);
+				return instance;
+			}
+		);
 	}
 
 	std::vector<std::string> GetModels3DNames() {
@@ -233,11 +225,15 @@ namespace Templates {
 
 	//DESTROY
 
+	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D)
+	{
+		refTracker.RemoveRef(model3D->name, model3D);
+	}
+
 	//EDITOR
 	void ReleaseModel3DTemplates()
 	{
-		model3DInstancesRefCount.clear();
-		model3DInstances.clear();
+		refTracker.Clear();
 		model3DTemplates.clear();
 	}
 
@@ -248,7 +244,7 @@ namespace Templates {
 
 	std::string GetModel3DInstanceTemplateName(std::shared_ptr<Model3DInstance> model3D)
 	{
-		return nostd::GetKeyFromValueInMap(model3DInstances, model3D);
+		return nostd::GetKeyFromValueInMap(refTracker.instances, model3D);
 	}
 
 	/*

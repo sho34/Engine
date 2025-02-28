@@ -8,6 +8,7 @@
 #include "../Mesh/Mesh.h"
 #include "../Material/Material.h"
 #include "../../Animation/Animated.h"
+#include <DirectXCollision.h>
 
 namespace Animation { struct Animated; };
 namespace Templates {
@@ -20,6 +21,7 @@ namespace Templates {
 
 	struct Model3DInstance
 	{
+		std::string name;
 		VertexClass vertexClass;
 		std::vector<std::vector<byte>> vertices;
 		std::vector<std::shared_ptr<MeshInstance>> meshes;
@@ -46,6 +48,7 @@ namespace Templates {
 	//UPDATE
 
 	//DESTROY
+	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D);
 	void ReleaseModel3DTemplates();
 
 	//EDITOR

@@ -6,14 +6,6 @@
 
 namespace Templates {
 
-	/*
-	struct Mesh
-	{
-		std::string name;
-		bool primitive = false;
-	};
-	*/
-
 	using namespace DeviceUtils;
 
 	struct MeshInstance

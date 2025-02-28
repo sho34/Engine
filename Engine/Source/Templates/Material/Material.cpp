@@ -10,15 +10,16 @@
 #include "../../Shaders/Compiler/ShaderCompiler.h"
 #include <nlohmann/json.hpp>
 #include <set>
+#include "../../Common/DirectXHelper.h"
+#include "../../pch/NoStd.h"
 
 namespace Templates {
 
-	std::map<std::string, nlohmann::json> materialTemplates;
+	static std::map<std::string, nlohmann::json> materialTemplates;
 
 	//Material+Mesh = MaterialInstance
 	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
-	std::map<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> materialInstances;
-	std::map<std::shared_ptr<MaterialInstance>, unsigned int> materialInstancesRefCount;
+	static nostd::SharedRefTracker<MaterialMeshInstancePair, MaterialInstance> refTracker;
 
 	//NOTIFICATIONS
 	/*
@@ -55,31 +56,20 @@ namespace Templates {
 
 	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, bool uniqueMaterialInstance)
 	{
-		std::string instanceName = name;
-		if (uniqueMaterialInstance)
-		{
-			instanceName += nostd::gen_string(8, g);
-		}
-
 		if (!materialTemplates.contains(name)) return nullptr;
 
-		std::shared_ptr<MaterialInstance> material = nullptr;
+		std::string instanceName = name;
+		if (uniqueMaterialInstance) { instanceName += nostd::gen_string(8, g); }
 
 		auto key = MaterialMeshInstancePair(std::make_tuple(instanceName, textures), mesh);
 
-		if (materialInstances.contains(key))
-		{
-			material = materialInstances.at(key);
-		}
-		else
-		{
-			material = std::make_shared<MaterialInstance>();
-			LoadMaterialInstance(name, mesh, material, textures);
-			materialInstances.insert_or_assign(key, material);
-			materialInstancesRefCount.insert_or_assign(material, 0U);
-		}
-		materialInstancesRefCount.find(material)->second++;
-		return material;
+		return refTracker.AddRef(key, [name, mesh, textures]()
+			{
+				std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
+				LoadMaterialInstance(name, mesh, instance, textures);
+				return instance;
+			}
+		);
 	}
 
 	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures)
@@ -279,21 +269,14 @@ namespace Templates {
 
 	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh)
 	{
-		materialInstancesRefCount.at(material)--;
-		if (materialInstancesRefCount.at(material) == 0U)
-		{
-			auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures), mesh);
-			materialInstances.erase(key);
-			materialInstancesRefCount.erase(material);
-			material = nullptr;
-		}
+		auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures), mesh);
+		refTracker.RemoveRef(key, material);
 	}
 
 	//DESTROY
 	void ReleaseMaterialTemplates()
 	{
-		materialInstancesRefCount.clear();
-		materialInstances.clear();
+		refTracker.Clear();
 		materialTemplates.clear();
 	}
 
@@ -310,7 +293,7 @@ namespace Templates {
 
 	std::string GetMaterialInstanceTemplateName(std::shared_ptr<MaterialInstance> material)
 	{
-		for (auto it : materialInstances) {
+		for (auto it : refTracker.instances) {
 			if (it.second == material) return std::get<0>(it.first.first);
 		}
 		return "";

@@ -118,4 +118,54 @@ namespace nostd {
 		std::sample(std::cbegin(charset), std::cend(charset), std::begin(result), std::intptr_t(length), std::forward<URBG>(g));
 		return result;
 	}
+
+	template<typename K, typename V>
+	struct SharedRefTracker
+	{
+		std::map<K, std::shared_ptr<V>> instances;
+		std::map<std::shared_ptr<V>, unsigned int> instancesRefCount;
+
+		std::shared_ptr<V> AddRef(K key, std::function<std::shared_ptr<V>()> newRefCallback = []() { return std::make_shared<V>(); })
+		{
+			std::shared_ptr<V> instance = nullptr;
+
+			if (instances.contains(key))
+			{
+				instance = instances.at(key);
+			}
+			else
+			{
+				instance = newRefCallback();
+				instances.insert_or_assign(key, instance);
+				instancesRefCount.insert_or_assign(instance, 0U);
+			}
+			instancesRefCount.find(instance)->second++;
+			return instance;
+		}
+
+		void RemoveRef(K key, std::shared_ptr<V>& instance)
+		{
+			if (!instancesRefCount.contains(instance)) return;
+
+			instancesRefCount.at(instance)--;
+			if (instancesRefCount.at(instance) == 0U)
+			{
+				instancesRefCount.erase(instance);
+				instances.erase(key);
+			}
+			instance = nullptr;
+		}
+
+		unsigned int Count(std::shared_ptr<V> instance)
+		{
+			assert(instancesRefCount.contains(instance));
+			return instancesRefCount.at(instancesRefCount);
+		}
+
+		void Clear()
+		{
+			instances.clear();
+			instancesRefCount.clear();
+		}
+	};
 }

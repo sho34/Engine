@@ -38,7 +38,9 @@ namespace Scene::Level {
 
 	void LoadLevel(std::filesystem::path level)
 	{
-		std::string pathStr = defaultLevelsFolder + level.generic_string() + ".json";
+		std::string pathStr = (std::filesystem::exists(level) ? level.generic_string() : (defaultLevelsFolder + level.generic_string() + ".json"));
+		std::string debug = "Loading level: " + pathStr + "\n";
+		OutputDebugStringA(debug.c_str());
 		std::ifstream file(pathStr);
 		nlohmann::json data = nlohmann::json::parse(file);
 

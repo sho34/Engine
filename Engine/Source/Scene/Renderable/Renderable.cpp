@@ -663,6 +663,8 @@ namespace Scene {
 
 		meshes.clear();
 		meshesShadowMap.clear();
+
+		if (model3D) { DestroyModel3DInstance(model3D); }
 	}
 
 	//RENDER
@@ -1144,8 +1146,7 @@ namespace Scene {
 			DEBUG_PTR_COUNT(renderable);
 			renderable->this_ptr = nullptr;
 		}
-		renderables.clear();
 		animables.clear();
+		renderables.clear();
 	}
-
 }
