@@ -659,7 +659,7 @@ namespace Scene {
 		auto destroyMeshInstance = [](auto& vec) { for (auto& mesh : vec) { DestroyMeshInstance(mesh); } };
 
 		destroyMeshInstance(meshes);
-		destroyMeshInstance(meshesShadowMap);
+		if (!model3D) { destroyMeshInstance(meshesShadowMap); }
 
 		meshes.clear();
 		meshesShadowMap.clear();
