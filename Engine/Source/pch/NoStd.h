@@ -120,15 +120,14 @@ namespace nostd {
 	}
 
 	template<typename K, typename V>
-	struct SharedRefTracker
+	struct RefTracker
 	{
-		std::map<K, std::shared_ptr<V>> instances;
-		std::map<std::shared_ptr<V>, unsigned int> instancesRefCount;
+		std::map<K, V> instances;
+		std::map<V, unsigned int> instancesRefCount;
 
-		std::shared_ptr<V> AddRef(K key, std::function<std::shared_ptr<V>()> newRefCallback = []() { return std::make_shared<V>(); })
+		V AddRef(K key, std::function<V()> newRefCallback = []() { return V(); })
 		{
-			std::shared_ptr<V> instance = nullptr;
-
+			V instance;
 			if (instances.contains(key))
 			{
 				instance = instances.at(key);
@@ -143,9 +142,9 @@ namespace nostd {
 			return instance;
 		}
 
-		void RemoveRef(K key, std::shared_ptr<V>& instance)
+		void RemoveRef(K key, V& instance)
 		{
-			if (!instancesRefCount.contains(instance)) return;
+			assert(instancesRefCount.contains(instance));
 
 			instancesRefCount.at(instance)--;
 			if (instancesRefCount.at(instance) == 0U)
@@ -156,7 +155,7 @@ namespace nostd {
 			instance = nullptr;
 		}
 
-		unsigned int Count(std::shared_ptr<V> instance)
+		unsigned int Count(V& instance)
 		{
 			assert(instancesRefCount.contains(instance));
 			return instancesRefCount.at(instancesRefCount);
@@ -166,6 +165,20 @@ namespace nostd {
 		{
 			instances.clear();
 			instancesRefCount.clear();
+		}
+
+		K FindKey(V& instance)
+		{
+			for (auto it = instances.begin(); it != instances.end(); it++)
+			{
+				if (it->second == instance) { return it->first; }
+			}
+			return K();
+		}
+
+		V FindValue(K key)
+		{
+			return instances.at(key);
 		}
 	};
 }

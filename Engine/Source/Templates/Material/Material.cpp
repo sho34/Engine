@@ -19,7 +19,7 @@ namespace Templates {
 
 	//Material+Mesh = MaterialInstance
 	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
-	static nostd::SharedRefTracker<MaterialMeshInstancePair, MaterialInstance> refTracker;
+	static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
 
 	//NOTIFICATIONS
 	/*

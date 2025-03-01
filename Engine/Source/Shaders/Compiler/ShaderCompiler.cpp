@@ -1,10 +1,6 @@
 #include "pch.h"
 #include "ShaderCompiler.h"
 #include "../../Common/DirectXHelper.h"
-//#include "../../Renderer/Renderer.h"
-//#include "../../Scene/Lights/Lights.h"
-//#include "../../Scene/Camera/Camera.h"
-//#include "../../Animation/Animated.h"
 
 namespace ShaderCompiler {
 
@@ -23,9 +19,7 @@ namespace ShaderCompiler {
 	//Source to Shader
 	std::map<std::string, std::set<Source>> shaderFilesPermutations;
 
-	//can't put this under SharedRefTracker
-	std::map<Source, std::shared_ptr<ShaderBinary>> shaderOutputMap;
-	std::map<std::shared_ptr<ShaderBinary>, unsigned int> shaderOutputRefCount;
+	nostd::RefTracker<Source, std::shared_ptr<ShaderBinary>> refTracker;
 
 	//Dependencies of hlsl+shaderType(Source) file to many .h files
 	typedef std::map<Source, ShaderDependencies> ShaderIncludesDependencies;
@@ -36,19 +30,11 @@ namespace ShaderCompiler {
 
 	std::shared_ptr<ShaderBinary> ShaderCompiler::GetShaderBinary(Source& params)
 	{
-		if (shaderOutputMap.contains(params))
-		{
-			auto& binary = shaderOutputMap.at(params);
-			shaderOutputRefCount.at(binary)++;
-			return binary;
-		}
-		else
-		{
-			auto binary = Compile(params);
-			shaderOutputMap.insert_or_assign(params, binary);
-			shaderOutputRefCount.insert_or_assign(binary, 1U);
-			return binary;
-		}
+		return refTracker.AddRef(params, [&params]()
+			{
+				return Compile(params);
+			}
+		);
 	}
 
 	static std::mutex compileMutex;
@@ -106,7 +92,7 @@ namespace ShaderCompiler {
 		pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pErrors.GetAddressOf()), nullptr);
 		if (pErrors && pErrors->GetStringLength() > 0) {
 			OutputDebugStringA((char*)pErrors->GetBufferPointer());
-			return shaderOutputMap.at(params); //return the old shader if there were errors
+			return refTracker.FindValue(params);
 		}
 
 		// Get shader reflection data.
@@ -135,22 +121,8 @@ namespace ShaderCompiler {
 
 	void DestroyShaderBinary(std::shared_ptr<ShaderBinary>& shaderBinary)
 	{
-		shaderOutputRefCount.at(shaderBinary)--;
-		if (shaderOutputRefCount.at(shaderBinary) == 0U)
-		{
-			for (auto it = shaderOutputMap.begin(); it != shaderOutputMap.end();)
-			{
-				if (it->second == shaderBinary) {
-					it = shaderOutputMap.erase(it);
-				}
-				else
-				{
-					it++;
-				}
-			}
-			shaderOutputRefCount.erase(shaderBinary);
-			shaderBinary = nullptr;
-		}
+		Source key = refTracker.FindKey(shaderBinary);
+		refTracker.RemoveRef(key, shaderBinary);
 	}
 
 	void BuildShaderCompiler() {

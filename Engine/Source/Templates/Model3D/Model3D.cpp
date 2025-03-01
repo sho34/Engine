@@ -11,7 +11,7 @@ using namespace DeviceUtils;
 namespace Templates {
 
 	static std::map<std::string, nlohmann::json> model3DTemplates;
-	static nostd::SharedRefTracker<std::string, Model3DInstance> refTracker;
+	static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker;
 
 	//CREATE
 	void CreateModel3D(std::string name, nlohmann::json json)

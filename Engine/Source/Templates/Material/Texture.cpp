@@ -5,14 +5,20 @@
 #include "../../Renderer/DeviceUtils/Resources/Resources.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 #include "../../Resources/ShaderByteCode.h"
+#include "../../pch/NoStd.h"
+#include <wrl.h>
+#include <wrl/client.h>
+#include <d3d12.h>
+#include <atlbase.h>
+#include <nlohmann/json.hpp>
 
 extern std::shared_ptr<Renderer> renderer;
 
 std::unordered_map<std::string, CComPtr<ID3D12Resource>> texturesCache;
 std::unordered_map<std::string, unsigned int> texturesCacheMipMaps;
 std::unordered_map<std::string, unsigned int> texturesCacheRefCount;
-std::unordered_map<MaterialTexture, std::shared_ptr<MaterialTextureInstance>> textureInstances;
-std::unordered_map<std::shared_ptr<MaterialTextureInstance>, unsigned int> textureInstancesRefCount;
+
+nostd::RefTracker<MaterialTexture, std::shared_ptr<MaterialTextureInstance>> refTracker;
 
 void TransformJsonToMaterialTextures(std::map<TextureType, MaterialTexture>& textures, nlohmann::json object, const std::string& key) {
 
@@ -38,19 +44,15 @@ std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> GetTextures(cons
 
 	std::transform(textures.begin(), textures.end(), std::inserter(texInstances, texInstances.end()), [](auto pair)
 		{
-			auto& texture = pair.second;
-			if (!textureInstances.contains(texture))
-			{
-				std::shared_ptr<MaterialTextureInstance> textureInstance = std::make_shared<MaterialTextureInstance>();
-				textureInstance->Load(texture);
-				textureInstances.insert_or_assign(texture, textureInstance);
-				textureInstancesRefCount.insert_or_assign(textureInstance, 1U);
-			}
-			else
-			{
-				textureInstancesRefCount.at(textureInstances.at(texture))++;
-			}
-			return std::pair<TextureType, std::shared_ptr<MaterialTextureInstance>>(pair.first, textureInstances.at(texture));
+			MaterialTexture& texture = pair.second;
+			std::shared_ptr<MaterialTextureInstance> instance = refTracker.AddRef(texture, [&texture]()
+				{
+					std::shared_ptr<MaterialTextureInstance> instance = std::make_shared<MaterialTextureInstance>();
+					instance->Load(texture);
+					return instance;
+				}
+			);
+			return std::pair<TextureType, std::shared_ptr<MaterialTextureInstance>>(pair.first, instance);
 		}
 	);
 
@@ -59,39 +61,20 @@ std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> GetTextures(cons
 
 std::shared_ptr<MaterialTextureInstance> GetTextureFromGPUHandle(const MaterialTexture& texture)
 {
-	if (!textureInstances.contains(texture))
-	{
-		std::shared_ptr<MaterialTextureInstance> textureInstance = std::make_shared<MaterialTextureInstance>();
-		textureInstance->textureName = texture.path;
-		textureInstance->gpuHandle = texture.gpuHandle;
-		textureInstances.insert_or_assign(texture, textureInstance);
-		textureInstancesRefCount.insert_or_assign(textureInstance, 1U);
-	}
-	else
-	{
-		textureInstancesRefCount.at(textureInstances.at(texture))++;
-	}
-	return textureInstances.at(texture);
+	return refTracker.AddRef(texture, [texture]()
+		{
+			std::shared_ptr<MaterialTextureInstance> instance = std::make_shared<MaterialTextureInstance>();
+			instance->textureName = texture.path;
+			instance->gpuHandle = texture.gpuHandle;
+			return instance;
+		}
+	);
 }
 
 void DestroyMaterialTextureInstance(std::shared_ptr<MaterialTextureInstance>& texture)
 {
-	textureInstancesRefCount.at(texture)--;
-	if (textureInstancesRefCount.at(texture) == 0)
-	{
-		for (auto it = textureInstances.begin(); it != textureInstances.end();)
-		{
-			if (it->second == texture) {
-				it = textureInstances.erase(it);
-			}
-			else
-			{
-				it++;
-			}
-		}
-		textureInstancesRefCount.erase(texture);
-		texture = nullptr;
-	}
+	auto key = refTracker.FindKey(texture);
+	refTracker.RemoveRef(key, texture);
 }
 
 void MaterialTextureInstance::Load(MaterialTexture& texture)

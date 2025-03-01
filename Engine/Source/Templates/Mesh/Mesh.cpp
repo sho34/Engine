@@ -7,7 +7,7 @@
 namespace Templates {
 
 	static std::set<std::string> meshTemplates;
-	static nostd::SharedRefTracker<std::string, MeshInstance> refTracker;
+	static nostd::RefTracker<std::string, std::shared_ptr<MeshInstance>> refTracker;
 
 	//CREATE
 	void CreatePrimitiveMeshTemplate(const std::string name)
