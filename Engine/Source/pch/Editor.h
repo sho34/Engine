@@ -115,4 +115,53 @@ inline void ImDrawTextureImage(ImTextureID textureId, unsigned int textureWidth,
 	ImGui::Image(textureId, ImVec2((float)currentRegionAvail.x, sizeY));
 }
 
+inline std::function<void()> drawFromComboSelection(nlohmann::json& state, const std::string att, auto& listMap)
+{
+	return [&state, att, &listMap]
+		{
+			std::string value = state.at(att);
+			std::vector<std::string> selectables;
+			std::transform(listMap.begin(), listMap.end(), std::back_inserter(selectables), [](auto& pair) { return pair.first; });
+			DrawComboSelection(value, selectables, [&state, &att](std::string newValue) {
+				state[att] = newValue;
+				}, "");
+		};
+};
+
+inline std::function<void()> drawFromCheckBox(nlohmann::json& state, const std::string att)
+{
+	return [&state, att]
+		{
+			bool value = state.at(att);
+			if (ImGui::Checkbox("", &value)) { state[att] = value; }
+		};
+};
+
+inline std::function<void()> drawFromFloat(nlohmann::json& state, const std::string att)
+{
+	return [&state, att]
+		{
+			float value = state.at(att);
+			if (ImGui::InputFloat("", &value)) { state[att] = value; }
+		};
+};
+
+inline std::function<void()> drawFromInt(nlohmann::json& state, const std::string att)
+{
+	return [&state, att]
+		{
+			int value = state.at(att);
+			if (ImGui::InputInt("", &value)) { state[att] = value; }
+		};
+};
+
+inline std::function<void()> drawFromUInt(nlohmann::json& state, const std::string att)
+{
+	return [&state, att]
+		{
+			int value = state.at(att);
+			if (ImGui::InputInt("", &value)) { value = max(0, value); state[att] = value; }
+		};
+};
+
 #endif
