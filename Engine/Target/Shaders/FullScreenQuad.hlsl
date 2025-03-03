@@ -31,5 +31,4 @@ PixelShaderInput main_vs(VertexShaderInput input)
 float4 main_ps(PixelShaderInput input) : SV_TARGET
 {
 	return float4(BaseTexture.Sample(samp0, input.uv0.xy).rgb*alpha,1.0f);
-	//return float4(1,1,1,1);
 }

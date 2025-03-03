@@ -7,6 +7,6 @@
     "messy_tavern": {
         "path": "messy_tavern/scene.gltf",
         "autoCreateMaterial": true,
-        "materialsShader": "NormalMappingLighting"
+        "materialsShader": "BlinnPhong"
     }
 }

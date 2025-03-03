@@ -480,7 +480,7 @@ static std::map<std::string, D3D12_FILL_MODE> stringToFillMode = {
 static std::map<D3D12_CULL_MODE, std::string> cullModeToString = {
 	{ D3D12_CULL_MODE_NONE, "NONE" },
 	{ D3D12_CULL_MODE_FRONT, "FRONT" },
-	{ D3D12_CULL_MODE_BACK, "BACK " }
+	{ D3D12_CULL_MODE_BACK, "BACK" }
 };
 
 static std::map<std::string, D3D12_CULL_MODE> stringToCullMode = {

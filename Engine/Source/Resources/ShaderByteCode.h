@@ -140,3 +140,9 @@ struct ShaderBinary {
 
 	void CreateByteCode(const ComPtr<IDxcResult>& result);
 };
+
+struct RenderableShaderAttributes
+{
+	bool uniqueMaterialInstance = false;
+	bool castShadows = true;
+};

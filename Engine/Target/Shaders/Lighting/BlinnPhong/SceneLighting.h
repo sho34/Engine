@@ -4,9 +4,11 @@ void SceneLighting(
   in float3 worldPos, in float3 normal, in float specularExponent,
   in float3 viewDir,
   Lights lights,
+  #if defined(_HAS_SHADOWMAPS_TEXTURES)
   ShadowMaps shadowMaps,
   Texture2D shadowMapsTextures[],
   SamplerState sampler0,
+  #endif
   inout float3 diffuseFinalLightContribution, inout float3 specularFinalLightContribution
 ) {
   AmbientLighting ambientL;
@@ -31,27 +33,33 @@ void SceneLighting(
     case DIRECTIONAL:
     {
       directionalL.Compute(lights.atts[i], normal, viewDir, worldPos, specularExponent, diffuseLightContribution, specularLightContribution);
+	  #if defined(_HAS_SHADOWMAPS_TEXTURES)
       if (lights.atts[i].hasShadowMap)
       {
         directionalL.Shadow(shadowMaps.atts[smi], worldPos, shadowMapsTextures[smi], sampler0, shadowMapFactor);
       }
+	  #endif
     }
     break;
     case SPOT:
     {
       spotL.Compute(lights.atts[i], normal, viewDir, worldPos, specularExponent, diffuseLightContribution, specularLightContribution);
+	  #if defined(_HAS_SHADOWMAPS_TEXTURES)
       if (lights.atts[i].hasShadowMap) {
         spotL.Shadow(shadowMaps.atts[smi], worldPos, shadowMapsTextures[smi], sampler0, shadowMapFactor);
       }
+	  #endif
     }
     break;
     case POINT:
     {
       pointL.Compute(lights.atts[i], normal, viewDir, worldPos, specularExponent, diffuseLightContribution, specularLightContribution);
+	  #if defined(_HAS_SHADOWMAPS_TEXTURES)
       if (lights.atts[i].hasShadowMap)
       {
         pointL.Shadow(shadowMaps.atts[smi], worldPos, shadowMapsTextures[smi], sampler0, shadowMapFactor);
       }
+	  #endif
     }
     break;
     default:

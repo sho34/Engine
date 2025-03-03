@@ -38,16 +38,28 @@ cbuffer renderable : register(b0) {
 
 ConstantBuffer<Camera> camera : register(b1);
 ConstantBuffer<Lights> lights : register(b2);
+#if defined(_HAS_SHADOWMAPS_TEXTURES)
 ConstantBuffer<ShadowMaps> shadowMaps : register(b3);
+#endif
 #ifdef _HAS_SKINNING
 ConstantBuffer<Animated3D> animation : register(b4);
 #endif
 
+#if defined(_HAS_BASE_TEXTURE)
 Texture2D BaseTexture : register(t0);
+#endif
+#if defined(_HAS_NORMALMAP_TEXTURE)
 Texture2D NormalMapTexture : register(t1);
+#endif
+#if defined(_HAS_METALLIC_ROUGHNESS_TEXTURE)
 Texture2D MetallicRoughnessTexture : register(t2);
+#endif
+#if defined(_HAS_SHADOWMAPS_TEXTURES)
 Texture2D ShadowMapsTextures[] : register(t3);
+#endif
+#if defined(_HAS_BASE_TEXTURE) || defined(_HAS_NORMALMAP_TEXTURE) || defined(_HAS_METALLIC_ROUGHNESS_TEXTURE) || defined(_HAS_SHADOWMAPS_TEXTURES)
 SamplerState sampler0 : register(s0);
+#endif
 
 PixelShaderInput main_vs(VertexShaderInput input)
 {
@@ -139,9 +151,11 @@ float4 main_ps(PixelShaderInput input) : SV_TARGET
 		albedoColor, f0, f90, roughness,
 		viewDir,
 		lights,
+		#if defined(_HAS_SHADOWMAPS_TEXTURES)
 		shadowMaps,
 		ShadowMapsTextures,
 		sampler0,
+		#endif
 		diffuseFinalLightContribution, specularFinalLightContribution
 	);	
 	

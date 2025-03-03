@@ -61,10 +61,6 @@
       }
     }
   },
-  "Model3D": {
-    "mappedValues": [],
-    "shader": "Model3D"
-  },
   "Pyramid": {
     "mappedValues": [
       {
@@ -90,7 +86,7 @@
         "ShaderVisibility": "PIXEL"
       }
     ],
-    "shaderTemplate": "NormalMappingLighting",
+    "shaderTemplate": "BlinnPhong",
     "textures": {
       "BaseTexture": {
         "numFrames": 0,

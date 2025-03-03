@@ -9,11 +9,7 @@
         ],
         "fileName": "AnimatedDecal"
     },
-    "Model3D": {
-        "mappedValues": [],
-        "fileName": "Model3D"
-    },
-    "NormalMappingLighting": {
+    "BlinnPhong": {
         "mappedValues": [
             {
                 "value": 1024.0,
@@ -21,7 +17,7 @@
                 "variableType": "FLOAT"
             }
         ],
-        "fileName": "NormalMappingLighting"
+        "fileName": "BlinnPhong"
     },
     "PBR": {
         "mappedValues": [],

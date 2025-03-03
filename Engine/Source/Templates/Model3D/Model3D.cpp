@@ -20,7 +20,7 @@ namespace Templates {
 		model3DTemplates.insert_or_assign(name, json);
 	}
 
-	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name)
+	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name, RenderableShaderAttributes shaderAttributes)
 	{
 		model->name = name;
 		nlohmann::json mdl = model3DTemplates.at(name);
@@ -87,11 +87,11 @@ namespace Templates {
 					CreateMaterial(materialName, materialJson);
 				}
 
-				materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh);
+				materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh, shaderAttributes);
 			}
 			else
 			{
-				materialInstance = GetMaterialInstance(mdl.at("materials").at(meshIndex), std::map<TextureType, MaterialTexture>(), mesh);
+				materialInstance = GetMaterialInstance(mdl.at("materials").at(meshIndex), std::map<TextureType, MaterialTexture>(), mesh, shaderAttributes);
 			}
 
 			model->materials.push_back(materialInstance);
@@ -196,14 +196,14 @@ namespace Templates {
 	}
 
 	//READ&GET
-	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name)
+	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name, RenderableShaderAttributes shaderAttributes)
 	{
 		if (!model3DTemplates.contains(name)) return nullptr;
 
-		return refTracker.AddRef(name, [name]()
+		return refTracker.AddRef(name, [name, shaderAttributes]()
 			{
 				std::shared_ptr<Model3DInstance> instance = std::make_shared<Model3DInstance>();
-				LoadModel3DInstance(instance, name);
+				LoadModel3DInstance(instance, name, shaderAttributes);
 				return instance;
 			}
 		);

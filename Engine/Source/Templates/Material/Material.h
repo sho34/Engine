@@ -37,8 +37,8 @@ namespace Templates {
 
 	//CREATE
 	void CreateMaterial(std::string name, nlohmann::json json);
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, bool uniqueMaterialInstance = false);
-	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures);
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, RenderableShaderAttributes shaderAttributes);
+	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures, bool castShadows);
 
 	//READ&GET
 	//std::shared_ptr<Material> GetMaterialTemplate(std::string name);
@@ -49,14 +49,14 @@ namespace Templates {
 
 	//DESTROY
 	void ReleaseMaterialTemplates();
-	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh);
+	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, RenderableShaderAttributes shaderAttributes);
 
 	//EDITOR
 #if defined(_EDITOR)
 	//void SelectMaterial(std::string materialName, void*& ptr);
 	void DrawMaterialPanel(std::string& material, ImVec2 pos, ImVec2 size, bool pop);
 	//std::string GetMaterialName(void* ptr);
-	std::string GetMaterialInstanceTemplateName(std::shared_ptr<MaterialInstance> material);
+	//std::string GetMaterialInstanceTemplateName(std::shared_ptr<MaterialInstance> material);
 	//nlohmann::json json();
 #endif
 };

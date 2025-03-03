@@ -40,10 +40,6 @@ namespace Scene
 	typedef std::pair<std::shared_ptr<MeshInstance>, CComPtr<ID3D12PipelineState>> MeshPipelineStatePair;
 	typedef std::map<std::shared_ptr<MeshInstance>, CComPtr<ID3D12PipelineState>> MeshPipelineStateMap;
 
-	inline void TranformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, bool uniqueMaterialInstance = false);
-
-	inline void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
-
 	struct Renderable
 	{
 		~Renderable() { Destroy(); } //will this work?
@@ -66,6 +62,9 @@ namespace Scene
 		bool hidden = false;
 		D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
+		//shader attributes
+		RenderableShaderAttributes shaderAttributes;
+
 		//Model3D
 		std::shared_ptr<Model3DInstance> model3D = nullptr;
 
@@ -77,7 +76,6 @@ namespace Scene
 		//Materials
 		MeshMaterialMap meshMaterials;
 		MeshMaterialMap meshShadowMapMaterials;
-		bool uniqueMaterialInstance = false;
 
 		//CONSTANTS BUFFER
 		MeshConstantsBufferMap meshConstantsBuffer;
@@ -204,11 +202,20 @@ namespace Scene
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorAnimationAttributes();
+		void DrawEditorShaderAttributes();
 		void DrawEditorMeshesAttributes();
+		void DrawEditorPipelineStateAttributes();
 #endif
 	};
 
 	//CREATE
+	void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, RenderableShaderAttributes shaderAttributes);
+	void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
+	void TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j);
+	void TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key);
+	void TransformJsonToRasterizerState(D3D12_RASTERIZER_DESC& RasterizerState, nlohmann::json j, std::string key);
+	void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
+	void BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons);
 	std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej);
 
 	//READ

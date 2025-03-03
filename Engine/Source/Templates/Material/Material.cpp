@@ -18,7 +18,7 @@ namespace Templates {
 	static std::map<std::string, nlohmann::json> materialTemplates;
 
 	//Material+Mesh = MaterialInstance
-	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
+	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
 	static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
 
 	//NOTIFICATIONS
@@ -54,25 +54,25 @@ namespace Templates {
 
 	static std::mt19937 g;
 
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, bool uniqueMaterialInstance)
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, RenderableShaderAttributes shaderAttributes)
 	{
 		if (!materialTemplates.contains(name)) return nullptr;
 
 		std::string instanceName = name;
-		if (uniqueMaterialInstance) { instanceName += nostd::gen_string(8, g); }
+		if (shaderAttributes.uniqueMaterialInstance) { instanceName += nostd::gen_string(8, g); }
 
-		auto key = MaterialMeshInstancePair(std::make_tuple(instanceName, textures), mesh);
+		auto key = MaterialMeshInstancePair(std::make_tuple(instanceName, textures, shaderAttributes.castShadows), mesh);
 
-		return refTracker.AddRef(key, [name, mesh, textures]()
+		return refTracker.AddRef(key, [name, mesh, textures, shaderAttributes]()
 			{
 				std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
-				LoadMaterialInstance(name, mesh, instance, textures);
+				LoadMaterialInstance(name, mesh, instance, textures, shaderAttributes.castShadows);
 				return instance;
 			}
 		);
 	}
 
-	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures)
+	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures, bool castShadows)
 	{
 		material->vertexClass = mesh->vertexClass;
 
@@ -91,6 +91,10 @@ namespace Templates {
 			{
 				defines.push_back(textureTypeToShaderDefine.at(strToTextureType.at(it.key())));
 			}
+		}
+		if (castShadows)
+		{
+			defines.push_back(textureTypeToShaderDefine.at(TextureType_ShadowMaps));
 		}
 
 		Source compVS = { .shaderType = VERTEX_SHADER, .shaderName = fileName, .defines = defines };
@@ -242,7 +246,8 @@ namespace Templates {
 			auto& mapping = vertexShader->constantsBuffersVariables.at(varName);
 
 			variablesMapping.insert_or_assign(varName,
-				MaterialVariableMapping(
+				MaterialVariableMapping
+				(
 					{
 					.variableType = variableType,
 					.mapping = mapping
@@ -267,9 +272,9 @@ namespace Templates {
 		return (materialTemplates.contains(name)) ? materialTemplates.at(name) : nlohmann::json();
 	}
 
-	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh)
+	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, RenderableShaderAttributes shaderAttributes)
 	{
-		auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures), mesh);
+		auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures, shaderAttributes.castShadows), mesh);
 		refTracker.RemoveRef(key, material);
 	}
 
@@ -291,6 +296,7 @@ namespace Templates {
 
 	}
 
+	/*
 	std::string GetMaterialInstanceTemplateName(std::shared_ptr<MaterialInstance> material)
 	{
 		for (auto it : refTracker.instances) {
@@ -298,6 +304,7 @@ namespace Templates {
 		}
 		return "";
 	}
+	*/
 
 	/*
 	nlohmann::json json()

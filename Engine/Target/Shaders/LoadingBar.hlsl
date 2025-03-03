@@ -23,7 +23,6 @@ PixelShaderInput main_vs(VertexShaderInput input)
 	PixelShaderInput output;
 
 	output.pos = float4(pos + (input.pos.xy*scale),1.0f.xx);
-	//output.uv0 = uvOffset + input.uv*uvScale;
 	output.uv0 = input.uv;
 
 	return output;
@@ -32,6 +31,4 @@ PixelShaderInput main_vs(VertexShaderInput input)
 float4 main_ps(PixelShaderInput input) : SV_TARGET
 {
 	return (input.uv0.x<progress)?color1:color2;
-	//return float4(BaseTexture.Sample(samp0, input.uv0.xy).rgb,1.0f);
-	//return lerp(color1,color2,progress);
 }

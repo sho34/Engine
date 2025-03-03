@@ -25,10 +25,14 @@ cbuffer renderable : register(b0) {
 
 ConstantBuffer<Camera> camera : register(b1);
 ConstantBuffer<Lights> lights : register(b2);
+#if defined(_HAS_SHADOWMAPS_TEXTURES)
 ConstantBuffer<ShadowMaps> shadowMaps : register(b3);
+#endif
 
 Texture2D BaseTexture : register(t0);
+#if defined(_HAS_SHADOWMAPS_TEXTURES)
 Texture2D ShadowMapsTextures[] : register(t1);
+#endif
 SamplerState sampler0 : register(s0);
 
 PixelShaderInput main_vs(VertexShaderInput input)
@@ -72,9 +76,11 @@ float4 main_ps(PixelShaderInput input) : SV_TARGET
         worldPos, normal, specularExponent,
         viewDir,
         lights,
+		#if defined(_HAS_SHADOWMAPS_TEXTURES)
         shadowMaps,
         ShadowMapsTextures,
         sampler0,
+		#endif
         diffuseFinalLightContribution, specularFinalLightContribution
     );
 

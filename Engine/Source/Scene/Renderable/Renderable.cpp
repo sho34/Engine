@@ -43,15 +43,15 @@ namespace Scene {
 	std::map<std::string, std::shared_ptr<Renderable>> renderables;
 	std::map<std::string, std::shared_ptr<Renderable>> animables;
 
-	void TranformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, bool uniqueMaterialInstance)
+	void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, RenderableShaderAttributes shaderAttributes)
 	{
-		std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [uniqueMaterialInstance](const nlohmann::json& value)
+		std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [shaderAttributes](const nlohmann::json& value)
 			{
 				std::map<TextureType, MaterialTexture> textures;
 				TransformJsonToMaterialTextures(textures, value, "textures");
 
 				std::shared_ptr<MeshInstance> mesh = GetMeshInstance(value["mesh"]);
-				std::shared_ptr<MaterialInstance> material = GetMaterialInstance(value["material"], textures, mesh, uniqueMaterialInstance);
+				std::shared_ptr<MaterialInstance> material = GetMaterialInstance(value["material"], textures, mesh, shaderAttributes);
 				return MeshMaterialPair(mesh, material);
 			}
 		);
@@ -154,7 +154,8 @@ namespace Scene {
 		ReplaceFromJson(renderable->name, renderablej, "name");
 		ReplaceFromJson(renderable->visible, renderablej, "visible");
 		ReplaceFromJson(renderable->hidden, renderablej, "hidden");
-		ReplaceFromJson(renderable->uniqueMaterialInstance, renderablej, "uniqueMaterialInstance");
+		ReplaceFromJson(renderable->shaderAttributes.uniqueMaterialInstance, renderablej, "uniqueMaterialInstance");
+		ReplaceFromJson(renderable->shaderAttributes.castShadows, renderablej, "castShadows");
 		JsonToFloat3(renderable->position, renderablej, "position");
 		JsonToFloat3(renderable->scale, renderablej, "scale");
 		JsonToFloat3(renderable->rotation, renderablej, "rotation");
@@ -163,10 +164,10 @@ namespace Scene {
 		std::string model3DName = "";
 		if (!renderablej["meshMaterials"].empty())
 		{
-			TranformJsonToMeshMaterialMap(renderable->meshMaterials, renderablej["meshMaterials"], renderable->uniqueMaterialInstance);
+			TransformJsonToMeshMaterialMap(renderable->meshMaterials, renderablej["meshMaterials"], renderable->shaderAttributes);
 			renderable->meshes.push_back(renderable->meshMaterials.begin()->first);
 
-			TranformJsonToMeshMaterialMap(renderable->meshShadowMapMaterials, renderablej["meshMaterialsShadowMap"]);
+			TransformJsonToMeshMaterialMap(renderable->meshShadowMapMaterials, renderablej["meshMaterialsShadowMap"], { .uniqueMaterialInstance = false, .castShadows = false });
 			if (renderable->meshShadowMapMaterials.size() > 0)
 			{
 				renderable->meshesShadowMap.push_back(renderable->meshShadowMapMaterials.begin()->first);
@@ -186,7 +187,7 @@ namespace Scene {
 
 	void Renderable::CreateFromModel3D(std::string model3DName)
 	{
-		std::shared_ptr<Model3DInstance> model = GetModel3DInstance(model3DName);
+		std::shared_ptr<Model3DInstance> model = GetModel3DInstance(model3DName, shaderAttributes);
 
 		model3D = model;
 
@@ -238,7 +239,7 @@ namespace Scene {
 			shadowMapBaseTexture.insert_or_assign(TextureType_Base, textures.at(TextureType_Base));
 		}
 
-		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", shadowMapBaseTexture, mesh);
+		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", shadowMapBaseTexture, mesh, { .uniqueMaterialInstance = false, .castShadows = false });
 		meshShadowMapMaterials.insert_or_assign(mesh, shadowMapMaterial);
 	}
 
@@ -533,7 +534,7 @@ namespace Scene {
 	{
 		for (auto& [mesh, materialName] : materialSwaps)
 		{
-			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh, uniqueMaterialInstance);
+			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh, shaderAttributes);
 			SetMeshMaterial(mesh, materialInstance);
 			CreateMeshConstantsBuffers(mesh);
 			CreateMeshRootSignatures(mesh);
@@ -638,8 +639,8 @@ namespace Scene {
 	//DESTROY
 	void Renderable::Destroy()
 	{
-		for (auto& [mesh, mat] : meshMaterials) { DestroyMaterialInstance(mat, mesh); } meshMaterials.clear();
-		for (auto& [mesh, mat] : meshShadowMapMaterials) { DestroyMaterialInstance(mat, mesh); } meshShadowMapMaterials.clear();
+		for (auto& [mesh, mat] : meshMaterials) { DestroyMaterialInstance(mat, mesh, shaderAttributes); } meshMaterials.clear();
+		for (auto& [mesh, mat] : meshShadowMapMaterials) { DestroyMaterialInstance(mat, mesh, { .uniqueMaterialInstance = false, .castShadows = false }); } meshShadowMapMaterials.clear();
 
 		for (auto& [mesh, cbuffers] : meshConstantsBuffer) { for (auto& cbuffer : cbuffers) DestroyConstantsBuffer(cbuffer); } meshConstantsBuffer.clear();
 		for (auto& [mesh, cbuffers] : meshShadowMapConstantsBuffer) { for (auto& cbuffer : cbuffers) DestroyConstantsBuffer(cbuffer); } meshShadowMapConstantsBuffer.clear();
@@ -828,7 +829,9 @@ namespace Scene {
 			renderable->DrawEditorInformationAttributes();
 			renderable->DrawEditorWorldAttributes();
 			renderable->DrawEditorAnimationAttributes();
+			renderable->DrawEditorShaderAttributes();
 			renderable->DrawEditorMeshesAttributes();
+			renderable->DrawEditorPipelineStateAttributes();
 			ImGui::EndTable();
 		}
 	}
@@ -1008,6 +1011,21 @@ namespace Scene {
 		}
 	}
 
+	void Renderable::DrawEditorShaderAttributes()
+	{
+		auto rebuildMaterials = [this]
+			{
+				renderableUpdateFlags |= RenderableFlags_SwapMaterialsFromMesh;
+				for (auto& [mesh, mat] : meshMaterials)
+				{
+					materialSwaps.insert_or_assign(mesh, mat->material);
+				}
+			};
+
+		if (ImGui::Checkbox("Unique Materials instances", &shaderAttributes.uniqueMaterialInstance)) { rebuildMaterials(); }
+		if (ImGui::Checkbox("Cast Shadows", &shaderAttributes.castShadows)) { rebuildMaterials(); }
+	}
+
 	void Renderable::DrawEditorMeshesAttributes()
 	{
 		std::vector<std::string> modelsNames = GetModels3DNames();
@@ -1114,7 +1132,8 @@ namespace Scene {
 				if (meshMaterials.contains(mesh))
 				{
 					std::shared_ptr<MaterialInstance> material = meshMaterials.at(mesh);
-					materialName = GetMaterialInstanceTemplateName(material);
+					materialName = material->material;
+					//materialName = GetMaterialInstanceTemplateName(material);
 				}
 				DrawComboSelection(materialName, materialList, [this, mesh](std::string matName)
 					{
@@ -1125,6 +1144,349 @@ namespace Scene {
 				ImGui::PopID();
 			}
 			ImGui::EndTable();
+		}
+	}
+
+	void Renderable::DrawEditorPipelineStateAttributes()
+	{
+		nlohmann::json pipelineState;
+		if (json.contains("pipelineState")) pipelineState = json.at("pipelineState");
+
+		std::vector<std::string> pipelineStateAttributes = {
+			"BlendState", "RasterizerState", "PrimitiveTopologyType", "renderTargetsFormats", "depthStencilFormat"
+		};
+
+		std::vector<std::string> rasterizerStateAttributes = {
+			"FillMode", "CullMode", "FrontCounterClockwise", "DepthBias", "DepthBiasClamp", "SlopeScaledDepthBias",
+			"DepthClipEnable", "MultisampleEnable", "AntialiasedLineEnable", "ForcedSampleCount", "ConservativeRaster",
+		};
+
+		std::map<std::string, std::function<void(nlohmann::json&)>> rasterizerStateAttributesAddCallbacks = {
+			{ "FillMode", [](nlohmann::json& RasterizerState) { RasterizerState["FillMode"] = fillModeToString.at(D3D12_FILL_MODE_SOLID); } },
+			{ "CullMode", [](nlohmann::json& RasterizerState) { RasterizerState["CullMode"] = cullModeToString.at(D3D12_CULL_MODE_BACK); } },
+			{ "FrontCounterClockwise", [](nlohmann::json& RasterizerState) { RasterizerState["FrontCounterClockwise"] = false; } },
+			{ "DepthBias", [](nlohmann::json& RasterizerState) { RasterizerState["DepthBias"] = D3D12_DEFAULT_DEPTH_BIAS; } },
+			{ "DepthBiasClamp", [](nlohmann::json& RasterizerState) { RasterizerState["DepthBiasClamp"] = D3D12_DEFAULT_DEPTH_BIAS_CLAMP; } },
+			{ "SlopeScaledDepthBias", [](nlohmann::json& RasterizerState) { RasterizerState["SlopeScaledDepthBias"] = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS; } },
+			{ "DepthClipEnable", [](nlohmann::json& RasterizerState) { RasterizerState["DepthClipEnable"] = true; } },
+			{ "MultisampleEnable", [](nlohmann::json& RasterizerState) { RasterizerState["MultisampleEnable"] = false; } },
+			{ "AntialiasedLineEnable", [](nlohmann::json& RasterizerState) { RasterizerState["AntialiasedLineEnable"] = false; } },
+			{ "ForcedSampleCount", [](nlohmann::json& RasterizerState) { RasterizerState["ForcedSampleCount"] = 0; } },
+			{ "ConservativeRaster", [](nlohmann::json& RasterizerState) { RasterizerState["ConservativeRaster"] = conservativeRasterizationModeToString.at(D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF); } },
+		};
+
+		auto drawFromComboSelecton = [](nlohmann::json& state, std::string att, auto& listMap)
+			{
+				return [&state, &att, &listMap]
+					{
+						std::string value = state.at(att);
+						std::vector<std::string> selectables;
+						std::transform(listMap.begin(), listMap.end(), std::back_inserter(selectables), [](auto& pair) { return pair.first; });
+						DrawComboSelection(FillMode, selectables, [&state, &att](std::string newValue) { state[att] = newValue; }, "");
+					};
+			};
+
+		std::map<std::string, std::function<void()>> rasterizerStateAttributesDrawCallbacks = {
+			{ "FillMode", [&pipelineState,this]
+			{
+				std::string FillMode = pipelineState.at("RasterizerState").at("FillMode");
+				std::vector<std::string> selectables;
+				std::transform(stringToFillMode.begin(), stringToFillMode.end(), std::back_inserter(selectables), [](auto& pair) { return pair.first; });
+				DrawComboSelection(FillMode, selectables, [this](std::string mode)
+					{ json["pipelineState"]["RasterizerState"]["FillMode"] = mode; },
+				"");
+			}
+			},
+			{ "CullMode", [&pipelineState,this]
+			{
+				std::string CullMode = pipelineState.at("RasterizerState").at("CullMode");
+				std::vector<std::string> selectables;
+				std::transform(stringToCullMode.begin(), stringToCullMode.end(), std::back_inserter(selectables), [](auto& pair) { return pair.first; });
+				DrawComboSelection(CullMode, selectables, [this](std::string mode)
+					{ json["pipelineState"]["RasterizerState"]["CullMode"] = mode; },
+				"");
+			}
+			},
+			{ "FrontCounterClockwise", [&pipelineState,this]
+			{
+				bool FrontCounterClockwise = pipelineState.at("RasterizerState").at("FrontCounterClockwise");
+				if (ImGui::Checkbox("", &FrontCounterClockwise)) { json["pipelineState"]["RasterizerState"]["FrontCounterClockwise"] = FrontCounterClockwise; }
+			}
+			},
+			{ "DepthBias", [&pipelineState,this]
+			{
+				int DepthBias = pipelineState.at("RasterizerState").at("DepthBias");
+				if (ImGui::InputInt("", &DepthBias)) { json["pipelineState"]["RasterizerState"]["DepthBias"] = DepthBias; }
+			}
+			},
+			{ "DepthBiasClamp", [&pipelineState,this]
+			{
+				float DepthBiasClamp = pipelineState.at("RasterizerState").at("DepthBiasClamp");
+				if (ImGui::InputFloat("", &DepthBiasClamp)) { json["pipelineState"]["RasterizerState"]["DepthBiasClamp"] = DepthBiasClamp; }
+			}
+			},
+			{ "SlopeScaledDepthBias", [&pipelineState,this]
+			{
+				float SlopeScaledDepthBias = pipelineState.at("RasterizerState").at("SlopeScaledDepthBias");
+				if (ImGui::InputFloat("", &SlopeScaledDepthBias)) { json["pipelineState"]["RasterizerState"]["SlopeScaledDepthBias"] = SlopeScaledDepthBias; }
+			}
+			},
+			{ "DepthClipEnable", [&pipelineState,this]
+			{
+				bool DepthClipEnable = pipelineState.at("RasterizerState").at("DepthClipEnable");
+				if (ImGui::Checkbox("", &DepthClipEnable)) { json["pipelineState"]["RasterizerState"]["DepthClipEnable"] = DepthClipEnable; }
+			}
+			},
+			{ "MultisampleEnable", [&pipelineState,this]
+			{
+				bool MultisampleEnable = pipelineState.at("RasterizerState").at("MultisampleEnable");
+				if (ImGui::Checkbox("", &MultisampleEnable)) { json["pipelineState"]["RasterizerState"]["MultisampleEnable"] = MultisampleEnable; }
+			}
+			},
+			{ "AntialiasedLineEnable", [&pipelineState,this]
+			{
+				bool AntialiasedLineEnable = pipelineState.at("RasterizerState").at("AntialiasedLineEnable");
+				if (ImGui::Checkbox("", &AntialiasedLineEnable)) { json["pipelineState"]["RasterizerState"]["AntialiasedLineEnable"] = AntialiasedLineEnable; }
+			}
+			},
+			{ "ForcedSampleCount", [&pipelineState,this]
+			{
+				int ForcedSampleCount = pipelineState.at("RasterizerState").at("ForcedSampleCount");
+				if (ImGui::InputInt("", &ForcedSampleCount)) {
+					ForcedSampleCount = max(0, ForcedSampleCount);
+					json["pipelineState"]["RasterizerState"]["ForcedSampleCount"] = ForcedSampleCount;
+				}
+			}
+			},
+			{ "ConservativeRaster", [&pipelineState,this]
+			{
+				std::string ConservativeRaster = pipelineState.at("RasterizerState").at("ConservativeRaster");
+				std::vector<std::string> selectables;
+				std::transform(stringToConservativeRasterizationMode.begin(), stringToConservativeRasterizationMode.end(), std::back_inserter(selectables), [](auto& pair) { return pair.first; });
+				DrawComboSelection(ConservativeRaster, selectables, [this](std::string mode)
+					{ json["pipelineState"]["RasterizerState"]["ConservativeRaster"] = mode; },
+				"");
+			}
+			},
+		};
+
+		std::map<std::string, std::function<void()>> pipelineStateAttributesDrawCallbacks = {
+			{ "BlendState", [] {} },
+			{ "RasterizerState", [this,&pipelineState,rasterizerStateAttributes,rasterizerStateAttributesAddCallbacks,rasterizerStateAttributesDrawCallbacks]
+			{
+				nlohmann::json RasterizerState = pipelineState.at("RasterizerState");
+				std::vector<std::string> selectables = {" "};
+				std::vector<std::string> drawables;
+				for (auto att : rasterizerStateAttributes)
+				{
+					if (!RasterizerState.contains(att))
+					{
+						selectables.push_back(att);
+					}
+					else
+					{
+						drawables.push_back(att);
+					}
+				}
+				ImGui::PushID("RasterizerState-selection");
+				DrawComboSelection(selectables[0], selectables, [this, &RasterizerState, rasterizerStateAttributesAddCallbacks](std::string att)
+					{
+						rasterizerStateAttributesAddCallbacks.at(att)(RasterizerState);
+						json["pipelineState"]["RasterizerState"] = RasterizerState;
+					}, "add"
+				);
+				ImGui::PopID();
+				if (drawables.size() > 0)
+				{
+					ImGui::PushID("RasterizerState-drawables");
+					if (ImGui::BeginTable("Rasterizer-table", 3, ImGuiTableFlags_NoSavedSettings))
+					{
+						ImGui::TableSetupColumn("attribute", ImGuiTableColumnFlags_WidthFixed);
+						ImGui::TableSetupColumn("value", ImGuiTableColumnFlags_WidthStretch);
+
+						for (auto att : drawables)
+						{
+							ImGui::TableNextRow();
+							ImGui::PushID(("RasterizerState-drawables" + att).c_str());
+							ImGui::TableSetColumnIndex(0);
+							if (ImGui::SmallButton(ICON_FA_TIMES)) {}
+							ImGui::TableSetColumnIndex(1);
+							ImGui::Text(att.c_str());
+							ImGui::TableSetColumnIndex(2);
+							rasterizerStateAttributesDrawCallbacks.at(att)();
+							ImGui::PopID();
+						}
+						ImGui::EndTable();
+					}
+					ImGui::PopID();
+				}
+			}
+			},
+			{ "PrimitiveTopologyType", [this,&pipelineState]
+			{
+				std::string PrimitiveTopologyType = pipelineState.at("PrimitiveTopologyType");
+				std::vector<std::string> selectables;
+				std::transform(stringToPrimitiveTopologyType.begin(), stringToPrimitiveTopologyType.end(), std::back_inserter(selectables), [](auto& pair)
+					{
+						return pair.first;
+					}
+				);
+				ImGui::PushID("PrimitiveTopologyType-selection");
+				DrawComboSelection(PrimitiveTopologyType, selectables, [this](std::string type)
+					{
+						json["pipelineState"]["PrimitiveTopologyType"] = type;
+					}, ""
+				);
+				ImGui::PopID();
+			}
+			},
+			{ "renderTargetsFormats", [this,&pipelineState]
+			{
+				std::vector<std::string> selectables;
+				std::transform(stringToDxgiFormat.begin(), stringToDxgiFormat.end(), std::back_inserter(selectables), [](auto& pair)
+					{
+						return pair.first;
+					}
+				);
+				unsigned int numRenderTargetsFormats = static_cast<unsigned int>(pipelineState.at("renderTargetsFormats").size());
+				bool canAdd = numRenderTargetsFormats < _countof(D3D12_GRAPHICS_PIPELINE_STATE_DESC::RTVFormats);
+				int addIndex = -1;
+				int deleteIndex = -1;
+				for (unsigned int i = 0; i < numRenderTargetsFormats; i++)
+				{
+					std::string renderTargetFormat = pipelineState.at("renderTargetsFormats")[i];
+					std::string label = "RT#" + std::to_string(i + 1);
+					ImGui::PushID(label.c_str());
+					{
+						if (canAdd)
+						{
+							if (ImGui::SmallButton(ICON_FA_PLUS))
+							{
+								addIndex = i;
+								ImGui::PopID();
+								break;
+							}
+							ImGui::SameLine();
+						}
+						if (ImGui::SmallButton(ICON_FA_TIMES))
+						{
+							deleteIndex = i;
+							ImGui::PopID();
+							break;
+						}
+						ImGui::SameLine();
+						DrawComboSelection(renderTargetFormat, selectables, [this, i](std::string format)
+							{
+								json["pipelineState"]["renderTargetsFormats"][i] = format;
+							}, label
+						);
+					}
+					ImGui::PopID();
+				}
+				if (addIndex != -1)
+				{
+					auto pos = pipelineState.at("renderTargetsFormats").begin() + addIndex + 1;
+					pipelineState.at("renderTargetsFormats").insert(pos, dxgiFormatsToString.at(DXGI_FORMAT_R8G8B8A8_UNORM));
+				}
+				if (deleteIndex != -1)
+				{
+					auto pos = pipelineState.at("renderTargetsFormats").begin() + deleteIndex;
+					pipelineState.at("renderTargetsFormats").erase(pos);
+				}
+				if (addIndex != -1 || deleteIndex != -1)
+				{
+					json["pipelineState"] = pipelineState;
+				}
+			}
+			},
+			{ "depthStencilFormat", [this,&pipelineState]
+			{
+				std::string depthStencilFormat = pipelineState.at("depthStencilFormat");
+				std::vector<std::string> selectables;
+				std::transform(stringToDxgiFormat.begin(), stringToDxgiFormat.end(), std::back_inserter(selectables), [](auto& pair)
+					{
+						return pair.first;
+					}
+				);
+				ImGui::PushID("depthStencilFormat-selection");
+				DrawComboSelection(depthStencilFormat, selectables, [this](std::string format)
+					{
+						json["pipelineState"]["depthStencilFormat"] = format;
+					}, ""
+				);
+				ImGui::PopID();
+			}
+			},
+		};
+
+		std::map<std::string, std::function<void()>> pipelineStateAttributesAddCallbacks = {
+			{ "BlendState", [&pipelineState] { pipelineState["BlendState"] = {}; } },
+			{ "RasterizerState", [&pipelineState] { pipelineState["RasterizerState"] = {}; } },
+			{ "PrimitiveTopologyType", [&pipelineState] { pipelineState["PrimitiveTopologyType"] = primitiveTopologyTypeToString.at(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE); } },
+			{ "renderTargetsFormats", [&pipelineState] { pipelineState["renderTargetsFormats"] = { dxgiFormatsToString.at(DXGI_FORMAT_R8G8B8A8_UNORM) }; } },
+			{ "depthStencilFormat", [&pipelineState] { pipelineState["depthStencilFormat"] = dxgiFormatsToString.at(DXGI_FORMAT_D32_FLOAT); } },
+		};
+
+		std::vector<std::string> selectables = { " " };
+		for (auto att : pipelineStateAttributes)
+		{
+			if (!pipelineState.contains(att)) selectables.push_back(att);
+		}
+
+		ImGuiTreeNodeFlags flag = ImGuiTreeNodeFlags_DefaultOpen;
+		if (ImGui::TreeNodeEx("pipelineState", flag))
+		{
+			DrawComboSelection(selectables[0], selectables, [this, pipelineStateAttributesAddCallbacks, &pipelineState](std::string attribute)
+				{
+					pipelineStateAttributesAddCallbacks.at(attribute)();
+					if (!json.contains("pipelineState"))
+					{
+						json["pipelineState"] = pipelineState;
+					}
+					else
+					{
+						json["pipelineState"].merge_patch(pipelineState);
+						pipelineState = json["pipelineState"];
+					}
+				}, "add"
+			);
+
+			if (!pipelineState.empty())
+			{
+				for (auto att : pipelineStateAttributes)
+				{
+					if (pipelineState.contains(att))
+					{
+						ImGui::PushID(att.c_str());
+						{
+							ImGui::PushID((att + "delete").c_str());
+							{
+								if (ImGui::SmallButton(ICON_FA_TIMES))
+								{
+									auto pos = pipelineState.find(att);
+									pipelineState.erase(pos);
+									json["pipelineState"] = pipelineState;
+									ImGui::PopID();
+									ImGui::PopID();
+									break;
+								}
+							}
+							ImGui::PopID();
+							ImGui::SameLine();
+							ImGui::PushID((att + "tree-node").c_str());
+							if (ImGui::TreeNodeEx(att.c_str(), flag))
+							{
+								pipelineStateAttributesDrawCallbacks.at(att)();
+								ImGui::TreePop();
+							}
+							ImGui::PopID();
+						}
+						ImGui::PopID();
+					}
+				}
+			}
+			// Call ImGui::TreeNodeEx() recursively to populate each level of children
+			ImGui::TreePop();  // This is required at the end of the if block
 		}
 	}
 #endif
