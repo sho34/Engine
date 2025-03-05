@@ -115,53 +115,142 @@ inline void ImDrawTextureImage(ImTextureID textureId, unsigned int textureWidth,
 	ImGui::Image(textureId, ImVec2((float)currentRegionAvail.x, sizeY));
 }
 
-inline std::function<void()> drawFromComboSelection(nlohmann::json& state, const std::string att, auto& listMap)
+inline void drawFromCombo(nlohmann::json& json, const std::string attribute, auto& listMap)
 {
-	return [&state, att, &listMap]
+	std::string value = json.at(attribute);
+	std::vector<std::string> selectables = nostd::GetKeysFromMap(listMap);
+	DrawComboSelection(value, selectables, [&json, &attribute](std::string newValue)
 		{
-			std::string value = state.at(att);
-			std::vector<std::string> selectables;
-			std::transform(listMap.begin(), listMap.end(), std::back_inserter(selectables), [](auto& pair) { return pair.first; });
-			DrawComboSelection(value, selectables, [&state, &att](std::string newValue) {
-				state[att] = newValue;
-				}, "");
-		};
+			json[attribute] = newValue;
+		}, ""
+	);
 };
 
-inline std::function<void()> drawFromCheckBox(nlohmann::json& state, const std::string att)
+inline void drawFromCheckBox(nlohmann::json& json, const std::string attribute)
 {
-	return [&state, att]
-		{
-			bool value = state.at(att);
-			if (ImGui::Checkbox("", &value)) { state[att] = value; }
-		};
+	bool value = json.at(attribute);
+	ImGui::SameLine();
+	if (ImGui::Checkbox("", &value)) { json[attribute] = value; }
 };
 
-inline std::function<void()> drawFromFloat(nlohmann::json& state, const std::string att)
+inline void drawFromFloat(nlohmann::json& json, const std::string attribute)
 {
-	return [&state, att]
-		{
-			float value = state.at(att);
-			if (ImGui::InputFloat("", &value)) { state[att] = value; }
-		};
+	float value = json.at(attribute);
+	if (ImGui::InputFloat("", &value)) { json[attribute] = value; }
 };
 
-inline std::function<void()> drawFromInt(nlohmann::json& state, const std::string att)
+inline void drawFromInt(nlohmann::json& json, const std::string attribute)
 {
-	return [&state, att]
-		{
-			int value = state.at(att);
-			if (ImGui::InputInt("", &value)) { state[att] = value; }
-		};
+	int value = json.at(attribute);
+	if (ImGui::InputInt("", &value)) { json[attribute] = value; }
 };
 
-inline std::function<void()> drawFromUInt(nlohmann::json& state, const std::string att)
+inline void drawFromUInt(nlohmann::json& json, const std::string attribute)
 {
-	return [&state, att]
-		{
-			int value = state.at(att);
-			if (ImGui::InputInt("", &value)) { value = max(0, value); state[att] = value; }
-		};
+	int value = json.at(attribute);
+	if (ImGui::InputInt("", &value)) { value = max(0, value); json[attribute] = value; }
 };
+
+inline void ImDrawDynamicArray(
+	std::string label,
+	nlohmann::json& arr,
+	unsigned int maxItems,
+	std::function<void(nlohmann::json&, unsigned int)> insert,
+	std::function<void(nlohmann::json&, unsigned int)> draw
+)
+{
+	bool canAdd = arr.size() < maxItems;
+	bool canDelete = arr.size() > 1U;
+	int addIndex = -1;
+	int deleteIndex = -1;
+
+	for (unsigned int i = 0U; i < arr.size(); i++)
+	{
+		std::string itemID = label + "#" + std::to_string(i + 1U);
+		ImGui::PushID(itemID.c_str());
+		{
+			if (canAdd)
+			{
+				if (ImGui::SmallButton(ICON_FA_PLUS))
+				{
+					insert(arr, i);
+					ImGui::PopID();
+					break;
+				}
+				ImGui::SameLine();
+			}
+
+			if (canDelete)
+			{
+				if (ImGui::SmallButton(ICON_FA_TIMES))
+				{
+					arr.erase(i);
+					ImGui::PopID();
+					break;
+				}
+				ImGui::SameLine();
+			}
+
+			draw(arr[i], i);
+		}
+		ImGui::PopID();
+	}
+}
+
+inline void ImDrawObject(
+	std::string label,
+	nlohmann::json& object,
+	std::map<std::string, std::function<void(nlohmann::json&)>> addAttribute,
+	std::map<std::string, std::function<void(nlohmann::json&)>> drawAttribute
+)
+{
+	//get all the attributes in the object
+	std::vector<std::string> attributes = nostd::GetKeysFromMap(addAttribute);
+
+	//make a list of the attributes that can be added
+	std::vector<std::string> selectables = { " " };
+	for (auto& attribute : attributes)
+	{
+		if (!object.contains(attribute)) selectables.push_back(attribute);
+	}
+
+	//draw a combo for adding attributes to the object
+	ImGui::Text(label.c_str());
+	if (selectables.size() > 1)
+	{
+		ImGui::PushID("pipelineState-add-combo");
+		DrawComboSelection(selectables[0], selectables, [&object, addAttribute](std::string attribute)
+			{
+				addAttribute.at(attribute)(object);
+			}, ""
+		);
+		ImGui::PopID();
+	}
+
+	//if the object is empty go no further
+	if (object.empty()) return;
+
+	//go through each attribute in the object and render the attribute representation
+	for (auto attribute : attributes)
+	{
+		if (!object.contains(attribute)) continue;
+
+		ImGui::PushID((label + "-" + attribute).c_str());
+		{
+			if (ImGui::SmallButton(ICON_FA_TIMES))
+			{
+				auto pos = object.find(attribute);
+				object.erase(pos);
+				ImGui::PopID();
+				return;
+			}
+			ImGui::SameLine();
+			ImGui::Text(attribute.c_str());
+
+			drawAttribute.at(attribute)(object);
+		}
+		ImGui::PopID();
+	}
+}
 
 #endif

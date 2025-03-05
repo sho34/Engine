@@ -25,4 +25,12 @@ namespace DeviceUtils
 		CComPtr<ID3D12RootSignature>& rootSignature,
 		const RenderablePipelineState& renderablePipelineState
 	);
+
+#if defined(_EDITOR)
+	void ImDrawBlendStatesRenderTargets(nlohmann::json& BlendState);
+
+	void ImDrawPipelineRenderTargetFormats(nlohmann::json& PipelineState);
+
+	void ImDrawPipelineState(nlohmann::json& PipelineState);
+#endif
 };
