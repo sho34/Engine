@@ -8,12 +8,26 @@ namespace Scene {
 
 		std::shared_ptr<SoundEffect> this_ptr = nullptr;
 
-		std::string name = "";
-		std::string sound = "";
-		float volume = 1.0f;
-		bool autoPlay = false;
-		XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
-		SOUND_EFFECT_INSTANCE_FLAGS instanceFlags = SoundEffectInstance_Default;
+		nlohmann::json json;
+
+		std::string name();
+		void name(std::string name);
+
+		std::string sound();
+		void sound(std::string sound);
+
+		float volume();
+		void volume(float volume);
+
+		bool autoPlay();
+		void autoPlay(bool autoPlay);
+
+		XMFLOAT3 position();
+		void position(XMFLOAT3 f3);
+		void position(nlohmann::json f3);
+
+		SOUND_EFFECT_INSTANCE_FLAGS instanceFlags();
+		void instanceFlags(SOUND_EFFECT_INSTANCE_FLAGS instanceFlags);
 
 		std::unique_ptr<DirectX::SoundEffectInstance> soundEffectInstance;
 
@@ -27,7 +41,7 @@ namespace Scene {
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorSoundAttributes();
-		nlohmann::json json();
+		//nlohmann::json json();
 #endif
 		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
 	};

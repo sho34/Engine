@@ -421,7 +421,7 @@ namespace Editor {
 					{
 						return std::pair<_SceneObjects, std::function<void(std::string, void*&)>>(pair.first, [pair](std::string a, void*& b)
 							{
-								boundingBox->visible = true;
+								boundingBox->visible(true);
 								pair.second(a, b);
 							}
 						);
@@ -438,7 +438,7 @@ namespace Editor {
 					{
 						return std::pair<_SceneObjects, std::function<void(void*&)>>(pair.first, [pair](void*& b)
 							{
-								boundingBox->visible = false;
+								boundingBox->visible(false);
 								pair.second(b);
 							}
 						);
@@ -744,7 +744,7 @@ namespace Editor {
 		if (soTab != _SceneObjects::SO_Lights || selSO == nullptr/* || shadowMapChainLight == nullptr*/) return;
 
 		Light* light = (Light*)selSO;
-		if (!light->hasShadowMaps) return;
+		if (!light->hasShadowMaps()) return;
 
 		light->RenderShadowMapMinMaxChain();
 	}

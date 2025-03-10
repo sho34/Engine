@@ -7,6 +7,10 @@
 #include "../../Editor/Editor.h"
 #include "imgui.h"
 #endif
+#include <Keyboard.h>
+#include <GamePad.h>
+#include <SimpleMath.h>
+#include <Mouse.h>
 
 extern RECT hWndRect;
 extern std::shared_ptr<Renderer> renderer;
@@ -14,6 +18,7 @@ extern std::shared_ptr<Renderer> renderer;
 namespace Scene
 {
 	using namespace DeviceUtils;
+	using namespace DirectX;
 
 	std::vector<std::shared_ptr<Camera>> cameraByIndex;
 	std::map<std::string, std::shared_ptr<Camera>> cameraByNames;
@@ -21,20 +26,18 @@ namespace Scene
 	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraj)
 	{
 		std::shared_ptr<Camera> camera = std::make_shared<Camera>();
-		if (cameraj["name"] == "")
-		{
-			camera->name = "cam." + std::to_string(cameraByIndex.size());
-		}
-		else
-		{
-			camera->name = cameraj["name"];
-		}
-		assert(!cameraByNames.contains(camera->name));
+		camera->json = cameraj;
+		camera->this_ptr = camera;
 
-		ReplaceFromJson(camera->fitWindow, cameraj, "fitWindow");
-		camera->projectionType = StrToProjectionTypes[cameraj["projectionType"]];
-		bool fitToWindow = (cameraj.contains("fitWindow") && cameraj["fitWindow"]);
-		switch (camera->projectionType)
+		SetIfMissingJson(camera->json, "name", "cam." + std::to_string(cameraByIndex.size()));
+		assert(!cameraByNames.contains(camera->json.at("name")));
+
+		SetIfMissingJson(camera->json, "fitWindow", false);
+		SetIfMissingJson(camera->json, "projectionType", ProjectionTypesToStr.at(PROJ_Perspective));
+
+		bool fitToWindow = camera->json.at("fitWindow");
+
+		switch (StrToProjectionTypes.at(camera->json.at("projectionType")))
 		{
 		case PROJ_Perspective:
 		{
@@ -83,17 +86,9 @@ namespace Scene
 		break;
 		}
 
-		JsonToFloat3(camera->position, cameraj, "position");
-		if (cameraj.contains("rotation"))
-		{
-			XMFLOAT2 rot2 = JsonToFloat2(cameraj["rotation"]);
-			camera->rotation = { rot2.x, rot2.y, 0.0f };
-		}
-
-		if (cameraj.contains("speed"))
-		{
-			camera->speed = cameraj["speed"];
-		}
+		SetIfMissingJson(camera->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
+		SetIfMissingJson(camera->json, "rotation", XMFLOAT3({ 0.0f,0.0f,0.0f }));
+		SetIfMissingJson(camera->json, "speed", 0.05f);
 
 		if (cameraj.contains("light"))
 		{
@@ -103,8 +98,8 @@ namespace Scene
 		camera->CreateConstantsBuffer();
 
 		cameraByIndex.push_back(camera);
-		cameraByNames[camera->name] = camera;
-		camera->this_ptr = camera;
+		cameraByNames[camera->json.at("name")] = camera;
+
 		return camera;
 	}
 
@@ -143,7 +138,7 @@ namespace Scene
 		{
 			ImGui::Text("camera is controlled by light");
 			ImGui::SameLine();
-			if (ImGui::TextLink(camera->light->name.c_str()))
+			if (ImGui::TextLink(camera->light->name().c_str()))
 			{
 				Editor::SelectSceneObject(_SceneObjects::SO_Lights, camera->light.get());
 			}
@@ -163,7 +158,7 @@ namespace Scene
 	std::string GetCameraName(void* ptr)
 	{
 		Camera* cam = (Camera*)ptr;
-		return cam->name;
+		return cam->json.at("name");
 	}
 #endif
 
@@ -171,7 +166,7 @@ namespace Scene
 	{
 		if (camera == nullptr) return;
 		nostd::vector_erase(cameraByIndex, camera);
-		cameraByNames.erase(camera->name);
+		cameraByNames.erase(camera->json.at("name"));
 		camera->this_ptr = nullptr;
 		camera = nullptr;
 	}
@@ -187,6 +182,54 @@ namespace Scene
 		cameraByNames.clear();
 	}
 
+	std::string Camera::name()
+	{
+		return json.at("name");
+	}
+
+	void Camera::name(std::string name)
+	{
+		json["name"] = name;
+	}
+
+	XMFLOAT3 Camera::position()
+	{
+		return XMFLOAT3(json.at("position").at(0), json.at("position").at(1), json.at("position").at(2));
+	}
+
+	XMVECTOR Camera::positionV()
+	{
+		XMFLOAT3 pos = position();
+		return { pos.x,pos.y,pos.z,0.0f };
+	}
+
+	void Camera::position(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("position");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Camera::position(nlohmann::json f3)
+	{
+		json.at("position") = f3;
+	}
+
+	XMFLOAT3 Camera::rotation()
+	{
+		return XMFLOAT3(json.at("rotation").at(0), json.at("rotation").at(1), json.at("rotation").at(2));
+	}
+
+	void Camera::rotation(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("rotation");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Camera::rotation(nlohmann::json f3)
+	{
+		json.at("rotation") = f3;
+	}
+
 	void Camera::Destroy()
 	{
 		DestroyConstantsBuffer(cameraCbv);
@@ -194,13 +237,13 @@ namespace Scene
 
 	void Camera::CreateConstantsBuffer()
 	{
-		cameraCbv = DeviceUtils::CreateConstantsBuffer(sizeof(CameraAttributes) * renderer->numFrames, name);
+		cameraCbv = DeviceUtils::CreateConstantsBuffer(sizeof(CameraAttributes) * renderer->numFrames, json.at("name"));
 	}
 
 	void Camera::WriteConstantsBuffer(unsigned int backbufferIndex)
 	{
 		CameraAttributes atts{};
-		if (projectionType == PROJ_Orthographic)
+		if (StrToProjectionTypes.at(json.at("projectionType")) == PROJ_Orthographic)
 		{
 			atts.viewProjection = XMMatrixMultiply(ViewMatrix(), orthographic.projectionMatrix);
 		}
@@ -209,7 +252,7 @@ namespace Scene
 			atts.viewProjection = XMMatrixMultiply(ViewMatrix(), perspective.projectionMatrix);
 		}
 
-		atts.eyePosition = { position.x, position.y, position.z };
+		atts.eyePosition = position();
 		atts.eyeForward = { *((XMFLOAT3*)CameraFw().m128_f32) };
 
 		memcpy(cameraCbv->mappedConstantBuffer + cameraCbv->alignedConstantBufferSize * backbufferIndex, &atts, sizeof(atts));
@@ -218,50 +261,52 @@ namespace Scene
 	XMMATRIX Camera::ViewMatrix()
 	{
 		XMVECTOR viewUp = up;
-		if (light != nullptr && light->lightType == LT_Point)
+		if (light != nullptr && light->lightType() == LT_Point)
 		{
 			unsigned int i = 0U;
 			for (; i < 6U; i++)
 			{
 				if (light->shadowMapCameras[i].get() == this)
 				{
-					viewUp = Scene::PointLight::PointLightUp[i]; break;
+					viewUp = Scene::PointLightUp[i]; break;
 				}
 			}
 		}
-		return XMMatrixLookToRH({ position.x ,position.y, position.z }, CameraFw(), viewUp);
+		return XMMatrixLookToRH(positionV(), CameraFw(), viewUp);
 	}
 
 	XMVECTOR Camera::CameraFw()
 	{
-		if (light != nullptr && light->lightType == LT_Point)
+		if (light != nullptr && light->lightType() == LT_Point)
 		{
 			unsigned int i = 0U;
 			for (; i < 6U; i++) {
 				if (light->shadowMapCameras[i].get() == this)
 				{
-					return Scene::PointLight::PointLightDirection[i];
+					return Scene::PointLightDirection[i];
 				}
 			}
 		}
 
+		XMFLOAT3 rot = rotation();
+
 		return {
-			sinf(rotation.x) * cosf(rotation.y),
-			sinf(rotation.y),
-			cosf(rotation.x) * cosf(rotation.y)
+			sinf(rot.x) * cosf(rot.y),
+			sinf(rot.y),
+			cosf(rot.x) * cosf(rot.y)
 		};
 	}
 
 	XMVECTOR Camera::CameraUp()
 	{
-		if (light != nullptr && light->lightType == LT_Point)
+		if (light != nullptr && light->lightType() == LT_Point)
 		{
-			UINT i = 0U;
+			unsigned int i = 0U;
 			for (; i < 6U; i++)
 			{
 				if (light->shadowMapCameras[i].get() == this)
 				{
-					return Scene::PointLight::PointLightUp[i];
+					return Scene::PointLightUp[i];
 				}
 			}
 		}
@@ -271,9 +316,9 @@ namespace Scene
 
 	void Camera::ProcessKeyboardInput(DirectX::Keyboard::KeyboardStateTracker& tracker, DirectX::Keyboard::State& state)
 	{
-		if (light == nullptr || light->lightType == LT_Spot || light->lightType == LT_Point)
+		if (light == nullptr || light->lightType() == LT_Spot || light->lightType() == LT_Point)
 		{
-			float moveSpeed = speed * ((state.LeftShift || state.RightShift) ? 10.0f : 1.0f);
+			float moveSpeed = json.at("speed") * ((state.LeftShift || state.RightShift) ? 10.0f : 1.0f);
 			if (state.Up) { MoveForward(moveSpeed); }
 			if (state.Down) { MoveBack(moveSpeed); }
 			if (state.Left) { MoveLeft(moveSpeed); }
@@ -283,17 +328,17 @@ namespace Scene
 
 	void Camera::ProcessGamepadInput(DirectX::GamePad::State& gamePadState, Vector2 gamePadCameraRotationSensitivity)
 	{
-		if (light == nullptr || light->lightType == LT_Spot || light->lightType == LT_Point)
+		if (light == nullptr || light->lightType() == LT_Spot || light->lightType() == LT_Point)
 		{
-			if (gamePadState.thumbSticks.leftY > 0) { MoveForward(speed); }
-			if (gamePadState.thumbSticks.leftY < 0) { MoveBack(speed); }
-			if (gamePadState.thumbSticks.leftX < 0) { MoveLeft(speed); }
-			if (gamePadState.thumbSticks.leftX > 0) { MoveRight(speed); }
+			if (gamePadState.thumbSticks.leftY > 0) { MoveForward(json.at("speed")); }
+			if (gamePadState.thumbSticks.leftY < 0) { MoveBack(json.at("speed")); }
+			if (gamePadState.thumbSticks.leftX < 0) { MoveLeft(json.at("speed")); }
+			if (gamePadState.thumbSticks.leftX > 0) { MoveRight(json.at("speed")); }
 		}
-		if (light == nullptr || light->lightType == LT_Directional || light->lightType == LT_Spot)
+		if (light == nullptr || light->lightType() == LT_Directional || light->lightType() == LT_Spot)
 		{
 			Vector2 stickDiff = { gamePadState.thumbSticks.rightX, gamePadState.thumbSticks.rightY };
-			rotation = rotation - XMFLOAT3{ stickDiff.x * gamePadCameraRotationSensitivity.x, stickDiff.y * gamePadCameraRotationSensitivity.y, 0.0f };
+			rotation(rotation() - XMFLOAT3{ stickDiff.x * gamePadCameraRotationSensitivity.x, stickDiff.y * gamePadCameraRotationSensitivity.y, 0.0f });
 			UdateLightRotation();
 		}
 	}
@@ -301,7 +346,7 @@ namespace Scene
 	XMFLOAT2 lastMousePos;
 	XMFLOAT2 GetMouseDiff(DirectX::Mouse::State& mouseState)
 	{
-		XMFLOAT2 currentMousePos = { static_cast<FLOAT>(mouseState.x) , static_cast<FLOAT>(mouseState.y) };
+		XMFLOAT2 currentMousePos = { static_cast<float>(mouseState.x) , static_cast<float>(mouseState.y) };
 		XMFLOAT2 diff = { 0.0f, 0.0f };
 		if (mouseState.leftButton)
 		{
@@ -311,18 +356,18 @@ namespace Scene
 		return diff;
 	}
 
-	INT lastWheelValue = 0;
-	FLOAT wheelDiffFactor = 0.0001f;
+	int lastWheelValue = 0;
+	float wheelDiffFactor = 0.0001f;
 	void Camera::ProcessMouseInput(DirectX::Mouse::State& mouseState, Vector2 rotationSensitivity)
 	{
-		if (light == nullptr || light->lightType == LT_Directional || light->lightType == LT_Spot)
+		if (light == nullptr || light->lightType() == LT_Directional || light->lightType() == LT_Spot)
 		{
 			Vector2 mouseDiff = GetMouseDiff(mouseState);
-			rotation = rotation - XMFLOAT3{ mouseDiff.x * rotationSensitivity.x, mouseDiff.y * rotationSensitivity.y, 0.0f };
+			rotation(rotation() - XMFLOAT3{ mouseDiff.x * rotationSensitivity.x, mouseDiff.y * rotationSensitivity.y, 0.0f });
 			UdateLightRotation();
-			if (light != nullptr && light->lightType == LT_Directional)
+			if (light != nullptr && light->lightType() == LT_Directional)
 			{
-				float diff = static_cast<FLOAT>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
+				float diff = static_cast<float>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
 				orthographic.expandView(diff);
 			}
 		}
@@ -332,19 +377,19 @@ namespace Scene
 	{
 		if (light == nullptr) return;
 
-		switch (light->lightType)
+		switch (light->lightType())
 		{
 		case LT_Spot:
 		{
-			light->spot.position = position;
+			light->position(position());
 		}
 		break;
 		case LT_Point:
 		{
-			light->point.position = position;
+			light->position(position());
 			for (auto cam : light->shadowMapCameras)
 			{
-				cam->position = position;
+				cam->position(position());
 			}
 		}
 		break;
@@ -355,18 +400,20 @@ namespace Scene
 	{
 		if (light == nullptr) return;
 
-		switch (light->lightType)
+		XMFLOAT3 rot = rotation();
+
+		switch (light->lightType())
 		{
 		case LT_Directional:
 		{
-			light->directional.rotation = { rotation.x, rotation.y };
-			XMVECTOR camPos = XMVectorScale(XMVector3Normalize(CameraFw()), -light->directional.distance);
-			position = *(XMFLOAT3*)camPos.m128_f32;
+			light->rotation({ rot.x, rot.y });
+			XMVECTOR camPos = XMVectorScale(XMVector3Normalize(CameraFw()), -light->directionalDistance());
+			position(*(XMFLOAT3*)camPos.m128_f32);
 		}
 		break;
 		case LT_Spot:
 		{
-			light->spot.rotation = { rotation.x, rotation.y };
+			light->rotation({ rot.x, rot.y });
 		}
 		break;
 		}
@@ -374,29 +421,29 @@ namespace Scene
 
 	void Camera::MoveForward(float step)
 	{
-		XMVECTOR newPos = XMVectorAdd({ position.x ,position.y, position.z }, CameraFw() * step);
-		position = { newPos.m128_f32[0], newPos.m128_f32[1], newPos.m128_f32[2] };
+		XMVECTOR newPos = XMVectorAdd(positionV(), CameraFw() * step);
+		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
 	void Camera::MoveBack(float step)
 	{
-		XMVECTOR newPos = XMVectorAdd({ position.x ,position.y, position.z }, CameraFw() * -step);
-		position = { newPos.m128_f32[0], newPos.m128_f32[1], newPos.m128_f32[2] };
+		XMVECTOR newPos = XMVectorAdd(positionV(), CameraFw() * -step);
+		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
 	void Camera::MoveLeft(float step)
 	{
-		XMVECTOR newPos = XMVectorAdd({ position.x ,position.y, position.z }, XMVector3Cross(CameraFw(), CameraUp()) * -step);
-		position = { newPos.m128_f32[0], newPos.m128_f32[1], newPos.m128_f32[2] };
+		XMVECTOR newPos = XMVectorAdd(positionV(), XMVector3Cross(CameraFw(), CameraUp()) * -step);
+		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
 	void Camera::MoveRight(float step)
 	{
-		XMVECTOR newPos = XMVectorAdd({ position.x ,position.y, position.z }, XMVector3Cross(CameraFw(), CameraUp()) * step);
-		position = { newPos.m128_f32[0], newPos.m128_f32[1], newPos.m128_f32[2] };
+		XMVECTOR newPos = XMVectorAdd(positionV(), XMVector3Cross(CameraFw(), CameraUp()) * step);
+		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
@@ -405,6 +452,7 @@ namespace Scene
 	std::shared_ptr<Camera> GetCamera(std::string name) { return cameraByNames.at(name); }
 
 #if defined(_EDITOR)
+	/*
 	nlohmann::json Camera::json()
 	{
 		nlohmann::json j = nlohmann::json({});
@@ -456,6 +504,7 @@ namespace Scene
 
 		return j;
 	}
+	*/
 
 	void Camera::DrawEditorInformationAttributes()
 	{
@@ -466,15 +515,15 @@ namespace Scene
 		{
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
-			std::string currentName = name;
+			std::string currentName = json.at("name");
 			if (ImGui::InputText("name", &currentName))
 			{
 				if (!cameraByNames.contains(currentName))
 				{
-					cameraByNames[currentName] = cameraByNames[name];
-					cameraByNames.erase(name);
+					cameraByNames[currentName] = cameraByNames[json.at("name")];
+					cameraByNames.erase(json.at("name"));
 				}
-				name = currentName;
+				json["name"] = currentName;
 			}
 			ImGui::EndTable();
 		}
@@ -491,22 +540,34 @@ namespace Scene
 			ImGui::TableSetColumnIndex(0);
 			ImGui::PushID("position");
 			ImGui::Text("position");
+
 			ImGui::TableSetColumnIndex(1);
-			ImGui::InputFloat("x", &position.x);
+			float pos0 = json.at("position").at(0);
+			if (ImGui::InputFloat("x", &pos0)) { json.at("position")[0] = pos0; }
+
 			ImGui::TableSetColumnIndex(2);
-			ImGui::InputFloat("y", &position.y);
+			float pos1 = json.at("position").at(1);
+			if (ImGui::InputFloat("y", &pos1)) { json.at("position")[1] = pos1; }
+
 			ImGui::TableSetColumnIndex(3);
-			ImGui::InputFloat("z", &position.z);
+			float pos2 = json.at("position").at(2);
+			if (ImGui::InputFloat("z", &pos2)) { json.at("position")[2] = pos2; }
+
 			ImGui::PopID();
 
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
 			ImGui::PushID("rotation");
 			ImGui::Text("rotation");
+
 			ImGui::TableSetColumnIndex(1);
-			ImGui::SliderAngle("azimuthal", &rotation.x);
+			float rot0 = json.at("rotation").at(0);
+			if (ImGui::SliderAngle("azimuthal", &rot0)) { json.at("rotation")[0] = rot0; }
+
 			ImGui::TableSetColumnIndex(2);
-			ImGui::SliderAngle("polar", &rotation.y);
+			float rot1 = json.at("rotation").at(1);
+			if (ImGui::SliderAngle("polar", &rot1)) { json.at("rotation")[1] = rot1; }
+
 			ImGui::PopID();
 
 			ImGui::EndTable();
@@ -516,12 +577,12 @@ namespace Scene
 	void Camera::DrawEditorCameraAttributes()
 	{
 		std::vector<std::string> selectables = ProjectionsTypesStr;
-		std::string selected = ProjectionTypesToStr[projectionType];
+		std::string selected = json.at("projectionType");
 
 		DrawComboSelection(selected, selectables, [this](std::string projection)
 			{
-				projectionType = StrToProjectionTypes[projection];
-				switch (projectionType) {
+				json["projectionType"] = StrToProjectionTypes[projection];
+				switch (StrToProjectionTypes.at(json.at("projectionType"))) {
 				case PROJ_Orthographic:
 				{
 					orthographic.Copy(editorOrthographic);
@@ -549,7 +610,7 @@ namespace Scene
 				editorOrthographic.Copy(orthographic);
 			};
 
-		if (projectionType == PROJ_Perspective)
+		if (StrToProjectionTypes.at(json.at("projectionType")) == PROJ_Perspective)
 		{
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
@@ -640,8 +701,8 @@ namespace Scene
 
 	void Camera::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
-		bbox->position = position;
-		bbox->scale = { 0.3f, 0.3f, 0.3f };
-		bbox->rotation = { 0.0f, 0.0f, 0.0f };
+		bbox->position(json.at("position"));
+		bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
+		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 }

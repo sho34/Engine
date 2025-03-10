@@ -12,6 +12,18 @@ inline void JsonToFloat3(DirectX::XMFLOAT3& value, nlohmann::json f3, std::strin
 	if (f3.contains(key)) { value = XMFLOAT3({ f3[key][0], f3[key][1], f3[key][2] }); }
 }
 
+template<typename T>
+inline void SetIfMissingJson(nlohmann::json& j, std::string key, T value)
+{
+	if (!j.contains(key)) { j[key] = value; }
+}
+
+template<>
+inline void SetIfMissingJson<DirectX::XMFLOAT3>(nlohmann::json& j, std::string key, DirectX::XMFLOAT3 value)
+{
+	if (!j.contains(key)) { j[key] = nlohmann::json::array({ value.x,value.y,value.z }); }
+}
+
 inline DirectX::XMFLOAT2 JsonToFloat2(nlohmann::json f2) {
 	return DirectX::XMFLOAT2({ f2[0], f2[1] });
 }
@@ -45,3 +57,9 @@ void ReplaceFromJson(T& value, nlohmann::json object, const std::string& key) {
 	if (object.contains(key)) value = static_cast<T>(object[key]);
 }
 
+inline void RemoveJsonAttributes(nlohmann::json& dst, std::vector<std::string>& atts) {
+	for (auto& key : atts)
+	{
+		if (dst.contains(key)) dst.erase(key);
+	}
+}

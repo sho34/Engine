@@ -1,4 +1,6 @@
 #pragma once
+#include <DirectXMath.h>
+#include "../../Common/d3dx12.h"
 
 namespace Scene { struct Light; }
 namespace DeviceUtils { struct ConstantsBuffer; }
@@ -7,7 +9,6 @@ enum VertexClass;
 namespace Scene {
 
 	using namespace DirectX;
-	using namespace Templates;
 	using namespace DeviceUtils;
 
 	inline static const D3D12_CLEAR_VALUE shadowMapOptimizedClearValue = {
@@ -50,37 +51,17 @@ namespace Scene {
 		XMFLOAT4 atts6;
 	};
 
-	struct ShadowMapParameters {
-		union {
-			XMFLOAT2 shadowMapAttributes;
-			struct { float shadowMapWidth, shadowMapHeight; };
-		};
-		union {
-			XMFLOAT2 viewAttributes;
-			struct { float viewWidth, viewHeight; };
-		};
-		union {
-			XMFLOAT2 zAttributes;
-			struct { float nearZ, farZ; };
-		};
-	};
 
 	//CREATE
 	void CreateShadowMapResources();
-	void CreateShadowMap(std::shared_ptr<Light>& light, nlohmann::json lightj);
 
 	//READ&GET
 	bool SceneHasShadowMaps();
-	//std::vector<std::shared_ptr<Light>> GetLightsWithShadowMaps();
 	unsigned int GetNextAvailableShadowMapSlot();
 
 	std::shared_ptr<ConstantsBuffer> GetShadowMapConstantsBuffer();
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetShadowMapGpuDescriptorHandleStart();
 	CD3DX12_GPU_DESCRIPTOR_HANDLE GetShadowMapGpuDescriptorHandle(unsigned int index);
-	//CD3DX12_GPU_DESCRIPTOR_HANDLE& GetLightShadowMapGpuDescriptorHandle(std::shared_ptr<Light>& light);
-	/*
-	std::pair<CComPtr<ID3D12RootSignature>, CComPtr<ID3D12PipelineState>> GetShadowMapRenderAttributes(VertexClass vertexClass, const std::shared_ptr<Material> material);
-	*/
 
 	//UPDATE
 	void AllocShadowMapSlot(unsigned int slot);
@@ -92,6 +73,5 @@ namespace Scene {
 	//DELETE
 	void DestroyShadowMaps();
 	void DestroyShadowMapResources();
-	//void DestroyShadowMapAttributes();
 };
 

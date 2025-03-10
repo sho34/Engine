@@ -44,7 +44,7 @@ namespace Scene {
 	std::map<std::string, std::shared_ptr<Renderable>> renderables;
 	std::map<std::string, std::shared_ptr<Renderable>> animables;
 
-	void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, RenderableShaderAttributes shaderAttributes)
+	void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes)
 	{
 		std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [shaderAttributes](const nlohmann::json& value)
 			{
@@ -153,23 +153,23 @@ namespace Scene {
 		if (!renderable->json.contains("pipelineState")) renderable->json["pipelineState"] = nlohmann::json::object();
 		renderable->this_ptr = renderable;
 
-		ReplaceFromJson(renderable->name, renderablej, "name");
-		ReplaceFromJson(renderable->visible, renderablej, "visible");
-		ReplaceFromJson(renderable->hidden, renderablej, "hidden");
-		ReplaceFromJson(renderable->shaderAttributes.uniqueMaterialInstance, renderablej, "uniqueMaterialInstance");
-		ReplaceFromJson(renderable->shaderAttributes.castShadows, renderablej, "castShadows");
-		JsonToFloat3(renderable->position, renderablej, "position");
-		JsonToFloat3(renderable->scale, renderablej, "scale");
-		JsonToFloat3(renderable->rotation, renderablej, "rotation");
+		SetIfMissingJson(renderable->json, "visible", true);
+		SetIfMissingJson(renderable->json, "hidden", false);
+		SetIfMissingJson(renderable->json, "uniqueMaterialInstance", false);
+		SetIfMissingJson(renderable->json, "castShadows", true);
+		SetIfMissingJson(renderable->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
+		SetIfMissingJson(renderable->json, "rotation", XMFLOAT3({ 0.0f,0.0f,0.0f }));
+		SetIfMissingJson(renderable->json, "scale", XMFLOAT3({ 1.0f,1.0f,1.0f }));
+		SetIfMissingJson(renderable->json, "topology", primitiveTopologyToString.at(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST));
 		TransformJsonArrayToSet(renderable->skipMeshes, renderablej, "skipMeshes");
 
 		std::string model3DName = "";
 		if (!renderablej["meshMaterials"].empty())
 		{
-			TransformJsonToMeshMaterialMap(renderable->meshMaterials, renderablej["meshMaterials"], renderable->shaderAttributes);
+			TransformJsonToMeshMaterialMap(renderable->meshMaterials, renderablej["meshMaterials"], renderable->json);
 			renderable->meshes.push_back(renderable->meshMaterials.begin()->first);
 
-			TransformJsonToMeshMaterialMap(renderable->meshShadowMapMaterials, renderablej["meshMaterialsShadowMap"], { .uniqueMaterialInstance = false, .castShadows = false });
+			TransformJsonToMeshMaterialMap(renderable->meshShadowMapMaterials, renderablej["meshMaterialsShadowMap"], { { "uniqueMaterialInstance",false}, {"castShadows",false} });
 			if (renderable->meshShadowMapMaterials.size() > 0)
 			{
 				renderable->meshesShadowMap.push_back(renderable->meshShadowMapMaterials.begin()->first);
@@ -182,14 +182,14 @@ namespace Scene {
 
 		renderable->CreateMeshesComponents();
 
-		renderables.insert_or_assign(renderable->name, renderable);
+		renderables.insert_or_assign(renderable->name(), renderable);
 
 		return renderable;
 	}
 
 	void Renderable::CreateFromModel3D(std::string model3DName)
 	{
-		std::shared_ptr<Model3DInstance> model = GetModel3DInstance(model3DName, shaderAttributes);
+		std::shared_ptr<Model3DInstance> model = GetModel3DInstance(model3DName, json);
 
 		model3D = model;
 
@@ -204,9 +204,117 @@ namespace Scene {
 		{
 			animable = model;
 			AttachAnimation(this_ptr, model->animations);
-			animables.insert_or_assign(name, this_ptr);
+			animables.insert_or_assign(name(), this_ptr);
 			StepAnimation(0.0f);
 		}
+	}
+
+	std::string Renderable::name()
+	{
+		return json.at("name");
+	}
+
+	void Renderable::name(std::string name)
+	{
+		json.at("name") = name;
+	}
+
+	XMFLOAT3 Renderable::position()
+	{
+		return XMFLOAT3(json.at("position").at(0), json.at("position").at(1), json.at("position").at(2));
+	}
+
+	void Renderable::position(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("position");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Renderable::position(nlohmann::json f3)
+	{
+		json.at("position") = f3;
+	}
+
+	XMFLOAT3 Renderable::rotation()
+	{
+		return XMFLOAT3(json.at("rotation").at(0), json.at("rotation").at(1), json.at("rotation").at(2));
+	}
+
+	void Renderable::rotation(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("rotation");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Renderable::rotation(nlohmann::json f3)
+	{
+		json.at("rotation") = f3;
+	}
+
+	XMFLOAT3 Renderable::scale()
+	{
+		return XMFLOAT3(json.at("scale").at(0), json.at("scale").at(1), json.at("scale").at(2));
+	}
+
+	void Renderable::scale(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("scale");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Renderable::scale(nlohmann::json f3)
+	{
+		json.at("scale") = f3;
+	}
+
+	bool Renderable::visible()
+	{
+		return json.at("visible");
+	}
+
+	void Renderable::visible(bool visible)
+	{
+		json.at("visible") = visible;
+	}
+
+	bool Renderable::hidden()
+	{
+		return json.at("hidden");
+	}
+
+	void Renderable::hidden(bool hidden)
+	{
+		json.at("hidden") = hidden;
+	}
+
+	D3D_PRIMITIVE_TOPOLOGY Renderable::topology()
+	{
+		return stringToPrimitiveTopology.at(json.at("topology"));
+	}
+
+	void Renderable::topology(std::string topology)
+	{
+		json.at("topology") = topology;
+	}
+
+	bool Renderable::uniqueMaterialInstance()
+	{
+		return json.at("uniqueMaterialInstance");
+	}
+
+	void Renderable::uniqueMaterialInstance(bool uniqueMaterialInstance)
+	{
+		json.at("uniqueMaterialInstance") = uniqueMaterialInstance;
+	}
+
+	bool Renderable::castShadows()
+	{
+		return json.at("castShadows");
+	}
+
+	void Renderable::castShadows(bool castShadows)
+	{
+		json.at("castShadows") = castShadows;
 	}
 
 	void Renderable::SetMeshMaterial(std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material)
@@ -241,7 +349,7 @@ namespace Scene {
 			shadowMapBaseTexture.insert_or_assign(TextureType_Base, textures.at(TextureType_Base));
 		}
 
-		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", shadowMapBaseTexture, mesh, { .uniqueMaterialInstance = false, .castShadows = false });
+		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", shadowMapBaseTexture, mesh, { { "uniqueMaterialInstance",false}, {"castShadows",false} });
 		meshShadowMapMaterials.insert_or_assign(mesh, shadowMapMaterial);
 	}
 
@@ -269,7 +377,7 @@ namespace Scene {
 
 		for (size_t size : material->variablesBufferSize)
 		{
-			std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name + "." + mesh->name);
+			std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name() + "." + mesh->name);
 			for (unsigned int n = 0; n < renderer->numFrames; n++)
 			{
 				WriteMaterialVariablesToConstantsBufferSpace(material, cbvData, n);
@@ -288,7 +396,7 @@ namespace Scene {
 
 		for (size_t size : material->variablesBufferSize)
 		{
-			std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name + ".sm." + mesh->name);
+			std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name() + ".sm." + mesh->name);
 			for (unsigned int n = 0; n < renderer->numFrames; n++)
 			{
 				WriteMaterialVariablesToConstantsBufferSpace(material, cbvData, n);
@@ -355,7 +463,7 @@ namespace Scene {
 
 		RenderablePipelineState pipelineState;
 		BuildPipelineStateFromJsonChain(pipelineState, { GetMaterialTemplate(material->material), json });
-		topology = topologyMap.at(pipelineState.PrimitiveTopologyType);
+		topology(primitiveTopologyToString.at(topologyMap.at(pipelineState.PrimitiveTopologyType)));
 		meshPipelineStates.insert_or_assign(mesh, CreatePipelineState(mesh->name, vsLayout, vsByteCode, psByteCode, rootSignature, pipelineState));
 	}
 
@@ -412,7 +520,7 @@ namespace Scene {
 		std::map<std::string, std::shared_ptr<Renderable>> r;
 		std::copy_if(renderables.begin(), renderables.end(), std::inserter(r, r.end()), [](const auto& pair)
 			{
-				return !pair.second->hidden;
+				return !pair.second->hidden();
 			}
 		);
 
@@ -436,12 +544,13 @@ namespace Scene {
 		}
 
 		XMVECTOR pv = { bb.Center.x, bb.Center.y, bb.Center.z };
-		XMVECTOR rot = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+		XMFLOAT3 rotV = rotation();
+		XMVECTOR rot = XMQuaternionRotationRollPitchYaw(rotV.x, rotV.y, rotV.z);
 		pv = XMVector3Rotate(pv, rot);
 		XMFLOAT3 boxP = { pv.m128_f32[0],pv.m128_f32[1],pv.m128_f32[2] };
-		bbox->position = boxP * scale + position;
-		bbox->scale = bb.Extents * scale;
-		bbox->rotation = rotation;
+		bbox->position(boxP * scale() + position());
+		bbox->scale(bb.Extents * scale());
+		bbox->rotation(rotV);
 	}
 
 	//UPDATE
@@ -522,9 +631,9 @@ namespace Scene {
 		meshShadowMapRootSignatures.clear();
 		meshPipelineStates.clear();
 		meshShadowMapPipelineStates.clear();
-		if (animables.contains(name))
+		if (animables.contains(name()))
 		{
-			animables.erase(name);
+			animables.erase(name());
 		}
 		animable = nullptr;
 		bonesTransformation.clear();
@@ -536,7 +645,7 @@ namespace Scene {
 	{
 		for (auto& [mesh, materialName] : materialSwaps)
 		{
-			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh, shaderAttributes);
+			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh, json);
 			SetMeshMaterial(mesh, materialInstance);
 			CreateMeshConstantsBuffers(mesh);
 			CreateMeshRootSignatures(mesh);
@@ -588,9 +697,12 @@ namespace Scene {
 
 	void Renderable::WriteConstantsBuffer(unsigned int backbufferIndex)
 	{
-		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotation.x, rotation.y, rotation.z, 0.0f });
-		XMMATRIX scaleM = XMMatrixScalingFromVector({ scale.x, scale.y, scale.z });
-		XMMATRIX positionM = XMMatrixTranslationFromVector({ position.x, position.y, position.z });
+		XMFLOAT3 posV = position();
+		XMFLOAT3 rotV = rotation();
+		XMFLOAT3 scaleV = scale();
+		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
+		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
 		XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
 
 		WriteConstantsBuffer("world", world, backbufferIndex);
@@ -598,9 +710,12 @@ namespace Scene {
 
 	void Renderable::WriteShadowMapConstantsBuffer(unsigned int backbufferIndex)
 	{
-		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotation.x, rotation.y, rotation.z, 0.0f });
-		XMMATRIX scaleM = XMMatrixScalingFromVector({ scale.x, scale.y, scale.z });
-		XMMATRIX positionM = XMMatrixTranslationFromVector({ position.x, position.y, position.z });
+		XMFLOAT3 posV = position();
+		XMFLOAT3 rotV = rotation();
+		XMFLOAT3 scaleV = scale();
+		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
+		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
 		XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
 
 		WriteShadowMapConstantsBuffer("world", world, backbufferIndex);
@@ -641,8 +756,8 @@ namespace Scene {
 	//DESTROY
 	void Renderable::Destroy()
 	{
-		for (auto& [mesh, mat] : meshMaterials) { DestroyMaterialInstance(mat, mesh, shaderAttributes); } meshMaterials.clear();
-		for (auto& [mesh, mat] : meshShadowMapMaterials) { DestroyMaterialInstance(mat, mesh, { .uniqueMaterialInstance = false, .castShadows = false }); } meshShadowMapMaterials.clear();
+		for (auto& [mesh, mat] : meshMaterials) { DestroyMaterialInstance(mat, mesh, json); } meshMaterials.clear();
+		for (auto& [mesh, mat] : meshShadowMapMaterials) { DestroyMaterialInstance(mat, mesh, { { "uniqueMaterialInstance",false}, {"castShadows",false} }); } meshShadowMapMaterials.clear();
 
 		for (auto& [mesh, cbuffers] : meshConstantsBuffer) { for (auto& cbuffer : cbuffers) DestroyConstantsBuffer(cbuffer); } meshConstantsBuffer.clear();
 		for (auto& [mesh, cbuffers] : meshShadowMapConstantsBuffer) { for (auto& cbuffer : cbuffers) DestroyConstantsBuffer(cbuffer); } meshShadowMapConstantsBuffer.clear();
@@ -675,15 +790,15 @@ namespace Scene {
 	{
 		using namespace Animation;
 
-		if (!visible) return;
+		if (!visible()) return;
 
 		auto& commandList = renderer->commandList;
 
 #if defined(_DEVELOPMENT)
-		PIXBeginEvent(commandList.p, 0, name.c_str());
+		PIXBeginEvent(commandList.p, 0, name().c_str());
 #endif
 
-		commandList->IASetPrimitiveTopology(topology);
+		commandList->IASetPrimitiveTopology(topology());
 
 		for (unsigned int i = 0; i < meshes.size(); i++)
 		{
@@ -752,16 +867,16 @@ namespace Scene {
 	{
 		using namespace Animation;
 
-		if (!visible || !meshShadowMapMaterials.size()) return;
+		if (!visible() || !meshShadowMapMaterials.size()) return;
 
 		auto& commandList = renderer->commandList;
 		auto& shadowMapCameras = light->shadowMapCameras;
 
 #if defined(_DEVELOPMENT)
-		PIXBeginEvent(commandList.p, 0, name.c_str());
+		PIXBeginEvent(commandList.p, 0, name().c_str());
 #endif
 
-		commandList->IASetPrimitiveTopology(topology);
+		commandList->IASetPrimitiveTopology(topology());
 
 		for (unsigned int i = 0; i < meshesShadowMap.size(); i++)
 		{
@@ -841,7 +956,7 @@ namespace Scene {
 	std::string GetRenderableName(void* ptr)
 	{
 		Renderable* renderable = (Renderable*)ptr;
-		return renderable->name;
+		return renderable->name();
 	}
 
 	/*
@@ -891,20 +1006,20 @@ namespace Scene {
 		{
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
-			std::string currentName = name;
+			std::string currentName = name();
 			if (ImGui::InputText("name", &currentName))
 			{
 				if (!renderables.contains(currentName))
 				{
-					renderables[currentName] = renderables[name];
-					renderables.erase(name);
+					renderables[currentName] = renderables[name()];
+					renderables.erase(name());
 				}
-				if (!animables.contains(currentName) && animables.contains(name))
+				if (!animables.contains(currentName) && animables.contains(name()))
 				{
-					animables[currentName] = animables[name];
-					animables.erase(name);
+					animables[currentName] = animables[name()];
+					animables.erase(name());
 				}
-				name = currentName;
+				name(currentName);
 			}
 			ImGui::EndTable();
 		}
@@ -913,9 +1028,12 @@ namespace Scene {
 
 	void Renderable::DrawEditorWorldAttributes()
 	{
-		ImDrawFloatValues<XMFLOAT3>("renderable-world-position", { "x","y","z" }, position, [this](XMFLOAT3 pos) {});
-		ImDrawDegreesValues<XMFLOAT3>("renderable-world-rotation", { "roll","pitch","yar" }, rotation, [this](XMFLOAT3 rot) {});
-		ImDrawFloatValues<XMFLOAT3>("renderable-world-scale", { "x","y","z" }, scale, [this](XMFLOAT3 scale) {});
+		XMFLOAT3 posV = position();
+		XMFLOAT3 rotV = rotation();
+		XMFLOAT3 scaleV = scale();
+		ImDrawFloatValues<XMFLOAT3>("renderable-world-position", { "x","y","z" }, posV, [this](XMFLOAT3 pos) {position(pos); });
+		ImDrawDegreesValues<XMFLOAT3>("renderable-world-rotation", { "roll","pitch","yaw" }, rotV, [this](XMFLOAT3 rot) {rotation(rot); });
+		ImDrawFloatValues<XMFLOAT3>("renderable-world-scale", { "x","y","z" }, scaleV, [this](XMFLOAT3 s) {scale(s); });
 	}
 
 	void Renderable::DrawEditorAnimationAttributes()
@@ -1024,8 +1142,8 @@ namespace Scene {
 				}
 			};
 
-		if (ImGui::Checkbox("Unique Materials instances", &shaderAttributes.uniqueMaterialInstance)) { rebuildMaterials(); }
-		if (ImGui::Checkbox("Cast Shadows", &shaderAttributes.castShadows)) { rebuildMaterials(); }
+		if (ImGui::Checkbox("Unique Materials instances", json.at("uniqueMaterialInstance").get_ptr<bool*>())) { rebuildMaterials(); }
+		if (ImGui::Checkbox("Cast Shadows", json.at("castShadows").get_ptr<bool*>())) { rebuildMaterials(); }
 	}
 
 	void Renderable::DrawEditorMeshesAttributes()
@@ -1158,8 +1276,8 @@ namespace Scene {
 	void DestroyRenderable(std::shared_ptr<Renderable>& renderable)
 	{
 		if (renderable == nullptr) return;
-		if (renderables.contains(renderable->name)) renderables.erase(renderable->name);
-		if (animables.contains(renderable->name)) animables.erase(renderable->name);
+		if (renderables.contains(renderable->name())) renderables.erase(renderable->name());
+		if (animables.contains(renderable->name())) animables.erase(renderable->name());
 		renderable->this_ptr = nullptr;
 		renderable = nullptr;
 	}
@@ -1169,7 +1287,7 @@ namespace Scene {
 	{
 		for (auto& [name, renderable] : renderables)
 		{
-			DEBUG_PTR_COUNT(renderable);
+			DEBUG_PTR_COUNT_JSON(renderable);
 			renderable->this_ptr = nullptr;
 		}
 		animables.clear();

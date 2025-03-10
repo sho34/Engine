@@ -128,7 +128,7 @@ namespace Animation {
 
 	void AttachAnimation(const std::shared_ptr<Renderable>& renderable, std::shared_ptr<Animated>& animated)
 	{
-		std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(sizeof(BonesMatrices), renderable->name);
+		std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(sizeof(BonesMatrices), renderable->name());
 		animationsCbv[renderable] = cbvData;
 
 		renderable->bonesTransformation = animated->bonesOffsets;

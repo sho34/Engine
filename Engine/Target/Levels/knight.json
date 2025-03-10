@@ -15,7 +15,8 @@
             "projectionType": "Perspective",
             "rotation": [
                 1.5707963705062866,
-                -0.19634954631328583
+                -0.19634954631328583,
+				0.0
             ],
             "speed": 0.05000000074505806,
 			"fitWindow": true
@@ -23,103 +24,91 @@
     ],
     "lights": [
         {
-            "ambient": {
-                "color": [
-                    0.05000000074505806,
-                    0.05000000074505806,
-                    0.05000000074505806
-                ]
-            },
+			"color": [
+				0.05000000074505806,
+				0.05000000074505806,
+				0.05000000074505806
+			],
             "lightType": "Ambient",
             "name": "light.0.amb"
         },
         {
-            "directional": {
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "directionalShadowMap": {
-                    "farZ": 1000.0,
-                    "nearZ": 0.009999999776482582,
-                    "shadowMapHeight": 4096,
-                    "shadowMapWidth": 4096,
-                    "viewHeight": 32.0,
-                    "viewWidth": 32.0
-                },
-                "distance": 30.0,
-                "hasShadowMaps": true,
-                "rotation": [
-                    1.5449994802474976,
-                    -0.30000039935112
-                ]
-            },
+			"color": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"farZ": 1000.0,
+			"nearZ": 0.009999999776482582,
+			"shadowMapHeight": 4096,
+			"shadowMapWidth": 4096,
+			"viewHeight": 32.0,
+			"viewWidth": 32.0,
+			"distance": 30.0,
+			"hasShadowMaps": true,
+			"rotation": [
+				1.5449994802474976,
+				-0.30000039935112,
+				0.0
+			],
             "lightType": "Directional",
             "name": "light.1.dir"
         },
         {
             "lightType": "Spot",
             "name": "light.2.spot",
-            "spot": {
-                "attenuation": [
-                    0.0,
-                    0.009999999776482582,
-                    0.019999999552965164
-                ],
-                "color": [
-                    0.960784375667572,
-                    0.960784375667572,
-                    0.960784375667572
-                ],
-                "coneAngle": 0.19634954631328583,
-                "hasShadowMaps": true,
-                "position": [
-                    -6.519999980926514,
-                    2.1600000858306885,
-                    0.6499999761581421
-                ],
-                "rotation": [
-                    1.4600000381469727,
-                    -0.3700000047683716
-                ],
-                "spotShadowMap": {
-                    "farZ": 100.0,
-                    "nearZ": 0.009999999776482582,
-                    "shadowMapHeight": 1024,
-                    "shadowMapWidth": 1024,
-                    "viewHeight": 32.0,
-                    "viewWidth": 32.0
-                }
-            }
+			"attenuation": [
+				0.0,
+				0.009999999776482582,
+				0.019999999552965164
+			],
+			"color": [
+				0.960784375667572,
+				0.960784375667572,
+				0.960784375667572
+			],
+			"coneAngle": 0.19634954631328583,
+			"hasShadowMaps": true,
+			"position": [
+				-6.519999980926514,
+				2.1600000858306885,
+				0.6499999761581421
+			],
+			"rotation": [
+				1.4600000381469727,
+				-0.3700000047683716,
+				0.0
+			],
+			"farZ": 100.0,
+			"nearZ": 0.009999999776482582,
+			"shadowMapHeight": 1024,
+			"shadowMapWidth": 1024,
+			"viewHeight": 32.0,
+			"viewWidth": 32.0
         },
         {
             "lightType": "Point",
             "name": "light.3.point",
-            "point": {
-                "attenuation": [
-                    0.0,
-                    0.10000000149011612,
-                    0.019999999552965164
-                ],
-                "color": [
-                    0.8588717579841614,
-                    0.2973017692565918,
-                    0.014681569300591946
-                ],
-                "hasShadowMaps": true,
-                "pointShadowMap": {
-                    "farZ": 20.0,
-                    "nearZ": 0.009999999776482582,
-                    "shadowMapHeight": 1024,
-                    "shadowMapWidth": 1024
-                },
-                "position": [
-                    -2.200000047683716,
-                    0.699999988079071,
-                    7.099999904632568
-                ]
-            }
+			"attenuation": [
+				0.0,
+				0.10000000149011612,
+				0.019999999552965164
+			],
+			"color": [
+				0.8588717579841614,
+				0.2973017692565918,
+				0.014681569300591946
+			],
+			"hasShadowMaps": true,
+			"farZ": 20.0,
+			"nearZ": 0.009999999776482582,
+			"shadowMapHeight": 1024,
+			"shadowMapWidth": 1024,
+			"position": [
+				-2.200000047683716,
+				0.699999988079071,
+				7.099999904632568
+			]
         }
     ],
     "renderables": [
@@ -142,28 +131,6 @@
                 2.0
             ],
             "skipMeshes": []
-        },
-        {
-            "model": "messy_tavern",
-            "name": "tavern",
-            "position": [
-                -14.0,
-                -1.100000023841858,
-                0.0
-            ],
-            "rotation": [
-                -1.5707963705062866,
-                3.1415927410125732,
-                1.5707963705062866
-            ],
-            "scale": [
-                0.10000000149011612,
-                0.10000000149011612,
-                0.10000000149011612
-            ],
-            "skipMeshes": [
-                0
-            ]
         }
     ],
 	"sounds":[
@@ -179,7 +146,7 @@
 			"volume":2.0,
 			"autoPlay":true,
 			"position":[-2.2,0.7,7.1],
-			"instanceFlags":"Use3D"			
+			"instanceFlags":1
 		}
 	]
 }

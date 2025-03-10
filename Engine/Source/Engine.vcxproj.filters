@@ -159,18 +159,6 @@
     <ClInclude Include="Scene\Lights\Lights.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Lights\AmbientLight.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Lights\DirectionalLight.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Lights\SpotLight.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene\Lights\PointLight.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Templates\Model3D\Model3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>

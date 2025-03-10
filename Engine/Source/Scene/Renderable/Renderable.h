@@ -47,23 +47,37 @@ namespace Scene
 
 		nlohmann::json json;
 
-		std::string name = "";
+		std::string name();
+		void name(std::string name);
 
-		XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
-		XMFLOAT3 scale = { 1.0f, 1.0f, 1.0f };
-		union {
-			XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
-			struct { FLOAT roll, pitch, yaw; };
-			FLOAT rot[3];
-		};
+		XMFLOAT3 position();
+		void position(XMFLOAT3 f3);
+		void position(nlohmann::json f3);
+
+		XMFLOAT3 rotation();
+		void rotation(XMFLOAT3 f3);
+		void rotation(nlohmann::json f3);
+
+		XMFLOAT3 scale();
+		void scale(XMFLOAT3 f3);
+		void scale(nlohmann::json f3);
 
 		//draw
-		bool visible = true;
-		bool hidden = false;
-		D3D_PRIMITIVE_TOPOLOGY topology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		bool visible();
+		void visible(bool visible);
+
+		bool hidden();
+		void hidden(bool hidden);
+
+		D3D_PRIMITIVE_TOPOLOGY topology();
+		void topology(std::string topology);
 
 		//shader attributes
-		RenderableShaderAttributes shaderAttributes;
+		bool uniqueMaterialInstance();
+		void uniqueMaterialInstance(bool uniqueMaterialInstance);
+
+		bool castShadows();
+		void castShadows(bool castShadows);
 
 		//Model3D
 		std::shared_ptr<Model3DInstance> model3D = nullptr;
@@ -209,7 +223,7 @@ namespace Scene
 	};
 
 	//CREATE
-	void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, RenderableShaderAttributes shaderAttributes);
+	void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes);
 	void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
 	void TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j);
 	void TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key);

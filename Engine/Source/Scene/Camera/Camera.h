@@ -48,9 +48,13 @@ namespace Scene {
 		~Camera() {
 			Destroy();
 		}
-		std::string name = "";
-		bool fitWindow = false;
-		ProjectionsTypes projectionType = PROJ_Perspective;
+		std::string name();
+		void name(std::string name);
+
+		std::shared_ptr<Camera> this_ptr = nullptr; //dumb but efective
+
+		nlohmann::json json;
+
 		union {
 			CameraProjections::Perspective perspective;
 			CameraProjections::Orthographic orthographic;
@@ -59,18 +63,18 @@ namespace Scene {
 		CameraProjections::Perspective editorPerspective;
 		CameraProjections::Orthographic editorOrthographic;
 #endif
-		XMFLOAT3 position = { 0.0f, 0.0f, 0.0f };
-		union {
-			XMFLOAT3 rotation = { 0.0f, 0.0f, 0.0f };
-			struct { FLOAT roll, pitch, yaw; };
-			FLOAT rot[3];
-		};
-		FLOAT speed = 0.05f;
+
+		XMFLOAT3 position();
+		XMVECTOR positionV();
+		void position(XMFLOAT3 f3);
+		void position(nlohmann::json f3);
+
+		XMFLOAT3 rotation();
+		void rotation(XMFLOAT3 f3);
+		void rotation(nlohmann::json f3);
+
 		std::shared_ptr<Scene::Light> light = nullptr;
-
 		std::shared_ptr<ConstantsBuffer> cameraCbv;
-		std::shared_ptr<Camera> this_ptr = nullptr; //dumb but efective
-
 		BoundingFrustum boundingFrustum;
 
 		void Destroy();
@@ -93,7 +97,7 @@ namespace Scene {
 		void MoveRight(float step);
 
 #if defined(_EDITOR)
-		nlohmann::json json();
+		//nlohmann::json json();
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorCameraAttributes();

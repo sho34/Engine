@@ -11,7 +11,10 @@
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
 //#include "../../Animation/Effects/Effects.h"
+#include <imgui.h>
+#include "../../pch/Editor.h"
 #endif
+#include "../../pch/Json.h"
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -35,71 +38,146 @@ namespace Scene {
 
 		std::shared_ptr<Light> light = std::make_shared<Light>();
 		light->this_ptr = light;
-		light->name = lightj["name"];
-		light->lightType = StrToLightType[lightj["lightType"]];
+		light->json = lightj;
+		SetIfMissingJson(light->json, "lightType", LightTypeToStr.at(LT_Ambient));
+		SetIfMissingJson(light->json, "hasShadowMaps", false);
 
-		switch (light->lightType)
+#if defined(_EDITOR)
+		switch (light->lightType())
 		{
 		case LT_Ambient:
 		{
-			light->ambient = {
-				.color = JsonToFloat3(lightj["ambient"]["color"])
-			};
-#if defined(_EDITOR)
-			light->editorAmbient = light->ambient;
-#endif
+			light->editorAmbient = light->json;
 		}
 		break;
 		case LT_Directional:
 		{
-			ReplaceFromJson(light->hasShadowMaps, lightj["directional"], "hasShadowMaps");
-			light->directional = {
-				.color = JsonToFloat3(lightj["directional"]["color"]),
-				.distance = lightj["directional"]["distance"],
-				.rotation = JsonToFloat2(lightj["directional"]["rotation"])
-			};
-#if defined(_EDITOR)
-			light->editorDirectional = light->directional;
-#endif
+			light->editorDirectional = light->json;
 		}
 		break;
 		case LT_Spot:
 		{
-			ReplaceFromJson(light->hasShadowMaps, lightj["spot"], "hasShadowMaps");
-			light->spot = {
-				.color = JsonToFloat3(lightj["spot"]["color"]),
-				.position = JsonToFloat3(lightj["spot"]["position"]),
-				.rotation = JsonToFloat2(lightj["spot"]["rotation"]),
-				.coneAngle = lightj["spot"]["coneAngle"],
-				.attenuation = JsonToFloat3(lightj["spot"]["attenuation"])
-			};
-#if defined(_EDITOR)
-			light->editorSpot = light->spot;
-#endif
+			light->editorSpot = light->json;
 		}
 		break;
 		case LT_Point:
 		{
-			ReplaceFromJson(light->hasShadowMaps, lightj["point"], "hasShadowMaps");
-			light->point = {
-				.color = JsonToFloat3(lightj["point"]["color"]),
-				.position = JsonToFloat3(lightj["point"]["position"]),
-				.attenuation = JsonToFloat3(lightj["point"]["attenuation"])
-			};
-#if defined(_EDITOR)
-			light->editorPoint = light->point;
-#endif
+			light->editorPoint = light->json;
 		}
 		break;
 		}
+#endif
 
 		lights.push_back(light);
-		lightsByName[light->name] = light;
+		lightsByName[light->name()] = light;
 
-		if (!light->hasShadowMaps) return light;
+		if (light->hasShadowMaps()) light->CreateShadowMap();
 
-		CreateShadowMap(light, lightj);
 		return light;
+	}
+
+	std::string Light::name()
+	{
+		return json.at("name");
+	}
+
+	void Light::name(std::string name)
+	{
+		json.at("name") = name;
+	}
+
+	LightType Light::lightType()
+	{
+		return StrToLightType.at(json.at("lightType"));
+	}
+
+	void Light::lightType(LightType lightType)
+	{
+		json.at("lightType") = LightTypeToStr.at(lightType);
+	}
+
+	XMFLOAT3 Light::position()
+	{
+		return XMFLOAT3(json.at("position").at(0), json.at("position").at(1), json.at("position").at(2));
+	}
+
+	void Light::position(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("position");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Light::position(nlohmann::json f3)
+	{
+		json.at("position") = f3;
+	}
+
+	XMFLOAT3 Light::rotation()
+	{
+		return XMFLOAT3(json.at("rotation").at(0), json.at("rotation").at(1), json.at("rotation").at(2));
+	}
+
+	void Light::rotation(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("rotation");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Light::rotation(nlohmann::json f3)
+	{
+		json.at("rotation") = f3;
+	}
+
+	XMFLOAT3 Light::color()
+	{
+		return XMFLOAT3(json.at("color").at(0), json.at("color").at(1), json.at("color").at(2));
+	}
+
+	void Light::color(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("color");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Light::color(nlohmann::json f3)
+	{
+		json.at("color") = f3;
+	}
+
+	XMFLOAT3 Light::attenuation()
+	{
+		return XMFLOAT3(json.at("attenuation").at(0), json.at("attenuation").at(1), json.at("attenuation").at(2));
+	}
+
+	void Light::attenuation(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("attenuation");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void Light::attenuation(nlohmann::json f3)
+	{
+		json.at("attenuation") = f3;
+	}
+
+	float Light::coneAngle()
+	{
+		return json.at("coneAngle");
+	}
+
+	void Light::coneAngle(float coneAngle)
+	{
+		json.at("coneAngle") = coneAngle;
+	}
+
+	bool Light::hasShadowMaps()
+	{
+		return json.at("hasShadowMaps");
+	}
+
+	void Light::hasShadowMaps(bool hasShadowMaps)
+	{
+		json.at("hasShadowMaps") = hasShadowMaps;
 	}
 
 	//READ&GET
@@ -123,7 +201,7 @@ namespace Scene {
 	std::string GetLightName(void* ptr)
 	{
 		Light* l = (Light*)ptr;
-		return l->name;
+		return l->name();
 	}
 #endif
 
@@ -207,48 +285,55 @@ namespace Scene {
 	{
 		LightAttributes atts{};
 		ZeroMemory(&atts, sizeof(atts));
-		atts.lightType = light->lightType;
+		atts.lightType = light->lightType();
 
-		switch (light->lightType) {
+		switch (light->lightType())
+		{
 		case LT_Ambient:
 		{
-			atts.lightColor = light->ambient.color;
+			atts.lightColor = light->color();
 		}
 		break;
 		case LT_Directional:
 		{
-			atts.lightColor = light->directional.color;
+			XMFLOAT3 rot = light->rotation();
+			atts.lightColor = light->color();
 			atts.atts1 = {
-				sinf(light->directional.rotation.x) * cosf(light->directional.rotation.y),
-				sinf(light->directional.rotation.y),
-				cosf(light->directional.rotation.x) * cosf(light->directional.rotation.y),
+				sinf(rot.x) * cosf(rot.y),
+				sinf(rot.y),
+				cosf(rot.x) * cosf(rot.y),
 				0.0f
 			};
-			atts.hasShadowMap = light->hasShadowMaps;
+			atts.hasShadowMap = light->hasShadowMaps();
 			atts.shadowMapIndex = light->shadowMapIndex;
 		}
 		break;
 		case LT_Spot:
 		{
-			atts.lightColor = light->spot.color;
-			atts.atts1 = { light->spot.position.x, light->spot.position.y, light->spot.position.z, 0.0f };
+			XMFLOAT3 pos = light->position();
+			XMFLOAT3 rot = light->rotation();
+			XMFLOAT3 atte = light->attenuation();
+			atts.lightColor = light->color();
+			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
 			atts.atts2 = {
-				sinf(light->spot.rotation.x) * cosf(light->spot.rotation.y),
-				sinf(light->spot.rotation.y),
-				cosf(light->spot.rotation.x) * cosf(light->spot.rotation.y),
-				cosf(light->spot.coneAngle)
+				sinf(rot.x) * cosf(rot.y),
+				sinf(rot.y),
+				cosf(rot.x) * cosf(rot.y),
+				cosf(light->coneAngle())
 			};
-			atts.atts3 = { light->spot.constant, light->spot.linear, light->spot.quadratic };
-			atts.hasShadowMap = light->hasShadowMaps;
+			atts.atts3 = { atte.x, atte.y, atte.z };
+			atts.hasShadowMap = light->hasShadowMaps();
 			atts.shadowMapIndex = light->shadowMapIndex;
 		}
 		break;
 		case LT_Point:
 		{
-			atts.lightColor = light->point.color;
-			atts.atts1 = { light->point.position.x, light->point.position.y, light->point.position.z, 0.0f };
-			atts.atts2 = { light->point.constant, light->point.linear, light->point.quadratic, 0.0f };
-			atts.hasShadowMap = light->hasShadowMaps;
+			XMFLOAT3 pos = light->position();
+			XMFLOAT3 atte = light->attenuation();
+			atts.lightColor = light->color();
+			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
+			atts.atts2 = { atte.x, atte.y, atte.z, 0.0f };
+			atts.hasShadowMap = light->hasShadowMaps();
 			atts.shadowMapIndex = light->shadowMapIndex;
 		}
 		break;
@@ -270,7 +355,7 @@ namespace Scene {
 	{
 		for (auto& l : lights)
 		{
-			if (l->hasShadowMaps)
+			if (l->hasShadowMaps())
 			{
 				l->DestroyShadowMap();
 #if defined(_EDITOR)
@@ -295,15 +380,15 @@ namespace Scene {
 		{
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
-			std::string currentName = name;
+			std::string currentName = name();
 			if (ImGui::InputText("name", &currentName))
 			{
 				if (!lightsByName.contains(currentName))
 				{
-					lightsByName[currentName] = lightsByName[name];
-					lightsByName.erase(name);
+					lightsByName[currentName] = lightsByName[name()];
+					lightsByName.erase(name());
 				}
-				name = currentName;
+				name(currentName);
 			}
 			ImGui::EndTable();
 		}
@@ -313,9 +398,11 @@ namespace Scene {
 	{
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
-		ImDrawColorEdit3<XMFLOAT3>("light-ambient-color", ambient.color, [this](XMFLOAT3 color)
+		XMFLOAT3 col = color();
+		ImDrawColorEdit3<XMFLOAT3>("light-ambient-color", col, [this](XMFLOAT3 col)
 			{
-				editorAmbient.color = color;
+				editorAmbient["color"] = { col.x, col.y, col.z };
+				color(col);
 			}
 		);
 	}
@@ -324,18 +411,23 @@ namespace Scene {
 	{
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
-		ImDrawColorEdit3<XMFLOAT3>("light-directional-color", directional.color, [this](XMFLOAT3 color)
+		XMFLOAT3 col = color();
+		ImDrawColorEdit3<XMFLOAT3>("light-directional-color", col, [this](XMFLOAT3 col)
 			{
-				editorDirectional.color = color;
+				editorDirectional["color"] = { col.x, col.y, col.z };
+				color(col);
 			}
 		);
 
-		ImDrawDegreesValues<XMFLOAT2>("light-directional-rotation", { "azimuthal","polar" }, directional.rotation, [this](XMFLOAT2 rot)
+		XMFLOAT3 rot3 = rotation();
+		XMFLOAT2 rot2 = { rot3.x, rot3.y };
+		ImDrawDegreesValues<XMFLOAT2>("light-directional-rotation", { "azimuthal","polar" }, rot2, [this](XMFLOAT2 rot)
 			{
-				editorDirectional.rotation = rot;
-				if (hasShadowMaps)
+				editorDirectional["rotation"] = { rot.x, rot.y, 0.0f };
+				rotation(XMFLOAT3({ rot.x, rot.y, 0.0f }));
+				if (hasShadowMaps())
 				{
-					shadowMapCameras[0]->rotation = { rot.x, rot.y, 0.0f };
+					shadowMapCameras[0]->rotation(XMFLOAT3({ rot.x, rot.y, 0.0f }));
 				}
 			}
 		);
@@ -348,41 +440,52 @@ namespace Scene {
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 
-		ImDrawColorEdit3<XMFLOAT3>("light-spot-color", spot.color, [this](XMFLOAT3 color)
+		XMFLOAT3 col = color();
+		ImDrawColorEdit3<XMFLOAT3>("light-spot-color", col, [this](XMFLOAT3 col)
 			{
-				editorSpot.color = color;
+				editorSpot["color"] = { col.x, col.y, col.z };
+				color(col);
 			}
 		);
 
-		ImDrawFloatValues<XMFLOAT3>("light-spot-position", { "x","y","z" }, spot.position, [this](XMFLOAT3 pos)
+		XMFLOAT3 pos = position();
+		ImDrawFloatValues<XMFLOAT3>("light-spot-position", { "x","y","z" }, pos, [this](XMFLOAT3 pos)
 			{
-				editorSpot.position = pos;
-				if (hasShadowMaps)
+				position(pos);
+				editorSpot["position"] = { pos.x, pos.y, pos.z };
+				if (hasShadowMaps())
 				{
-					shadowMapCameras[0]->position = pos;
+					shadowMapCameras[0]->position(pos);
 				}
 			}
 		);
 
-		ImDrawDegreesValues<XMFLOAT2>("light-spot-rotation", { "azimuthal","polar" }, spot.rotation, [this](XMFLOAT2 rot)
+		XMFLOAT3 rot3 = rotation();
+		XMFLOAT2 rot2 = { rot3.x, rot3.y };
+		ImDrawDegreesValues<XMFLOAT2>("light-spot-rotation", { "azimuthal","polar" }, rot2, [this](XMFLOAT2 rot)
 			{
-				editorSpot.rotation = rot;
-				if (hasShadowMaps)
+				editorSpot["rotation"] = { rot.x, rot.y, 0.0f };
+				rotation(XMFLOAT3({ rot.x, rot.y, 0.0f }));
+				if (hasShadowMaps())
 				{
-					shadowMapCameras[0]->rotation = { rot.x, rot.y, 0.0f };
+					shadowMapCameras[0]->rotation(XMFLOAT3({ rot.x, rot.y, 0.0f }));
 				}
 			}
 		);
 
-		ImDrawDegreesValues<float>("light-spot-coneangle", { "Cone Angle" }, spot.coneAngle, [this](float coneAngle)
+		float coneA = coneAngle();
+		ImDrawDegreesValues<float>("light-spot-coneangle", { "Cone Angle" }, coneA, [this](float coneA)
 			{
-				editorSpot.coneAngle = coneAngle;
+				editorSpot["coneAngle"] = coneA;
+				coneAngle(coneA);
 			}
 		);
 
-		ImDrawFloatValues<XMFLOAT3>("light-spot-attenuation", { "C","X","X\xC2\xB2" }, spot.attenuation, [this](XMFLOAT3 attenuation)
+		XMFLOAT3 atte = attenuation();
+		ImDrawFloatValues<XMFLOAT3>("light-spot-attenuation", { "C","X","X\xC2\xB2" }, atte, [this](XMFLOAT3 atte)
 			{
-				editorSpot.attenuation = attenuation;
+				editorSpot["attenuation"] = { atte.x, atte.y, atte.z };
+				attenuation(atte);
 			}
 		);
 
@@ -394,31 +497,38 @@ namespace Scene {
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 
-		ImDrawColorEdit3<XMFLOAT3>("light-spot-color", point.color, [this](XMFLOAT3 color)
+		XMFLOAT3 col = color();
+		ImDrawColorEdit3<XMFLOAT3>("light-point-color", col, [this](XMFLOAT3 col)
 			{
-				editorPoint.color = color;
+				editorPoint["color"] = { col.x, col.y, col.z };
+				color(col);
 			}
 		);
 
-		ImDrawFloatValues<XMFLOAT3>("light-spot-position", { "x","y","z" }, spot.position, [this](XMFLOAT3 pos)
+		XMFLOAT3 pos = position();
+		ImDrawFloatValues<XMFLOAT3>("light-point-position", { "x","y","z" }, pos, [this](XMFLOAT3 pos)
 			{
-				editorPoint.position = pos;
-				if (hasShadowMaps)
+				position(pos);
+				editorPoint["position"] = { pos.x, pos.y, pos.z };
+				if (hasShadowMaps())
 				{
-					shadowMapCameras[0]->position = pos;
+					shadowMapCameras[0]->position(pos);
 				}
 			}
 		);
 
-		ImDrawFloatValues<XMFLOAT3>("light-point-attenuation", { "C","X","X\xC2\xB2" }, point.attenuation, [this](XMFLOAT3 attenuation)
+		XMFLOAT3 atte = attenuation();
+		ImDrawFloatValues<XMFLOAT3>("light-point-attenuation", { "C","X","X\xC2\xB2" }, atte, [this](XMFLOAT3 atte)
 			{
-				editorPoint.attenuation = attenuation;
+				editorPoint["attenuation"] = { atte.x, atte.y, atte.z };
+				attenuation(atte);
 			}
 		);
 
 		ImDrawPointShadowMap();
 	}
 
+	/*
 	nlohmann::json Light::json() {
 		nlohmann::json j = nlohmann::json({});
 
@@ -498,22 +608,21 @@ namespace Scene {
 		break;
 		}
 
-		/*
-		using namespace Animation::Effects;
-		auto effects = GetLightEffects(this_ptr);
-		if (!effects.empty()) {
-			j["effects"] = effects;
-		}
-		*/
+		//using namespace Animation::Effects;
+		//auto effects = GetLightEffects(this_ptr);
+		//if (!effects.empty()) {
+		//	j["effects"] = effects;
+		//}
 
-		return j;
-	}
+	return j;
+}
+*/
 
 	void SelectLight(std::string lightName, void*& ptr)
 	{
 		std::shared_ptr<Light> light = lightsByName.at(lightName);
 
-		if (light->hasShadowMaps)
+		if (light->hasShadowMaps())
 		{
 			light->shadowMapUpdateFlags |= ShadowMapUpdateFlags_CreateShadowMapMinMaxChain;
 		}
@@ -523,17 +632,40 @@ namespace Scene {
 	void DeSelectLight(void*& ptr)
 	{
 		Light* light = (Light*)ptr;
-		if (light->hasShadowMaps)
+		if (light->hasShadowMaps())
 		{
 			light->shadowMapUpdateFlags |= ShadowMapUpdateFlags_DestroyShadowMapMinMaxChain;
 		}
 		ptr = nullptr;
 	}
 
-	static std::map<LightType, ShadowMapParameters> defaultShadowMapParameters = {
-		{ LT_Directional, {.shadowMapWidth = 1024.0f, .shadowMapHeight = 1024.0f,.viewWidth = 32.0f, .viewHeight = 32.0f,.nearZ = 0.01f, .farZ = 1000.0f} },
-		{ LT_Spot, {.shadowMapWidth = 1024.0f, .shadowMapHeight = 1024.0f,.viewWidth = 32.0f, .viewHeight = 32.0f,.nearZ = 0.01f, .farZ = 100.0f } },
-		{ LT_Point, {.shadowMapWidth = 1024.0f, .shadowMapHeight = 1024.0f,.viewWidth = 32.0f, .viewHeight = 32.0f,.nearZ = 0.01f, .farZ = 20.0f } },
+	static void ReplaceLightsJsonAttributes(nlohmann::json& dst, nlohmann::json src, nlohmann::json attributesToAdd, nlohmann::json attributesToDelete)
+	{
+		for (auto it = attributesToDelete.begin(); it != attributesToDelete.end(); it++)
+		{
+			dst.erase(it.key());
+		}
+		for (auto it = attributesToAdd.begin(); it != attributesToAdd.end(); it++)
+		{
+			dst[it.key()] = src[it.key()];
+		}
+	}
+
+	static const std::map<LightType, nlohmann::json> lightMapJsonAttributes = {
+		{ LT_Ambient, editorDefaultAmbient },
+		{ LT_Directional, editorDefaultDirectional },
+		{ LT_Spot, editorDefaultSpot },
+		{ LT_Point, editorDefaultPoint },
+	};
+
+	static std::map<LightType, nlohmann::json> defaultShadowMapParameters = {
+		{ LT_Directional, {{ "shadowMapWidth",1024}, {"shadowMapHeight",1024}, {"viewWidth", 32.0f}, {"viewHeight",32.0f},{"nearZ",0.01f}, {"farZ",1000.0f}}},
+		{ LT_Spot, {{ "shadowMapWidth",1024}, {"shadowMapHeight",1024}, {"viewWidth", 32.0f}, {"viewHeight",32.0f},{"nearZ",0.01f}, {"farZ",100.0f}} },
+		{ LT_Point, {{ "shadowMapWidth",1024}, {"shadowMapHeight",1024}, {"nearZ",0.01f}, {"farZ",20.0f}} },
+	};
+
+	static std::vector<std::string> shadowMapJsonAttributes = {
+		"shadowMapWidth", "shadowMapHeight", "viewWidth", "viewHeight", "nearZ", "farZ",
 	};
 
 	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop)
@@ -545,44 +677,46 @@ namespace Scene {
 			light->DrawEditorInformationAttributes();
 
 			std::vector<std::string> selectables = LightTypesStr;
-			std::string selected = LightTypeToStr[light->lightType];
+			std::string selected = light->json.at("lightType");
+			nlohmann::json lightAttributes = lightMapJsonAttributes.at(light->lightType());
 
-			DrawComboSelection(selected, selectables, [light](std::string lightTypeStr)
+			DrawComboSelection(selected, selectables, [light, lightAttributes](std::string lightTypeStr)
 				{
-					light->lightType = StrToLightType[lightTypeStr];
-					switch (light->lightType)
+					light->lightType(StrToLightType.at(lightTypeStr));
+					RemoveJsonAttributes(light->json, shadowMapJsonAttributes);
+					switch (light->lightType())
 					{
 					case LT_Ambient:
 					{
-						light->ambient = light->editorAmbient;
+						ReplaceLightsJsonAttributes(light->json, light->editorAmbient, editorDefaultAmbient, lightAttributes);
 					}
 					break;
 					case LT_Directional:
 					{
-						light->directional = light->editorDirectional;
-						light->shadowMapParams = defaultShadowMapParameters.at(light->lightType);
-						if (light->hasShadowMaps)
+						ReplaceLightsJsonAttributes(light->json, light->editorDirectional, editorDefaultDirectional, lightAttributes);
+						if (light->hasShadowMaps())
 						{
+							light->json.merge_patch(defaultShadowMapParameters.at(LT_Directional));
 							light->shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 						}
 					}
 					break;
 					case LT_Spot:
 					{
-						light->spot = light->editorSpot;
-						light->shadowMapParams = defaultShadowMapParameters.at(light->lightType);
-						if (light->hasShadowMaps)
+						ReplaceLightsJsonAttributes(light->json, light->editorSpot, editorDefaultSpot, lightAttributes);
+						if (light->hasShadowMaps())
 						{
+							light->json.merge_patch(defaultShadowMapParameters.at(LT_Spot));
 							light->shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 						}
 					}
 					break;
 					case LT_Point:
 					{
-						light->point = light->editorPoint;
-						light->shadowMapParams = defaultShadowMapParameters.at(light->lightType);
-						if (light->hasShadowMaps)
+						ReplaceLightsJsonAttributes(light->json, light->editorPoint, editorDefaultPoint, lightAttributes);
+						if (light->hasShadowMaps())
 						{
+							light->json.merge_patch(defaultShadowMapParameters.at(LT_Point));
 							light->shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 						}
 					}
@@ -592,7 +726,7 @@ namespace Scene {
 				"lightType"
 			);
 
-			switch (light->lightType)
+			switch (light->lightType())
 			{
 			case LT_Ambient:
 			{
@@ -624,20 +758,16 @@ namespace Scene {
 
 	void Light::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
-		if (lightType == LT_Ambient || lightType == LT_Directional)
+		if (lightType() == LT_Ambient || lightType() == LT_Directional)
 		{
-			bbox->position = { 0.0f ,0.0f,0.0f };
+			bbox->position(XMFLOAT3({ 0.0f ,0.0f,0.0f }));
 		}
-		else if (lightType == LT_Spot)
+		else
 		{
-			bbox->position = spot.position;
-		}
-		else if (lightType == LT_Point)
-		{
-			bbox->position = point.position;
+			bbox->position(position());
 		}
 
-		bbox->scale = { 0.5f, 0.5f, 0.5f };
-		bbox->rotation = { 0.0f, 0.0f, 0.0f };
+		bbox->scale(XMFLOAT3({ 0.5f, 0.5f, 0.5f }));
+		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 }

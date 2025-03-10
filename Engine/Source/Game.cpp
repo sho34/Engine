@@ -148,7 +148,7 @@ void GetAudioListenerVectors(std::function<void(XMFLOAT3 pos, XMFLOAT3 fw, XMFLO
 {
 	if (!mainPassCamera) return;
 
-	XMFLOAT3 pos = mainPassCamera->position;
+	XMFLOAT3 pos = mainPassCamera->position();
 	XMVECTOR fw = mainPassCamera->CameraFw();
 	XMVECTOR up = mainPassCamera->CameraUp();
 

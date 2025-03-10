@@ -110,6 +110,7 @@ namespace DX
 #define CCNAME_D3D12_OBJECT_N(x,name) x->SetName(nostd::StringToWString(""###x##":"+name).c_str())
 #if defined(_DEBUG)
 #define DEBUG_PTR_COUNT(x) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + x->name + "(" + std::to_string(x.use_count()) + ")\n").c_str());
+#define DEBUG_PTR_COUNT_JSON(x) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + x->name() + "(" + std::to_string(x.use_count()) + ")\n").c_str());
 #define DEBUG_INSTANCE_REF_COUNT(instanceName,refCountMap,key) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + instanceName + "(" + std::to_string(refCountMap.find(key)->second) + ")\n").c_str());
 #else
 #define DEBUG_PTR_COUNT(x) 

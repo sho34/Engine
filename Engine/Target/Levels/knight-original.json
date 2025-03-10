@@ -111,7 +111,27 @@
 			]
         }
     ],
-    "renderables": [
+	"renderables": [
+        {
+            "model": "knight",
+            "name": "knight",
+            "position": [
+                0.0,
+                -0.949999988079071,
+                3.0
+            ],
+            "rotation": [
+                -1.5707963705062866,
+                -1.5707963705062866,
+                0.0
+            ],
+            "scale": [
+                2.0,
+                2.0,
+                2.0
+            ],
+            "skipMeshes": []
+        },
         {
             "model": "messy_tavern",
             "name": "tavern",
@@ -132,7 +152,24 @@
             ],
             "skipMeshes": [
                 0
-            ]
+            ],
+			"castShadows": true
         }
-    ]
+    ],
+	"sounds":[
+		{
+			"name":"music",
+			"sound":"music",
+			"volume":0.3,
+			"autoPlay":true
+		},
+		{
+			"name":"fireplace",
+			"sound":"fireplace",
+			"volume":2.0,
+			"autoPlay":true,
+			"position":[-2.2,0.7,7.1],
+			"instanceFlags":1
+		}
+	]
 }

@@ -20,7 +20,7 @@ namespace Templates {
 		model3DTemplates.insert_or_assign(name, json);
 	}
 
-	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name, RenderableShaderAttributes shaderAttributes)
+	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name, nlohmann::json shaderAttributes)
 	{
 		model->name = name;
 		nlohmann::json mdl = model3DTemplates.at(name);
@@ -196,7 +196,7 @@ namespace Templates {
 	}
 
 	//READ&GET
-	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name, RenderableShaderAttributes shaderAttributes)
+	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name, nlohmann::json shaderAttributes)
 	{
 		if (!model3DTemplates.contains(name)) return nullptr;
 

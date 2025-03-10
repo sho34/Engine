@@ -54,19 +54,19 @@ namespace Templates {
 
 	static std::mt19937 g;
 
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, RenderableShaderAttributes shaderAttributes)
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
 	{
 		if (!materialTemplates.contains(name)) return nullptr;
 
 		std::string instanceName = name;
-		if (shaderAttributes.uniqueMaterialInstance) { instanceName += nostd::gen_string(8, g); }
+		if (shaderAttributes.at("uniqueMaterialInstance")) { instanceName += nostd::gen_string(8, g); }
 
-		auto key = MaterialMeshInstancePair(std::make_tuple(instanceName, textures, shaderAttributes.castShadows), mesh);
+		auto key = MaterialMeshInstancePair(std::make_tuple(instanceName, textures, shaderAttributes.at("castShadows")), mesh);
 
 		return refTracker.AddRef(key, [name, mesh, textures, shaderAttributes]()
 			{
 				std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
-				LoadMaterialInstance(name, mesh, instance, textures, shaderAttributes.castShadows);
+				LoadMaterialInstance(name, mesh, instance, textures, shaderAttributes.at("castShadows"));
 				return instance;
 			}
 		);
@@ -272,9 +272,9 @@ namespace Templates {
 		return (materialTemplates.contains(name)) ? materialTemplates.at(name) : nlohmann::json();
 	}
 
-	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, RenderableShaderAttributes shaderAttributes)
+	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
 	{
-		auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures, shaderAttributes.castShadows), mesh);
+		auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures, shaderAttributes.at("castShadows")), mesh);
 		refTracker.RemoveRef(key, material);
 	}
 

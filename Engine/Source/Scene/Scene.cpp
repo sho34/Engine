@@ -28,7 +28,7 @@ namespace Scene
 		PIXBeginEvent(renderer->commandQueue.p, 0, L"ShadowMaps");
 		for (auto& l : GetLights())
 		{
-			if (!l->hasShadowMaps) continue;
+			if (!l->hasShadowMaps()) continue;
 
 			auto renderSceneShadowMap = [&l](unsigned int cameraIndex)
 				{
@@ -39,7 +39,7 @@ namespace Scene
 					}
 				};
 
-			std::string shadowMapEvent = "ShadowMap:" + l->name;
+			std::string shadowMapEvent = "ShadowMap:" + l->name();
 			PIXBeginEvent(renderer->commandList.p, 0, nostd::StringToWString(shadowMapEvent).c_str());
 
 			l->RenderShadowMap(renderSceneShadowMap);
@@ -62,7 +62,7 @@ namespace Scene
 			for (auto l : GetLights())
 			{
 				UpdateConstantsBufferLightAttributes(l, backBufferIndex, lightIndex++, l->shadowMapIndex);
-				if (l->hasShadowMaps && l->lightType != LT_Ambient)
+				if (l->hasShadowMaps() && l->lightType() != LT_Ambient)
 				{
 					UpdateConstantsBufferShadowMapAttributes(l, renderer->backBufferIndex, l->shadowMapIndex);
 				}

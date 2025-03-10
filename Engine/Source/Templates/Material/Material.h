@@ -37,7 +37,7 @@ namespace Templates {
 
 	//CREATE
 	void CreateMaterial(std::string name, nlohmann::json json);
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, RenderableShaderAttributes shaderAttributes);
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
 	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures, bool castShadows);
 
 	//READ&GET
@@ -49,7 +49,7 @@ namespace Templates {
 
 	//DESTROY
 	void ReleaseMaterialTemplates();
-	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, RenderableShaderAttributes shaderAttributes);
+	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
 
 	//EDITOR
 #if defined(_EDITOR)

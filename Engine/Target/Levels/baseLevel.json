@@ -16,45 +16,41 @@
             "projectionType": "Perspective",
             "rotation": [
                 1.5707963705062866,
-                -0.19634954631328583
+                -0.19634954631328583,
+				0.0
             ],
             "speed": 0.05000000074505806
         }
     ],
     "lights": [
         {
-            "ambient": {
-                "color": [
-                    0.05000000074505806,
-                    0.05000000074505806,
-                    0.05000000074505806
-                ]
-            },
+			"color": [
+				0.05000000074505806,
+				0.05000000074505806,
+				0.05000000074505806
+			],
             "lightType": "Ambient",
             "name": "light.0.amb"
         },
         {
-            "directional": {
-                "color": [
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "directionalShadowMap": {
-                    "farZ": 1000.0,
-                    "nearZ": 0.009999999776482582,
-                    "shadowMapHeight": 4096,
-                    "shadowMapWidth": 4096,
-                    "viewHeight": 32.0,
-                    "viewWidth": 32.0
-                },
-                "distance": 30.0,
-                "hasShadowMaps": true,
-                "rotation": [
-                    1.5449994802474976,
-                    -0.30000039935112
-                ]
-            },
+			"color": [
+				1.0,
+				1.0,
+				1.0
+			],
+			"farZ": 1000.0,
+			"nearZ": 0.009999999776482582,
+			"shadowMapHeight": 4096,
+			"shadowMapWidth": 4096,
+			"viewHeight": 32.0,
+			"viewWidth": 32.0,
+			"distance": 30.0,
+			"hasShadowMaps": true,
+			"rotation": [
+				1.5449994802474976,
+				-0.30000039935112,
+				0.0
+			],
             "lightType": "Directional",
             "name": "light.1.dir"
         }
@@ -84,7 +80,8 @@
                 1.0,
                 20.0
             ],
-            "skipMeshes": []
+            "skipMeshes": [],
+			"castShadows": true
         },
         {
             "meshMaterials": [
@@ -115,7 +112,12 @@
                 0.009999999776482582,
                 0.009999999776482582
             ],
-            "skipMeshes": []
+            "skipMeshes": [],
+			"pipelineState":{
+				"RasterizerState":{
+					"CullMode":"FRONT"
+				}
+			}
         }
     ]
 }

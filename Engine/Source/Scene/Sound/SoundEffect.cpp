@@ -13,19 +13,19 @@ namespace Scene {
 	std::shared_ptr<SoundEffect> CreateSoundEffect(nlohmann::json soundj)
 	{
 		std::shared_ptr<SoundEffect> fx = std::make_shared<SoundEffect>();
-
-		ReplaceFromJson(fx->name, soundj, "name");
-		ReplaceFromJson(fx->sound, soundj, "sound");
-		ReplaceFromJson(fx->volume, soundj, "volume");
-		ReplaceFromJson(fx->autoPlay, soundj, "autoPlay");
-		nostd::ReplaceFromJsonUsingMap(fx->instanceFlags, stringToSoundEffectInstanceFlag, soundj, "instanceFlags");
-		JsonToFloat3(fx->position, soundj, "position");
-
 		fx->this_ptr = fx;
+		fx->json = soundj;
+
+		SetIfMissingJson(fx->json, "sound", "");
+		SetIfMissingJson(fx->json, "volume", 1.0f);
+		SetIfMissingJson(fx->json, "autoPlay", false);
+		SetIfMissingJson(fx->json, "instanceFlags", static_cast<int>(SoundEffectInstance_Default));
+		SetIfMissingJson(fx->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
+
 		fx->CreateSoundEffectInstance();
 
-		soundsEffects.insert_or_assign(fx->name, fx);
-		if (nostd::bytesHas(fx->instanceFlags, SoundEffectInstance_Use3D))
+		soundsEffects.insert_or_assign(fx->name(), fx);
+		if (nostd::bytesHas(fx->instanceFlags(), SoundEffectInstance_Use3D))
 		{
 			sounds3DEffects.push_back(fx);
 		}
@@ -33,15 +33,81 @@ namespace Scene {
 		return fx;
 	}
 
+	std::string SoundEffect::name()
+	{
+		return json.at("name");
+	}
+
+	void SoundEffect::name(std::string name)
+	{
+		json.at("name") = name;
+	}
+
+	std::string SoundEffect::sound()
+	{
+		return json.at("sound");
+	}
+
+	void SoundEffect::sound(std::string sound)
+	{
+		json.at("sound") = sound;
+	}
+
+	float SoundEffect::volume()
+	{
+		return json.at("volume");
+	}
+
+	void SoundEffect::volume(float volume)
+	{
+		json.at("volume") = volume;
+	}
+
+	bool SoundEffect::autoPlay()
+	{
+		return json.at("autoPlay");
+	}
+
+	void SoundEffect::autoPlay(bool autoPlay)
+	{
+		json.at("volume") = autoPlay;
+	}
+
+	XMFLOAT3 SoundEffect::position()
+	{
+		return XMFLOAT3(json.at("position").at(0), json.at("position").at(1), json.at("position").at(2));
+	}
+
+	void SoundEffect::position(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("position");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void SoundEffect::position(nlohmann::json f3)
+	{
+		json.at("position") = f3;
+	}
+
+	SOUND_EFFECT_INSTANCE_FLAGS SoundEffect::instanceFlags()
+	{
+		return static_cast<SOUND_EFFECT_INSTANCE_FLAGS>(json.at("instanceFlags"));
+	}
+
+	void SoundEffect::instanceFlags(SOUND_EFFECT_INSTANCE_FLAGS instanceFlags)
+	{
+		json.at("instanceFlags") = static_cast<int>(instanceFlags);
+	}
+
 	void SoundEffect::CreateSoundEffectInstance()
 	{
-		soundEffectInstance = GetSoundEffectInstance(sound, instanceFlags);
-		soundEffectInstance->SetVolume(volume);
-		if (autoPlay) soundEffectInstance->Play(true);
+		soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags());
+		soundEffectInstance->SetVolume(volume());
+		if (autoPlay()) soundEffectInstance->Play(true);
 
-		if (nostd::bytesHas(instanceFlags, SoundEffectInstance_Use3D))
+		if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D))
 		{
-			audioEmitter.SetPosition(position);
+			audioEmitter.SetPosition(position());
 		}
 	}
 
@@ -98,7 +164,7 @@ namespace Scene {
 		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
 		{
 			fx->DrawEditorInformationAttributes();
-			if (nostd::bytesHas(fx->instanceFlags, SoundEffectInstance_Use3D))
+			if (nostd::bytesHas(fx->instanceFlags(), SoundEffectInstance_Use3D))
 			{
 				fx->DrawEditorWorldAttributes();
 			}
@@ -110,7 +176,7 @@ namespace Scene {
 	std::string GetSoundEffectName(void* ptr)
 	{
 		SoundEffect* soundEffect = (SoundEffect*)ptr;
-		return soundEffect->name;
+		return soundEffect->name();
 	}
 
 	void SoundEffect::DrawEditorInformationAttributes()
@@ -122,15 +188,15 @@ namespace Scene {
 		{
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
-			std::string currentName = name;
+			std::string currentName = name();
 			if (ImGui::InputText("name", &currentName))
 			{
 				if (!soundsEffects.contains(currentName))
 				{
-					soundsEffects[currentName] = soundsEffects[name];
-					soundsEffects.erase(name);
+					soundsEffects[currentName] = soundsEffects.at(name());
+					soundsEffects.erase(name());
 				}
-				name = currentName;
+				name(currentName);
 			}
 			ImGui::EndTable();
 		}
@@ -140,26 +206,14 @@ namespace Scene {
 	{
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
-		std::string tableName = "sound-effect-world-atts";
-		if (ImGui::BeginTable(tableName.c_str(), 4, ImGuiTableFlags_NoSavedSettings))
-		{
-			bool updatePos = false;
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::PushID("position");
-			ImGui::Text("position");
-			ImGui::TableSetColumnIndex(1);
-			if (ImGui::InputFloat("x", &position.x)) { updatePos = true; }
-			ImGui::TableSetColumnIndex(2);
-			if (ImGui::InputFloat("y", &position.y)) { updatePos = true; }
-			ImGui::TableSetColumnIndex(3);
-			if (ImGui::InputFloat("z", &position.z)) { updatePos = true; }
-			ImGui::PopID();
 
-			if (updatePos) { audioEmitter.SetPosition(position); }
-
-			ImGui::EndTable();
-		}
+		XMFLOAT3 posV = position();
+		ImDrawFloatValues<XMFLOAT3>("sound-effect-position", { "x","y","z" }, posV, [this](XMFLOAT3 pos)
+			{
+				position(pos);
+				audioEmitter.SetPosition(pos);
+			}
+		);
 	}
 
 	void SoundEffect::DrawEditorSoundAttributes()
@@ -168,20 +222,20 @@ namespace Scene {
 		ImGui::TableSetColumnIndex(0);
 
 		std::vector<std::string> selectables = nostd::GetKeysFromMap(strToSoundEffectInstanceFlags);
-		std::string selected = soundEffectInstanceFlagsToStr.at(instanceFlags);
+		std::string selected = soundEffectInstanceFlagsToStr.at(instanceFlags());
 		DrawComboSelection(selected, selectables, [this](std::string soundEffectInstanceFlag)
 			{
 				SOUND_EFFECT_INSTANCE_FLAGS newSoundInstanceFlags = strToSoundEffectInstanceFlags.at(soundEffectInstanceFlag);
 				DestroySoundEffectInstance();
-				if (nostd::bytesHas(instanceFlags, SoundEffectInstance_Use3D) && !nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
+				if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D) && !nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
 				{
 					nostd::vector_erase(sounds3DEffects, this_ptr);
 				}
-				else if (!nostd::bytesHas(instanceFlags, SoundEffectInstance_Use3D) && nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
+				else if (!nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D) && nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
 				{
 					sounds3DEffects.push_back(this_ptr);
 				}
-				instanceFlags = newSoundInstanceFlags;
+				instanceFlags(newSoundInstanceFlags);
 				CreateSoundEffectInstance();
 			}
 		);
@@ -193,9 +247,11 @@ namespace Scene {
 			ImGui::PushID("volume");
 			ImGui::Text("volume");
 			ImGui::TableSetColumnIndex(1);
-			if (ImGui::InputFloat("", &volume))
+			float vol = volume();
+			if (ImGui::InputFloat("", &vol))
 			{
-				soundEffectInstance->SetVolume(volume);
+				volume(vol);
+				soundEffectInstance->SetVolume(vol);
 			}
 			ImGui::PopID();
 
@@ -206,9 +262,9 @@ namespace Scene {
 
 	void SoundEffect::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
-		bbox->position = position;
-		bbox->scale = { 0.3f, 0.3f, 0.3f };
-		bbox->rotation = { 0.0f, 0.0f, 0.0f };
+		bbox->position(position());
+		bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
+		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 
 	void DestroySoundEffects()

@@ -357,14 +357,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Scene\Lights\AmbientLight.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Lights\DirectionalLight.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="Scene\Lights\Lights.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
@@ -429,14 +421,6 @@
       </ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Scene\Camera\Projections\Perspective.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Lights\PointLight.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Lights\SpotLight.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>

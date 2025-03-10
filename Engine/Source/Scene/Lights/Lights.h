@@ -1,10 +1,6 @@
 #pragma once
 
 #include <ppltasks.h>
-#include "AmbientLight.h"
-#include "DirectionalLight.h"
-#include "SpotLight.h"
-#include "PointLight.h"
 #include "../Renderable/Renderable.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 #include "ShadowMap.h"
@@ -27,26 +23,40 @@ namespace Scene {
 	using namespace RenderPass;
 
 #if defined(_EDITOR)
-	static const AmbientLight editorDefaultAmbient;
-	static const DirectionalLight editorDefaultDirectional = {
-		.color = *((XMFLOAT3*)&DirectX::Colors::White),
-		.azimuthalAngle = 0.0f,
-		.polarAngle = XM_PI
+	static const nlohmann::json editorDefaultAmbient = {
+		{ "color", { 0.3f, 0.3f, 0.3f} }
 	};
-	static const SpotLight editorDefaultSpot = {
-		.color = *((XMFLOAT3*)&DirectX::Colors::White),
-		.position = { 0.0f, 10.0f, 0.0f },
-		.azimuthalAngle = 0.0f,
-		.polarAngle = XM_PI,
-		.coneAngle = XMConvertToRadians(30.0f),
-		.attenuation = { 0.0f, 0.001f, 0.0001f }
+
+	static const nlohmann::json editorDefaultDirectional = {
+		{ "color", { 1.0f, 1.0f, 1.0f } },
+		{ "rotation", { 0.0f, 3.141592654f } }
 	};
-	static const PointLight editorDefaultPoint = {
-		.color = *((XMFLOAT3*)&DirectX::Colors::White),
-		.position = { 0.0f, 10.0f, 0.0f },
-		.attenuation = { 0.0f, 0.001f, 0.0001f }
+
+	static const nlohmann::json editorDefaultSpot = {
+		{ "color", { 1.0f, 1.0f, 1.0f } },
+		{ "position", { 0.0f, 10.0f, 0.0f } },
+		{ "rotation", { 0.0f, 3.141592654f } },
+		{ "coneAngle", 0.523599 },
+		{ "attenuation" , { 0.0f, 0.001f, 0.0001f } }
+	};
+
+	static const nlohmann::json editorDefaultPoint = {
+		{ "color", { 1.0f, 1.0f, 1.0f } },
+		{ "position", { 0.0f, 10.0f, 0.0f } },
+		{ "attenuation" , { 0.0f, 0.001f, 0.0001f } }
 	};
 #endif
+
+	static constexpr XMVECTOR PointLightDirection[] = {
+	{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f,-1.0f, 0.0f, 0.0f },
+	{ 1.0f, 0.0f, 0.0f, 0.0f }, {-1.0f, 0.0f, 0.0f, 0.0f },
+	{ 0.0f, 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f,-1.0f, 0.0f },
+	};
+	static constexpr XMVECTOR PointLightUp[] = {
+		{ 0.0f, 0.0f,-1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f, 0.0f },
+		{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f },
+		{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f, 0.0f },
+	};
 
 	inline static const std::string LightConstantBufferName = "lights";
 	inline static const std::string ShadowMapConstantBufferName = "shadowMaps";
@@ -107,27 +117,48 @@ namespace Scene {
 			editorPoint = editorDefaultPoint;
 #endif
 		}
-		~Light() {} //will this work? NO
+		~Light() {}
 
 		std::shared_ptr<Light> this_ptr = nullptr; //dumb but efective
+		nlohmann::json json;
 
-		std::string name = "";
-		LightType lightType = LT_Ambient;
+		std::string name();
+		void name(std::string name);
 
-		union {
-			AmbientLight ambient;
-			DirectionalLight directional;
-			SpotLight spot;
-			PointLight point;
-		};
+		LightType lightType();
+		void lightType(LightType lightType);
 
-		union {
-			DirectionalLightShadowMap directionalShadowMap;
-			SpotLightShadowMap spotShadowMap;
-			PointLightShadowMap pointShadowMap;
-		};
-		bool hasShadowMaps = false;
-		ShadowMapParameters shadowMapParams;
+		XMFLOAT3 position();
+		void position(XMFLOAT3 f3);
+		void position(nlohmann::json f3);
+
+		XMFLOAT3 rotation();
+		void rotation(XMFLOAT3 f3);
+		void rotation(nlohmann::json f3);
+
+		XMFLOAT3 color();
+		void color(XMFLOAT3 f3);
+		void color(nlohmann::json f3);
+
+		XMFLOAT3 attenuation();
+		void attenuation(XMFLOAT3 f3);
+		void attenuation(nlohmann::json f3);
+
+		float directionalDistance() { return 30.0f; }
+
+		float coneAngle();
+		void coneAngle(float coneAngle);
+
+		bool hasShadowMaps();
+		void hasShadowMaps(bool hasShadowMaps);
+
+		//the following ones are calculated, so no need to store in json
+		D3D12_RECT shadowMapClearScissorRect; //used in point lights
+		D3D12_VIEWPORT shadowMapClearViewport; //used in point lights
+		std::vector<D3D12_RECT> shadowMapScissorRect;
+		std::vector<D3D12_VIEWPORT> shadowMapViewport;
+		XMMATRIX shadowMapProjectionMatrix;
+		XMFLOAT2 shadowMapTexelInvSize;
 
 		std::shared_ptr<RenderToTexturePass> shadowMapRenderPass;
 		unsigned int shadowMapIndex = 0xFFFFFFFF;
@@ -170,10 +201,16 @@ namespace Scene {
 
 		//EDITOR
 #if defined(_EDITOR)
+		nlohmann::json editorAmbient;
+		nlohmann::json editorDirectional;
+		nlohmann::json editorSpot;
+		nlohmann::json editorPoint;
+		/*
 		AmbientLight editorAmbient;
 		DirectionalLight editorDirectional;
 		SpotLight editorSpot;
 		PointLight editorPoint;
+		*/
 
 		void DrawEditorInformationAttributes();
 		void DrawAmbientLightPanel();
@@ -184,7 +221,7 @@ namespace Scene {
 		void ImDrawSpotShadowMap();
 		void ImDrawPointShadowMap();
 		void ImDrawShadowMapMinMaxChain();
-		nlohmann::json json();
+		//nlohmann::json json();
 #endif
 	};
 

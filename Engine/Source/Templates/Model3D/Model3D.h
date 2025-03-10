@@ -34,13 +34,13 @@ namespace Templates {
 
 	//CREATE
 	void CreateModel3D(std::string name, nlohmann::json json);
-	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name, RenderableShaderAttributes shaderAttributes);
+	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name, nlohmann::json shaderAttributes);
 
 	nlohmann::json CreateModel3DMaterialJson(std::string shader, std::filesystem::path relativePath, aiMaterial* material);
 	void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh);
 
 	//READ&GET
-	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name, RenderableShaderAttributes shaderAttributes);
+	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name, nlohmann::json shaderAttributes);
 	std::vector<std::string> GetModels3DNames();
 	std::string GetModel3DMeshInstanceName(std::string name, unsigned int index);
 	std::string GetModel3DMaterialInstanceName(std::string name, unsigned int index);
