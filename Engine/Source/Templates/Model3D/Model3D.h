@@ -26,10 +26,13 @@ namespace Templates {
 		std::vector<std::vector<byte>> vertices;
 		std::vector<std::shared_ptr<MeshInstance>> meshes;
 		std::vector<std::shared_ptr<MaterialInstance>> materials;
+		std::vector<std::string> materialNames;
+		nlohmann::json shaderAttributes;
 
 		//animation
 		std::shared_ptr<Animation::Animated> animations = nullptr;
 		BoundingBox GetAnimatedBoundingBox(XMMATRIX* bones);
+		std::shared_ptr<MaterialInstance> GetModel3DMaterialInstance(unsigned int meshIndex);
 	};
 
 	//CREATE

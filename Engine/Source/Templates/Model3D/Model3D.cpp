@@ -23,6 +23,8 @@ namespace Templates {
 	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name, nlohmann::json shaderAttributes)
 	{
 		model->name = name;
+		model->shaderAttributes = shaderAttributes;
+
 		nlohmann::json mdl = model3DTemplates.at(name);
 
 		std::string filename = Model3D::assetsRootFolder + std::string(mdl.at("path"));
@@ -74,11 +76,11 @@ namespace Templates {
 
 			model->meshes.push_back(mesh);
 
-			std::shared_ptr<MaterialInstance> materialInstance = nullptr;
+			std::string materialName;
 
 			if (mdl.at("autoCreateMaterial"))
 			{
-				std::string materialName = GetModel3DMaterialInstanceName(name, meshIndex);
+				materialName = GetModel3DMaterialInstanceName(name, meshIndex);
 				nlohmann::json materialTemplate = GetMaterialTemplate(materialName);
 
 				if (materialTemplate.empty())
@@ -86,18 +88,22 @@ namespace Templates {
 					nlohmann::json materialJson = CreateModel3DMaterialJson(mdl.at("materialsShader"), path.relative_path(), aiModel->mMaterials[aMesh->mMaterialIndex]);
 					CreateMaterial(materialName, materialJson);
 				}
-
-				materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh, shaderAttributes);
 			}
 			else
 			{
-				materialInstance = GetMaterialInstance(mdl.at("materials").at(meshIndex), std::map<TextureType, MaterialTexture>(), mesh, shaderAttributes);
-			}
+				materialName = mdl.at("materials").at(meshIndex);
 
-			model->materials.push_back(materialInstance);
+			}
+			model->materialNames.push_back(materialName);
 		}
 
 		importer.FreeScene();
+
+		for (unsigned int i = 0; i < model->materialNames.size(); i++)
+		{
+			std::shared_ptr<MaterialInstance> materialInstance = model->GetModel3DMaterialInstance(i);
+			model->materials.push_back(materialInstance);
+		}
 	}
 
 	void PushAssimpTextureToJson(nlohmann::json& j, TextureType textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
@@ -303,5 +309,10 @@ namespace Templates {
 		};
 
 		return BoundingBox(center, extents);
+	}
+
+	std::shared_ptr<MaterialInstance> Model3DInstance::GetModel3DMaterialInstance(unsigned int meshIndex)
+	{
+		return GetMaterialInstance(materialNames[meshIndex], std::map<TextureType, MaterialTexture>(), meshes[meshIndex], shaderAttributes);
 	}
 }

@@ -24,8 +24,11 @@ namespace Scene
 		RenderableFlags_RebuildMeshes = RenderableFlags_CreateMeshes | RenderableFlags_DestroyMeshes,
 		RenderableFlags_RebuildMeshesFromModel3D = RenderableFlags_CreateMeshesFromModel3D | RenderableFlags_DestroyMeshes,
 		RenderableFlags_SwapMaterialsFromMesh = 0x8,
+		RenderableFlags_RebuildMaterials = 0x10
 	};
 #endif
+
+	static nlohmann::json defaultShadowMapShaderAttributes = { { "uniqueMaterialInstance", false }, { "castShadows",false } };
 
 	//Mesh Instance to Material Instance
 	typedef std::pair<std::shared_ptr<MeshInstance>, std::shared_ptr<MaterialInstance>> MeshMaterialPair;
@@ -118,9 +121,17 @@ namespace Scene
 		std::map<std::shared_ptr<MeshInstance>, std::string> materialSwaps;
 		std::string model3DSwap;
 		std::string meshSwap;
+		std::vector<unsigned int> materialToChangeMeshIndex;
+		std::vector<std::string> materialToRebuild;
 #endif
 
 		//CREATE
+		void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes);
+		void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
+		void TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j);
+		void TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key);
+		void TransformJsonToRasterizerState(D3D12_RASTERIZER_DESC& RasterizerState, nlohmann::json j, std::string key);
+		void BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons);
 		void SetMeshMaterial(std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material);
 		void CreateFromModel3D(std::string model3DName);
 		void CreateMeshesComponents();
@@ -137,6 +148,9 @@ namespace Scene
 
 		//UPDATE
 #if defined(_EDITOR)
+		void BindChangesToMaterial(unsigned int meshIndex);
+		void DestroyMaterialsToRebuild();
+		void RebuildMaterials();
 		void CleanMeshes();
 		void SwapMaterials();
 		void SwapMeshes();
@@ -162,7 +176,6 @@ namespace Scene
 				}
 			}
 		}
-
 		template<typename T>
 		void WriteShadowMapConstantsBuffer(std::string constantName, T& data, unsigned int backbufferIndex, unsigned int slot = 0U, size_t offset = 0ULL) {
 
@@ -181,25 +194,10 @@ namespace Scene
 					cbv[psVar.bufferIndex]->push<T>(data, backbufferIndex, psVar.offset + psVar.size * slot + offset);
 				}
 			}
-
-			//if (loading) return;
-			//
-			//for (auto& [mesh, cbv] : meshConstantsBuffer) {
-			//	MaterialPtr material = meshMaterials[mesh];
-			//	if (material->loading) continue;
-			//
-			//	auto& cbufferDefVS = material->shader->vertexShader->constantsBuffersVariables;
-			//	WriteToConstantsBufferSpace(constantName, data, backbufferIndex, cbufferDefVS, cbv, slot, offset);
-			//
-			//	auto& cbufferDefPS = material->shader->pixelShader->constantsBuffersVariables;
-			//	WriteToConstantsBufferSpace(constantName, data, backbufferIndex, cbufferDefPS, cbv, slot, offset);
-			//}
 		};
-
 		void WirteAnimationConstantsBuffer(unsigned int backbufferIndex);
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
 		void WriteShadowMapConstantsBuffer(unsigned int backbufferIndex);
-
 		void SetCurrentAnimation(std::string animation, float animationTime = 0.0f, float timeFactor = 1.0f, bool autoPlay = true);
 		void StepAnimation(double elapsedSeconds);
 
@@ -223,13 +221,6 @@ namespace Scene
 	};
 
 	//CREATE
-	void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes);
-	void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
-	void TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j);
-	void TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key);
-	void TransformJsonToRasterizerState(D3D12_RASTERIZER_DESC& RasterizerState, nlohmann::json j, std::string key);
-	void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
-	void BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons);
 	std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej);
 
 	//READ

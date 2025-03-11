@@ -21,30 +21,6 @@ namespace Templates {
 	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
 	static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
 
-	//NOTIFICATIONS
-	/*
-	TemplatesNotification<std::shared_ptr<Material>*> materialChangeNotifications;
-
-	static void OnShaderCompilationStart(void* materialPtr) {
-		auto material = static_cast<MaterialPtr*>(materialPtr);
-		if (materialChangeNotifications.contains(material)) {
-			NotifyOnLoadStart<MaterialPtr*>(materialChangeNotifications[material]);
-		}
-		(*material)->loading = true;
-	}
-
-	static void OnShaderCompilationComplete(void* materialPtr, void* shaderPtr) {
-		auto& material = *static_cast<MaterialPtr*>(materialPtr);
-		BuildMaterialProperties(material);
-		material->loading = false;
-		if (materialChangeNotifications.contains(&material)) {
-			NotifyOnLoadComplete(&material, materialChangeNotifications[&material]);
-		}
-	}
-
-	static void OnShaderDestroy(void* materialPtr, void* shaderPtr) {}
-	*/
-
 	//CREATE
 	void CreateMaterial(std::string name, nlohmann::json json)
 	{
@@ -75,34 +51,28 @@ namespace Templates {
 	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures, bool castShadows)
 	{
 		material->vertexClass = mesh->vertexClass;
+		material->material = name;
+		material->tupleTextures = textures;
 
 		nlohmann::json mat = GetMaterialTemplate(name);
 		nlohmann::json shader = GetShaderTemplate(mat.at("shader"));
 
-		using namespace ShaderCompiler;
-		std::string fileName = shader.contains("fileName") ? std::string(shader.at("fileName")) : std::string(mat.at("shader"));
-		std::vector<std::string> defines;
+		material->shaderName = shader.contains("fileName") ? std::string(shader.at("fileName")) : std::string(mat.at("shader"));
 		std::vector<std::string> vertexClassDefines = VertexClassDefines.at(mesh->vertexClass);
-		std::move(vertexClassDefines.begin(), vertexClassDefines.end(), std::back_inserter(defines));
+		std::move(vertexClassDefines.begin(), vertexClassDefines.end(), std::back_inserter(material->defines));
 		if (mat.contains("textures"))
 		{
 			nlohmann::json jtextures = mat.at("textures");
 			for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
 			{
-				defines.push_back(textureTypeToShaderDefine.at(strToTextureType.at(it.key())));
+				material->defines.push_back(textureTypeToShaderDefine.at(strToTextureType.at(it.key())));
 			}
 		}
 		if (castShadows)
 		{
-			defines.push_back(textureTypeToShaderDefine.at(TextureType_ShadowMaps));
+			material->defines.push_back(textureTypeToShaderDefine.at(TextureType_ShadowMaps));
 		}
 
-		Source compVS = { .shaderType = VERTEX_SHADER, .shaderName = fileName, .defines = defines };
-		Source compPS = { .shaderType = PIXEL_SHADER, .shaderName = fileName, .defines = defines };
-		material->material = name;
-		material->tupleTextures = textures;
-		material->vertexShader = GetShaderBinary(compVS);
-		material->pixelShader = GetShaderBinary(compPS);
 		TransformJsonToMaterialSamplers(material->samplers, mat, "samplers");
 		std::map<TextureType, MaterialTexture> matTextures;
 		if (textures.size() > 0)
@@ -114,7 +84,39 @@ namespace Templates {
 			TransformJsonToMaterialTextures(matTextures, mat, "textures");
 		}
 		material->textures = GetTextures(matTextures);
-		material->LoadVariablesMapping(mat);
+		material->CreateShaderBinary();
+	}
+
+	void MaterialInstance::CreateShaderBinary()
+	{
+		using namespace ShaderCompiler;
+		Source compVS = { .shaderType = VERTEX_SHADER, .shaderName = shaderName, .defines = defines };
+		Source compPS = { .shaderType = PIXEL_SHADER, .shaderName = shaderName, .defines = defines };
+		vertexShader = GetShaderBinary(compVS);
+		pixelShader = GetShaderBinary(compPS);
+		vertexShader->BindChange([this] { NotifyChanges(); });
+		pixelShader->BindChange([this] { NotifyChanges(); });
+		nlohmann::json mat = GetMaterialTemplate(material);
+		LoadVariablesMapping(mat);
+	}
+
+	void MaterialInstance::BindChange(std::function<void()> changeListener)
+	{
+		changesCallbacks.push_back(changeListener);
+	}
+
+	void MaterialInstance::NotifyChanges()
+	{
+		changesCounter++;
+
+		if (changesCounter < 2U) return;
+
+		for (auto cb : changesCallbacks)
+		{
+			cb();
+		}
+
+		changesCounter = 0U;
 	}
 
 	void MaterialInstance::Destroy()
@@ -143,6 +145,8 @@ namespace Templates {
 			pixelShader->cbufferSize.size()
 		)); //do i really need this?
 
+		variablesBufferSize.clear();
+		variablesBuffer.clear();
 		for (unsigned int index = 0; index < numConstantsBuffers; index++)
 		{
 			//get the CBuffer size
@@ -183,6 +187,7 @@ namespace Templates {
 			mappedValues.insert_or_assign(mappedValue.at("variable"), mappedValue);
 		}
 
+		variablesMapping.clear();
 		for (auto& [varName, mappedValue] : mappedValues)
 		{
 			if (vsVars.contains(varName))

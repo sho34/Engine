@@ -7,11 +7,18 @@
 #include <wrl.h>
 #include <wrl/client.h>
 #include <dxcapi.h>
+#include <string>
 
 enum ShaderType {
 	VERTEX_SHADER,
 	PIXEL_SHADER,
 	GEOMETRY_SHADER
+};
+
+static std::map<ShaderType, std::string> ShaderTypeToStr = {
+	{ VERTEX_SHADER, "VERTEX_SHADER" },
+	{ PIXEL_SHADER, "PIXEL_SHADER" },
+	{ GEOMETRY_SHADER, "GEOMETRY_SHADER" },
 };
 
 //shader compilation source (shaderName + it's shader type)
@@ -23,6 +30,18 @@ struct Source {
 	bool operator<(const Source& other) const
 	{
 		return std::tie(shaderName, shaderType, defines) < std::tie(other.shaderName, other.shaderType, other.defines);
+	}
+
+	std::string to_string()
+	{
+		std::string defs;
+		for (unsigned int i = 0; i < defines.size(); i++)
+		{
+			defs += defines[i];
+			if (i < (defines.size() - 1))
+				defs += ",";
+		}
+		return ShaderTypeToStr.at(shaderType) + ":" + shaderName + ".hlsl (" + defs + ")";
 	}
 };
 
@@ -130,6 +149,8 @@ struct ShaderBinary {
 	//the bytecode(vector of bytes)
 	ShaderByteCode byteCode;
 
+	std::vector<std::function<void()>> changesCallbacks;
+
 	void CopyFrom(std::shared_ptr<ShaderBinary>& src);
 
 	void CreateVSSemantics(const ComPtr<ID3D12ShaderReflection>& reflection, const D3D12_SHADER_DESC& desc);
@@ -139,4 +160,8 @@ struct ShaderBinary {
 	void CreateConstantsBuffersVariables(const ComPtr<ID3D12ShaderReflection>& reflection, const D3D12_SHADER_DESC& desc);
 
 	void CreateByteCode(const ComPtr<IDxcResult>& result);
+
+	void BindChange(std::function<void()> changeListener);
+
+	void NotifyChanges();
 };

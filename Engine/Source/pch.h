@@ -113,7 +113,6 @@ using namespace Concurrency;
 
 #include "pch/TemplateFlags.h"
 #include "pch/Application.h"
-#include "pch/Notifications.h"
 #include "pch/Json.h"
 #include "pch/NoStd.h"
 #include "pch/DXTypes.h"

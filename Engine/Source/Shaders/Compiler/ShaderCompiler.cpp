@@ -1,6 +1,11 @@
 #include "pch.h"
 #include "ShaderCompiler.h"
+#include "../../Resources/ShaderByteCode.h"
 #include "../../Common/DirectXHelper.h"
+#include "../../pch/NoStd.h"
+#include <string>
+#include <set>
+#include <map>
 
 namespace ShaderCompiler {
 
@@ -25,10 +30,7 @@ namespace ShaderCompiler {
 	typedef std::map<Source, ShaderDependencies> ShaderIncludesDependencies;
 	ShaderIncludesDependencies dependencies;
 
-	//Notifications 
-	TemplatesNotification<std::shared_ptr<ShaderBinary>*> shaderCompilationNotifications;
-
-	std::shared_ptr<ShaderBinary> ShaderCompiler::GetShaderBinary(Source& params)
+	std::shared_ptr<ShaderBinary> ShaderCompiler::GetShaderBinary(Source params)
 	{
 		return refTracker.AddRef(params, [&params]()
 			{
@@ -38,7 +40,7 @@ namespace ShaderCompiler {
 	}
 
 	static std::mutex compileMutex;
-	std::shared_ptr<ShaderBinary> ShaderCompiler::Compile(Source& params) {
+	std::shared_ptr<ShaderBinary> ShaderCompiler::Compile(Source params) {
 
 		std::lock_guard<std::mutex> lock(compileMutex);
 		//read the shader
@@ -130,9 +132,47 @@ namespace ShaderCompiler {
 		DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler));
 	}
 
+	void BuildShader(std::string shaderFile)
+	{
+		for (auto it = refTracker.instances.begin(); it != refTracker.instances.end(); it++)
+		{
+			Source source = it->first;
+			std::shared_ptr<ShaderBinary> instance = it->second;
+
+			if (source.shaderName != shaderFile) continue;
+
+			using namespace ShaderCompiler;
+			std::shared_ptr<ShaderBinary> test = Compile(source);
+			if (test == instance)
+			{
+				OutputDebugStringA((std::string("Error found compiling ") + source.to_string()).c_str());
+				return;
+			}
+		}
+
+		for (auto& [source, binary] : refTracker.instances)
+		{
+			if (source.shaderName != shaderFile) continue;
+			binary->NotifyChanges();
+		}
+	}
+
+	void BuildShaderFromDependency(std::string dependency)
+	{
+		std::set<std::string> shaderFiles;
+		for (auto& [src, deps] : dependencies) {
+			if (deps.contains(dependency)) {
+				shaderFiles.insert(src.shaderName);
+			}
+		}
+		for (auto shaderFile : shaderFiles) {
+			BuildShader(shaderFile);
+		}
+	}
+
 	static CompilerQueue changesQueue;
 	void MonitorShaderChanges(std::string folder) {
-		return;
+
 		std::thread monitor([folder]()
 			{
 				HANDLE file = CreateFileA(folder.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
@@ -199,59 +239,19 @@ namespace ShaderCompiler {
 					while (changesQueue.size() > 0)
 					{
 
-						/*
 						std::filesystem::path filePath(changesQueue.front());
 						std::string fileExtension = filePath.extension().string();
 
 						std::string output = "Modified: " + filePath.string() + "\n";
 						OutputDebugStringA(output.c_str());
 
-						auto buildShader = [fileExtension](const std::string& shaderName)
-							{
-								Source sources[] = {
-									{.shaderName = shaderName, .shaderType = VERTEX_SHADER },
-									{.shaderName = shaderName, .shaderType = PIXEL_SHADER }
-								};
-
-								auto shaderOutputOldRef = &shaderOutputRefs.find(sources[0])->second;
-
-								if (shaderCompilationNotifications.contains(shaderOutputOldRef)) {
-									NotifyOnLoadStart<std::shared_ptr<ShaderBinary>*>(shaderCompilationNotifications[shaderOutputOldRef]);
-								}
-
-								for (auto& source : sources) {
-									auto output = Compile(source).get();
-									auto& shaderOutputRef = shaderOutputRefs[source];
-									if (shaderOutputRef.get() != output.get()) {
-										shaderOutputRef->CopyFrom(output);
-									}
-
-									if (shaderCompilationNotifications.contains(&shaderOutputRef)) {
-										auto& notifications = shaderCompilationNotifications[&shaderOutputRef];
-										NotifyOnLoadComplete(&shaderOutputRef, notifications);
-									}
-								}
-							};
-
-						auto buildShaderFromDependency = [buildShader](const std::string& shaderDependency) {
-							std::set<std::string> shaderNames;
-							for (auto& [src, deps] : dependencies) {
-								if (deps.contains(shaderDependency)) {
-									shaderNames.insert(src.shaderName);
-								}
-							}
-							for (auto shaderName : shaderNames) {
-								buildShader(shaderName);
-							}
-							};
-
 						if (!_stricmp(fileExtension.c_str(), ".hlsl")) {
-							buildShader(filePath.stem().string().c_str());
+							BuildShader(filePath.stem().string().c_str());
 						}
 						else if (!_stricmp(fileExtension.c_str(), ".h")) {
-							buildShaderFromDependency(filePath.string().c_str());
+							BuildShaderFromDependency(filePath.string().c_str());
 						}
-						*/
+
 						changesQueue.pop();
 					}
 					std::this_thread::sleep_for(200ms);

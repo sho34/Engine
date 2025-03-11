@@ -102,3 +102,15 @@ void ShaderBinary::CreateByteCode(const ComPtr<IDxcResult>& result)
 	memcpy_s(byteCode.data(), code->GetBufferSize(), code->GetBufferPointer(), code->GetBufferSize());
 }
 
+void ShaderBinary::BindChange(std::function<void()> changeListener)
+{
+	changesCallbacks.push_back(changeListener);
+}
+
+void ShaderBinary::NotifyChanges()
+{
+	for (auto cb : changesCallbacks)
+	{
+		cb();
+	}
+}

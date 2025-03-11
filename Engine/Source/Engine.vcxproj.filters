@@ -222,9 +222,6 @@
     <ClInclude Include="pch\Json.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pch\Notifications.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="pch\NoStd.h">
       <Filter>Header Files</Filter>
     </ClInclude>

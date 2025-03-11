@@ -251,6 +251,8 @@
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <EnableModules>
+      </EnableModules>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -287,7 +289,6 @@
     <ClInclude Include="pch\Editor.h" />
     <ClInclude Include="pch\Json.h" />
     <ClInclude Include="pch\NoStd.h" />
-    <ClInclude Include="pch\Notifications.h" />
     <ClInclude Include="Primitives\BoxLines.h" />
     <ClInclude Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.h" />
     <ClInclude Include="Editor\DefaultLevel.h">

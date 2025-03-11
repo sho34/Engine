@@ -6,6 +6,10 @@
 #include "SamplerDesc.h"
 #include "Texture.h"
 #include <d3d12.h>
+#include <wrl/client.h>
+#if defined(_EDITOR)
+#include <imgui.h>
+#endif
 
 namespace Templates { struct MeshInstance; }
 
@@ -24,11 +28,18 @@ namespace Templates {
 		MaterialVariablesMapping variablesMapping;
 		std::vector<size_t> variablesBufferSize;
 		std::vector<std::vector<byte>> variablesBuffer;
+		std::string shaderName;
+		std::vector<std::string> defines;
 		std::shared_ptr<ShaderBinary> vertexShader;
 		std::shared_ptr<ShaderBinary> pixelShader;
 		std::vector<MaterialSamplerDesc> samplers;
 		std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> textures;
+		unsigned int changesCounter = 0U;
+		std::vector<std::function<void()>> changesCallbacks;
 
+		void CreateShaderBinary();
+		void BindChange(std::function<void()> changeListener);
+		void NotifyChanges();
 		void Destroy();
 		bool ShaderBinaryHasRegister(std::function<int(std::shared_ptr<ShaderBinary>&)> getRegister);
 		void LoadVariablesMapping(nlohmann::json material);

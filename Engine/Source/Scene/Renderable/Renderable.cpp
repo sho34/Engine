@@ -25,26 +25,11 @@
 extern std::mutex rendererMutex;
 extern std::shared_ptr<Renderer> renderer;
 namespace Scene {
-
-	//NOTIFICATIONS
-	static void OnMaterialChangeStart(void* renderablePtr) {
-		//auto renderable = static_cast<Renderable*>(renderablePtr);
-		//renderable->loading = true;
-	}
-
-	static void OnMaterialChangeComplete(void* renderablePtr, void* materialPtr) {
-		//auto renderable = static_cast<Renderable*>(renderablePtr);
-		//renderable->Initialize(renderer);
-		//renderable->loading = false;
-	}
-
-	static void OnMaterialDestroy(void* renderablePtr, void* materialPtr) { }
-
 	//NAMESPACE VARIABLES
 	std::map<std::string, std::shared_ptr<Renderable>> renderables;
 	std::map<std::string, std::shared_ptr<Renderable>> animables;
 
-	void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes)
+	void Renderable::TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes)
 	{
 		std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [shaderAttributes](const nlohmann::json& value)
 			{
@@ -58,7 +43,7 @@ namespace Scene {
 		);
 	}
 
-	void TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j)
+	void Renderable::TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j)
 	{
 		ReplaceFromJson(RenderTarget.BlendEnable, j, "BlendEnable");
 		ReplaceFromJson(RenderTarget.LogicOpEnable, j, "LogicOpEnable");
@@ -73,7 +58,7 @@ namespace Scene {
 		ReplaceFromJson(RenderTarget.RenderTargetWriteMask, j, "RenderTargetWriteMask");
 	}
 
-	void TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key)
+	void Renderable::TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key)
 	{
 		if (!j.contains(key) || j[key].empty()) return;
 		nlohmann::json blstate = j[key];
@@ -89,7 +74,7 @@ namespace Scene {
 		}
 	}
 
-	void TransformJsonToRasterizerState(D3D12_RASTERIZER_DESC& RasterizerState, nlohmann::json j, std::string key)
+	void Renderable::TransformJsonToRasterizerState(D3D12_RASTERIZER_DESC& RasterizerState, nlohmann::json j, std::string key)
 	{
 		if (!j.contains(key) || j[key].empty()) return;
 		nlohmann::json rzstate = j[key];
@@ -107,7 +92,7 @@ namespace Scene {
 		nostd::ReplaceFromJsonUsingMap(RasterizerState.ConservativeRaster, stringToConservativeRasterizationMode, rzstate, "ConservativeRaster");
 	}
 
-	void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key)
+	void Renderable::TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key)
 	{
 		if (!j.contains(key) || j[key].empty()) return;
 		nlohmann::json pstate = j[key];
@@ -119,7 +104,7 @@ namespace Scene {
 		TransformJsonToBlendState(pipelineState.BlendState, pstate, "BlendState");
 	}
 
-	void BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons)
+	void Renderable::BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons)
 	{
 		nlohmann::json pipelineStateJson = { {"pipelineState", {}} };
 
@@ -166,10 +151,10 @@ namespace Scene {
 		std::string model3DName = "";
 		if (!renderablej["meshMaterials"].empty())
 		{
-			TransformJsonToMeshMaterialMap(renderable->meshMaterials, renderablej["meshMaterials"], renderable->json);
+			renderable->TransformJsonToMeshMaterialMap(renderable->meshMaterials, renderablej["meshMaterials"], renderable->json);
 			renderable->meshes.push_back(renderable->meshMaterials.begin()->first);
 
-			TransformJsonToMeshMaterialMap(renderable->meshShadowMapMaterials, renderablej["meshMaterialsShadowMap"], { { "uniqueMaterialInstance",false}, {"castShadows",false} });
+			renderable->TransformJsonToMeshMaterialMap(renderable->meshShadowMapMaterials, renderablej["meshMaterialsShadowMap"], defaultShadowMapShaderAttributes);
 			if (renderable->meshShadowMapMaterials.size() > 0)
 			{
 				renderable->meshesShadowMap.push_back(renderable->meshShadowMapMaterials.begin()->first);
@@ -349,12 +334,44 @@ namespace Scene {
 			shadowMapBaseTexture.insert_or_assign(TextureType_Base, textures.at(TextureType_Base));
 		}
 
-		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", shadowMapBaseTexture, mesh, { { "uniqueMaterialInstance",false}, {"castShadows",false} });
+		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", shadowMapBaseTexture, mesh, defaultShadowMapShaderAttributes);
 		meshShadowMapMaterials.insert_or_assign(mesh, shadowMapMaterial);
 	}
 
+#if defined(_EDITOR)
+	void Renderable::BindChangesToMaterial(unsigned int meshIndex)
+	{
+		std::string materialName = meshMaterials.at(meshes.at(meshIndex))->material;
+		meshMaterials.at(meshes.at(meshIndex))->BindChange([this, meshIndex, materialName]
+			{
+				materialToChangeMeshIndex.push_back(meshIndex);
+				materialToRebuild.push_back(materialName);
+				renderableUpdateFlags |= RenderableFlags_RebuildMaterials;
+			}
+		);
+		if (meshesShadowMap.size() > 0ULL)
+		{
+			meshShadowMapMaterials.at(meshesShadowMap.at(meshIndex))->BindChange([this, meshIndex, materialName]
+				{
+					materialToChangeMeshIndex.push_back(meshIndex);
+					materialToRebuild.push_back(materialName);
+					renderableUpdateFlags |= RenderableFlags_RebuildMaterials;
+				}
+			);
+		}
+	}
+#endif
+
 	void Renderable::CreateMeshesComponents()
 	{
+#if defined(_EDITOR)
+		for (unsigned int i = 0; i < meshes.size(); i++)
+		{
+			BindChangesToMaterial(i);
+		}
+
+#endif
+
 		for (auto& mesh : meshes)
 		{
 			CreateMeshConstantsBuffers(mesh);
@@ -557,6 +574,13 @@ namespace Scene {
 	void RenderablesStep()
 	{
 #if defined(_EDITOR)
+		std::map<std::string, std::shared_ptr<Renderable>> renderablesRebuildMaterials;
+		std::copy_if(renderables.begin(), renderables.end(), std::inserter(renderablesRebuildMaterials, renderablesRebuildMaterials.end()), [](const auto& pair)
+			{
+				return pair.second->renderableUpdateFlags & RenderableFlags_RebuildMaterials;
+			}
+		);
+
 		std::map<std::string, std::shared_ptr<Renderable>> renderablesToSwaps;
 		std::copy_if(renderables.begin(), renderables.end(), std::inserter(renderablesToSwaps, renderablesToSwaps.end()), [](const auto& pair)
 			{
@@ -585,12 +609,22 @@ namespace Scene {
 			}
 		);
 
-		if (renderablesToSwaps.size() > 0ULL || renderablesToDestroy.size() > 0ULL ||
+		if (renderablesRebuildMaterials.size() > 0ULL || renderablesToSwaps.size() > 0ULL || renderablesToDestroy.size() > 0ULL ||
 			renderablesToCreateMeshes.size() > 0ULL || renderablesToCreateModels3D.size() > 0ULL)
 		{
 			renderer->Flush();
-			renderer->RenderCriticalFrame([&renderablesToSwaps, &renderablesToDestroy, &renderablesToCreateMeshes, &renderablesToCreateModels3D]
+			renderer->RenderCriticalFrame([&renderablesRebuildMaterials, &renderablesToSwaps, &renderablesToDestroy, &renderablesToCreateMeshes, &renderablesToCreateModels3D]
 				{
+					for (auto& [name, renderable] : renderablesRebuildMaterials)
+					{
+						renderable->DestroyMaterialsToRebuild();
+					}
+
+					for (auto& [name, renderable] : renderablesRebuildMaterials)
+					{
+						renderable->RebuildMaterials();
+					}
+
 					for (auto& [name, renderable] : renderablesToDestroy)
 					{
 						renderable->CleanMeshes();
@@ -617,6 +651,93 @@ namespace Scene {
 	}
 
 #if defined(_EDITOR)
+	void Renderable::DestroyMaterialsToRebuild()
+	{
+		for (unsigned int meshIndex : materialToChangeMeshIndex)
+		{
+			std::shared_ptr<MeshInstance> mesh = meshes.at(meshIndex);
+
+			{
+				//destroy material
+				if (!model3D)
+				{
+					std::shared_ptr<MaterialInstance> mat = meshMaterials.at(mesh);
+					DestroyMaterialInstance(mat, mesh, json);
+				}
+				else
+				{
+					DestroyMaterialInstance(model3D->materials[meshIndex], model3D->meshes[meshIndex], model3D->shaderAttributes);
+				}
+				meshMaterials.at(mesh) = nullptr;
+
+				//destroy constants buffer
+				for (std::shared_ptr<ConstantsBuffer>& cbuffer : meshConstantsBuffer.at(mesh))
+				{
+					DestroyConstantsBuffer(cbuffer);
+				}
+				meshConstantsBuffer.at(mesh).clear();
+
+				//destroy root signature
+				meshRootSignatures.at(mesh).Release();
+
+				//destroy shader pipeline state
+				meshPipelineStates.at(mesh).Release();
+			}
+
+			{
+				//destroy material
+				std::shared_ptr<MaterialInstance> mat = meshShadowMapMaterials.at(mesh);
+				DestroyMaterialInstance(mat, mesh, defaultShadowMapShaderAttributes);
+				meshShadowMapMaterials.at(mesh) = nullptr;
+
+				//destroy constants buffer
+				for (std::shared_ptr<ConstantsBuffer>& cbuffer : meshShadowMapConstantsBuffer.at(mesh))
+				{
+					DestroyConstantsBuffer(cbuffer);
+				}
+				meshShadowMapConstantsBuffer.at(mesh).clear();
+
+				//destroy root signature
+				meshShadowMapRootSignatures.at(mesh).Release();
+
+				//destroy shader pipeline state
+				meshShadowMapPipelineStates.at(mesh).Release();
+			}
+		}
+	}
+
+	void Renderable::RebuildMaterials()
+	{
+		for (unsigned int meshIndex : materialToChangeMeshIndex)
+		{
+			std::shared_ptr<MeshInstance> mesh = meshes.at(meshIndex);
+			std::shared_ptr<MaterialInstance> materialInstance = nullptr;
+
+			if (!model3D)
+			{
+				materialInstance = GetMaterialInstance(materialToRebuild.at(meshIndex), std::map<TextureType, MaterialTexture>(), mesh, json);
+			}
+			else
+			{
+				materialInstance = model3D->GetModel3DMaterialInstance(meshIndex);
+				model3D->materials[meshIndex] = materialInstance;
+			}
+
+			SetMeshMaterial(mesh, materialInstance);
+			BindChangesToMaterial(meshIndex);
+			CreateMeshConstantsBuffers(mesh);
+			CreateMeshRootSignatures(mesh);
+			CreateMeshPipelineState(mesh);
+			CreateMeshShadowMapConstantsBuffers(mesh);
+			CreateMeshShadowMapRootSignatures(mesh);
+			CreateMeshShadowMapPipelineState(mesh);
+		}
+
+		materialToChangeMeshIndex.clear();
+
+		renderableUpdateFlags &= ~RenderableFlags_RebuildMaterials;
+	}
+
 	void Renderable::CleanMeshes()
 	{
 		model3D = nullptr;
@@ -757,7 +878,7 @@ namespace Scene {
 	void Renderable::Destroy()
 	{
 		for (auto& [mesh, mat] : meshMaterials) { DestroyMaterialInstance(mat, mesh, json); } meshMaterials.clear();
-		for (auto& [mesh, mat] : meshShadowMapMaterials) { DestroyMaterialInstance(mat, mesh, { { "uniqueMaterialInstance",false}, {"castShadows",false} }); } meshShadowMapMaterials.clear();
+		for (auto& [mesh, mat] : meshShadowMapMaterials) { DestroyMaterialInstance(mat, mesh, defaultShadowMapShaderAttributes); } meshShadowMapMaterials.clear();
 
 		for (auto& [mesh, cbuffers] : meshConstantsBuffer) { for (auto& cbuffer : cbuffers) DestroyConstantsBuffer(cbuffer); } meshConstantsBuffer.clear();
 		for (auto& [mesh, cbuffers] : meshShadowMapConstantsBuffer) { for (auto& cbuffer : cbuffers) DestroyConstantsBuffer(cbuffer); } meshShadowMapConstantsBuffer.clear();
@@ -1253,7 +1374,6 @@ namespace Scene {
 				{
 					std::shared_ptr<MaterialInstance> material = meshMaterials.at(mesh);
 					materialName = material->material;
-					//materialName = GetMaterialInstanceTemplateName(material);
 				}
 				DrawComboSelection(materialName, materialList, [this, mesh](std::string matName)
 					{
