@@ -296,8 +296,29 @@ namespace Templates {
 
 	//EDITOR
 #if defined(_EDITOR)
+
 	void DrawMaterialPanel(std::string& material, ImVec2 pos, ImVec2 size, bool pop)
 	{
+		nlohmann::json& mat = materialTemplates.at(material);
+
+		std::string shader = mat.at("shader");
+		if (ImGui::Button(ICON_FA_ELLIPSIS_H))
+		{
+
+		}
+		ImGui::SameLine();
+		ImGui::InputText("Shader", shader.data(), shader.size(), ImGuiInputTextFlags_ReadOnly);
+
+		if (mat.contains("mappedValues"))
+		{
+			ImGui::Text("Mapped Values");
+			unsigned int sz = static_cast<unsigned int>(mat.at("mappedValues").size());
+			for (unsigned int i = 0; i < sz; i++)
+			{
+				nlohmann::json& mappedV = mat.at("mappedValues").at(i);
+				ImMaterialVariablesDraw.at(StrToMaterialVariablesTypes.at(std::string(mappedV.at("variableType"))))(i, mappedV);
+			}
+		}
 
 	}
 

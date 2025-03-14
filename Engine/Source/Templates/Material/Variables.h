@@ -29,16 +29,16 @@ static std::vector<std::string> MaterialVariablesTypesStr = {
 };
 
 static std::map<MaterialVariablesTypes, std::string> MaterialVariablesTypesNames = {
-	{MaterialVariablesTypes::MAT_VAR_BOOLEAN, "BOOLEAN"},
-	{MaterialVariablesTypes::MAT_VAR_INTEGER, "INTEGER"},
-	{MaterialVariablesTypes::MAT_VAR_UNSIGNED_INTEGER, "UNSIGNED_INTEGER"},
-	{MaterialVariablesTypes::MAT_VAR_RGB, "RGB"},
-	{MaterialVariablesTypes::MAT_VAR_RGBA, "RGBA"},
-	{MaterialVariablesTypes::MAT_VAR_FLOAT, "FLOAT"},
-	{MaterialVariablesTypes::MAT_VAR_FLOAT2, "FLOAT2"},
-	{MaterialVariablesTypes::MAT_VAR_FLOAT3, "FLOAT3"},
-	{MaterialVariablesTypes::MAT_VAR_FLOAT4, "FLOAT4"},
-	{MaterialVariablesTypes::MAT_VAR_MATRIX4X4, "MATRIX4X4"},
+	{ MAT_VAR_BOOLEAN, "BOOLEAN"},
+	{ MAT_VAR_INTEGER, "INTEGER"},
+	{ MAT_VAR_UNSIGNED_INTEGER, "UNSIGNED_INTEGER"},
+	{ MAT_VAR_RGB, "RGB"},
+	{ MAT_VAR_RGBA, "RGBA"},
+	{ MAT_VAR_FLOAT, "FLOAT"},
+	{ MAT_VAR_FLOAT2, "FLOAT2"},
+	{ MAT_VAR_FLOAT3, "FLOAT3"},
+	{ MAT_VAR_FLOAT4, "FLOAT4"},
+	{ MAT_VAR_MATRIX4X4, "MATRIX4X4"},
 };
 
 static std::map<std::string, MaterialVariablesTypes> StrToMaterialVariablesTypes = {
@@ -55,16 +55,35 @@ static std::map<std::string, MaterialVariablesTypes> StrToMaterialVariablesTypes
 };
 
 static std::map<MaterialVariablesTypes, size_t> MaterialVariablesTypesSizes = {
-	{MaterialVariablesTypes::MAT_VAR_BOOLEAN, sizeof(bool)},
-	{MaterialVariablesTypes::MAT_VAR_INTEGER, sizeof(int)},
-	{MaterialVariablesTypes::MAT_VAR_UNSIGNED_INTEGER, sizeof(unsigned int)},
-	{MaterialVariablesTypes::MAT_VAR_RGB, sizeof(float[3])},
-	{MaterialVariablesTypes::MAT_VAR_RGBA, sizeof(float[4])},
-	{MaterialVariablesTypes::MAT_VAR_FLOAT, sizeof(float)},
-	{MaterialVariablesTypes::MAT_VAR_FLOAT2, sizeof(float[2])},
-	{MaterialVariablesTypes::MAT_VAR_FLOAT3, sizeof(float[3])},
-	{MaterialVariablesTypes::MAT_VAR_FLOAT4, sizeof(float[4])},
-	{MaterialVariablesTypes::MAT_VAR_MATRIX4X4, sizeof(float[16])},
+	{ MAT_VAR_BOOLEAN, sizeof(bool)},
+	{ MAT_VAR_INTEGER, sizeof(int)},
+	{ MAT_VAR_UNSIGNED_INTEGER, sizeof(unsigned int)},
+	{ MAT_VAR_RGB, sizeof(float[3])},
+	{ MAT_VAR_RGBA, sizeof(float[4])},
+	{ MAT_VAR_FLOAT, sizeof(float)},
+	{ MAT_VAR_FLOAT2, sizeof(float[2])},
+	{ MAT_VAR_FLOAT3, sizeof(float[3])},
+	{ MAT_VAR_FLOAT4, sizeof(float[4])},
+	{ MAT_VAR_MATRIX4X4, sizeof(float[16])},
+};
+
+static std::map<std::string, MaterialVariablesTypes> HLSLVariableClassToMaterialVariableTypes = {
+	{	"bool", MAT_VAR_BOOLEAN },
+	{	"int", MAT_VAR_INTEGER },
+	{	"uint", MAT_VAR_UNSIGNED_INTEGER },
+	{	"unsigned int", MAT_VAR_UNSIGNED_INTEGER },
+	{	"dword", MAT_VAR_UNSIGNED_INTEGER },
+	{	"float", MAT_VAR_FLOAT },
+	{	"float2", MAT_VAR_FLOAT2 },
+	{	"float3", MAT_VAR_FLOAT3 },
+	{	"float4", MAT_VAR_FLOAT4 },
+	{	"float4x4", MAT_VAR_MATRIX4X4 },
+	{	"matrix", MAT_VAR_MATRIX4X4 },
+};
+
+static std::map<std::tuple<std::string, std::string>, MaterialVariablesTypes> HLSLVariablePatternToMaterialVariableTypes = {
+	{ { "float3","color" }, MAT_VAR_RGB },
+	{ { "float4","color" }, MAT_VAR_RGBA },
 };
 
 struct MaterialVariableInitialValue

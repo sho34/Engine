@@ -23,6 +23,8 @@ namespace Templates {
 
 	//EDITOR
 #if defined(_EDITOR)
+	void SetShaderMappedVariable(std::string shaderName, std::string varName, MaterialVariablesTypes type);
+	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string shaderName);
 	void DrawShaderPanel(std::string& shader, ImVec2 pos, ImVec2 size, bool pop);
 	/*
 	std::string GetShaderName(void* ptr);

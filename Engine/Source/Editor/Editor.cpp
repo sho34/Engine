@@ -6,6 +6,7 @@
 #include "../Renderer/RenderPass/RenderPass.h"
 #include <imgui.h>
 #include <Mouse.h>
+#include "../pch/Application.h"
 
 extern HWND hWnd;
 extern std::unique_ptr<DirectX::Mouse> mouse;
@@ -212,7 +213,7 @@ namespace Editor {
 				ImGui::MenuItem(ICON_FA_FILE "New");
 				ImGui::Separator();
 				if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "Open")) {
-					OpenFile();
+					OpenLevelFile();
 				}
 				if (ImGui::MenuItem(ICON_FA_SAVE "Save")) {
 					SaveLevelToFile(currentLevelName);
@@ -333,7 +334,7 @@ namespace Editor {
 
 		}
 
-		if (ImGui::BeginTable(tableName, 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+		if (ImGui::BeginTable(tableName, 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX))
 		{
 			DrawTableRows(GetObjects, OnSelect);
 			ImGui::EndTable();
@@ -385,7 +386,7 @@ namespace Editor {
 		std::string panelName = "panel-" + SelectedPrefix.at(tab);// + GetSelectedName.at(tab)(selected);
 		ImGui::SetNextWindowPos(pos);
 		ImGui::SetNextWindowSize(size);
-		ImGui::BeginChild(panelName.c_str());
+		ImGui::BeginChild(panelName.c_str(), ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding);
 		{
 			if (ImGui::SmallButton("<<")) { pop = true; }
 			ImGui::SameLine();
@@ -460,7 +461,7 @@ namespace Editor {
 		ImGui::End();
 	}
 
-	bool OpenFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr)
+	bool OpenFileDialog(std::wstring& path, std::wstring defaultDirectory, std::wstring defaultFileName, std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo)
 	{
 		IFileOpenDialog* p_file_open = nullptr;
 		bool are_all_operation_success = false;
@@ -539,31 +540,40 @@ namespace Editor {
 		return are_all_operation_success;
 	}
 
-	void OpenFile()
+	void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName, std::string filterPattern)
 	{
-		std::thread load([]()
+		std::thread load([onFileSelected, defaultDirectory, filterName, filterPattern]()
 			{
 				//first create the directory if needed
-				std::filesystem::path directory(defaultLevelsFolder);
+				std::filesystem::path directory(defaultDirectory);
 				std::filesystem::create_directory(directory);
 
 				std::wstring path = L"";
-				COMDLG_FILTERSPEC filters[] = { {.pszName = L"JSON files. (*.json)", .pszSpec = L"*.json" } };
+				std::wstring pszName = nostd::StringToWString(filterName);
+				std::wstring pszSpec = nostd::StringToWString(filterPattern);
+				COMDLG_FILTERSPEC filters[] = { {.pszName = pszName.c_str(), .pszSpec = pszSpec.c_str() } };
 				std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
 				if (!OpenFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
 				if (path.empty()) return;
 
-				std::filesystem::path jsonFilePath = path;
-				jsonFilePath.replace_extension(".json");
-
-				soTab = _SceneObjects::SO_Renderables;
-				tempTab = _Templates::T_Materials;
-
-				//jsonFilePath.replace_extension("");
-				levelToLoad = jsonFilePath;
+				onFileSelected(path);
 			}
 		);
 		load.detach();
+	}
+
+	void OpenLevelFile()
+	{
+		OpenFile([](std::filesystem::path path)
+			{
+				std::filesystem::path jsonFilePath = path;
+				jsonFilePath.replace_extension(".json");
+				levelToLoad = jsonFilePath;
+				soTab = _SceneObjects::SO_Renderables;
+				tempTab = _Templates::T_Materials;
+			},
+			defaultLevelsFolder
+		);
 	}
 
 	void SaveLevelToFile(std::string levelFileName)

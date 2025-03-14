@@ -86,7 +86,7 @@
         "ShaderVisibility": "PIXEL"
       }
     ],
-    "shaderTemplate": "BlinnPhong",
+    "shader": "BlinnPhong",
     "textures": {
       "BaseTexture": {
         "numFrames": 0,

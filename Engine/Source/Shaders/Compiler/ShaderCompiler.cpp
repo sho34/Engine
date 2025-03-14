@@ -21,9 +21,6 @@ namespace ShaderCompiler {
 		{	ShaderType::PIXEL_SHADER, L"ps_6_1" },
 	};
 
-	//Source to Shader
-	std::map<std::string, std::set<Source>> shaderFilesPermutations;
-
 	nostd::RefTracker<Source, std::shared_ptr<ShaderBinary>> refTracker;
 
 	//Dependencies of hlsl+shaderType(Source) file to many .h files

@@ -85,9 +85,39 @@ void ShaderBinary::CreateConstantsBuffersVariables(const ComPtr<ID3D12ShaderRefl
 			D3D12_SHADER_VARIABLE_DESC varDesc;
 			varReflection->GetDesc(&varDesc);
 
-			std::string varName(varDesc.Name);
+			if (!(varDesc.uFlags & D3D_SVF_USED)) continue;
 
+			std::string varName(varDesc.Name);
 			constantsBuffersVariables.insert_or_assign(varName, ShaderConstantsBufferVariable({ .bufferIndex = paramIdx, .size = varDesc.Size, .offset = varDesc.StartOffset }));
+
+			ID3D12ShaderReflectionType* varType = varReflection->GetType();
+			D3D12_SHADER_TYPE_DESC varTypeDesc;
+			varType->GetDesc(&varTypeDesc);
+
+			std::string varClass = varTypeDesc.Name;
+			bool useNamePattern = false;
+			for (auto it = HLSLVariablePatternToMaterialVariableTypes.begin(); it != HLSLVariablePatternToMaterialVariableTypes.end(); it++)
+			{
+				std::string tieClass = std::get<0>(it->first);
+				if (varClass != tieClass) continue;
+
+				std::string tiePattern = std::get<1>(it->first);
+
+				std::string lowerVarName = varName;
+				std::transform(lowerVarName.begin(), lowerVarName.end(), lowerVarName.begin(),
+					[](unsigned char c) { return std::tolower(c); });
+
+				if (lowerVarName.find(tiePattern) == std::string::npos) continue;
+
+				SetShaderMappedVariable(shaderSource.shaderName, varName, it->second);
+
+				useNamePattern = true;
+				break;
+			}
+
+			if (useNamePattern) continue;
+
+			SetShaderMappedVariable(shaderSource.shaderName, varName, HLSLVariableClassToMaterialVariableTypes.at(varClass));
 		}
 		cbufferSize.push_back(paramDesc.Size);
 	}

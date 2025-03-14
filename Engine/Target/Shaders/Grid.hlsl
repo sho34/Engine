@@ -96,7 +96,7 @@ float4 main_ps(PixelShaderInput input) : SV_TARGET
         diffuseFinalLightContribution, specularFinalLightContribution
     );
     
-    float3 outputColor = getGridColor(input) * diffuseFinalLightContribution;
+    float3 outputColor = baseColor.rgb * getGridColor(input) * diffuseFinalLightContribution;
     outputColor = saturate(outputColor);
     outputColor += specularFinalLightContribution;
     

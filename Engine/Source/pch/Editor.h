@@ -1,6 +1,8 @@
 #pragma once
 
 #if defined(_EDITOR)
+#include "../Templates/Material/Variables.h"
+
 static const std::string defaultLevelName = "baseLevel.json";
 
 inline void DrawComboSelection(std::string selected, std::vector<std::string> selectables, std::function<void(std::string)> onSelect, std::string label = "") {
@@ -40,6 +42,31 @@ inline void ImDrawColorEdit3(std::string tableName, T& Tcolor, std::function<voi
 			ImGui::TableSetColumnIndex(0);
 
 			if (ImGui::ColorEdit3(label.c_str(), (float*)&Tcolor)) {
+				onChange(Tcolor);
+			}
+		}
+		ImGui::PopID();
+		ImGui::EndTable();
+	}
+}
+
+template<typename T>
+inline void ImDrawColorEdit4(std::string tableName, T& Tcolor, std::function<void(T)> onChange) {
+
+	if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
+	{
+		std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
+		ImGui::PushID(tableId.c_str());
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			std::string label = tableId.substr(tableId.find_first_of("-") + 1);
+			ImGui::Text(label.c_str());
+
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+
+			if (ImGui::ColorEdit4(label.c_str(), (float*)&Tcolor)) {
 				onChange(Tcolor);
 			}
 		}
@@ -115,40 +142,39 @@ inline void ImDrawTextureImage(ImTextureID textureId, unsigned int textureWidth,
 	ImGui::Image(textureId, ImVec2((float)currentRegionAvail.x, sizeY));
 }
 
-inline void drawFromCombo(nlohmann::json& json, const std::string attribute, auto& listMap)
+inline void drawFromCombo(nlohmann::json& json, const std::string attribute, auto& listMap, std::string label = "")
 {
 	std::string value = json.at(attribute);
 	std::vector<std::string> selectables = nostd::GetKeysFromMap(listMap);
 	DrawComboSelection(value, selectables, [&json, &attribute](std::string newValue)
 		{
 			json[attribute] = newValue;
-		}, ""
-	);
+		}, label.c_str()
+			);
 };
 
-inline void drawFromCheckBox(nlohmann::json& json, const std::string attribute)
+inline void drawFromCheckBox(nlohmann::json& json, const std::string attribute, std::string label = "")
 {
 	bool value = json.at(attribute);
-	ImGui::SameLine();
-	if (ImGui::Checkbox("", &value)) { json[attribute] = value; }
+	if (ImGui::Checkbox(label.c_str(), &value)) { json[attribute] = value; }
 };
 
-inline void drawFromFloat(nlohmann::json& json, const std::string attribute)
+inline void drawFromFloat(nlohmann::json& json, const std::string attribute, std::string label = "")
 {
 	float value = json.at(attribute);
-	if (ImGui::InputFloat("", &value)) { json[attribute] = value; }
+	if (ImGui::InputFloat(label.c_str(), &value)) { json[attribute] = value; }
 };
 
-inline void drawFromInt(nlohmann::json& json, const std::string attribute)
+inline void drawFromInt(nlohmann::json& json, const std::string attribute, std::string label = "")
 {
 	int value = json.at(attribute);
-	if (ImGui::InputInt("", &value)) { json[attribute] = value; }
+	if (ImGui::InputInt(label.c_str(), &value)) { json[attribute] = value; }
 };
 
-inline void drawFromUInt(nlohmann::json& json, const std::string attribute)
+inline void drawFromUInt(nlohmann::json& json, const std::string attribute, std::string label = "")
 {
 	int value = json.at(attribute);
-	if (ImGui::InputInt("", &value)) { value = max(0, value); json[attribute] = value; }
+	if (ImGui::InputInt(label.c_str(), &value)) { value = max(0, value); json[attribute] = value; }
 };
 
 inline void ImDrawDynamicArray(
@@ -252,5 +278,104 @@ inline void ImDrawObject(
 		ImGui::PopID();
 	}
 }
+
+static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohmann::json&)>> ImMaterialVariablesDraw =
+{
+	{ MAT_VAR_BOOLEAN, [](unsigned int index, nlohmann::json& variable) { drawFromCheckBox(variable,"value",variable.at("variable")); }},
+	{ MAT_VAR_INTEGER, [](unsigned int index, nlohmann::json& variable) { drawFromInt(variable,"value",variable.at("variable")); }},
+	{ MAT_VAR_UNSIGNED_INTEGER, [](unsigned int index, nlohmann::json& variable) { drawFromUInt(variable,"value",variable.at("variable")); }},
+	{ MAT_VAR_RGB, [](unsigned int index, nlohmann::json& variable) {
+		XMFLOAT3 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2) };
+		ImDrawColorEdit3<XMFLOAT3>("material-" + std::string(variable.at("variable")), value, [&variable](XMFLOAT3 f3)
+			{
+				nlohmann::json& j = variable.at("value");
+				j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+			}
+		);
+	}},
+	{ MAT_VAR_RGBA, [](unsigned int index, nlohmann::json& variable) {
+		XMFLOAT4 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2), variable.at("value").at(3) };
+		ImDrawColorEdit4<XMFLOAT4>("material-" + std::string(variable.at("variable")), value, [&variable](XMFLOAT4 f4)
+			{
+				nlohmann::json& j = variable.at("value");
+				j.at(0) = f4.x; j.at(1) = f4.y; j.at(2) = f4.z; j.at(3) = f4.w;
+			}
+		);
+	}},
+	{ MAT_VAR_FLOAT, [](unsigned int index, nlohmann::json& variable) {
+		float value = variable.at("value");
+		ImDrawFloatValues<float>("material-" + std::string(variable.at("variable")), { "" }, value, [&variable](float f)
+			{
+				variable.at("value") = f;
+			}
+		);
+	}},
+	{ MAT_VAR_FLOAT2, [](unsigned int index, nlohmann::json& variable) {
+		XMFLOAT2 value = { variable.at("value").at(0), variable.at("value").at(1) };
+		ImDrawFloatValues<XMFLOAT2>("material-" + std::string(variable.at("variable")), { "x","y" }, value, [&variable](XMFLOAT2 f2)
+			{
+				nlohmann::json& j = variable.at("value");
+				j.at(0) = f2.x; j.at(1) = f2.y;
+			}
+		);
+	}},
+	{ MAT_VAR_FLOAT3, [](unsigned int index, nlohmann::json& variable)
+	{
+		XMFLOAT3 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2)};
+		ImDrawFloatValues<XMFLOAT3>("material-" + std::string(variable.at("variable")), { "x","y","z" }, value, [&variable](XMFLOAT3 f3)
+			{
+				nlohmann::json& j = variable.at("value");
+				j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+			}
+		);
+	}},
+	{ MAT_VAR_FLOAT4, [](unsigned int index, nlohmann::json& variable) {
+		XMFLOAT4 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2), variable.at("value").at(3)};
+		ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "x","y","z","w"}, value, [&variable](XMFLOAT4 f4)
+			{
+				nlohmann::json& j = variable.at("value");
+				j.at(0) = f4.x; j.at(1) = f4.y; j.at(2) = f4.z;; j.at(3) = f4.w;
+			}
+		);
+	}},
+	{ MAT_VAR_MATRIX4X4, [](unsigned int index, nlohmann::json& variable) {
+		{
+			XMFLOAT4 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2), variable.at("value").at(3)};
+			ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "0.x","0.y","0.z","0.w"}, value, [&variable](XMFLOAT4 f4)
+				{
+					nlohmann::json& j = variable.at("value");
+					j.at(0) = f4.x; j.at(1) = f4.y; j.at(2) = f4.z; j.at(3) = f4.w;
+				}
+			);
+		}
+		{
+			XMFLOAT4 value = { variable.at("value").at(4), variable.at("value").at(5), variable.at("value").at(6), variable.at("value").at(7)};
+			ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "1.x","1.y","1.z","1.w" }, value, [&variable](XMFLOAT4 f4)
+				{
+					nlohmann::json& j = variable.at("value");
+					j.at(4) = f4.x; j.at(5) = f4.y; j.at(6) = f4.z; j.at(7) = f4.w;
+				}
+			);
+		}
+		{
+			XMFLOAT4 value = { variable.at("value").at(8), variable.at("value").at(9), variable.at("value").at(10), variable.at("value").at(11)};
+			ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "2.x","2.y","2.z","2.w" }, value, [&variable](XMFLOAT4 f4)
+				{
+					nlohmann::json& j = variable.at("value");
+					j.at(8) = f4.x; j.at(9) = f4.y; j.at(10) = f4.z; j.at(11) = f4.w;
+				}
+			);
+		}
+		{
+			XMFLOAT4 value = { variable.at("value").at(12), variable.at("value").at(13), variable.at("value").at(14), variable.at("value").at(15)};
+			ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "3.x","3.y","3.z","3.w" }, value, [&variable](XMFLOAT4 f4)
+				{
+					nlohmann::json& j = variable.at("value");
+					j.at(12) = f4.x; j.at(13) = f4.y; j.at(14) = f4.z; j.at(15) = f4.w;
+				}
+			);
+		}
+	}},
+};
 
 #endif
