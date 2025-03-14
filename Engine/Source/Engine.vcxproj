@@ -283,6 +283,7 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameDecl.h" />
     <ClInclude Include="pch\Debug.h" />
+    <ClInclude Include="pch\ShaderMaterials.h" />
     <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />
     <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h" />
     <ClInclude Include="pch\DXTypes.h" />
@@ -425,9 +426,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Resources\ShaderByteCode.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="Templates\Shader\Shader.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
@@ -503,7 +501,6 @@
     </ClCompile>
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Renderer\VertexFormats.cpp" />
-    <ClCompile Include="Resources\ShaderByteCode.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
     <ClCompile Include="Shaders\Compiler\CustomIncludeHandler.cpp" />
     <ClCompile Include="Editor\Editor.cpp">

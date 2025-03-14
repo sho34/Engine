@@ -1,8 +1,5 @@
 #pragma once
 
-//Dependencies of hlsl+shaderType(Source) file to many .h files
-typedef std::unordered_set<std::string> ShaderDependencies;
-
 //a custom handler to manage include files
 struct CustomIncludeHandler : IDxcIncludeHandler {
 

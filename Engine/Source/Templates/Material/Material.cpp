@@ -12,6 +12,7 @@
 #include <set>
 #include "../../Common/DirectXHelper.h"
 #include "../../pch/NoStd.h"
+#include <random>
 
 namespace Templates {
 
@@ -84,16 +85,16 @@ namespace Templates {
 			TransformJsonToMaterialTextures(matTextures, mat, "textures");
 		}
 		material->textures = GetTextures(matTextures);
-		material->CreateShaderBinary();
+		material->GetShaderInstances();
 	}
 
-	void MaterialInstance::CreateShaderBinary()
+	void MaterialInstance::GetShaderInstances()
 	{
 		using namespace ShaderCompiler;
 		Source compVS = { .shaderType = VERTEX_SHADER, .shaderName = shaderName, .defines = defines };
 		Source compPS = { .shaderType = PIXEL_SHADER, .shaderName = shaderName, .defines = defines };
-		vertexShader = GetShaderBinary(compVS);
-		pixelShader = GetShaderBinary(compPS);
+		vertexShader = GetShaderInstance(compVS);
+		pixelShader = GetShaderInstance(compPS);
 		vertexShader->BindChange([this] { NotifyChanges(); });
 		pixelShader->BindChange([this] { NotifyChanges(); });
 		nlohmann::json mat = GetMaterialTemplate(material);
@@ -133,7 +134,7 @@ namespace Templates {
 	}
 
 	//READ&GET
-	bool MaterialInstance::ShaderBinaryHasRegister(std::function<int(std::shared_ptr<ShaderBinary>&)> getRegister)
+	bool MaterialInstance::ShaderInstanceHasRegister(std::function<int(std::shared_ptr<ShaderInstance>&)> getRegister)
 	{
 		return (getRegister(vertexShader) != -1) || (getRegister(pixelShader) != -1);
 	}

@@ -1,48 +1,35 @@
 #include "pch.h"
 #include "ShaderCompiler.h"
-#include "../../Resources/ShaderByteCode.h"
 #include "../../Common/DirectXHelper.h"
 #include "../../pch/NoStd.h"
 #include <string>
 #include <set>
 #include <map>
+#include "../../pch/Application.h"
+
+using namespace Templates;
 
 namespace ShaderCompiler {
 
 	std::map<ShaderType, std::wstring> shaderEntryPoint =
 	{
-		{	ShaderType::VERTEX_SHADER, L"main_vs"	},
-		{	ShaderType::PIXEL_SHADER, L"main_ps"	},
+		{	VERTEX_SHADER, L"main_vs"	},
+		{	PIXEL_SHADER, L"main_ps"	},
 	};
 
 	std::map<ShaderType, std::wstring> shaderTarget =
 	{
-		{	ShaderType::VERTEX_SHADER, L"vs_6_1"	},
-		{	ShaderType::PIXEL_SHADER, L"ps_6_1" },
+		{	VERTEX_SHADER, L"vs_6_1"	},
+		{	PIXEL_SHADER, L"ps_6_1" },
 	};
 
-	nostd::RefTracker<Source, std::shared_ptr<ShaderBinary>> refTracker;
-
-	//Dependencies of hlsl+shaderType(Source) file to many .h files
-	typedef std::map<Source, ShaderDependencies> ShaderIncludesDependencies;
-	ShaderIncludesDependencies dependencies;
-
-	std::shared_ptr<ShaderBinary> ShaderCompiler::GetShaderBinary(Source params)
-	{
-		return refTracker.AddRef(params, [&params]()
-			{
-				return Compile(params);
-			}
-		);
-	}
-
 	static std::mutex compileMutex;
-	std::shared_ptr<ShaderBinary> ShaderCompiler::Compile(Source params) {
+	std::shared_ptr<ShaderInstance> ShaderCompiler::Compile(Source params, ShaderIncludesDependencies& dependencies) {
 
 		std::lock_guard<std::mutex> lock(compileMutex);
 		//read the shader
 
-		const std::string filename = shaderRootFolder + params.shaderName + ".hlsl";
+		const std::string filename = defaultShadersFolder + params.shaderName + ".hlsl";
 		ShaderByteCode shaderSource = DX::ReadDataAsync(filename.c_str()).get();
 
 		//create a blob for the shader source code
@@ -83,7 +70,7 @@ namespace ShaderCompiler {
 		//compile the shader
 		ComPtr<IDxcResult> pCompileResult;
 		dependencies[params].clear();
-		CustomIncludeHandler includeHandler(dependencies[params], shaderRootFolder, pUtils);
+		CustomIncludeHandler includeHandler(dependencies[params], defaultShadersFolder, pUtils);
 		DX::ThrowIfFailed(pCompiler->Compile(&sourceBuffer, arguments.data(), (UINT32)arguments.size(), &includeHandler, IID_PPV_ARGS(pCompileResult.GetAddressOf())));
 
 		//get the errors
@@ -91,7 +78,7 @@ namespace ShaderCompiler {
 		pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pErrors.GetAddressOf()), nullptr);
 		if (pErrors && pErrors->GetStringLength() > 0) {
 			OutputDebugStringA((char*)pErrors->GetBufferPointer());
-			return refTracker.FindValue(params);
+			return nullptr;
 		}
 
 		// Get shader reflection data.
@@ -107,7 +94,7 @@ namespace ShaderCompiler {
 		D3D12_SHADER_DESC shaderDesc{};
 		shaderReflection->GetDesc(&shaderDesc);
 
-		std::shared_ptr<ShaderBinary> shaderBinary = std::make_shared<ShaderBinary>();
+		std::shared_ptr<ShaderInstance> shaderBinary = std::make_shared<ShaderInstance>();
 
 		shaderBinary->shaderSource = params;
 		shaderBinary->CreateVSSemantics(shaderReflection, shaderDesc);
@@ -118,146 +105,9 @@ namespace ShaderCompiler {
 		return shaderBinary;
 	}
 
-	void DestroyShaderBinary(std::shared_ptr<ShaderBinary>& shaderBinary)
-	{
-		Source key = refTracker.FindKey(shaderBinary);
-		refTracker.RemoveRef(key, shaderBinary);
-	}
-
 	void BuildShaderCompiler() {
 		DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(pUtils.GetAddressOf()));
 		DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&pCompiler));
-	}
-
-	void BuildShader(std::string shaderFile)
-	{
-		for (auto it = refTracker.instances.begin(); it != refTracker.instances.end(); it++)
-		{
-			Source source = it->first;
-			std::shared_ptr<ShaderBinary> instance = it->second;
-
-			if (source.shaderName != shaderFile) continue;
-
-			using namespace ShaderCompiler;
-			std::shared_ptr<ShaderBinary> test = Compile(source);
-			if (test == instance)
-			{
-				OutputDebugStringA((std::string("Error found compiling ") + source.to_string()).c_str());
-				return;
-			}
-		}
-
-		for (auto& [source, binary] : refTracker.instances)
-		{
-			if (source.shaderName != shaderFile) continue;
-			binary->NotifyChanges();
-		}
-	}
-
-	void BuildShaderFromDependency(std::string dependency)
-	{
-		std::set<std::string> shaderFiles;
-		for (auto& [src, deps] : dependencies) {
-			if (deps.contains(dependency)) {
-				shaderFiles.insert(src.shaderName);
-			}
-		}
-		for (auto shaderFile : shaderFiles) {
-			BuildShader(shaderFile);
-		}
-	}
-
-	static CompilerQueue changesQueue;
-	void MonitorShaderChanges(std::string folder) {
-
-		std::thread monitor([folder]()
-			{
-				HANDLE file = CreateFileA(folder.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
-
-				if (file == INVALID_HANDLE_VALUE || file == NULL) {
-					OutputDebugStringA("ERROR: Invalid HANDLE value.\n");
-					ExitProcess(GetLastError());
-				}
-
-				OVERLAPPED overlapped;
-				overlapped.hEvent = CreateEvent(NULL, FALSE, 0, NULL);
-
-				uint8_t change_buf[1024];
-				BOOL success = ReadDirectoryChangesW(
-					file, change_buf, 1024, TRUE,
-					FILE_NOTIFY_CHANGE_LAST_WRITE,
-					NULL, &overlapped, NULL);
-
-				while (true) {
-					DWORD result = WaitForSingleObject(overlapped.hEvent, 0);
-
-					if (result == WAIT_OBJECT_0) {
-						DWORD bytes_transferred;
-						GetOverlappedResult(file, &overlapped, &bytes_transferred, FALSE);
-
-						FILE_NOTIFY_INFORMATION* event = (FILE_NOTIFY_INFORMATION*)change_buf;
-
-						for (;;) {
-							DWORD name_len = event->FileNameLength / sizeof(wchar_t);
-
-							switch (event->Action) {
-							case FILE_ACTION_MODIFIED: {
-								std::string shaderFile = nostd::WStringToString(std::wstring(event->FileName, event->FileNameLength / sizeof(event->FileName[0])));
-								changesQueue.push(shaderFile);
-							} break;
-							default: {
-								printf("Unknown action!\n");
-							} break;
-							}
-
-							// Are there more events to handle?
-							if (event->NextEntryOffset) {
-								*((uint8_t**)&event) += event->NextEntryOffset;
-							}
-							else {
-								break;
-							}
-						}
-					}
-					// Queue the next event
-					BOOL success = ReadDirectoryChangesW(
-						file, change_buf, 1024, TRUE,
-						FILE_NOTIFY_CHANGE_LAST_WRITE,
-						NULL, &overlapped, NULL);
-				}
-			}
-		);
-
-		std::thread compilation([]()
-			{
-				using namespace std::chrono_literals;
-				while (TRUE)
-				{
-					while (changesQueue.size() > 0)
-					{
-
-						std::filesystem::path filePath(changesQueue.front());
-						std::string fileExtension = filePath.extension().string();
-
-						std::string output = "Modified: " + filePath.string() + "\n";
-						OutputDebugStringA(output.c_str());
-
-						if (!_stricmp(fileExtension.c_str(), ".hlsl")) {
-							BuildShader(filePath.stem().string().c_str());
-						}
-						else if (!_stricmp(fileExtension.c_str(), ".h")) {
-							BuildShaderFromDependency(filePath.string().c_str());
-						}
-
-						changesQueue.pop();
-					}
-					std::this_thread::sleep_for(200ms);
-				}
-			}
-		);
-
-		monitor.detach();
-		compilation.detach();
 	}
 
 	void DestroyShaderCompiler()

@@ -943,15 +943,15 @@ namespace Scene {
 				}
 			}
 
-			if (camera && material->ShaderBinaryHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) {
+			if (camera && material->ShaderInstanceHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) {
 				camera->cameraCbv->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 			}
 
-			if (material->ShaderBinaryHasRegister([](auto& binary) { return binary->lightCBVRegister; })) {
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightCBVRegister; })) {
 				GetLightsConstantsBuffer()->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 			}
 
-			if (material->ShaderBinaryHasRegister([](auto& binary) { return binary->lightsShadowMapCBVRegister; })) {
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightsShadowMapCBVRegister; })) {
 				if (SceneHasShadowMaps()) {
 					GetShadowMapConstantsBuffer()->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 				}
@@ -961,13 +961,13 @@ namespace Scene {
 				}
 			}
 
-			if (material->ShaderBinaryHasRegister([](auto& binary) { return binary->animationCBVRegister; })) {
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->animationCBVRegister; })) {
 				GetAnimatedConstantsBuffer(this_ptr)->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 			}
 
 			material->SetRootDescriptorTable(commandList, cbvSlot);
 
-			if (material->ShaderBinaryHasRegister([](auto& binary) { return binary->lightsShadowMapSRVRegister; })) {
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightsShadowMapSRVRegister; })) {
 				if (SceneHasShadowMaps()) {
 					commandList->SetGraphicsRootDescriptorTable(cbvSlot, GetShadowMapGpuDescriptorHandleStart());
 				}
@@ -1009,7 +1009,7 @@ namespace Scene {
 			auto& pipelineState = meshShadowMapPipelineStates.at(mesh);
 
 			//don't draw things without a camera, bad shader(sorry)
-			if (!material->ShaderBinaryHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) continue;
+			if (!material->ShaderInstanceHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) continue;
 
 			commandList->SetGraphicsRootSignature(rootSignature);
 			commandList->SetPipelineState(pipelineState);
@@ -1024,11 +1024,11 @@ namespace Scene {
 				}
 			}
 
-			if (material->ShaderBinaryHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) {
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) {
 				shadowMapCameras[cameraIndex]->cameraCbv->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 			}
 
-			if (material->ShaderBinaryHasRegister([](auto& binary) { return binary->animationCBVRegister; })) {
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->animationCBVRegister; })) {
 				GetAnimatedConstantsBuffer(this_ptr)->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 			}
 

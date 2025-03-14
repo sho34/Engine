@@ -1,5 +1,4 @@
 #pragma once
-#include "../../Resources/ShaderByteCode.h"
 
 struct MaterialTexture
 {

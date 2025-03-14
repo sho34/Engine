@@ -87,64 +87,6 @@ static std::map<MaterialVariablesTypes, std::function<void(MaterialVariableIniti
 void WriteMappedInitialValuesToDestination(MaterialVariableInitialValue& def, void* dst, size_t size)
 {
 	materialVariableInitialValueToDestionation.at(def.variableType)(def, dst, size);
-	/*
-	switch (def.variableType)
-	{
-	case MAT_VAR_BOOLEAN:
-	{
-		auto src = std::any_cast<BOOLEAN>(def.value);
-		memcpy(dst, &src, size);
-	}
-	break;
-	case MAT_VAR_INTEGER:
-	{
-		auto src = std::any_cast<INT>(def.value);
-		memcpy(dst, &src, size);
-	}
-	break;
-	case MAT_VAR_UNSIGNED_INTEGER:
-	{
-		auto src = std::any_cast<UINT>(def.value);
-		memcpy(dst, &src, size);
-	}
-	break;
-	case MAT_VAR_RGB:
-	{
-	}
-	break;
-	case MAT_VAR_RGBA:
-	{
-	}
-	break;
-	case MAT_VAR_FLOAT:
-	{
-		auto src = std::any_cast<FLOAT>(def.value);
-		memcpy(dst, &src, size);
-	}
-	break;
-	case MAT_VAR_FLOAT2:
-	{
-		auto src = std::any_cast<XMFLOAT2>(def.value);
-		memcpy(dst, &src.x, size);
-	}
-	break;
-	case MAT_VAR_FLOAT3:
-	{
-		auto src = std::any_cast<XMFLOAT3>(def.value);
-		memcpy(dst, &src.x, size);
-	}
-	break;
-	case MAT_VAR_FLOAT4:
-	{
-		auto src = std::any_cast<XMFLOAT4>(def.value);
-		memcpy(dst, &src.x, size);
-	}
-	break;
-	case MAT_VAR_MATRIX4X4:
-	{
-	}
-	break;
-	}*/
 }
 
 template<>
@@ -203,52 +145,8 @@ nlohmann::json TransformMaterialValueMappingToJson(MaterialInitialValueMap mappe
 			nlohmann::json matInitialValue = nlohmann::json({});
 
 			matInitialValue["variable"] = pair.first;
-			matInitialValue["variableType"] = MaterialVariablesTypesStr[pair.second.variableType];
+			matInitialValue["variableType"] = MaterialVariablesTypesNames.at(pair.second.variableType);
 			valueMappingToJson.at(pair.second.variableType)(matInitialValue, pair.second);
-			/*
-			switch (pair.second.variableType) {
-			case MAT_VAR_BOOLEAN:
-			{
-				auto value = std::any_cast<BOOLEAN>(pair.second.value);
-				matInitialValue["value"] = value;
-			}
-			break;
-			case MAT_VAR_INTEGER:
-			{
-				auto value = std::any_cast<INT>(pair.second.value);
-				matInitialValue["value"] = value;
-			}
-			break;
-			case MAT_VAR_UNSIGNED_INTEGER:
-			{
-				auto value = std::any_cast<UINT>(pair.second.value);
-				matInitialValue["value"] = value;
-			}
-			break;
-			case MAT_VAR_RGB:
-				break;
-			case MAT_VAR_RGBA:
-				break;
-			case MAT_VAR_FLOAT:
-			{
-				auto value = std::any_cast<FLOAT>(pair.second.value);
-				matInitialValue["value"] = value;
-			}
-			break;
-			case MAT_VAR_FLOAT2:
-				break;
-			case MAT_VAR_FLOAT3:
-			{
-				auto value = std::any_cast<XMFLOAT3>(pair.second.value);
-				matInitialValue["value"] = { value.x , value.y, value.z };
-			}
-			break;
-			case MAT_VAR_FLOAT4:
-				break;
-			case MAT_VAR_MATRIX4X4:
-				break;
-			}*/
-
 			return matInitialValue;
 		}
 	);

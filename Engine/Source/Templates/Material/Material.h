@@ -30,18 +30,18 @@ namespace Templates {
 		std::vector<std::vector<byte>> variablesBuffer;
 		std::string shaderName;
 		std::vector<std::string> defines;
-		std::shared_ptr<ShaderBinary> vertexShader;
-		std::shared_ptr<ShaderBinary> pixelShader;
+		std::shared_ptr<ShaderInstance> vertexShader;
+		std::shared_ptr<ShaderInstance> pixelShader;
 		std::vector<MaterialSamplerDesc> samplers;
 		std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> textures;
 		unsigned int changesCounter = 0U;
 		std::vector<std::function<void()>> changesCallbacks;
 
-		void CreateShaderBinary();
+		void GetShaderInstances();
 		void BindChange(std::function<void()> changeListener);
 		void NotifyChanges();
 		void Destroy();
-		bool ShaderBinaryHasRegister(std::function<int(std::shared_ptr<ShaderBinary>&)> getRegister);
+		bool ShaderInstanceHasRegister(std::function<int(std::shared_ptr<ShaderInstance>&)> getRegister);
 		void LoadVariablesMapping(nlohmann::json material);
 		void SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
 	};

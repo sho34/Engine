@@ -117,6 +117,7 @@ using namespace Concurrency;
 #include "pch/NoStd.h"
 #include "pch/DXTypes.h"
 #include "pch/Debug.h"
+#include "pch/ShaderMaterials.h"
 #if defined(_EDITOR)
 #include "pch/Editor.h"
 #endif

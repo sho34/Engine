@@ -193,7 +193,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	//initialize the shader compiler and changes monitor
 	BuildShaderCompiler();
-	MonitorShaderChanges("Shaders");
+	MonitorShaderChanges(defaultShadersFolder);
 
 	//Initialize the audio system
 	InitAudio();
@@ -244,7 +244,7 @@ void CreateSystemTemplates() {
 	CreateShader("Floor", R"( {
 		"systemCreated" : true,
 		"mappedValues": [
-			{ "value": [ 1.0, 1.0, 1.0 ], "variable": "baseColor", "variableType": "FLOAT3" },
+			{ "value": [ 1.0, 0.0, 1.0 ], "variable": "baseColor", "variableType": "RGB" },
 			{ "value": 1024.0, "variable": "specularExponent", "variableType": "FLOAT" }
 		],
 		"fileName": "Grid"

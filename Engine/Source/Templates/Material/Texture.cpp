@@ -4,7 +4,6 @@
 #include "../../Renderer/Renderer.h"
 #include "../../Renderer/DeviceUtils/Resources/Resources.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
-#include "../../Resources/ShaderByteCode.h"
 #include "../../pch/NoStd.h"
 #include <wrl.h>
 #include <wrl/client.h>
