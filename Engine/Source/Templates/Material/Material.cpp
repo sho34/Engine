@@ -6,13 +6,13 @@
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 #include "../../Scene/Lights/Lights.h"
 #include "../../Scene/Camera/Camera.h"
-#include "../../Common/d3dx12.h"
 #include "../../Shaders/Compiler/ShaderCompiler.h"
+#include "../../Common/d3dx12.h"
+#include "../../Common/DirectXHelper.h"
 #include <nlohmann/json.hpp>
 #include <set>
-#include "../../Common/DirectXHelper.h"
-#include "../../pch/NoStd.h"
 #include <random>
+#include <NoStd.h>
 
 namespace Templates {
 
@@ -95,29 +95,42 @@ namespace Templates {
 		Source compPS = { .shaderType = PIXEL_SHADER, .shaderName = shaderName, .defines = defines };
 		vertexShader = GetShaderInstance(compVS);
 		pixelShader = GetShaderInstance(compPS);
-		vertexShader->BindChange([this] { NotifyChanges(); });
-		pixelShader->BindChange([this] { NotifyChanges(); });
+		vertexShader->BindChange([this] { NotifyRebuild(); });
+		pixelShader->BindChange([this] { NotifyRebuild(); });
 		nlohmann::json mat = GetMaterialTemplate(material);
 		LoadVariablesMapping(mat);
 	}
 
-	void MaterialInstance::BindChange(std::function<void()> changeListener)
+	void MaterialInstance::BindRebuildChange(std::function<void()> changeListener)
 	{
-		changesCallbacks.push_back(changeListener);
+		rebuildCallbacks.push_back(changeListener);
 	}
 
-	void MaterialInstance::NotifyChanges()
+	void MaterialInstance::NotifyRebuild()
 	{
 		changesCounter++;
 
 		if (changesCounter < 2U) return;
 
-		for (auto cb : changesCallbacks)
+		for (auto& cb : rebuildCallbacks)
 		{
 			cb();
 		}
 
 		changesCounter = 0U;
+	}
+
+	void MaterialInstance::BindMappedValueChange(std::function<void()> changeListener)
+	{
+		propagateMappedValueChanges.push_back(changeListener);
+	}
+
+	void MaterialInstance::NotifyMappedValueChange()
+	{
+		for (auto& cb : propagateMappedValueChanges)
+		{
+			cb();
+		}
 	}
 
 	void MaterialInstance::Destroy()
@@ -273,6 +286,27 @@ namespace Templates {
 		}
 	}
 
+	void MaterialInstance::UpdateMappedValues(nlohmann::json mappedValues)
+	{
+		//write the values to mapped memory
+		for (unsigned int i = 0; i < mappedValues.size(); i++)
+		{
+			nlohmann::json def = mappedValues.at(i);
+			std::string varName(def.at("variable"));
+
+			if (!variablesMapping.contains(varName)) continue;
+
+			MaterialVariableMapping mapping = variablesMapping.at(varName);
+			size_t size = mapping.mapping.size;
+			byte* dst = variablesBuffer[mapping.mapping.bufferIndex].data();
+			dst += mapping.mapping.offset;
+			auto initialValue = JsonToMaterialInitialValue(def);
+			WriteMappedInitialValuesToDestination(initialValue, dst, size);
+		}
+
+		NotifyMappedValueChange();
+	}
+
 	nlohmann::json GetMaterialTemplate(std::string name)
 	{
 		return (materialTemplates.contains(name)) ? materialTemplates.at(name) : nlohmann::json();
@@ -303,35 +337,64 @@ namespace Templates {
 		nlohmann::json& mat = materialTemplates.at(material);
 
 		std::string shader = mat.at("shader");
-		if (ImGui::Button(ICON_FA_ELLIPSIS_H))
-		{
 
+		std::vector<std::string> selectables = GetShadersNames();
+
+		ImGui::Text("Shader");
+		ImGui::PushID("shader-name-combo");
+		{
+			DrawComboSelection(shader, selectables, [&mat](std::string shaderName)
+				{
+					mat.at("shader") = shaderName;
+				}, ""
+			);
 		}
-		ImGui::SameLine();
-		ImGui::InputText("Shader", shader.data(), shader.size(), ImGuiInputTextFlags_ReadOnly);
+		ImGui::PopID();
 
-		if (mat.contains("mappedValues"))
+		nlohmann::json sha = GetShaderTemplate(shader);
+		std::string fileName = sha.contains("fileName") ? std::string(sha.at("fileName")) : shader;
+		bool updateMappedValues = false;
+		bool rebuildMaterial = false;
+		ImGui::PushID("material-mapped-values");
 		{
-			ImGui::Text("Mapped Values");
-			unsigned int sz = static_cast<unsigned int>(mat.at("mappedValues").size());
-			for (unsigned int i = 0; i < sz; i++)
+			updateMappedValues = ImDrawMappedValues(mat, GetShaderMappeableVariables(fileName.data()));
+		}
+		ImGui::PopID();
+
+		ImGui::PushID("material-textures");
+		{
+			rebuildMaterial = ImDrawTextureParameters(mat, GetShaderTextureParameters(fileName.data()));
+		}
+		ImGui::PopID();
+
+		ImGui::PushID("material-samplers");
+		{
+			rebuildMaterial = ImDrawSamplerParameters(mat, GetShaderSamplerParameters(fileName.data()));
+		}
+		ImGui::PopID();
+
+		if (updateMappedValues || rebuildMaterial)
+		{
+			for (auto& [_, instance] : refTracker.instances)
 			{
-				nlohmann::json& mappedV = mat.at("mappedValues").at(i);
-				ImMaterialVariablesDraw.at(StrToMaterialVariablesTypes.at(std::string(mappedV.at("variableType"))))(i, mappedV);
+				if (instance->material != material) continue;
+
+				if (updateMappedValues)
+				{
+					instance->UpdateMappedValues(mat.at("mappedValues"));
+				}
+				if (rebuildMaterial)
+				{
+					for (auto& cb : instance->rebuildCallbacks)
+					{
+						cb();
+					}
+				}
 			}
 		}
 
-	}
 
-	/*
-	std::string GetMaterialInstanceTemplateName(std::shared_ptr<MaterialInstance> material)
-	{
-		for (auto it : refTracker.instances) {
-			if (it.second == material) return std::get<0>(it.first.first);
-		}
-		return "";
 	}
-	*/
 
 	/*
 	nlohmann::json json()

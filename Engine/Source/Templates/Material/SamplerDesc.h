@@ -44,7 +44,8 @@ struct MaterialSamplerDesc : D3D12_STATIC_SAMPLER_DESC {
 				other.MinLOD, other.MaxLOD, other.ShaderRegister, other.RegisterSpace, other.ShaderVisibility);
 	}
 
-	nlohmann::json json() {
+	nlohmann::json json()
+	{
 		return nlohmann::json(
 			{
 				{ "Filter" , filterToString[Filter] },
@@ -59,26 +60,9 @@ struct MaterialSamplerDesc : D3D12_STATIC_SAMPLER_DESC {
 				{ "MaxLOD" , MaxLOD },
 				{ "ShaderRegister" , ShaderRegister },
 				{ "RegisterSpace" , RegisterSpace },
-				{ "ShaderVisibility" , shaderVisibilityToString[ShaderVisibility] },
+				{ "ShaderVisibility" , shaderVisibilityToString[ShaderVisibility] }
 			}
-			);
-		/*
-		nlohmann::json j = nlohmann::json({});
-		j["Filter"] = filterToString[Filter];
-		j["AddressU"] = textureAddressModeToString[AddressU];
-		j["AddressV"] = textureAddressModeToString[AddressV];
-		j["AddressW"] = textureAddressModeToString[AddressW];
-		j["MipLODBias"] = MipLODBias;
-		j["MaxAnisotropy"] = MaxAnisotropy;
-		j["ComparisonFunc"] = comparisonFuncToString[ComparisonFunc];
-		j["BorderColor"] = borderColorToString[BorderColor];
-		j["MinLOD"] = MinLOD;
-		j["MaxLOD"] = MaxLOD;
-		j["ShaderRegister"] = ShaderRegister;
-		j["RegisterSpace"] = RegisterSpace;
-		j["ShaderVisibility"] = shaderVisibilityToString[ShaderVisibility];
-		return j;
-		*/
+		);
 	}
 };
 

@@ -90,7 +90,6 @@ namespace DeviceUtils
 		ImDrawDynamicArray(
 			"BLEND#RT",
 			BlendState.at("RenderTarget"),
-			_countof(D3D12_BLEND_DESC::RenderTarget),
 			[](nlohmann::json& RenderTarget, unsigned int index)
 			{
 				auto pos = RenderTarget.begin() + index + 1;
@@ -106,7 +105,9 @@ namespace DeviceUtils
 					addToBlendDescRenderTarget,
 					drawBlendDescRenderTarget
 				);
-			}
+			},
+			_countof(D3D12_BLEND_DESC::RenderTarget),
+			1U
 		);
 	}
 
@@ -116,7 +117,6 @@ namespace DeviceUtils
 		ImDrawDynamicArray(
 			"RT",
 			PipelineState.at("renderTargetsFormats"),
-			_countof(D3D12_GRAPHICS_PIPELINE_STATE_DESC::RTVFormats),
 			[](nlohmann::json& renderTargetsFormats, unsigned int index)
 			{
 				auto pos = renderTargetsFormats.begin() + index + 1;
@@ -134,7 +134,9 @@ namespace DeviceUtils
 				ImGui::SameLine();
 				std::string label = (std::string("RT#") + std::to_string(index + 1));
 				ImGui::Text(label.c_str());
-			}
+			},
+			_countof(D3D12_GRAPHICS_PIPELINE_STATE_DESC::RTVFormats),
+			1U
 		);
 	}
 

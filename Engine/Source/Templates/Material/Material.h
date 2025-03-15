@@ -35,15 +35,19 @@ namespace Templates {
 		std::vector<MaterialSamplerDesc> samplers;
 		std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> textures;
 		unsigned int changesCounter = 0U;
-		std::vector<std::function<void()>> changesCallbacks;
+		std::vector<std::function<void()>> rebuildCallbacks;
+		std::vector<std::function<void()>> propagateMappedValueChanges;
 
 		void GetShaderInstances();
-		void BindChange(std::function<void()> changeListener);
-		void NotifyChanges();
+		void BindRebuildChange(std::function<void()> changeListener);
+		void NotifyRebuild();
+		void BindMappedValueChange(std::function<void()> changeListener);
+		void NotifyMappedValueChange();
 		void Destroy();
 		bool ShaderInstanceHasRegister(std::function<int(std::shared_ptr<ShaderInstance>&)> getRegister);
 		void LoadVariablesMapping(nlohmann::json material);
 		void SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
+		void UpdateMappedValues(nlohmann::json mappedValues);
 	};
 
 	//CREATE

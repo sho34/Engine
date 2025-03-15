@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -153,7 +153,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/tween</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/tween</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -175,7 +175,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -198,7 +198,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/tween;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/tween;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -221,7 +221,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;HAS_DIRECTXTK12;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
@@ -245,7 +245,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/tween;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/tween;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>

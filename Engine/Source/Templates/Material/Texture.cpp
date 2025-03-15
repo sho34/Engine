@@ -4,7 +4,7 @@
 #include "../../Renderer/Renderer.h"
 #include "../../Renderer/DeviceUtils/Resources/Resources.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
-#include "../../pch/NoStd.h"
+#include <NoStd.h>
 #include <wrl.h>
 #include <wrl/client.h>
 #include <d3d12.h>

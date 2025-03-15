@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "Shader.h"
 #include "../../Shaders/Compiler/ShaderCompiler.h"
-#include "../../pch/NoStd.h"
+#include <NoStd.h>
 #include <nlohmann/json.hpp>
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
-#include "../../pch/Application.h"
+#include <Application.h>
 #endif
 
 namespace Templates {
@@ -14,6 +14,8 @@ namespace Templates {
 
 #if defined(_EDITOR)
 	std::map<std::string, std::map<std::string, MaterialVariablesTypes>> shaderConstantVariablesTypes;
+	std::map<std::string, std::set<TextureType>> shaderTexturesTypes;
+	std::map<std::string, unsigned int> shaderSamplers;
 #endif
 
 	nostd::RefTracker<Source, std::shared_ptr<ShaderInstance>> refTracker;
@@ -71,11 +73,20 @@ namespace Templates {
 			else if (bindDesc.Type == D3D_SIT_TEXTURE)
 			{
 				texturesParameters.insert_or_assign(strToTextureType.at(resourceName), ShaderTextureParameter({ .registerId = bindDesc.BindPoint, .numTextures = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
-				//texturesParameters.insert_or_assign(resourceName, ShaderTextureParameter({ .registerId = bindDesc.BindPoint, .numTextures = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
+#if defined(_EDITOR)
+				TextureType textureType = strToTextureType.at(resourceName);
+				if (materialTexturesTypes.contains(textureType))
+				{
+					shaderTexturesTypes[shaderSource.shaderName].insert(textureType);
+				}
+#endif
 			}
 			else if (bindDesc.Type == D3D_SIT_SAMPLER)
 			{
 				samplersParameters.insert_or_assign(resourceName, ShaderSamplerParameter({ .registerId = bindDesc.BindPoint, .numSamplers = bindDesc.BindCount }));
+#if defined(_EDITOR)
+				shaderSamplers[shaderSource.shaderName]++;
+#endif
 			}
 		}
 	}
@@ -330,7 +341,6 @@ namespace Templates {
 		compilation.detach();
 	}
 
-
 	//DELETE
 	void ReleaseShaderTemplates()
 	{
@@ -353,71 +363,34 @@ namespace Templates {
 
 	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string shaderName)
 	{
-		if (!shaderConstantVariablesTypes.contains(shaderName)) return std::map<std::string, MaterialVariablesTypes>();
-		return shaderConstantVariablesTypes.at(shaderName);
+		return (shaderConstantVariablesTypes.contains(shaderName)) ? shaderConstantVariablesTypes.at(shaderName) : std::map<std::string, MaterialVariablesTypes>();
 	}
 
+	std::set<TextureType> GetShaderTextureParameters(std::string shaderName)
+	{
+		return (shaderTexturesTypes.contains(shaderName)) ? shaderTexturesTypes.at(shaderName) : std::set<TextureType>();
+	}
 
+	unsigned int GetShaderSamplerParameters(std::string shaderName)
+	{
+		return (shaderSamplers.contains(shaderName)) ? shaderSamplers.at(shaderName) : 0U;
+	}
 
 	void DrawShaderPanel(std::string& shader, ImVec2 pos, ImVec2 size, bool pop)
 	{
-		nlohmann::json& mat = shaderTemplates.at(shader);
+		nlohmann::json& sha = shaderTemplates.at(shader);
 
-		std::string fileName = mat.contains("fileName") ? std::string(mat.at("fileName")) : shader;
-		if (ImGui::Button(ICON_FA_ELLIPSIS_H))
-		{
-			Editor::OpenFile([&mat](std::filesystem::path shaderPath)
-				{
-					std::filesystem::path hlslFilePath = shaderPath;
-					hlslFilePath.replace_extension(".hlsl");
-					mat.at("fileName") = hlslFilePath.stem().string();
-				}
-			, defaultShadersFolder, "Shader files. (*.hlsl)", "*.hlsl");
-		}
-		ImGui::SameLine();
-		ImGui::InputText("fileName", fileName.data(), fileName.size(), ImGuiInputTextFlags_ReadOnly);
-
-		std::set<std::string> existingVariables;
-		if (mat.contains("mappedValues"))
-		{
-			unsigned int sz = static_cast<unsigned int>(mat.at("mappedValues").size());
-			for (unsigned int i = 0; i < sz; i++)
+		std::string fileName = sha.contains("fileName") ? std::string(sha.at("fileName")) : shader;
+		ImDrawFileSelector("", fileName, [&sha](std::filesystem::path shaderPath)
 			{
-				existingVariables.insert(mat.at("mappedValues").at(i).at("variable"));
-			}
-		}
+				std::filesystem::path hlslFilePath = shaderPath;
+				hlslFilePath.replace_extension(".hlsl");
+				sha.at("fileName") = hlslFilePath.stem().string();
+			},
+			defaultShadersFolder, "Shader files. (*.hlsl)", "*.hlsl"
+		);
 
-		std::vector<std::string> selectables = { " " };
-		std::map<std::string, MaterialVariablesTypes> mappeables = GetShaderMappeableVariables(fileName.data());
-		for (auto it = mappeables.begin(); it != mappeables.end(); it++)
-		{
-			if (existingVariables.contains(it->first)) continue;
-			selectables.push_back(it->first);
-		}
-
-		//draw a combo for adding attributes to the object
-		ImGui::Text("Mapped Values");
-		if (selectables.size() > 1)
-		{
-			ImGui::PushID("mapped-values-add-combo");
-			DrawComboSelection(selectables[0], selectables, [&mat, mappeables](std::string variable)
-				{
-					if (!mat.contains("mappedValues")) { mat["mappedValues"] = nlohmann::json::array(); }
-					MaterialVariablesMappedJsonInitializer.at(mappeables.at(variable))(mat["mappedValues"], variable);
-				}, ""
-			);
-			ImGui::PopID();
-		}
-
-		if (mat.contains("mappedValues"))
-		{
-			unsigned int sz = static_cast<unsigned int>(mat.at("mappedValues").size());
-			for (unsigned int i = 0; i < sz; i++)
-			{
-				nlohmann::json& mappedV = mat.at("mappedValues").at(i);
-				ImMaterialVariablesDraw.at(StrToMaterialVariablesTypes.at(std::string(mappedV.at("variableType"))))(i, mappedV);
-			}
-		}
+		ImDrawMappedValues(sha, GetShaderMappeableVariables(fileName.data()));
 	}
 
 	/*

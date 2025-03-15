@@ -342,16 +342,20 @@ namespace Scene {
 	void Renderable::BindChangesToMaterial(unsigned int meshIndex)
 	{
 		std::string materialName = meshMaterials.at(meshes.at(meshIndex))->material;
-		meshMaterials.at(meshes.at(meshIndex))->BindChange([this, meshIndex, materialName]
+
+		//rebuild material instance
+		meshMaterials.at(meshes.at(meshIndex))->BindRebuildChange([this, meshIndex, materialName]
 			{
 				materialToChangeMeshIndex.push_back(meshIndex);
 				materialToRebuild.push_back(materialName);
 				renderableUpdateFlags |= RenderableFlags_RebuildMaterials;
 			}
 		);
+
+		//rebuild shadow map material instance
 		if (meshesShadowMap.size() > 0ULL)
 		{
-			meshShadowMapMaterials.at(meshesShadowMap.at(meshIndex))->BindChange([this, meshIndex, materialName]
+			meshShadowMapMaterials.at(meshesShadowMap.at(meshIndex))->BindRebuildChange([this, meshIndex, materialName]
 				{
 					materialToChangeMeshIndex.push_back(meshIndex);
 					materialToRebuild.push_back(materialName);
@@ -359,6 +363,22 @@ namespace Scene {
 				}
 			);
 		}
+
+		//update constants buffer values
+		meshMaterials.at(meshes.at(meshIndex))->BindMappedValueChange([this, meshIndex]
+			{
+				std::shared_ptr<MeshInstance> mesh = meshes[meshIndex];
+				std::shared_ptr<MaterialInstance>& material = meshMaterials.at(mesh);
+				for (std::shared_ptr<ConstantsBuffer> cbvData : meshConstantsBuffer[mesh])
+				{
+					for (unsigned int n = 0; n < renderer->numFrames; n++)
+					{
+						WriteMaterialVariablesToConstantsBufferSpace(material, cbvData, n);
+					}
+				}
+			}
+		);
+
 	}
 #endif
 
@@ -684,6 +704,7 @@ namespace Scene {
 				meshPipelineStates.at(mesh).Release();
 			}
 
+			if (meshShadowMapMaterials.contains(mesh))
 			{
 				//destroy material
 				std::shared_ptr<MaterialInstance> mat = meshShadowMapMaterials.at(mesh);

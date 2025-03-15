@@ -179,7 +179,8 @@ namespace Templates {
 		//pushAiMaterialToTextures(metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
 		PushAssimpTextureToJson(matJson, TextureType_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
 
-		matJson["samplers"] = { MaterialSamplerDesc().json() };
+		matJson["samplers"] = nlohmann::json::array();
+		matJson["samplers"].push_back(MaterialSamplerDesc().json());
 
 		return matJson;
 	}

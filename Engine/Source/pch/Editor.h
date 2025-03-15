@@ -2,13 +2,14 @@
 
 #if defined(_EDITOR)
 #include "../Templates/Material/Variables.h"
+#include "../Editor/Editor.h"
 
 static const std::string defaultLevelName = "baseLevel.json";
 
-inline void DrawComboSelection(std::string selected, std::vector<std::string> selectables, std::function<void(std::string)> onSelect, std::string label = "") {
-
+inline bool DrawComboSelection(std::string selected, std::vector<std::string> selectables, std::function<void(std::string)> onSelect, std::string label = "")
+{
+	bool ret = false;
 	int current_item = static_cast<int>(std::find(selectables.begin(), selectables.end(), selected) - selectables.begin());
-
 	if (ImGui::BeginCombo(label.c_str(), selectables[current_item].c_str()))
 	{
 		for (int i = 0; i < selectables.size(); i++)
@@ -16,6 +17,7 @@ inline void DrawComboSelection(std::string selected, std::vector<std::string> se
 			std::string selectableId = "combo#selectable#" + label + "#" + std::to_string(i);
 			ImGui::PushID(selectableId.c_str());
 			if (ImGui::Selectable(selectables[i].c_str(), current_item == i)) {
+				ret = true;
 				onSelect(selectables[i]);
 			}
 			ImGui::PopID();
@@ -23,11 +25,13 @@ inline void DrawComboSelection(std::string selected, std::vector<std::string> se
 
 		ImGui::EndCombo();
 	}
+	return ret;
 };
 
 template<typename T>
-inline void ImDrawColorEdit3(std::string tableName, T& Tcolor, std::function<void(T)> onChange) {
-
+inline bool ImDrawColorEdit3(std::string tableName, T& Tcolor, std::function<void(T)> onChange)
+{
+	bool ret = false;
 	if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
 	{
 		std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
@@ -43,16 +47,19 @@ inline void ImDrawColorEdit3(std::string tableName, T& Tcolor, std::function<voi
 
 			if (ImGui::ColorEdit3(label.c_str(), (float*)&Tcolor)) {
 				onChange(Tcolor);
+				ret = true;
 			}
 		}
 		ImGui::PopID();
 		ImGui::EndTable();
 	}
+	return ret;
 }
 
 template<typename T>
-inline void ImDrawColorEdit4(std::string tableName, T& Tcolor, std::function<void(T)> onChange) {
-
+inline bool ImDrawColorEdit4(std::string tableName, T& Tcolor, std::function<void(T)> onChange)
+{
+	bool ret = false;
 	if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
 	{
 		std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
@@ -68,15 +75,19 @@ inline void ImDrawColorEdit4(std::string tableName, T& Tcolor, std::function<voi
 
 			if (ImGui::ColorEdit4(label.c_str(), (float*)&Tcolor)) {
 				onChange(Tcolor);
+				ret = true;
 			}
 		}
 		ImGui::PopID();
 		ImGui::EndTable();
 	}
+	return ret;
 }
 
 template<typename T>
-inline void ImDrawDegreesValues(std::string tableName, std::vector<std::string> componentsLabel, T& rot, std::function<void(T)> onChange) {
+inline bool ImDrawDegreesValues(std::string tableName, std::vector<std::string> componentsLabel, T& rot, std::function<void(T)> onChange)
+{
+	bool ret = false;
 	if (ImGui::BeginTable(tableName.c_str(), static_cast<int>(componentsLabel.size()) + 1, ImGuiTableFlags_NoSavedSettings))
 	{
 		std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
@@ -91,7 +102,11 @@ inline void ImDrawDegreesValues(std::string tableName, std::vector<std::string> 
 			{
 				for (int i = 0; i < componentsLabel.size(); i++) {
 					ImGui::TableSetColumnIndex(i + 1);
-					if (ImGui::SliderAngle(componentsLabel[i].c_str(), (((float*)&rot) + i), 0.0f, 360.0f, "%.0f", ImGuiSliderFlags_AlwaysClamp)) { onChange(rot); }
+					if (ImGui::SliderAngle(componentsLabel[i].c_str(), (((float*)&rot) + i), 0.0f, 360.0f, "%.0f", ImGuiSliderFlags_AlwaysClamp))
+					{
+						onChange(rot);
+						ret = true;
+					}
 				}
 			}
 			ImGui::PopID();
@@ -99,10 +114,13 @@ inline void ImDrawDegreesValues(std::string tableName, std::vector<std::string> 
 		ImGui::PopID();
 		ImGui::EndTable();
 	}
+	return ret;
 }
 
 template<typename T>
-inline void ImDrawFloatValues(std::string tableName, std::vector<std::string> componentsLabel, T& values, std::function<void(T)> onChange) {
+inline bool ImDrawFloatValues(std::string tableName, std::vector<std::string> componentsLabel, T& values, std::function<void(T)> onChange)
+{
+	bool ret = false;
 	if (ImGui::BeginTable(tableName.c_str(), static_cast<int>(componentsLabel.size()) + 1, ImGuiTableFlags_NoSavedSettings))
 	{
 		std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
@@ -117,8 +135,10 @@ inline void ImDrawFloatValues(std::string tableName, std::vector<std::string> co
 			{
 				for (int i = 0; i < componentsLabel.size(); i++) {
 					ImGui::TableSetColumnIndex(i + 1);
-					if (ImGui::InputFloat(componentsLabel[i].c_str(), ((float*)&values) + i)) {
+					if (ImGui::InputFloat(componentsLabel[i].c_str(), ((float*)&values) + i))
+					{
 						onChange(values);
+						ret = true;
 					}
 				}
 			}
@@ -128,6 +148,7 @@ inline void ImDrawFloatValues(std::string tableName, std::vector<std::string> co
 		ImGui::PopID();
 		ImGui::EndTable();
 	}
+	return ret;
 }
 
 inline void ImDrawTextureImage(ImTextureID textureId, unsigned int textureWidth, unsigned int textureHeight) {
@@ -142,51 +163,60 @@ inline void ImDrawTextureImage(ImTextureID textureId, unsigned int textureWidth,
 	ImGui::Image(textureId, ImVec2((float)currentRegionAvail.x, sizeY));
 }
 
-inline void drawFromCombo(nlohmann::json& json, const std::string attribute, auto& listMap, std::string label = "")
+inline bool drawFromCombo(nlohmann::json& json, const std::string attribute, auto& listMap, std::string label = "")
 {
 	std::string value = json.at(attribute);
 	std::vector<std::string> selectables = nostd::GetKeysFromMap(listMap);
-	DrawComboSelection(value, selectables, [&json, &attribute](std::string newValue)
+	bool ret = false;
+	DrawComboSelection(value, selectables, [&json, &attribute, &ret](std::string newValue)
 		{
 			json[attribute] = newValue;
-		}, label.c_str()
-			);
+			ret = true;
+		},
+		label.c_str()
+	);
+	return ret;
 };
 
-inline void drawFromCheckBox(nlohmann::json& json, const std::string attribute, std::string label = "")
+inline bool drawFromCheckBox(nlohmann::json& json, const std::string attribute, std::string label = "")
 {
 	bool value = json.at(attribute);
-	if (ImGui::Checkbox(label.c_str(), &value)) { json[attribute] = value; }
+	if (ImGui::Checkbox(label.c_str(), &value)) { json[attribute] = value; return true; }
+	return false;
 };
 
-inline void drawFromFloat(nlohmann::json& json, const std::string attribute, std::string label = "")
+inline bool drawFromFloat(nlohmann::json& json, const std::string attribute, std::string label = "")
 {
 	float value = json.at(attribute);
-	if (ImGui::InputFloat(label.c_str(), &value)) { json[attribute] = value; }
+	if (ImGui::InputFloat(label.c_str(), &value)) { json[attribute] = value; return true; }
+	return false;
 };
 
-inline void drawFromInt(nlohmann::json& json, const std::string attribute, std::string label = "")
+inline bool drawFromInt(nlohmann::json& json, const std::string attribute, std::string label = "")
 {
 	int value = json.at(attribute);
-	if (ImGui::InputInt(label.c_str(), &value)) { json[attribute] = value; }
+	if (ImGui::InputInt(label.c_str(), &value)) { json[attribute] = value; return true; }
+	return false;
 };
 
-inline void drawFromUInt(nlohmann::json& json, const std::string attribute, std::string label = "")
+inline bool drawFromUInt(nlohmann::json& json, const std::string attribute, std::string label = "")
 {
 	int value = json.at(attribute);
-	if (ImGui::InputInt(label.c_str(), &value)) { value = max(0, value); json[attribute] = value; }
+	if (ImGui::InputInt(label.c_str(), &value)) { value = max(0, value); json[attribute] = value; return true; }
+	return false;
 };
 
 inline void ImDrawDynamicArray(
 	std::string label,
 	nlohmann::json& arr,
-	unsigned int maxItems,
 	std::function<void(nlohmann::json&, unsigned int)> insert,
-	std::function<void(nlohmann::json&, unsigned int)> draw
+	std::function<void(nlohmann::json&, unsigned int)> draw,
+	unsigned int maxItems,
+	unsigned int minItems = 0U
 )
 {
 	bool canAdd = arr.size() < maxItems;
-	bool canDelete = arr.size() > 1U;
+	bool canDelete = arr.size() > minItems;
 	int addIndex = -1;
 	int deleteIndex = -1;
 
@@ -244,7 +274,7 @@ inline void ImDrawObject(
 	ImGui::Text(label.c_str());
 	if (selectables.size() > 1)
 	{
-		ImGui::PushID("pipelineState-add-combo");
+		ImGui::PushID((label + "-add-combo").c_str());
 		DrawComboSelection(selectables[0], selectables, [&object, addAttribute](std::string attribute)
 			{
 				addAttribute.at(attribute)(object);
@@ -279,14 +309,14 @@ inline void ImDrawObject(
 	}
 }
 
-static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohmann::json&)>> ImMaterialVariablesDraw =
+static std::map<MaterialVariablesTypes, std::function<bool(unsigned int, nlohmann::json&)>> ImMaterialVariablesDraw =
 {
-	{ MAT_VAR_BOOLEAN, [](unsigned int index, nlohmann::json& variable) { drawFromCheckBox(variable,"value",variable.at("variable")); }},
-	{ MAT_VAR_INTEGER, [](unsigned int index, nlohmann::json& variable) { drawFromInt(variable,"value",variable.at("variable")); }},
-	{ MAT_VAR_UNSIGNED_INTEGER, [](unsigned int index, nlohmann::json& variable) { drawFromUInt(variable,"value",variable.at("variable")); }},
+	{ MAT_VAR_BOOLEAN, [](unsigned int index, nlohmann::json& variable) { return drawFromCheckBox(variable,"value",variable.at("variable")); }},
+	{ MAT_VAR_INTEGER, [](unsigned int index, nlohmann::json& variable) { return drawFromInt(variable,"value",variable.at("variable")); }},
+	{ MAT_VAR_UNSIGNED_INTEGER, [](unsigned int index, nlohmann::json& variable) { return drawFromUInt(variable,"value",variable.at("variable")); }},
 	{ MAT_VAR_RGB, [](unsigned int index, nlohmann::json& variable) {
 		XMFLOAT3 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2) };
-		ImDrawColorEdit3<XMFLOAT3>("material-" + std::string(variable.at("variable")), value, [&variable](XMFLOAT3 f3)
+		return ImDrawColorEdit3<XMFLOAT3>("material-" + std::string(variable.at("variable")), value, [&variable](XMFLOAT3 f3)
 			{
 				nlohmann::json& j = variable.at("value");
 				j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
@@ -295,7 +325,7 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 	}},
 	{ MAT_VAR_RGBA, [](unsigned int index, nlohmann::json& variable) {
 		XMFLOAT4 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2), variable.at("value").at(3) };
-		ImDrawColorEdit4<XMFLOAT4>("material-" + std::string(variable.at("variable")), value, [&variable](XMFLOAT4 f4)
+		return ImDrawColorEdit4<XMFLOAT4>("material-" + std::string(variable.at("variable")), value, [&variable](XMFLOAT4 f4)
 			{
 				nlohmann::json& j = variable.at("value");
 				j.at(0) = f4.x; j.at(1) = f4.y; j.at(2) = f4.z; j.at(3) = f4.w;
@@ -304,7 +334,7 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 	}},
 	{ MAT_VAR_FLOAT, [](unsigned int index, nlohmann::json& variable) {
 		float value = variable.at("value");
-		ImDrawFloatValues<float>("material-" + std::string(variable.at("variable")), { "" }, value, [&variable](float f)
+		return ImDrawFloatValues<float>("material-" + std::string(variable.at("variable")), { "" }, value, [&variable](float f)
 			{
 				variable.at("value") = f;
 			}
@@ -312,7 +342,7 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 	}},
 	{ MAT_VAR_FLOAT2, [](unsigned int index, nlohmann::json& variable) {
 		XMFLOAT2 value = { variable.at("value").at(0), variable.at("value").at(1) };
-		ImDrawFloatValues<XMFLOAT2>("material-" + std::string(variable.at("variable")), { "x","y" }, value, [&variable](XMFLOAT2 f2)
+		return ImDrawFloatValues<XMFLOAT2>("material-" + std::string(variable.at("variable")), { "x","y" }, value, [&variable](XMFLOAT2 f2)
 			{
 				nlohmann::json& j = variable.at("value");
 				j.at(0) = f2.x; j.at(1) = f2.y;
@@ -322,7 +352,7 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 	{ MAT_VAR_FLOAT3, [](unsigned int index, nlohmann::json& variable)
 	{
 		XMFLOAT3 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2)};
-		ImDrawFloatValues<XMFLOAT3>("material-" + std::string(variable.at("variable")), { "x","y","z" }, value, [&variable](XMFLOAT3 f3)
+		return ImDrawFloatValues<XMFLOAT3>("material-" + std::string(variable.at("variable")), { "x","y","z" }, value, [&variable](XMFLOAT3 f3)
 			{
 				nlohmann::json& j = variable.at("value");
 				j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
@@ -331,7 +361,7 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 	}},
 	{ MAT_VAR_FLOAT4, [](unsigned int index, nlohmann::json& variable) {
 		XMFLOAT4 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2), variable.at("value").at(3)};
-		ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "x","y","z","w"}, value, [&variable](XMFLOAT4 f4)
+		return ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "x","y","z","w"}, value, [&variable](XMFLOAT4 f4)
 			{
 				nlohmann::json& j = variable.at("value");
 				j.at(0) = f4.x; j.at(1) = f4.y; j.at(2) = f4.z;; j.at(3) = f4.w;
@@ -339,9 +369,10 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 		);
 	}},
 	{ MAT_VAR_MATRIX4X4, [](unsigned int index, nlohmann::json& variable) {
+		bool ret = false;
 		{
 			XMFLOAT4 value = { variable.at("value").at(0), variable.at("value").at(1), variable.at("value").at(2), variable.at("value").at(3)};
-			ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "0.x","0.y","0.z","0.w"}, value, [&variable](XMFLOAT4 f4)
+			ret |= ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "0.x","0.y","0.z","0.w"}, value, [&variable](XMFLOAT4 f4)
 				{
 					nlohmann::json& j = variable.at("value");
 					j.at(0) = f4.x; j.at(1) = f4.y; j.at(2) = f4.z; j.at(3) = f4.w;
@@ -350,7 +381,7 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 		}
 		{
 			XMFLOAT4 value = { variable.at("value").at(4), variable.at("value").at(5), variable.at("value").at(6), variable.at("value").at(7)};
-			ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "1.x","1.y","1.z","1.w" }, value, [&variable](XMFLOAT4 f4)
+			ret |= ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "1.x","1.y","1.z","1.w" }, value, [&variable](XMFLOAT4 f4)
 				{
 					nlohmann::json& j = variable.at("value");
 					j.at(4) = f4.x; j.at(5) = f4.y; j.at(6) = f4.z; j.at(7) = f4.w;
@@ -359,7 +390,7 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 		}
 		{
 			XMFLOAT4 value = { variable.at("value").at(8), variable.at("value").at(9), variable.at("value").at(10), variable.at("value").at(11)};
-			ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "2.x","2.y","2.z","2.w" }, value, [&variable](XMFLOAT4 f4)
+			ret |= ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "2.x","2.y","2.z","2.w" }, value, [&variable](XMFLOAT4 f4)
 				{
 					nlohmann::json& j = variable.at("value");
 					j.at(8) = f4.x; j.at(9) = f4.y; j.at(10) = f4.z; j.at(11) = f4.w;
@@ -368,14 +399,232 @@ static std::map<MaterialVariablesTypes, std::function<void(unsigned int, nlohman
 		}
 		{
 			XMFLOAT4 value = { variable.at("value").at(12), variable.at("value").at(13), variable.at("value").at(14), variable.at("value").at(15)};
-			ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "3.x","3.y","3.z","3.w" }, value, [&variable](XMFLOAT4 f4)
+			ret |= ImDrawFloatValues<XMFLOAT4>("material-" + std::string(variable.at("variable")), { "3.x","3.y","3.z","3.w" }, value, [&variable](XMFLOAT4 f4)
 				{
 					nlohmann::json& j = variable.at("value");
 					j.at(12) = f4.x; j.at(13) = f4.y; j.at(14) = f4.z; j.at(15) = f4.w;
 				}
 			);
 		}
+		return ret;
 	}},
 };
+
+inline bool ImDrawMappedValues(nlohmann::json& sha, std::map<std::string, MaterialVariablesTypes> mappeables)
+{
+	if (mappeables.size() == 0ULL) return false;
+
+	ImGui::Separator();
+
+	std::set<std::string> existingVariables;
+	if (sha.contains("mappedValues"))
+	{
+		unsigned int sz = static_cast<unsigned int>(sha.at("mappedValues").size());
+		for (unsigned int i = 0; i < sz; i++)
+		{
+			existingVariables.insert(sha.at("mappedValues").at(i).at("variable"));
+		}
+	}
+
+	std::vector<std::string> selectables = { " " };
+
+	for (auto it = mappeables.begin(); it != mappeables.end(); it++)
+	{
+		if (existingVariables.contains(it->first)) continue;
+		selectables.push_back(it->first);
+	}
+
+	//draw a combo for adding attributes to the object
+	ImGui::Text("Mapped Values");
+	if (selectables.size() > 1)
+	{
+		ImGui::PushID("mapped-values-add-combo");
+		{
+			DrawComboSelection(selectables[0], selectables, [&sha, mappeables](std::string variable)
+				{
+					if (!sha.contains("mappedValues")) { sha["mappedValues"] = nlohmann::json::array(); }
+					MaterialVariablesMappedJsonInitializer.at(mappeables.at(variable))(sha["mappedValues"], variable);
+				}, ""
+			);
+		}
+		ImGui::PopID();
+	}
+
+	bool ret = false;
+	if (sha.contains("mappedValues"))
+	{
+		unsigned int sz = static_cast<unsigned int>(sha.at("mappedValues").size());
+		for (unsigned int i = 0; i < sz; i++)
+		{
+			ImGui::PushID(("mapped-values-draw-" + std::to_string(i + 1)).c_str());
+			{
+				nlohmann::json& mappedV = sha.at("mappedValues").at(i);
+				ret |= ImMaterialVariablesDraw.at(StrToMaterialVariablesTypes.at(std::string(mappedV.at("variableType"))))(i, mappedV);
+			}
+			ImGui::PopID();
+		}
+	}
+	return ret;
+}
+
+inline void ImDrawFileSelector(std::string label, std::string fileName, std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName, std::string filterPattern)
+{
+	if (ImGui::Button(ICON_FA_ELLIPSIS_H))
+	{
+		Editor::OpenFile(onFileSelected, defaultDirectory, filterName, filterPattern);
+	}
+	ImGui::SameLine();
+	ImGui::InputText(label.c_str(), fileName.data(), fileName.size(), ImGuiInputTextFlags_ReadOnly);
+}
+
+inline bool ImDrawTextureParameters(nlohmann::json& mat, std::set<TextureType> texturesInShader)
+{
+	if (texturesInShader.size() == 0ULL) return false;
+
+	ImGui::Separator();
+
+	std::vector<std::string> selectables = { " " };
+	for (TextureType type : texturesInShader)
+	{
+		std::string texture = textureTypeToStr.at(type);
+		if (!mat.contains("textures") || !mat.at("textures").contains(texture))
+		{
+			selectables.push_back(texture);
+		}
+	}
+
+	bool ret = false;
+	ImGui::Text("Textures");
+	if (selectables.size() > 1)
+	{
+		ImGui::PushID("textures-values-add-combo");
+		DrawComboSelection(selectables[0], selectables, [&mat, &ret](std::string textureType)
+			{
+				mat["textures"][textureType] = { {"numFrames", 0}, {"format", dxgiFormatsToString.at(DXGI_FORMAT_UNKNOWN)}, {"path", ""} };
+				ret = true;
+			}, ""
+		);
+		ImGui::PopID();
+	}
+
+	if (mat.contains("textures"))
+	{
+		std::set<std::string> toDelete;
+		std::vector<std::string> textureFormats = nostd::GetKeysFromMap(stringToDxgiFormat);
+
+		for (auto& [textureType, texture] : mat.at("textures").items())
+		{
+			ImGui::PushID(("material-delete-" + textureType).c_str());
+			{
+				if (ImGui::Button(ICON_FA_TIMES))
+				{
+					toDelete.insert(textureType);
+				}
+				ImGui::SameLine();
+				ImGui::Text(textureType.c_str());
+			}
+			ImGui::PopID();
+
+			ImGui::PushID(("material-file-select-" + textureType).c_str());
+			{
+				std::string fileName = texture.at("path");
+				ImDrawFileSelector("File", fileName, [&texture, &ret](std::filesystem::path path)
+					{
+						std::filesystem::path relPath = path.relative_path();
+						std::filesystem::path curPath = std::filesystem::current_path();
+						std::filesystem::path texturePath = std::filesystem::relative(path, curPath);
+						texture.at("path") = texturePath.string();
+						ret = true;
+					},
+					defaultAssetsFolder, "Texture files. (*.dds)", "*.dds"
+				);
+			}
+			ImGui::PopID();
+
+			ImGui::PushID(("material-file-format-" + textureType).c_str());
+			{
+				std::string format = texture.at("format");
+				DrawComboSelection(format, textureFormats, [&texture, &ret](std::string newFormat)
+					{
+						texture.at("format") = newFormat;
+						ret = true;
+					}, "Format"
+				);
+			}
+			ImGui::PopID();
+
+			ImGui::PushID(("material-file-num-frames" + textureType).c_str());
+			{
+				if (drawFromUInt(texture, "numFrames", "Num Frames"))
+				{
+					ret = true;
+				}
+			}
+			ImGui::PopID();
+		}
+
+		for (auto& texture : toDelete)
+		{
+			mat.at("textures").erase(texture);
+			ret = true;
+		}
+
+	}
+	return ret;
+}
+
+inline bool ImDrawSamplerParameters(nlohmann::json& mat, unsigned int totalSamplers)
+{
+	if (totalSamplers == 0U) return false;
+
+	ImGui::Separator();
+
+	ImGui::Text("Samplers");
+
+	bool ret = false;
+
+	if (!mat.contains("samplers") || mat.at("samplers").size() == 0ULL)
+	{
+		if (ImGui::Button(ICON_FA_PLUS))
+		{
+			mat["samplers"] = nlohmann::json::array();
+			mat["samplers"].push_back(MaterialSamplerDesc().json());
+			ret = true;
+		}
+		ImGui::SameLine();
+		ImGui::Text("Add Sampler");
+	}
+	else
+	{
+		ImDrawDynamicArray("samplers", mat.at("samplers"),
+			[&ret](nlohmann::json& samplers, unsigned int index)
+			{
+				auto pos = samplers.begin() + index + 1;
+				samplers.insert(pos, MaterialSamplerDesc().json());
+				ret = true;
+			},
+			[&ret](nlohmann::json& sampler, unsigned int index)
+			{
+				ImGui::Text(("Sampler#" + std::to_string(index + 1)).c_str());
+				ImGui::NewLine();
+				ret |= drawFromCombo(sampler, "AddressU", stringToTextureAddressMode, "AddressU");
+				ret |= drawFromCombo(sampler, "AddressV", stringToTextureAddressMode, "AddressV");
+				ret |= drawFromCombo(sampler, "AddressW", stringToTextureAddressMode, "AddressW");
+				ret |= drawFromCombo(sampler, "BorderColor", stringToBorderColor, "BorderColor");
+				ret |= drawFromCombo(sampler, "ComparisonFunc", stringToComparisonFunc, "ComparisonFunc");
+				ret |= drawFromCombo(sampler, "Filter", stringToFilter, "Filter");
+				ret |= drawFromUInt(sampler, "MaxAnisotropy", "MaxAnisotropy");
+				ret |= drawFromFloat(sampler, "MaxLOD", "MaxLOD");
+				ret |= drawFromFloat(sampler, "MinLOD", "MinLOD");
+				ret |= drawFromFloat(sampler, "MipLODBias", "MipLODBias");
+				ret |= drawFromUInt(sampler, "RegisterSpace", "RegisterSpace");
+				ret |= drawFromUInt(sampler, "ShaderRegister", "ShaderRegister");
+				ret |= drawFromCombo(sampler, "ShaderVisibility", stringToShaderVisibility, "ShaderVisibility");
+			},
+			totalSamplers
+		);
+	}
+	return ret;
+}
 
 #endif

@@ -6,7 +6,7 @@
 #include "../Renderer/RenderPass/RenderPass.h"
 #include <imgui.h>
 #include <Mouse.h>
-#include "../pch/Application.h"
+#include <Application.h>
 
 extern HWND hWnd;
 extern std::unique_ptr<DirectX::Mouse> mouse;

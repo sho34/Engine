@@ -4,14 +4,13 @@
 #include <Audio.h>
 #include <nlohmann/json.hpp>
 #include "../../Audio/AudioSystem.h"
-#include "../../pch/NoStd.h"
+#include <NoStd.h>
 
 using namespace AudioSystem;
 using namespace DirectX;
-namespace Templates {
-
+namespace Templates
+{
 	std::map<std::string, nlohmann::json> soundTemplates;
-	//std::map<std::string, std::shared_ptr<Sound>> soundTemplates;
 	std::map<std::string, std::shared_ptr<DirectX::SoundEffect>> soundEffects;
 
 	//CREATE
@@ -19,14 +18,6 @@ namespace Templates {
 	{
 		if (soundTemplates.contains(name)) return;
 		soundTemplates.insert_or_assign(name, json);
-		/*
-		if (GetSoundTemplate(name)) return;
-
-		std::shared_ptr<Sound> sound = std::make_shared<Sound>();
-		sound->name = name;
-		sound->path = soundj["path"];
-		soundTemplates.insert_or_assign(name, sound);
-		*/
 	}
 
 	std::unique_ptr<DirectX::SoundEffectInstance> GetSoundEffectInstance(std::string name, SOUND_EFFECT_INSTANCE_FLAGS flags)
@@ -47,9 +38,6 @@ namespace Templates {
 	}
 
 	/*
-	{
-		if (soundEffects.contains(name)) return soundEffects.at(name);
-
 	std::shared_ptr<DirectX::SoundEffect> GetSoundEffect(std::string name)
 		std::shared_ptr<Sound> sound = GetSoundTemplate(name);
 		std::shared_ptr<DirectX::SoundEffect> soundEffect = std::make_shared<DirectX::SoundEffect>(GetAudioEngine().get(), nostd::StringToWString(sound->path).c_str());
@@ -74,11 +62,6 @@ namespace Templates {
 	//DESTROY
 	void ReleaseSoundTemplates()
 	{
-		/*
-		for (auto& [name, sound] : soundTemplates) {
-			sound->sound = nullptr;
-		}
-		*/
 		soundTemplates.clear();
 	}
 

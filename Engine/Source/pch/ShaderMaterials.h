@@ -90,6 +90,12 @@ inline static std::map<TextureType, std::string> textureTypeToShaderDefine = {
 	{ TextureType_DepthTexture, "_HAS_DEPTH_TEXTURE" },
 };
 
+inline static std::set<TextureType> materialTexturesTypes = {
+	TextureType_Base,
+	TextureType_NormalMap,
+	TextureType_MetallicRoughness
+};
+
 //define the Textures binding
 struct ShaderTextureParameter {
 	unsigned int registerId;

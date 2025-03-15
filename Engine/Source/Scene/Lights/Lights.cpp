@@ -12,9 +12,9 @@
 #include "../../Editor/Editor.h"
 //#include "../../Animation/Effects/Effects.h"
 #include <imgui.h>
-#include "../../pch/Editor.h"
+#include <Editor.h>
 #endif
-#include "../../pch/Json.h"
+#include <Json.h>
 
 extern std::shared_ptr<Renderer> renderer;
 

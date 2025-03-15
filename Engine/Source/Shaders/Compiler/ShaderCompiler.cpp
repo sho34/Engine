@@ -1,11 +1,11 @@
 #include "pch.h"
 #include "ShaderCompiler.h"
 #include "../../Common/DirectXHelper.h"
-#include "../../pch/NoStd.h"
 #include <string>
 #include <set>
 #include <map>
-#include "../../pch/Application.h"
+#include <NoStd.h>
+#include <Application.h>
 
 using namespace Templates;
 
