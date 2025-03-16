@@ -21,7 +21,7 @@ namespace Editor {
 	void DrawRightPanel();
 
 	bool OpenFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr);
-	void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName = "JSON files. (*.json)", std::string filterPattern = "*.json");
+	void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName = "JSON files. (*.json)", std::string filterPattern = "*.json", bool detach = false);
 	void OpenLevelFile();
 
 	void SaveLevelToFile(std::string levelFileName);

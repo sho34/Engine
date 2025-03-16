@@ -357,19 +357,19 @@ namespace Templates {
 		bool rebuildMaterial = false;
 		ImGui::PushID("material-mapped-values");
 		{
-			updateMappedValues = ImDrawMappedValues(mat, GetShaderMappeableVariables(fileName.data()));
+			updateMappedValues |= ImDrawMappedValues(mat, GetShaderMappeableVariables(fileName.data()));
 		}
 		ImGui::PopID();
 
 		ImGui::PushID("material-textures");
 		{
-			rebuildMaterial = ImDrawTextureParameters(mat, GetShaderTextureParameters(fileName.data()));
+			rebuildMaterial |= ImDrawTextureParameters(mat, GetShaderTextureParameters(fileName.data()));
 		}
 		ImGui::PopID();
 
 		ImGui::PushID("material-samplers");
 		{
-			rebuildMaterial = ImDrawSamplerParameters(mat, GetShaderSamplerParameters(fileName.data()));
+			rebuildMaterial |= ImDrawSamplerParameters(mat, GetShaderSamplerParameters(fileName.data()));
 		}
 		ImGui::PopID();
 
@@ -392,7 +392,6 @@ namespace Templates {
 				}
 			}
 		}
-
 
 	}
 

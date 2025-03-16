@@ -540,7 +540,7 @@ namespace Editor {
 		return are_all_operation_success;
 	}
 
-	void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName, std::string filterPattern)
+	void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName, std::string filterPattern, bool detach)
 	{
 		std::thread load([onFileSelected, defaultDirectory, filterName, filterPattern]()
 			{
@@ -559,7 +559,14 @@ namespace Editor {
 				onFileSelected(path);
 			}
 		);
-		load.detach();
+		if (detach)
+		{
+			load.detach();
+		}
+		else
+		{
+			load.join();
+		}
 	}
 
 	void OpenLevelFile()

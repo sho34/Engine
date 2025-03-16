@@ -528,6 +528,9 @@ inline bool ImDrawTextureParameters(nlohmann::json& mat, std::set<TextureType> t
 			ImGui::PushID(("material-file-select-" + textureType).c_str());
 			{
 				std::string fileName = texture.at("path");
+				std::filesystem::path rootFolder = fileName;
+				std::string parentFolder = rootFolder.parent_path().string();
+
 				ImDrawFileSelector("File", fileName, [&texture, &ret](std::filesystem::path path)
 					{
 						std::filesystem::path relPath = path.relative_path();
@@ -536,7 +539,7 @@ inline bool ImDrawTextureParameters(nlohmann::json& mat, std::set<TextureType> t
 						texture.at("path") = texturePath.string();
 						ret = true;
 					},
-					defaultAssetsFolder, "Texture files. (*.dds)", "*.dds"
+					parentFolder, "Texture files. (*.dds)", "*.dds"
 				);
 			}
 			ImGui::PopID();
