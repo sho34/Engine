@@ -539,12 +539,14 @@ void GameInputStep()
 
 void AnimableStep(double elapsedSeconds)
 {
-	for (auto& [name, r] : GetAnimables()) {
+	for (auto& [name, r] : GetAnimables())
+	{
 		r->StepAnimation(elapsedSeconds);
 	}
 }
 
-void AudioStep() {
+void AudioStep()
+{
 	GetAudioListenerVectors([](XMFLOAT3 pos, XMFLOAT3 fw, XMFLOAT3 up)
 		{
 			UpdateListener(pos, fw, up);

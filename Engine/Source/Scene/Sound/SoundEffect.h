@@ -38,6 +38,7 @@ namespace Scene {
 		AudioEmitter audioEmitter;
 
 #if defined(_EDITOR)
+		unsigned int soundEffectUpdateFlags = 0U;
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorSoundAttributes();

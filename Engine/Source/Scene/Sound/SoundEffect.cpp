@@ -30,6 +30,10 @@ namespace Scene {
 			sounds3DEffects.push_back(fx);
 		}
 
+#if defined(_EDITOR)
+		Templates::BindNotifications(fx->sound(), fx->this_ptr);
+#endif
+
 		return fx;
 	}
 
@@ -113,6 +117,7 @@ namespace Scene {
 
 	void SoundEffect::DestroySoundEffectInstance()
 	{
+		soundEffectInstance->Stop(true);
 		soundEffectInstance = nullptr;
 	}
 
@@ -221,37 +226,60 @@ namespace Scene {
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
 
-		std::vector<std::string> selectables = nostd::GetKeysFromMap(strToSoundEffectInstanceFlags);
-		std::string selected = soundEffectInstanceFlagsToStr.at(instanceFlags());
-		DrawComboSelection(selected, selectables, [this](std::string soundEffectInstanceFlag)
-			{
-				SOUND_EFFECT_INSTANCE_FLAGS newSoundInstanceFlags = strToSoundEffectInstanceFlags.at(soundEffectInstanceFlag);
-				DestroySoundEffectInstance();
-				if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D) && !nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
+		ImGui::PushID("sound-effect-template");
+		{
+			std::vector<std::string> selectables = GetSoundsNames();
+			std::string selected = sound();
+			DrawComboSelection(selected, selectables, [this, selected](std::string sound)
 				{
-					nostd::vector_erase(sounds3DEffects, this_ptr);
+					Templates::UnbindNotifications(selected, this_ptr);
+					DestroySoundEffectInstance();
+					this->sound(sound);
+					CreateSoundEffectInstance();
+					Templates::BindNotifications(sound, this_ptr);
 				}
-				else if (!nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D) && nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
+			);
+		}
+		ImGui::PopID();
+
+		ImGui::PushID("sound-effect-instance-flag");
+		{
+			std::vector<std::string> selectables = nostd::GetKeysFromMap(strToSoundEffectInstanceFlags);
+			std::string selected = soundEffectInstanceFlagsToStr.at(instanceFlags());
+			DrawComboSelection(selected, selectables, [this](std::string soundEffectInstanceFlag)
 				{
-					sounds3DEffects.push_back(this_ptr);
+					SOUND_EFFECT_INSTANCE_FLAGS newSoundInstanceFlags = strToSoundEffectInstanceFlags.at(soundEffectInstanceFlag);
+					DestroySoundEffectInstance();
+					if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D) && !nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
+					{
+						nostd::vector_erase(sounds3DEffects, this_ptr);
+					}
+					else if (!nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D) && nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
+					{
+						sounds3DEffects.push_back(this_ptr);
+					}
+					instanceFlags(newSoundInstanceFlags);
+					CreateSoundEffectInstance();
 				}
-				instanceFlags(newSoundInstanceFlags);
-				CreateSoundEffectInstance();
-			}
-		);
+			);
+		}
+		ImGui::PopID();
+
 		std::string tableName = "sound-effect-sound-atts";
 		if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_NoSavedSettings))
 		{
 			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
 			ImGui::PushID("volume");
-			ImGui::Text("volume");
-			ImGui::TableSetColumnIndex(1);
-			float vol = volume();
-			if (ImGui::InputFloat("", &vol))
 			{
-				volume(vol);
-				soundEffectInstance->SetVolume(vol);
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text("volume");
+				ImGui::TableSetColumnIndex(1);
+				float vol = volume();
+				if (ImGui::InputFloat("", &vol))
+				{
+					volume(vol);
+					soundEffectInstance->SetVolume(vol);
+				}
 			}
 			ImGui::PopID();
 

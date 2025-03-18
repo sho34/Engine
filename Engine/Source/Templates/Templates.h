@@ -10,7 +10,7 @@ using namespace Templates;
 enum _Templates {
 	T_Shaders,
 	T_Materials,
-	T_Meshes,
+	//T_Meshes,
 	T_Models3D,
 	T_Sounds
 };
@@ -18,7 +18,7 @@ enum _Templates {
 static const std::unordered_map<_Templates, std::string> TemplatesToStr = {
 	{ T_Shaders, "Shaders" },
 	{ T_Materials, "Materials" },
-	{ T_Meshes,	"Meshes" },
+	//{ T_Meshes,	"Meshes" },
 	{ T_Models3D, "Models3D" },
 	{ T_Sounds, "Sounds" },
 };
@@ -26,7 +26,7 @@ static const std::unordered_map<_Templates, std::string> TemplatesToStr = {
 #if defined(_EDITOR)
 static const std::map<_Templates, std::function<std::vector<std::string>()>> GetTemplates = {
 	{ T_Materials, GetMaterialsNames },
-	{ T_Meshes, GetMeshesNames },
+	//{ T_Meshes, GetMeshesNames },
 	{ T_Models3D, GetModels3DNames },
 	{ T_Shaders, GetShadersNames },
 	{ T_Sounds, GetSoundsNames }
@@ -38,7 +38,7 @@ inline auto deSelectTemplate(std::string& s) { s = ""; }
 
 static const std::map<_Templates, std::function<void(std::string, std::string&)>> SetSelectedTemplate = {
 	{ T_Materials, selectTemplate },
-	{ T_Meshes, selectTemplate },
+	//{ T_Meshes, selectTemplate },
 	{ T_Models3D, selectTemplate },
 	{ T_Shaders, selectTemplate },
 	{ T_Sounds, selectTemplate }
@@ -46,7 +46,7 @@ static const std::map<_Templates, std::function<void(std::string, std::string&)>
 
 static const std::map<_Templates, std::function<void(std::string&)>> DeSelectTemplate = {
 	{ T_Materials, deSelectTemplate },
-	{ T_Meshes, deSelectTemplate },
+	//{ T_Meshes, deSelectTemplate },
 	{ T_Models3D, deSelectTemplate },
 	{ T_Shaders, deSelectTemplate },
 	{ T_Sounds, deSelectTemplate }
@@ -54,7 +54,7 @@ static const std::map<_Templates, std::function<void(std::string&)>> DeSelectTem
 
 static const std::map<_Templates, std::function<void(std::string&, ImVec2, ImVec2, bool)>> DrawTemplatePanel = {
 	{ T_Materials, DrawMaterialPanel },
-	{ T_Meshes, DrawMeshPanel },
+	//{ T_Meshes, DrawMeshPanel },
 	{ T_Models3D, DrawModel3DPanel },
 	{ T_Shaders, DrawShaderPanel },
 	{ T_Sounds, DrawSoundPanel }
@@ -62,7 +62,7 @@ static const std::map<_Templates, std::function<void(std::string&, ImVec2, ImVec
 
 static const std::map<_Templates, std::function<std::string(std::string)>> GetTemplateName = {
 	{ T_Materials, getX },
-	{ T_Meshes, getX },
+	//{ T_Meshes, getX },
 	{ T_Models3D, getX },
 	{ T_Shaders, getX },
 	{ T_Sounds, getX }

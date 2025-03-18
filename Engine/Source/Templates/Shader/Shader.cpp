@@ -381,7 +381,7 @@ namespace Templates {
 		nlohmann::json& sha = shaderTemplates.at(shader);
 
 		std::string fileName = sha.contains("fileName") ? std::string(sha.at("fileName")) : shader;
-		ImDrawFileSelector("", fileName, [&sha](std::filesystem::path shaderPath)
+		ImDrawFileSelector("##", fileName, [&sha](std::filesystem::path shaderPath)
 			{
 				std::filesystem::path hlslFilePath = shaderPath;
 				hlslFilePath.replace_extension(".hlsl");

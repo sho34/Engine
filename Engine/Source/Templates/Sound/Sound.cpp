@@ -4,7 +4,9 @@
 #include <Audio.h>
 #include <nlohmann/json.hpp>
 #include "../../Audio/AudioSystem.h"
+#include "../../Scene/Sound/SoundEffect.h"
 #include <NoStd.h>
+#include <Application.h>
 
 using namespace AudioSystem;
 using namespace DirectX;
@@ -12,6 +14,9 @@ namespace Templates
 {
 	std::map<std::string, nlohmann::json> soundTemplates;
 	std::map<std::string, std::shared_ptr<DirectX::SoundEffect>> soundEffects;
+#if defined(_EDITOR)
+	std::map<std::string, std::vector<std::shared_ptr<Scene::SoundEffect>>> soundInstances;
+#endif
 
 	//CREATE
 	void CreateSound(std::string name, nlohmann::json json)
@@ -37,22 +42,7 @@ namespace Templates
 		return soundEffects.at(name)->CreateInstance(flags);
 	}
 
-	/*
-	std::shared_ptr<DirectX::SoundEffect> GetSoundEffect(std::string name)
-		std::shared_ptr<Sound> sound = GetSoundTemplate(name);
-		std::shared_ptr<DirectX::SoundEffect> soundEffect = std::make_shared<DirectX::SoundEffect>(GetAudioEngine().get(), nostd::StringToWString(sound->path).c_str());
-		soundEffects.insert_or_assign(name, soundEffect);
-		return soundEffect;
-	}
-	*/
-
 	//READ&GET
-	/*
-	std::shared_ptr<Sound> GetSoundTemplate(std::string name) {
-		return nostd::GetValueFromMap(soundTemplates, name);
-	}
-	*/
-
 	std::vector<std::string> GetSoundsNames() {
 		return nostd::GetKeysFromMap(soundTemplates);
 	}
@@ -65,39 +55,80 @@ namespace Templates
 		soundTemplates.clear();
 	}
 
-	/*
-	void DestroySoundEffect(std::shared_ptr<DirectX::SoundEffect>& soundEffect)
-	{
-		nostd::EraseByValue(soundEffects, soundEffect);
-		soundEffect = nullptr;
-	}
-	*/
-
 	//EDITOR
-
-
-
-	/*
-	std::mutex soundCreateMutex;
-	*/
 #if defined(_EDITOR)
-	/*
-	void SelectSound(std::string soundName, void*& ptr) {
-		ptr = soundTemplates.at(soundName).get();
-	}
-	*/
 
-	void DrawSoundPanel(std::string& sound, ImVec2 pos, ImVec2 size, bool pop)
+	void BindNotifications(std::string sound, std::shared_ptr<Scene::SoundEffect> soundEffect)
 	{
+		soundInstances[sound].push_back(soundEffect);
+	}
+
+	void UnbindNotifications(std::string sound, std::shared_ptr<Scene::SoundEffect> soundEffect)
+	{
+		auto& instances = soundInstances.at(sound);
+		for (auto it = instances.begin(); it != instances.end(); )
+		{
+			if (*it = soundEffect)
+			{
+				it = instances.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+	}
+
+	void DestroySoundEffectInstances(std::string sound)
+	{
+		auto& instances = soundInstances.at(sound);
+		for (auto& it : instances)
+		{
+			it->DestroySoundEffectInstance();
+		}
+	}
+
+	void CreateSoundEffectInstances(std::string sound)
+	{
+		auto& instances = soundInstances.at(sound);
+		for (auto& it : instances)
+		{
+			it->CreateSoundEffectInstance();
+		}
+	}
+
+	void EraseSoundEffect(std::string sound)
+	{
+		soundEffects.erase(sound);
+	}
+
+	void DrawSoundPanel(std::string sound, ImVec2 pos, ImVec2 size, bool pop)
+	{
+		nlohmann::json& snd = soundTemplates.at(sound);
+
+		std::string parentFolder = defaultAssetsFolder;
+		std::string fileName = "";
+		if (snd.contains("path") && !snd.at("path").empty())
+		{
+			fileName = snd.at("path");
+			std::filesystem::path rootFolder = fileName;
+			parentFolder = rootFolder.parent_path().string();
+		}
+
+		ImDrawFileSelector("##", fileName, [&snd, sound](std::filesystem::path path)
+			{
+				std::filesystem::path curPath = std::filesystem::current_path();
+				std::filesystem::path relPath = std::filesystem::relative(path, curPath);
+				snd.at("path") = relPath.string();
+				DestroySoundEffectInstances(sound);
+				EraseSoundEffect(sound);
+				CreateSoundEffectInstances(sound);
+			},
+			parentFolder, "Sound files. (*.wav)", "*.wav"
+		);
 	}
 
 	/*
-	std::string GetSoundName(void* ptr)
-	{
-		Sound* sound = (Sound*)ptr;
-		return sound->name;
-	}
-
 	nlohmann::json json()
 	{
 		nlohmann::json j = nlohmann::json({});

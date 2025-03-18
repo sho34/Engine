@@ -527,13 +527,18 @@ inline bool ImDrawTextureParameters(nlohmann::json& mat, std::set<TextureType> t
 
 			ImGui::PushID(("material-file-select-" + textureType).c_str());
 			{
-				std::string fileName = texture.at("path");
-				std::filesystem::path rootFolder = fileName;
-				std::string parentFolder = rootFolder.parent_path().string();
+				std::string parentFolder = defaultAssetsFolder;
+				std::string fileName = "";
+				if (texture.contains("path") && !texture.at("path").empty())
+				{
+					fileName = texture.at("path");
+					std::filesystem::path rootFolder = fileName;
+					parentFolder = rootFolder.parent_path().string();
+				}
 
 				ImDrawFileSelector("File", fileName, [&texture, &ret](std::filesystem::path path)
 					{
-						std::filesystem::path relPath = path.relative_path();
+						//std::filesystem::path relPath = path.relative_path();
 						std::filesystem::path curPath = std::filesystem::current_path();
 						std::filesystem::path texturePath = std::filesystem::relative(path, curPath);
 						texture.at("path") = texturePath.string();
