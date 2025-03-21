@@ -49,6 +49,11 @@ namespace nostd {
 		return names;
 	}
 
+	inline void AppendToVector(std::vector<std::string>& dst, std::vector<std::string>& src)
+	{
+		dst.insert(dst.end(), src.begin(), src.end());
+	}
+
 	template<typename T>
 	inline T GetValueFromMap(std::map<std::string, T>& map, const std::string& key) {
 		auto it = map.find(key);
@@ -153,6 +158,11 @@ namespace nostd {
 				instances.erase(key);
 			}
 			instance = nullptr;
+		}
+
+		bool Has(K k)
+		{
+			return instances.contains(k);
 		}
 
 		unsigned int Count(V& instance)
