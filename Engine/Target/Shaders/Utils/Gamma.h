@@ -3,5 +3,8 @@ static const float INVGAMMA = 1.0f / GAMMA;
 
 float3 toGammaSpace(float3 color) {
 	return pow(abs(color), INVGAMMA);
-	//return color;
+}
+
+float3 fromGammaSpace(float3 color) {
+	return pow(abs(color), GAMMA);
 }
