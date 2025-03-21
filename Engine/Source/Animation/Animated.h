@@ -14,7 +14,7 @@ using namespace DirectX;
 namespace Animation
 {
 	static const std::string AnimationConstantBufferName = "animation";
-	static const unsigned int MAX_BONES = 256U;
+	static const unsigned int MAX_BONES = 1024U;
 	typedef XMMATRIX BonesMatrices[MAX_BONES];
 
 	using namespace DirectX;
