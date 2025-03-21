@@ -1,12 +1,3 @@
-{
-    "knight": {
-        "path": "knight/scene.gltf",
-        "autoCreateMaterial": true,
-        "materialsShader": "PBR"
-    },
-    "messy_tavern": {
-        "path": "messy_tavern/scene.gltf",
-        "autoCreateMaterial": true,
-        "materialsShader": "BlinnPhong"
-    }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:d038b87f2a5bbbb0a78b491250f9c2f694fa271fdc7df2f0d53852bd54e76956
+size 822

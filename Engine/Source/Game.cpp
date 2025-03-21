@@ -370,7 +370,11 @@ void EditorModeCreate()
 			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
 			//LoadDefaultLevel();
-			LoadLevel("knight");
+			LoadLevel("female");
+			//LoadLevel("knight");
+			//LoadLevel("baseLevel");
+			//LoadLevel("jumpsuit");
+			//LoadLevel("venom");
 			unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
 			unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
 			mainPass = CreateRenderPass("mainPass", { DXGI_FORMAT_R8G8B8A8_UNORM }, DXGI_FORMAT_D32_FLOAT, width, height);
