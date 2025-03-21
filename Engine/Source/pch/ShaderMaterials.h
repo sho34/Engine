@@ -90,6 +90,11 @@ inline static std::map<TextureType, std::string> textureTypeToShaderDefine = {
 	{ TextureType_DepthTexture, "_HAS_DEPTH_TEXTURE" },
 };
 
+inline static std::map<std::tuple<TextureType, DXGI_FORMAT>, std::string> textureTypeFormatDefine =
+{
+	{ std::make_tuple(TextureType_Base, DXGI_FORMAT_R8G8B8A8_UNORM) , "_BASE_TEXTURE_R8G8B8A8_UNORM" },
+};
+
 inline static std::set<TextureType> materialTexturesTypes = {
 	TextureType_Base,
 	TextureType_NormalMap,
