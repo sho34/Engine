@@ -11,6 +11,9 @@ namespace Templates {
 	namespace Sound
 	{
 		inline static const std::string templateName = "audio.json";
+#if defined(_EDITOR)
+		void ReleaseSoundEffectsInstances();
+#endif
 	}
 
 	//CREATE

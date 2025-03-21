@@ -50,6 +50,11 @@ namespace Templates
 	//UPDATE
 
 	//DESTROY
+	void Sound::ReleaseSoundEffectsInstances()
+	{
+		soundInstances.clear();
+	}
+
 	void ReleaseSoundTemplates()
 	{
 		soundTemplates.clear();

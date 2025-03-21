@@ -79,4 +79,7 @@ namespace Templates {
 	void LoadTemplates(const std::string folder, const std::string fileName, std::function<void(std::string, nlohmann::json)> loader);
 
 	void DestroyTemplates();
+#if defined(_EDITOR)
+	void DestroyTemplatesReferences();
+#endif
 }

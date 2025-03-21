@@ -63,6 +63,7 @@ namespace Templates {
 	//UPDATE
 
 	//DESTROY
+	void DestroyMaterial(std::string name);
 	void ReleaseMaterialTemplates();
 	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
 

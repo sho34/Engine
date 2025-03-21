@@ -192,6 +192,10 @@ namespace Scene {
 			animables.insert_or_assign(name(), this_ptr);
 			StepAnimation(0.0f);
 		}
+
+#if defined(_EDITOR)
+		BindNotifications(model3DName, this_ptr);
+#endif
 	}
 
 	std::string Renderable::name()
@@ -568,10 +572,11 @@ namespace Scene {
 	void Renderable::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox) {
 		BoundingBox bb;
 
-		if (!animable)
+		//if (!animable)
 		{
 			bb = boundingBox;
 		}
+		/*
 		else
 		{
 			using namespace Animation;
@@ -579,6 +584,7 @@ namespace Scene {
 			XMMATRIX* bones = reinterpret_cast<XMMATRIX*>(bonesCbv->mappedConstantBuffer + bonesCbv->alignedConstantBufferSize * renderer->backBufferIndex);
 			bb = animable->GetAnimatedBoundingBox(bones);
 		}
+		*/
 
 		XMVECTOR pv = { bb.Center.x, bb.Center.y, bb.Center.z };
 		XMFLOAT3 rotV = rotation();
@@ -761,12 +767,45 @@ namespace Scene {
 
 	void Renderable::CleanMeshes()
 	{
-		model3D = nullptr;
+		//model3D = nullptr;
 		skipMeshes.clear();
+
+		auto destroyMeshInstance = [](auto& vec)
+			{
+				for (auto& mesh : vec)
+				{
+					DestroyMeshInstance(mesh);
+				}
+			};
+
+		destroyMeshInstance(meshes);
+		if (!model3D)
+		{
+			destroyMeshInstance(meshesShadowMap);
+		}
+
+		if (!model3D)
+		{
+			std::shared_ptr<MaterialInstance> mat = meshMaterials.at(meshes.at(0));
+			DestroyMaterialInstance(mat, meshes.at(0), json);
+		}
+		else
+		{
+			for (unsigned int i = 0U; i < meshes.size(); i++)
+			{
+				DestroyMaterialInstance(model3D->materials[i], model3D->meshes[i], model3D->shaderAttributes);
+			}
+		}
+
 		meshes.clear();
 		meshesShadowMap.clear();
+
+		//meshes.clear();
+		//meshesShadowMap.clear();
+
 		meshMaterials.clear();
 		meshShadowMapMaterials.clear();
+
 		meshConstantsBuffer.clear();
 		meshShadowMapConstantsBuffer.clear();
 		meshRootSignatures.clear();
@@ -779,6 +818,10 @@ namespace Scene {
 		}
 		animable = nullptr;
 		bonesTransformation.clear();
+		if (model3D != nullptr)
+		{
+			DestroyModel3DInstance(model3D);
+		}
 		renderableUpdateFlags &= ~RenderableFlags_DestroyMeshes;
 		CreateBoundingBox();
 	}
@@ -815,6 +858,12 @@ namespace Scene {
 		CreateMeshesComponents();
 		model3DSwap.clear();
 		renderableUpdateFlags &= ~RenderableFlags_CreateMeshesFromModel3D;
+	}
+
+	void Renderable::ReloadModel3D()
+	{
+		renderableUpdateFlags |= RenderableFlags_RebuildMeshesFromModel3D;
+		model3DSwap = json.at("model");
 	}
 
 #endif
@@ -924,7 +973,10 @@ namespace Scene {
 		meshes.clear();
 		meshesShadowMap.clear();
 
-		if (model3D) { DestroyModel3DInstance(model3D); }
+		if (model3D)
+		{
+			DestroyModel3DInstance(model3D);
+		}
 	}
 
 	//RENDER
@@ -1410,7 +1462,17 @@ namespace Scene {
 
 	void Renderable::DrawEditorPipelineStateAttributes()
 	{
+		nlohmann::json currentJson = json;
 		ImDrawPipelineState(json.at("pipelineState"));
+		if (currentJson != json)
+		{
+			renderableUpdateFlags |= RenderableFlags_RebuildMaterials;
+			for (unsigned int i = 0; i < meshes.size(); i++)
+			{
+				materialToChangeMeshIndex.push_back(i);
+				materialToRebuild.push_back(meshMaterials.at(meshes.at(i))->material);
+			}
+		}
 	}
 #endif
 

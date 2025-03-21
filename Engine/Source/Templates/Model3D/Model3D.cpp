@@ -5,6 +5,8 @@
 #include "../../Animation/Animated.h"
 #include <d3d12.h>
 #include <nlohmann/json.hpp>
+using namespace Animation;
+using namespace Templates::Model3D;
 
 using namespace DeviceUtils;
 
@@ -12,6 +14,9 @@ namespace Templates {
 
 	static std::map<std::string, nlohmann::json> model3DTemplates;
 	static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker;
+#if defined(_EDITOR)
+	std::map<std::string, std::vector<std::shared_ptr<Scene::Renderable>>> renderableInstances;
+#endif
 
 	//CREATE
 	void CreateModel3D(std::string name, nlohmann::json json)
@@ -27,7 +32,7 @@ namespace Templates {
 
 		nlohmann::json mdl = model3DTemplates.at(name);
 
-		std::string filename = Model3D::assetsRootFolder + std::string(mdl.at("path"));
+		std::string filename = default3DModelsFolder + std::string(mdl.at("path"));
 
 		std::filesystem::path path(filename);
 
@@ -46,7 +51,6 @@ namespace Templates {
 		//fill the length of the animations so they can be looped
 		if (aiModel->mNumAnimations > 0U)
 		{
-			using namespace Animation;
 			model->animations = CreateAnimatedFromAssimp(aiModel);
 		}
 
@@ -85,8 +89,12 @@ namespace Templates {
 
 				if (materialTemplate.empty())
 				{
+#if defined(_DEVELOPMENT)
 					nlohmann::json materialJson = CreateModel3DMaterialJson(mdl.at("materialsShader"), path.relative_path(), aiModel->mMaterials[aMesh->mMaterialIndex]);
 					CreateMaterial(materialName, materialJson);
+#else
+					assert(!!!"Non development will never create a material");
+#endif
 				}
 			}
 			else
@@ -106,23 +114,75 @@ namespace Templates {
 		}
 	}
 
+#if defined(_DEVELOPMENT)
+	std::string GetUtilsPath()
+	{
+		char* utilsPath;
+		size_t utilsPathLen;
+		_dupenv_s(&utilsPath, &utilsPathLen, "CULPEO_UTILS");
+
+		return std::string(utilsPath);
+	}
+
+	void GetTextureAttributes(std::filesystem::path src, DXGI_FORMAT& format, int& numFrames)
+	{
+		using namespace raymii;
+
+		//get the format of the file
+		std::string cmdFormat = GetUtilsPath() + "texformat.bat " + src.string();
+		CommandResult resultFormat = Command::exec(cmdFormat);
+		resultFormat.output.pop_back();
+		format = stringToDxgiFormat.at(resultFormat.output);
+
+		//get the num of frames of the file
+		std::string cmdFrames = GetUtilsPath() + "texframes.bat " + src.string();
+		CommandResult result = Command::exec(cmdFrames);
+		result.output.pop_back();
+		numFrames = std::stoi(result.output) - 1;
+	}
+
+	void ConvertToDDS(std::filesystem::path src, std::filesystem::path dst, DXGI_FORMAT& format, int& numFrames)
+	{
+		GetTextureAttributes(src, format, numFrames);
+
+		using namespace raymii;
+
+		//get the format of the file
+		std::filesystem::path parentPath = src.parent_path();
+		std::string cmdConv = GetUtilsPath() + "texconv.exe " + src.string() + " -f " + dxgiFormatsToString.at(format) + " -l -y -o " + parentPath.string();
+		CommandResult result = Command::exec(cmdConv);
+	}
+
 	void PushAssimpTextureToJson(nlohmann::json& j, TextureType textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
 	{
-		std::string textureJsonPath = fallbackTexture;
+		std::filesystem::path textureJsonPath = fallbackTexture;
+		DXGI_FORMAT textureJsonFormat = format;
+		int numFrames = 0;
 
 		if (aiTextureName.length > 0)
 		{
 			textureJsonPath = relativePath.parent_path().append(aiTextureName.C_Str()).replace_extension(".dds").string();
+			std::filesystem::path originalTexturePath = relativePath.parent_path().append(aiTextureName.C_Str()).make_preferred();
+
+			if (!std::filesystem::exists(textureJsonPath))
+			{
+				ConvertToDDS(originalTexturePath, textureJsonPath, textureJsonFormat, numFrames);
+			}
+			else
+			{
+				GetTextureAttributes(originalTexturePath, textureJsonFormat, numFrames);
+			}
 		}
 
 		if (textureJsonPath != "")
 		{
 			j["textures"][textureTypeToStr.at(textureType)] = {
-				{ "path", textureJsonPath },
-				{ "format", dxgiFormatsToString.at(format) },
-				{ "numFrames", 0 }
+				{ "path", textureJsonPath.string() },
+				{ "format", dxgiFormatsToString.at(textureJsonFormat) },
+				{ "numFrames", numFrames }
 			};
 		}
+
 	};
 
 	nlohmann::json CreateModel3DMaterialJson(std::string shader, std::filesystem::path relativePath, aiMaterial* material)
@@ -166,17 +226,14 @@ namespace Templates {
 
 		aiString diffuseName;
 		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
-		//pushAiMaterialToTextures(diffuseName, "Assets/textures/gridmap.dds");
 		PushAssimpTextureToJson(matJson, TextureType_Base, relativePath, diffuseName, "Assets/textures/gridmap.dds");
 
 		aiString normalMapName;
 		material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
-		//pushAiMaterialToTextures(normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
 		PushAssimpTextureToJson(matJson, TextureType_NormalMap, relativePath, normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
 
 		aiString metallicRoughnessName;
 		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
-		//pushAiMaterialToTextures(metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
 		PushAssimpTextureToJson(matJson, TextureType_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
 
 		matJson["samplers"] = nlohmann::json::array();
@@ -184,6 +241,7 @@ namespace Templates {
 
 		return matJson;
 	}
+#endif
 
 	void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh)
 	{
@@ -231,10 +289,31 @@ namespace Templates {
 	//UPDATE
 
 	//DESTROY
+#if defined(_EDITOR)
+	void Model3D::ReleaseRenderablesInstances()
+	{
+		renderableInstances.clear();
+	}
+#endif
 
 	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D)
 	{
+		std::string modelName = model3D->name;
+		std::vector<std::string> matNames = model3D->materialNames; //666 <- avoid like cancer please
+
 		refTracker.RemoveRef(model3D->name, model3D);
+		if (!refTracker.Has(modelName) && model3DTemplates.contains(modelName))
+		{
+			nlohmann::json& mdl = model3DTemplates.at(modelName);
+
+			if (mdl.at("autoCreateMaterial"))
+			{
+				for (auto& matNames : matNames)
+				{
+					DestroyMaterial(matNames);
+				}
+			}
+		}
 	}
 
 	//EDITOR
@@ -245,8 +324,83 @@ namespace Templates {
 	}
 
 #if defined(_EDITOR)
+	void BindNotifications(std::string model, std::shared_ptr<Scene::Renderable> renderable)
+	{
+		renderableInstances[model].push_back(renderable);
+	}
+
+	void UnbindNotifications(std::string model, std::shared_ptr<Scene::Renderable> renderable)
+	{
+		auto& instances = renderableInstances.at(model);
+		for (auto it = instances.begin(); it != instances.end(); )
+		{
+			if (*it = renderable)
+			{
+				it = instances.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+	}
+
+	void ReloadModel3DInstances(std::string model)
+	{
+		auto& instances = renderableInstances.at(model);
+		for (auto& it : instances)
+		{
+			it->ReloadModel3D();
+		}
+	}
+
 	void DrawModel3DPanel(std::string& model, ImVec2 pos, ImVec2 size, bool pop)
 	{
+		nlohmann::json& mdl = model3DTemplates.at(model);
+
+		std::string parentFolder = default3DModelsFolder;
+		std::string fileName = "";
+		if (mdl.contains("path") && !mdl.at("path").empty())
+		{
+			fileName = mdl.at("path");
+			std::filesystem::path rootFolder = fileName;
+			parentFolder = default3DModelsFolder + rootFolder.parent_path().string();
+		}
+
+		ImGui::PushID("File-Selector");
+		{
+			ImDrawFileSelector("##", fileName, [&mdl, model](std::filesystem::path path)
+				{
+					std::filesystem::path curPath = std::filesystem::current_path().append(default3DModelsFolder);
+					std::filesystem::path relPath = std::filesystem::relative(path, curPath);
+					mdl.at("path") = relPath.string();
+					ReloadModel3DInstances(model);
+				},
+				parentFolder, "3d model files. (*.gltf)", "*.gltf"
+			);
+		}
+		ImGui::PopID();
+
+		ImGui::PushID("Auto-Create-Material");
+		{
+			drawFromCheckBox(mdl, "autoCreateMaterial", "Auto create material");
+		}
+		ImGui::PopID();
+
+		std::string currentShader = mdl.at("materialsShader");
+		std::vector<std::string> selectables = { " " };
+		std::vector<std::string> shaders = GetShadersNames();
+		nostd::AppendToVector(selectables, shaders);
+		ImGui::PushID("Select-Shader");
+		{
+			DrawComboSelection(currentShader, selectables, [&mdl, model](std::string newShader)
+				{
+					mdl.at("materialsShader") = newShader;
+					ReloadModel3DInstances(model);
+				}, "Shader"
+			);
+		}
+		ImGui::PopID();
 	}
 
 	std::string GetModel3DInstanceTemplateName(std::shared_ptr<Model3DInstance> model3D)

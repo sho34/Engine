@@ -49,4 +49,12 @@ namespace Templates
 		ReleaseMaterialTemplates();
 		ReleaseShaderTemplates();
 	}
+
+#if defined(_EDITOR)
+	void DestroyTemplatesReferences()
+	{
+		Sound::ReleaseSoundEffectsInstances();
+		Model3D::ReleaseRenderablesInstances();
+	}
+#endif
 }

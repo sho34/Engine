@@ -155,6 +155,7 @@ namespace Scene
 		void SwapMaterials();
 		void SwapMeshes();
 		void SwapModel3D();
+		void ReloadModel3D();
 #endif
 		void WriteMaterialVariablesToConstantsBufferSpace(std::shared_ptr<MaterialInstance>& material, std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int cbvFrameIndex);
 		template<typename T>

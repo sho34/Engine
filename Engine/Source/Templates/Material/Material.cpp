@@ -13,6 +13,7 @@
 #include <set>
 #include <random>
 #include <NoStd.h>
+#include <DXTypes.h>
 
 namespace Templates {
 
@@ -66,7 +67,13 @@ namespace Templates {
 			nlohmann::json jtextures = mat.at("textures");
 			for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
 			{
-				material->defines.push_back(textureTypeToShaderDefine.at(strToTextureType.at(it.key())));
+				TextureType texType = strToTextureType.at(it.key());
+				DXGI_FORMAT texFormat = stringToDxgiFormat.at(it.value().at("format"));
+				material->defines.push_back(textureTypeToShaderDefine.at(texType));
+				auto tie = std::tie(texType, texFormat);
+				if (textureTypeFormatDefine.contains(tie)) {
+					material->defines.push_back(textureTypeFormatDefine.at(tie));
+				}
 			}
 		}
 		if (castShadows)
@@ -316,6 +323,11 @@ namespace Templates {
 	{
 		auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures, shaderAttributes.at("castShadows")), mesh);
 		refTracker.RemoveRef(key, material);
+	}
+
+	void DestroyMaterial(std::string name)
+	{
+		materialTemplates.erase(name);
 	}
 
 	//DESTROY

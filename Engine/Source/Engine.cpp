@@ -594,6 +594,10 @@ void DestroyInstance()
 
 	GameDestroy();
 
+#if defined(_EDITOR)
+	DestroyTemplatesReferences();
+#endif
+
 	DestroySceneObjects();
 	DestroyLightsResources();
 	DestroyShadowMapResources();
