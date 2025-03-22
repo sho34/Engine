@@ -21,9 +21,17 @@
 #include "../../Effects/Effects.h"
 #include <imgui.h>
 #endif
+#include "../../Templates/Templates.h"
 
 extern std::mutex rendererMutex;
 extern std::shared_ptr<Renderer> renderer;
+#if defined(_EDITOR)
+namespace Editor {
+	extern _Templates tempTab;
+	extern std::string selTemp;
+}
+#endif
+
 namespace Scene {
 	//NAMESPACE VARIABLES
 	std::map<std::string, std::shared_ptr<Renderable>> renderables;
@@ -1373,24 +1381,38 @@ namespace Scene {
 			}
 		}
 
-		DrawComboSelection(selectables[current_item], selectables, [this, modelsNames, meshesNames](std::string m)
+		ImGui::PushID("renderable-mesh-model-selector");
+		{
+			if (model3DName != "")
 			{
-				if (m == " ")
+				if (ImGui::Button(ICON_FA_CUBE))
 				{
-					renderableUpdateFlags |= RenderableFlags_DestroyMeshes;
+					Editor::tempTab = T_Models3D;
+					Editor::selTemp = model3DName;
 				}
-				else if (std::find(modelsNames.begin(), modelsNames.end(), m) != modelsNames.end())
+				ImGui::SameLine();
+			}
+
+			DrawComboSelection(selectables[current_item], selectables, [this, modelsNames, meshesNames](std::string m)
 				{
-					renderableUpdateFlags |= RenderableFlags_RebuildMeshesFromModel3D;
-					model3DSwap = m;
-				}
-				else if (std::find(meshesNames.begin(), meshesNames.end(), m) != meshesNames.end())
-				{
-					renderableUpdateFlags |= RenderableFlags_RebuildMeshes;
-					meshSwap = m;
-				}
-			}, "model"
-		);
+					if (m == " ")
+					{
+						renderableUpdateFlags |= RenderableFlags_DestroyMeshes;
+					}
+					else if (std::find(modelsNames.begin(), modelsNames.end(), m) != modelsNames.end())
+					{
+						renderableUpdateFlags |= RenderableFlags_RebuildMeshesFromModel3D;
+						model3DSwap = m;
+					}
+					else if (std::find(meshesNames.begin(), meshesNames.end(), m) != meshesNames.end())
+					{
+						renderableUpdateFlags |= RenderableFlags_RebuildMeshes;
+						meshSwap = m;
+					}
+				}, "model"
+			);
+		}
+		ImGui::PopID();
 
 		std::string tableName = "renderable-meshes-atts";
 		if (ImGui::BeginTable(tableName.c_str(), 3, ImGuiTableFlags_NoSavedSettings))
@@ -1417,15 +1439,17 @@ namespace Scene {
 				ImGui::TableSetColumnIndex(0);
 				std::string comboIdSkip = "mesh#" + mesh->name + "#skip";
 				ImGui::PushID(comboIdSkip.c_str());
-				if (ImGui::Checkbox("", &skip_v))
 				{
-					if (skip_v)
+					if (ImGui::Checkbox("", &skip_v))
 					{
-						skipMeshes.insert(i);
-					}
-					else
-					{
-						skipMeshes.erase(i);
+						if (skip_v)
+						{
+							skipMeshes.insert(i);
+						}
+						else
+						{
+							skipMeshes.erase(i);
+						}
 					}
 				}
 				ImGui::PopID();
@@ -1440,20 +1464,35 @@ namespace Scene {
 
 				std::string comboId = "mesh#" + mesh->name + "#material";
 				ImGui::PushID(comboId.c_str());
-				ImGui::SetNextItemWidth(-1);
-
-				std::string materialName = " ";
-				if (meshMaterials.contains(mesh))
 				{
-					std::shared_ptr<MaterialInstance> material = meshMaterials.at(mesh);
-					materialName = material->material;
-				}
-				DrawComboSelection(materialName, materialList, [this, mesh](std::string matName)
+
+					std::string materialName = " ";
+					if (meshMaterials.contains(mesh))
 					{
-						materialSwaps.insert_or_assign(mesh, matName);
-						renderableUpdateFlags |= RenderableFlags_SwapMaterialsFromMesh;
+						std::shared_ptr<MaterialInstance> material = meshMaterials.at(mesh);
+						materialName = material->material;
 					}
-				);
+
+					if (materialName != " ")
+					{
+						if (ImGui::Button(ICON_FA_TSHIRT))
+						{
+							Editor::tempTab = T_Materials;
+							Editor::selTemp = materialName;
+						}
+						ImGui::SameLine();
+					}
+
+					ImGui::SetNextItemWidth(-1);
+
+					DrawComboSelection(materialName, materialList, [this, mesh](std::string matName)
+						{
+							materialSwaps.insert_or_assign(mesh, matName);
+							renderableUpdateFlags |= RenderableFlags_SwapMaterialsFromMesh;
+						}
+					);
+
+				}
 				ImGui::PopID();
 			}
 			ImGui::EndTable();

@@ -15,6 +15,14 @@
 #include <NoStd.h>
 #include <DXTypes.h>
 
+#if defined(_EDITOR)
+#include "../Templates.h"
+namespace Editor {
+	extern _Templates tempTab;
+	extern std::string selTemp;
+}
+#endif
+
 namespace Templates {
 
 	static std::map<std::string, nlohmann::json> materialTemplates;
@@ -70,9 +78,8 @@ namespace Templates {
 				TextureType texType = strToTextureType.at(it.key());
 				DXGI_FORMAT texFormat = stringToDxgiFormat.at(it.value().at("format"));
 				material->defines.push_back(textureTypeToShaderDefine.at(texType));
-				auto tie = std::tie(texType, texFormat);
-				if (textureTypeFormatDefine.contains(tie)) {
-					material->defines.push_back(textureTypeFormatDefine.at(tie));
+				if (texType == TextureType_Base && FormatsInGammaSpace.contains(texFormat)) {
+					material->defines.push_back(BaseTextureFromGammaSpaceDefine);
 				}
 			}
 		}
@@ -355,6 +362,16 @@ namespace Templates {
 		ImGui::Text("Shader");
 		ImGui::PushID("shader-name-combo");
 		{
+			if (shader != "")
+			{
+				if (ImGui::Button(ICON_FA_FILE_CODE))
+				{
+					Editor::tempTab = T_Shaders;
+					Editor::selTemp = shader;
+				}
+				ImGui::SameLine();
+			}
+
 			DrawComboSelection(shader, selectables, [&mat](std::string shaderName)
 				{
 					mat.at("shader") = shaderName;
@@ -381,7 +398,7 @@ namespace Templates {
 
 		ImGui::PushID("material-samplers");
 		{
-			rebuildMaterial |= ImDrawSamplerParameters(mat, GetShaderSamplerParameters(fileName.data()));
+			rebuildMaterial |= ImDrawSamplerParameters(mat, GetShaderSamplerParameters(fileName.data()), [] { return MaterialSamplerDesc().json(); });
 		}
 		ImGui::PopID();
 

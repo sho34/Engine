@@ -90,9 +90,31 @@ inline static std::map<TextureType, std::string> textureTypeToShaderDefine = {
 	{ TextureType_DepthTexture, "_HAS_DEPTH_TEXTURE" },
 };
 
-inline static std::map<std::tuple<TextureType, DXGI_FORMAT>, std::string> textureTypeFormatDefine =
+inline static std::string BaseTextureFromGammaSpaceDefine = "_BASE_TEXTURE_FROM_GAMMA_SPACE";
+inline static std::set<DXGI_FORMAT> FormatsInGammaSpace =
 {
-	{ std::make_tuple(TextureType_Base, DXGI_FORMAT_R8G8B8A8_UNORM) , "_BASE_TEXTURE_R8G8B8A8_UNORM" },
+	DXGI_FORMAT_R16G16B16A16_UNORM,
+	DXGI_FORMAT_R10G10B10A2_UNORM,
+	DXGI_FORMAT_R8G8B8A8_UNORM,
+	DXGI_FORMAT_R16G16_UNORM,
+	DXGI_FORMAT_R8G8_UNORM,
+	DXGI_FORMAT_D16_UNORM,
+	DXGI_FORMAT_R16_UNORM,
+	DXGI_FORMAT_R8_UNORM,
+	DXGI_FORMAT_A8_UNORM,
+	DXGI_FORMAT_R1_UNORM,
+	DXGI_FORMAT_R8G8_B8G8_UNORM,
+	DXGI_FORMAT_G8R8_G8B8_UNORM,
+	DXGI_FORMAT_BC1_UNORM,
+	DXGI_FORMAT_BC2_UNORM,
+	DXGI_FORMAT_BC3_UNORM,
+	DXGI_FORMAT_BC4_UNORM,
+	DXGI_FORMAT_BC5_UNORM,
+	DXGI_FORMAT_B5G6R5_UNORM,
+	DXGI_FORMAT_B5G5R5A1_UNORM,
+	DXGI_FORMAT_B8G8R8A8_UNORM,
+	DXGI_FORMAT_B8G8R8X8_UNORM,
+	DXGI_FORMAT_BC7_UNORM,
 };
 
 inline static std::set<TextureType> materialTexturesTypes = {

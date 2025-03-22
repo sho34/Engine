@@ -1,7 +1,14 @@
 #include "pch.h"
 #include "SoundEffect.h"
 #include "../Scene.h"
-#include "../../Templates/Sound/Sound.h"
+#include "../../Templates/Templates.h"
+
+#if defined(_EDITOR)
+namespace Editor {
+	extern _Templates tempTab;
+	extern std::string selTemp;
+}
+#endif
 
 using namespace Templates;
 namespace Scene {
@@ -230,6 +237,17 @@ namespace Scene {
 		{
 			std::vector<std::string> selectables = GetSoundsNames();
 			std::string selected = sound();
+
+			if (!selected.empty())
+			{
+				if (ImGui::Button(ICON_FA_FILE_AUDIO))
+				{
+					Editor::tempTab = T_Sounds;
+					Editor::selTemp = selected;
+				}
+				ImGui::SameLine();
+			}
+
 			DrawComboSelection(selected, selectables, [this, selected](std::string sound)
 				{
 					Templates::UnbindNotifications(selected, this_ptr);

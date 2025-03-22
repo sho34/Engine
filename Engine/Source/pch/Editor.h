@@ -1,8 +1,6 @@
 #pragma once
 
 #if defined(_EDITOR)
-#include "../Templates/Material/Variables.h"
-#include "../Editor/Editor.h"
 
 static const std::string defaultLevelName = "baseLevel.json";
 
@@ -467,11 +465,119 @@ inline bool ImDrawMappedValues(nlohmann::json& sha, std::map<std::string, Materi
 	return ret;
 }
 
+inline bool OpenFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr)
+{
+	IFileOpenDialog* p_file_open = nullptr;
+	bool are_all_operation_success = false;
+	while (!are_all_operation_success)
+	{
+		HRESULT hr = CoCreateInstance(CLSID_FileOpenDialog, NULL, CLSCTX_ALL,
+			IID_IFileOpenDialog, reinterpret_cast<void**>(&p_file_open));
+		if (FAILED(hr))
+			break;
+
+		if (!pFilterInfo)
+		{
+			COMDLG_FILTERSPEC open_filter[1];
+			open_filter[0].pszName = L"All files";
+			open_filter[0].pszSpec = L"*.*";
+			hr = p_file_open->SetFileTypes(1, open_filter);
+			if (FAILED(hr))
+				break;
+			hr = p_file_open->SetFileTypeIndex(1);
+			if (FAILED(hr))
+				break;
+		}
+		else
+		{
+			hr = p_file_open->SetFileTypes(pFilterInfo->second, pFilterInfo->first);
+			if (FAILED(hr))
+				break;
+			hr = p_file_open->SetFileTypeIndex(1);
+			if (FAILED(hr))
+				break;
+		}
+
+		if (!defaultDirectory.empty()) {
+			IShellItem* pCurFolder = NULL;
+			hr = SHCreateItemFromParsingName(defaultDirectory.c_str(), NULL, IID_PPV_ARGS(&pCurFolder));
+			if (FAILED(hr))
+				break;
+			p_file_open->SetFolder(pCurFolder);
+			pCurFolder->Release();
+		}
+
+		if (!defaultFileName.empty())
+		{
+			hr = p_file_open->SetFileName(defaultFileName.c_str());
+			if (FAILED(hr))
+				break;
+		}
+
+		hr = p_file_open->Show(NULL);
+		if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) // No item was selected.
+		{
+			are_all_operation_success = true;
+			break;
+		}
+		else if (FAILED(hr))
+			break;
+
+		IShellItem* p_item;
+		hr = p_file_open->GetResult(&p_item);
+		if (FAILED(hr))
+			break;
+
+		PWSTR item_path;
+		hr = p_item->GetDisplayName(SIGDN_FILESYSPATH, &item_path);
+		if (FAILED(hr))
+			break;
+		path = item_path;
+		CoTaskMemFree(item_path);
+		p_item->Release();
+
+		are_all_operation_success = true;
+	}
+
+	if (p_file_open)
+		p_file_open->Release();
+	return are_all_operation_success;
+}
+
+inline void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName = "JSON files. (*.json)", std::string filterPattern = "*.json", bool detach = false)
+{
+	std::thread load([onFileSelected, defaultDirectory, filterName, filterPattern]()
+		{
+			//first create the directory if needed
+			std::filesystem::path directory(defaultDirectory);
+			std::filesystem::create_directory(directory);
+
+			std::wstring path = L"";
+			std::wstring pszName = nostd::StringToWString(filterName);
+			std::wstring pszSpec = nostd::StringToWString(filterPattern);
+			COMDLG_FILTERSPEC filters[] = { {.pszName = pszName.c_str(), .pszSpec = pszSpec.c_str() } };
+			std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
+			if (!OpenFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
+			if (path.empty()) return;
+
+			onFileSelected(path);
+		}
+	);
+	if (detach)
+	{
+		load.detach();
+	}
+	else
+	{
+		load.join();
+	}
+}
+
 inline void ImDrawFileSelector(std::string label, std::string fileName, std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName, std::string filterPattern)
 {
 	if (ImGui::Button(ICON_FA_ELLIPSIS_H))
 	{
-		Editor::OpenFile(onFileSelected, defaultDirectory, filterName, filterPattern);
+		OpenFile(onFileSelected, defaultDirectory, filterName, filterPattern);
 	}
 	ImGui::SameLine();
 	ImGui::InputText(label.c_str(), fileName.data(), fileName.size(), ImGuiInputTextFlags_ReadOnly);
@@ -581,7 +687,11 @@ inline bool ImDrawTextureParameters(nlohmann::json& mat, std::set<TextureType> t
 	return ret;
 }
 
-inline bool ImDrawSamplerParameters(nlohmann::json& mat, unsigned int totalSamplers)
+inline bool ImDrawSamplerParameters(
+	nlohmann::json& mat,
+	unsigned int totalSamplers,
+	std::function<nlohmann::json()> getSamplerJson
+)
 {
 	if (totalSamplers == 0U) return false;
 
@@ -596,7 +706,7 @@ inline bool ImDrawSamplerParameters(nlohmann::json& mat, unsigned int totalSampl
 		if (ImGui::Button(ICON_FA_PLUS))
 		{
 			mat["samplers"] = nlohmann::json::array();
-			mat["samplers"].push_back(MaterialSamplerDesc().json());
+			mat["samplers"].push_back(getSamplerJson());
 			ret = true;
 		}
 		ImGui::SameLine();
@@ -605,10 +715,10 @@ inline bool ImDrawSamplerParameters(nlohmann::json& mat, unsigned int totalSampl
 	else
 	{
 		ImDrawDynamicArray("samplers", mat.at("samplers"),
-			[&ret](nlohmann::json& samplers, unsigned int index)
+			[&ret, getSamplerJson](nlohmann::json& samplers, unsigned int index)
 			{
 				auto pos = samplers.begin() + index + 1;
-				samplers.insert(pos, MaterialSamplerDesc().json());
+				samplers.insert(pos, getSamplerJson());
 				ret = true;
 			},
 			[&ret](nlohmann::json& sampler, unsigned int index)

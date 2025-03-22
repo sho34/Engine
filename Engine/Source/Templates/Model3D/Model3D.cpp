@@ -1,10 +1,12 @@
 #include "pch.h"
-#include "Model3D.h"
-#include "../Mesh/Mesh.h"
-#include "../../Renderer/VertexFormats.h"
-#include "../../Animation/Animated.h"
 #include <d3d12.h>
 #include <nlohmann/json.hpp>
+#include "Model3D.h"
+#include "../Mesh/Mesh.h"
+#include "../Scene/Renderable/Renderable.h"
+#include "../../Renderer/VertexFormats.h"
+#include "../../Animation/Animated.h"
+
 using namespace Animation;
 using namespace Templates::Model3D;
 
