@@ -494,6 +494,7 @@ void AppStep() {
 	RenderablesStep();
 	LightsStep();
 	AudioStep();
+	CamerasStep();
 	GameStep();
 	Render();
 
@@ -553,6 +554,7 @@ void AudioStep()
 		}
 	);
 	UpdateAudio();
+	SoundEffectsStep();
 }
 
 //RENDER

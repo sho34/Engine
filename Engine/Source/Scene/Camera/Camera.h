@@ -9,6 +9,13 @@ namespace Scene {
 	struct Light;
 	struct Renderable;
 
+#if defined(_EDITOR)
+	enum CameraFlags
+	{
+		CameraFlags_Destroy = 0x1
+	};
+#endif
+
 	using namespace DeviceUtils;
 
 	inline static const std::string CameraConstantBufferName = "camera";
@@ -60,6 +67,7 @@ namespace Scene {
 			CameraProjections::Orthographic orthographic;
 		};
 #if defined(_EDITOR)
+		unsigned int cameraUpdateFlags = 0U;
 		CameraProjections::Perspective editorPerspective;
 		CameraProjections::Orthographic editorOrthographic;
 #endif
@@ -101,6 +109,7 @@ namespace Scene {
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorCameraAttributes();
+		void BindDestruction(std::function<void()>);
 #endif
 
 		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
@@ -114,9 +123,12 @@ namespace Scene {
 	void DeSelectCamera(void*& ptr);
 	void DrawCameraPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetCameraName(void* ptr);
+	void DeleteCamera(std::string name);
 #endif
+	void CamerasStep();
 	void DestroyCamera(std::shared_ptr<Camera>& camera);
 	void DestroyCameras();
+
 	size_t GetNumCameras();
 	std::shared_ptr<Camera> GetCamera(unsigned int index);
 	std::shared_ptr<Camera> GetCamera(std::string name);

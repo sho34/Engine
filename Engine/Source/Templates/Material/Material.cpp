@@ -424,6 +424,11 @@ namespace Templates {
 
 	}
 
+	void DeleteMaterial(std::string name)
+	{
+
+	}
+
 	/*
 	nlohmann::json json()
 	{

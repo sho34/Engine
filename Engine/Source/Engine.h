@@ -44,6 +44,7 @@ void AppStep();
 void GameInputStep();
 void AnimableStep(double elapsedSeconds);
 void AudioStep();
+void CameraStep();
 
 //RENDER
 void Render();

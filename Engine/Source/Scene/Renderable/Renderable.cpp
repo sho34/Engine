@@ -622,8 +622,8 @@ namespace Scene {
 			}
 		);
 
-		std::map<std::string, std::shared_ptr<Renderable>> renderablesToDestroy;
-		std::copy_if(renderables.begin(), renderables.end(), std::inserter(renderablesToDestroy, renderablesToDestroy.end()), [](const auto& pair)
+		std::map<std::string, std::shared_ptr<Renderable>> renderablesToDestroyMeshes;
+		std::copy_if(renderables.begin(), renderables.end(), std::inserter(renderablesToDestroyMeshes, renderablesToDestroyMeshes.end()), [](const auto& pair)
 			{
 				return pair.second->renderableUpdateFlags & RenderableFlags_DestroyMeshes;
 			}
@@ -643,11 +643,18 @@ namespace Scene {
 			}
 		);
 
-		if (renderablesRebuildMaterials.size() > 0ULL || renderablesToSwaps.size() > 0ULL || renderablesToDestroy.size() > 0ULL ||
-			renderablesToCreateMeshes.size() > 0ULL || renderablesToCreateModels3D.size() > 0ULL)
+		std::map<std::string, std::shared_ptr<Renderable>> renderablesToDestroy;
+		std::copy_if(renderables.begin(), renderables.end(), std::inserter(renderablesToDestroy, renderablesToDestroy.end()), [](const auto& pair)
+			{
+				return pair.second->renderableUpdateFlags & RenderableFlags_Destroy;
+			}
+		);
+
+		if (renderablesRebuildMaterials.size() > 0ULL || renderablesToSwaps.size() > 0ULL || renderablesToDestroyMeshes.size() > 0ULL ||
+			renderablesToCreateMeshes.size() > 0ULL || renderablesToCreateModels3D.size() > 0ULL || renderablesToDestroy.size() > 0ULL)
 		{
 			renderer->Flush();
-			renderer->RenderCriticalFrame([&renderablesRebuildMaterials, &renderablesToSwaps, &renderablesToDestroy, &renderablesToCreateMeshes, &renderablesToCreateModels3D]
+			renderer->RenderCriticalFrame([&renderablesRebuildMaterials, &renderablesToSwaps, &renderablesToDestroyMeshes, &renderablesToCreateMeshes, &renderablesToCreateModels3D, &renderablesToDestroy]
 				{
 					for (auto& [name, renderable] : renderablesRebuildMaterials)
 					{
@@ -659,7 +666,7 @@ namespace Scene {
 						renderable->RebuildMaterials();
 					}
 
-					for (auto& [name, renderable] : renderablesToDestroy)
+					for (auto& [name, renderable] : renderablesToDestroyMeshes)
 					{
 						renderable->CleanMeshes();
 					}
@@ -677,6 +684,11 @@ namespace Scene {
 					for (auto& [name, renderable] : renderablesToCreateModels3D)
 					{
 						renderable->SwapModel3D();
+					}
+
+					for (auto& [name, renderable] : renderablesToDestroy)
+					{
+						DestroyRenderable(renderable);
 					}
 				}
 			);
@@ -1161,6 +1173,12 @@ namespace Scene {
 		return renderable->name();
 	}
 
+	void DeleteRenderable(std::string name)
+	{
+		std::shared_ptr<Renderable> renderable = renderables.at(name);
+		renderable->renderableUpdateFlags |= RenderableFlags_Destroy;
+	}
+
 	/*
 	nlohmann::json Renderable::json() {
 		nlohmann::json j = nlohmann::json({});
@@ -1515,6 +1533,7 @@ namespace Scene {
 	}
 #endif
 
+	//DESTROY
 	void DestroyRenderable(std::shared_ptr<Renderable>& renderable)
 	{
 		if (renderable == nullptr) return;
@@ -1524,7 +1543,6 @@ namespace Scene {
 		renderable = nullptr;
 	}
 
-	//DESTROY
 	void DestroyRenderables()
 	{
 		for (auto& [name, renderable] : renderables)
@@ -1535,4 +1553,5 @@ namespace Scene {
 		animables.clear();
 		renderables.clear();
 	}
+
 }

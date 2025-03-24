@@ -133,6 +133,10 @@ namespace Templates
 		);
 	}
 
+	void DeleteSound(std::string name)
+	{
+	}
+
 	/*
 	nlohmann::json json()
 	{

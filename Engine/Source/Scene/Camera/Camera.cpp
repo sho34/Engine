@@ -22,6 +22,9 @@ namespace Scene
 
 	std::vector<std::shared_ptr<Camera>> cameraByIndex;
 	std::map<std::string, std::shared_ptr<Camera>> cameraByNames;
+#if defined(_EDITOR)
+	std::map<std::shared_ptr<Camera>, std::vector<std::function<void()>>> cameraDestructionCallbacks;
+#endif
 
 	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraj)
 	{
@@ -160,7 +163,50 @@ namespace Scene
 		Camera* cam = (Camera*)ptr;
 		return cam->json.at("name");
 	}
+
+	void Camera::BindDestruction(std::function<void()> cb)
+	{
+		cameraDestructionCallbacks[this_ptr].push_back(cb);
+	}
+
+	void DeleteCamera(std::string name)
+	{
+		std::shared_ptr<Camera> cam = cameraByNames.at(name);
+		cam->cameraUpdateFlags |= CameraFlags_Destroy;
+	}
 #endif
+
+	void CamerasStep()
+	{
+		std::vector<std::shared_ptr<Camera>> camerasToDestroy;
+		std::copy_if(cameraByIndex.begin(), cameraByIndex.end(), std::back_inserter(camerasToDestroy), [](const std::shared_ptr<Camera>& cam)
+			{
+				return cam->cameraUpdateFlags & CameraFlags_Destroy;
+			}
+		);
+
+		if (camerasToDestroy.size() > 0ULL)
+		{
+			renderer->Flush();
+			renderer->RenderCriticalFrame([&camerasToDestroy]
+				{
+					for (auto& cam : camerasToDestroy)
+					{
+						if (cameraDestructionCallbacks.contains(cam))
+						{
+							for (auto& cb : cameraDestructionCallbacks.at(cam))
+							{
+								cb();
+							}
+							cameraDestructionCallbacks.erase(cam);
+						}
+						DestroyCamera(cam);
+					}
+					camerasToDestroy.clear();
+				}
+			);
+		}
+	}
 
 	void DestroyCamera(std::shared_ptr<Camera>& camera)
 	{
@@ -180,6 +226,9 @@ namespace Scene
 		}
 		cameraByIndex.clear();
 		cameraByNames.clear();
+#if defined(_EDITOR)
+		cameraDestructionCallbacks.clear();
+#endif
 	}
 
 	std::string Camera::name()

@@ -69,10 +69,8 @@ namespace Templates {
 
 	//EDITOR
 #if defined(_EDITOR)
-	//void SelectMaterial(std::string materialName, void*& ptr);
 	void DrawMaterialPanel(std::string& material, ImVec2 pos, ImVec2 size, bool pop);
-	//std::string GetMaterialName(void* ptr);
-	//std::string GetMaterialInstanceTemplateName(std::shared_ptr<MaterialInstance> material);
+	void DeleteMaterial(std::string name);
 	//nlohmann::json json();
 #endif
 };

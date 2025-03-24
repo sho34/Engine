@@ -28,6 +28,9 @@ namespace Scene {
 	static std::map<std::string, std::shared_ptr<Light>> lightsByName;
 	static std::vector<std::shared_ptr<Light>> lights;
 	static std::shared_ptr<ConstantsBuffer> lightsCbv = nullptr; //CBV for lights pool
+#if defined(_EDITOR)
+	static std::vector<std::shared_ptr<Light>> lightsToDestroy;
+#endif
 
 	//CREATE
 	void CreateLightsResources() {
@@ -213,6 +216,30 @@ namespace Scene {
 		std::vector<std::shared_ptr<Light>> lightsToDestroyShadowMapsMinMaxChain;
 		std::vector<std::shared_ptr<Light>> lightsToCreateShadowMaps;
 		std::vector<std::shared_ptr<Light>> lightsToCreateShadowMapsMinMaxChain;
+
+		if (lightsToDestroy.size() > 0ULL)
+		{
+			renderer->RenderCriticalFrame([]
+				{
+					for (auto& l : lightsToDestroy)
+					{
+						nostd::vector_erase(lights, l);
+						lightsByName.erase(l->name());
+
+						if (l->hasShadowMaps())
+						{
+							l->DestroyShadowMap();
+#if defined(_EDITOR)
+							l->DestroyShadowMapMinMaxChain();
+#endif
+						}
+						l->this_ptr = nullptr;
+					}
+
+					lightsToDestroy.clear();
+				}
+			);
+		}
 
 		for (auto& light : GetLights())
 		{
@@ -752,6 +779,11 @@ namespace Scene {
 
 			ImGui::EndTable();
 		}
+	}
+
+	void DeleteLight(std::string name)
+	{
+		lightsToDestroy.push_back(lightsByName.at(name));
 	}
 
 #endif

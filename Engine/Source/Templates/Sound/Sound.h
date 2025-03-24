@@ -33,6 +33,7 @@ namespace Templates {
 	void BindNotifications(std::string sound, std::shared_ptr<Scene::SoundEffect> soundEffect);
 	void UnbindNotifications(std::string sound, std::shared_ptr<Scene::SoundEffect> soundEffect);
 	void DrawSoundPanel(std::string sound, ImVec2 pos, ImVec2 size, bool pop);
+	void DeleteSound(std::string name);
 	//nlohmann::json json();
 #endif
 

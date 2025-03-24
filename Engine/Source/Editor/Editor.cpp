@@ -302,7 +302,7 @@ namespace Editor {
 		HandleApplicationDragTitleBar(dragRect);
 	}
 
-	auto DrawTableRows(auto GetObjects, auto OnSelect)
+	auto DrawTableRows(auto GetObjects, auto OnSelect, auto OnDelete)
 	{
 		ImGui::TableSetupColumn("Delete", ImGuiTableColumnFlags_WidthFixed);
 		ImGui::TableSetupColumn("Object", ImGuiTableColumnFlags_WidthStretch);
@@ -320,14 +320,14 @@ namespace Editor {
 			ImGui::PushID(rowName.c_str());
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
-			if (ImGui::SmallButton(ICON_FA_TIMES)) {}
+			if (ImGui::SmallButton(ICON_FA_TIMES)) { OnDelete(name); }
 			ImGui::TableSetColumnIndex(1);
 			if (ImGui::TextLink(name.c_str())) { OnSelect(name); }
 			ImGui::PopID();
 		}
 	}
 
-	auto DrawListPanel(const char* tableName, auto GetObjects, auto OnSelect)
+	auto DrawListPanel(const char* tableName, auto GetObjects, auto OnSelect, auto OnDelete)
 	{
 		if (ImGui::SmallButton(ICON_FA_PLUS))
 		{
@@ -336,7 +336,7 @@ namespace Editor {
 
 		if (ImGui::BeginTable(tableName, 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX))
 		{
-			DrawTableRows(GetObjects, OnSelect);
+			DrawTableRows(GetObjects, OnSelect, OnDelete);
 			ImGui::EndTable();
 		}
 	}
@@ -346,7 +346,8 @@ namespace Editor {
 		std::unordered_map<T, std::string> TabToStr,
 		std::map<T, std::function<std::vector<std::string>()>> GetTabList,
 		V& selected,
-		std::map<T, std::function<void(std::string, V&)>> OnSelect
+		std::map<T, std::function<void(std::string, V&)>> OnSelect,
+		std::map<T, std::function<void(std::string)>> OnDelete
 	)
 	{
 		ImGui::SetNextWindowPos(pos);
@@ -365,6 +366,10 @@ namespace Editor {
 					[tab, &selected, OnSelect](std::string name)
 					{
 						OnSelect.at(tab)(name, selected);
+					},
+					[tab, OnDelete](std::string name)
+					{
+						OnDelete.at(tab)(name);
 					}
 				);
 			}
@@ -429,7 +434,7 @@ namespace Editor {
 					}
 				);
 
-				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO, SetSelectedSceneObjectProxy);
+				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO, SetSelectedSceneObjectProxy, DeleteSceneObject);
 			}
 			else
 			{
@@ -451,7 +456,7 @@ namespace Editor {
 
 			if (selTemp.empty())
 			{
-				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp, SetSelectedTemplate);
+				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp, SetSelectedTemplate, DeleteTemplate);
 			}
 			else
 			{

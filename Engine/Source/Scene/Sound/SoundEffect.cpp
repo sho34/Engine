@@ -191,6 +191,34 @@ namespace Scene {
 		return soundEffect->name();
 	}
 
+	void DeleteSoundEffect(std::string name)
+	{
+		std::shared_ptr<SoundEffect> soundEffect = soundsEffects.at(name);
+		soundEffect->soundEffectUpdateFlags |= SoundEffectFlags_Destroy;
+	}
+
+	void SoundEffectsStep()
+	{
+#if defined(_EDITOR)
+		std::map<std::string, std::shared_ptr<SoundEffect>> soundEffectsToDestroy;
+		std::copy_if(soundsEffects.begin(), soundsEffects.end(), std::inserter(soundEffectsToDestroy, soundEffectsToDestroy.end()), [](const auto& pair)
+			{
+				return pair.second->soundEffectUpdateFlags & SoundEffectFlags_Destroy;
+			}
+		);
+
+		if (soundEffectsToDestroy.size() > 0ULL)
+		{
+			for (auto& [name, soundEffect] : soundEffectsToDestroy)
+			{
+				soundEffect->DestroySoundEffectInstance();
+				soundsEffects.erase(name);
+				nostd::vector_erase(sounds3DEffects, soundEffect);
+			}
+		}
+#endif
+	}
+
 	void SoundEffect::DrawEditorInformationAttributes()
 	{
 		ImGui::TableNextRow();

@@ -123,6 +123,9 @@ void RunRender()
 	if (!GetNumCameras())
 	{
 		resolvePass->BeginRenderPass();
+		{
+			DrawEditor();
+		}
 		resolvePass->EndRenderPass();
 		return;
 	}
@@ -384,6 +387,11 @@ void EditorModeCreate()
 		}
 	);
 	mainPassCamera = GetCamera("cam.0");
+	mainPassCamera->BindDestruction([]
+		{
+			mainPassCamera = nullptr;
+		}
+	);
 }
 
 void EditorModeStep()
@@ -409,24 +417,35 @@ void EditorModeStep()
 
 void EditorModeRender()
 {
-	WriteConstantsBuffers();
-
-	RenderSelectedLightShadowMapChain();
-
-	RenderSceneShadowMaps();
-
-	mainPass->BeginRenderPass();
+	if (mainPassCamera != nullptr)
 	{
-		RenderSceneObjects(mainPassCamera);
-	}
-	mainPass->EndRenderPass();
+		WriteConstantsBuffers();
 
-	resolvePass->BeginRenderPass();
-	{
-		resolvePass->CopyFromRenderToTexture(mainPass->renderToTexture[0]);
-		DrawEditor();
+		RenderSelectedLightShadowMapChain();
+
+		RenderSceneShadowMaps();
+
+		mainPass->BeginRenderPass();
+		{
+			RenderSceneObjects(mainPassCamera);
+		}
+		mainPass->EndRenderPass();
+
+		resolvePass->BeginRenderPass();
+		{
+			resolvePass->CopyFromRenderToTexture(mainPass->renderToTexture[0]);
+			DrawEditor();
+		}
+		resolvePass->EndRenderPass();
 	}
-	resolvePass->EndRenderPass();
+	else
+	{
+		resolvePass->BeginRenderPass();
+		{
+			DrawEditor();
+		}
+		resolvePass->EndRenderPass();
+	}
 }
 
 void EditorModeLeave()

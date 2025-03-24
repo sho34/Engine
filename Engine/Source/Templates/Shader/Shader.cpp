@@ -393,6 +393,10 @@ namespace Templates {
 		ImDrawMappedValues(sha, GetShaderMappeableVariables(fileName.data()));
 	}
 
+	void DeleteShader(std::string name)
+	{
+	}
+
 	/*
 	nlohmann::json json()
 	{

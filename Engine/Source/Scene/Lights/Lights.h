@@ -45,6 +45,7 @@ namespace Scene {
 		{ "position", { 0.0f, 10.0f, 0.0f } },
 		{ "attenuation" , { 0.0f, 0.001f, 0.0001f } }
 	};
+
 #endif
 
 	static constexpr XMVECTOR PointLightDirection[] = {
@@ -117,6 +118,7 @@ namespace Scene {
 			editorPoint = editorDefaultPoint;
 #endif
 		}
+
 		~Light() {}
 
 		std::shared_ptr<Light> this_ptr = nullptr; //dumb but efective
@@ -205,12 +207,6 @@ namespace Scene {
 		nlohmann::json editorDirectional;
 		nlohmann::json editorSpot;
 		nlohmann::json editorPoint;
-		/*
-		AmbientLight editorAmbient;
-		DirectionalLight editorDirectional;
-		SpotLight editorSpot;
-		PointLight editorPoint;
-		*/
 
 		void DrawEditorInformationAttributes();
 		void DrawAmbientLightPanel();
@@ -252,6 +248,7 @@ namespace Scene {
 	void SelectLight(std::string lightName, void*& ptr);
 	void DeSelectLight(void*& ptr);
 	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
+	void DeleteLight(std::string name);
 #endif
 };
 

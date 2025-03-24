@@ -60,6 +60,13 @@ static const std::map<_SceneObjects, std::function<std::string(void*)>> GetScene
 	{ SO_SoundEffects, GetSoundEffectName }
 };
 
+static const std::map<_SceneObjects, std::function<void(std::string)>> DeleteSceneObject = {
+	{ SO_Renderables, DeleteRenderable },
+	{ SO_Lights, DeleteLight },
+	{ SO_Cameras, DeleteCamera },
+	{ SO_SoundEffects, DeleteSoundEffect }
+};
+
 #endif
 
 namespace Scene

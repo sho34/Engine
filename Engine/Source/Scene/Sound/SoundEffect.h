@@ -2,6 +2,11 @@
 
 namespace Scene {
 
+	enum SoundEffect_UpdateFlags
+	{
+		SoundEffectFlags_Destroy = 0x1
+	};
+
 	struct Renderable;
 
 	struct SoundEffect {
@@ -65,6 +70,8 @@ namespace Scene {
 	void DeSelectSoundEffect(void*& ptr);
 	void DrawSoundEffectPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetSoundEffectName(void* ptr);
+	void DeleteSoundEffect(std::string name);
 #endif
 
+	void SoundEffectsStep();
 }

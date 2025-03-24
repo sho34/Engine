@@ -120,5 +120,6 @@ using namespace Concurrency;
 #include "pch/ShaderMaterials.h"
 #if defined(_EDITOR)
 #include "pch/Editor.h"
+#include "pch/DDSTextures.h"
 #include "pch/Command.h"
 #endif

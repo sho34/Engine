@@ -283,6 +283,7 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameDecl.h" />
     <ClInclude Include="pch\Command.h" />
+    <ClInclude Include="pch\DDSTextures.h" />
     <ClInclude Include="pch\Debug.h" />
     <ClInclude Include="pch\ShaderMaterials.h" />
     <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />

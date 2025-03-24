@@ -172,7 +172,7 @@ namespace Templates {
 			}
 			else
 			{
-				GetTextureAttributes(originalTexturePath, textureJsonFormat, numFrames);
+				GetDDSTextureAttributes(textureJsonPath, textureJsonFormat, numFrames);
 			}
 		}
 
@@ -408,6 +408,10 @@ namespace Templates {
 	std::string GetModel3DInstanceTemplateName(std::shared_ptr<Model3DInstance> model3D)
 	{
 		return nostd::GetKeyFromValueInMap(refTracker.instances, model3D);
+	}
+
+	void DeleteModel3D(std::string name)
+	{
 	}
 
 	/*

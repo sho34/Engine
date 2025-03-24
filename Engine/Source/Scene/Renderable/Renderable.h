@@ -24,7 +24,8 @@ namespace Scene
 		RenderableFlags_RebuildMeshes = RenderableFlags_CreateMeshes | RenderableFlags_DestroyMeshes,
 		RenderableFlags_RebuildMeshesFromModel3D = RenderableFlags_CreateMeshesFromModel3D | RenderableFlags_DestroyMeshes,
 		RenderableFlags_SwapMaterialsFromMesh = 0x8,
-		RenderableFlags_RebuildMaterials = 0x10
+		RenderableFlags_RebuildMaterials = 0x10,
+		RenderableFlags_Destroy = 0x20
 	};
 #endif
 
@@ -240,6 +241,7 @@ namespace Scene
 	void DeSelectRenderable(void*& ptr);
 	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetRenderableName(void* ptr);
+	void DeleteRenderable(std::string name);
 #endif
 
 	//DELETE
