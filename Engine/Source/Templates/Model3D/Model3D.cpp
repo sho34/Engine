@@ -6,18 +6,31 @@
 #include "../Scene/Renderable/Renderable.h"
 #include "../../Renderer/VertexFormats.h"
 #include "../../Animation/Animated.h"
+#if defined(_EDITOR)
+#include "../../Editor/Editor.h"
+#endif
 
 using namespace Animation;
 using namespace Templates::Model3D;
 
 using namespace DeviceUtils;
 
-namespace Templates {
-
+namespace Templates
+{
 	static std::map<std::string, nlohmann::json> model3DTemplates;
 	static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker;
 #if defined(_EDITOR)
 	std::map<std::string, std::vector<std::shared_ptr<Scene::Renderable>>> renderableInstances;
+
+	enum Model3DPopupModal
+	{
+		Model3DPopupModal_CannotDelete = 1,
+	};
+
+	namespace Model3D
+	{
+		unsigned int popupModalId = 0U;
+	};
 #endif
 
 	//CREATE
@@ -412,6 +425,20 @@ namespace Templates {
 
 	void DeleteModel3D(std::string name)
 	{
+		nlohmann::json model3D = model3DTemplates.at(name);
+		if (model3D.contains("systemCreated") && model3D.at("systemCreated") == true)
+		{
+			Model3D::popupModalId = Model3DPopupModal_CannotDelete;
+		}
+	}
+
+	void DrawModels3DsPopups()
+	{
+		Editor::DrawOkPopup(Model3D::popupModalId, Model3DPopupModal_CannotDelete, "CannotDeleteModel3DPopup", []
+			{
+				ImGui::Text("Cannot delete a system created model 3D");
+			}
+		);
 	}
 
 	/*

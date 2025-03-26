@@ -174,6 +174,9 @@ namespace Scene
 		std::shared_ptr<Camera> cam = cameraByNames.at(name);
 		cam->cameraUpdateFlags |= CameraFlags_Destroy;
 	}
+	void DrawCamerasPopups()
+	{
+	}
 #endif
 
 	void CamerasStep()

@@ -17,7 +17,8 @@ namespace Templates {
 
 	namespace Material
 	{
-		inline static const  std::string templateName = "materials.json";
+		inline static const std::string templateName = "materials.json";
+		inline static const std::string fallbackShader = "BaseLighting";
 	};
 
 	struct MaterialInstance {
@@ -71,6 +72,8 @@ namespace Templates {
 #if defined(_EDITOR)
 	void DrawMaterialPanel(std::string& material, ImVec2 pos, ImVec2 size, bool pop);
 	void DeleteMaterial(std::string name);
+	void DrawMaterialsPopups();
+	void DetachShader(std::string material);
 	//nlohmann::json json();
 #endif
 };

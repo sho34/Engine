@@ -124,6 +124,7 @@ namespace Scene {
 	void DrawCameraPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetCameraName(void* ptr);
 	void DeleteCamera(std::string name);
+	void DrawCamerasPopups();
 #endif
 	void CamerasStep();
 	void DestroyCamera(std::shared_ptr<Camera>& camera);

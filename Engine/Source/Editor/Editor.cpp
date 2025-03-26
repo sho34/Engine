@@ -347,7 +347,7 @@ namespace Editor {
 		std::map<T, std::function<std::vector<std::string>()>> GetTabList,
 		V& selected,
 		std::map<T, std::function<void(std::string, V&)>> OnSelect,
-		std::map<T, std::function<void(std::string)>> OnDelete
+		std::function<void(std::string)> OnDelete
 	)
 	{
 		ImGui::SetNextWindowPos(pos);
@@ -367,9 +367,9 @@ namespace Editor {
 					{
 						OnSelect.at(tab)(name, selected);
 					},
-					[tab, OnDelete](std::string name)
+					[OnDelete](std::string name)
 					{
-						OnDelete.at(tab)(name);
+						OnDelete(name);
 					}
 				);
 			}
@@ -434,7 +434,11 @@ namespace Editor {
 					}
 				);
 
-				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO, SetSelectedSceneObjectProxy, DeleteSceneObject);
+				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO, SetSelectedSceneObjectProxy, [](std::string name)
+					{
+
+					}
+				);
 			}
 			else
 			{
@@ -456,7 +460,11 @@ namespace Editor {
 
 			if (selTemp.empty())
 			{
-				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp, SetSelectedTemplate, DeleteTemplate);
+				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp, SetSelectedTemplate, [](std::string name)
+					{
+						DeleteTemplate.at(tempTab)(name);
+					}
+				);
 			}
 			else
 			{
@@ -464,6 +472,17 @@ namespace Editor {
 			}
 		}
 		ImGui::End();
+
+		/*
+		if (selSO == nullptr)
+		{
+			DrawSceneObjectsPopups.at(soTab)();
+		}
+		*/
+		if (selTemp == "")
+		{
+			DrawTemplatesPopups.at(tempTab)();
+		}
 	}
 
 	void OpenLevelFile()
@@ -705,6 +724,20 @@ namespace Editor {
 		boundingBox->WriteConstantsBuffer(renderer->backBufferIndex);
 		boundingBox->RenderLines(renderer, camera);
 		*/
+	}
+
+	void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent)
+	{
+		if (flag == cmpFlag)
+		{
+			ImGui::OpenPopup(popupId.c_str());
+			if (ImGui::BeginPopupModal(popupId.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				drawContent();
+				if (ImGui::Button("Ok")) { flag = 0U; }
+				ImGui::EndPopup();
+			}
+		}
 	}
 };
 

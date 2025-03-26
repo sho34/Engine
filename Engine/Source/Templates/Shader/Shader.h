@@ -83,7 +83,10 @@ namespace Templates {
 	std::set<TextureType> GetShaderTextureParameters(std::string shaderName);
 	unsigned int GetShaderSamplerParameters(std::string shaderName);
 	void DrawShaderPanel(std::string& shader, ImVec2 pos, ImVec2 size, bool pop);
+	void AttachMaterialToShader(std::string shader, std::string material);
+	void DetachMaterialsFromShader(std::string shader);
 	void DeleteShader(std::string name);
+	void DrawShadersPopups();
 	/*
 	nlohmann::json json();
 	*/

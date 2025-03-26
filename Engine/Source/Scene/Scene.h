@@ -53,6 +53,13 @@ static const std::map<_SceneObjects, std::function<void(void*&, ImVec2, ImVec2, 
 	{ SO_SoundEffects, DrawSoundEffectPanel }
 };
 
+static const std::map<_SceneObjects, std::function<void()>> DrawSceneObjectsPopups = {
+	{ SO_Renderables, DrawRenderablesPopups },
+	{ SO_Lights, DrawLightsPopups },
+	{ SO_Cameras, DrawCamerasPopups },
+	{ SO_SoundEffects, DrawSoundEffectsPopups }
+};
+
 static const std::map<_SceneObjects, std::function<std::string(void*)>> GetSceneObjectName = {
 	{ SO_Renderables, GetRenderableName },
 	{ SO_Lights, GetLightName },

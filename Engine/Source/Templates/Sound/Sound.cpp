@@ -7,6 +7,9 @@
 #include "../../Scene/Sound/SoundEffect.h"
 #include <NoStd.h>
 #include <Application.h>
+#if defined(_EDITOR)
+#include "../../Editor/Editor.h"
+#endif
 
 using namespace AudioSystem;
 using namespace DirectX;
@@ -16,6 +19,15 @@ namespace Templates
 	std::map<std::string, std::shared_ptr<DirectX::SoundEffect>> soundEffects;
 #if defined(_EDITOR)
 	std::map<std::string, std::vector<std::shared_ptr<Scene::SoundEffect>>> soundInstances;
+	enum SoundPopupModal
+	{
+		SoundPopupModal_CannotDelete = 1,
+	};
+
+	namespace Sound
+	{
+		unsigned int popupModalId = 0U;
+	};
 #endif
 
 	//CREATE
@@ -84,6 +96,15 @@ namespace Templates
 		}
 	}
 
+	void DetachSoundsEffectsTemplate(std::string sound)
+	{
+		auto& instances = soundInstances.at(sound);
+		for (auto& it : instances)
+		{
+			it->DetachSoundEffectTemplate();
+		}
+	}
+
 	void DestroySoundEffectInstances(std::string sound)
 	{
 		auto& instances = soundInstances.at(sound);
@@ -135,6 +156,26 @@ namespace Templates
 
 	void DeleteSound(std::string name)
 	{
+		nlohmann::json sound = soundTemplates.at(name);
+		if (sound.contains("systemCreated") && sound.at("systemCreated") == true)
+		{
+			Sound::popupModalId = SoundPopupModal_CannotDelete;
+			return;
+		}
+
+		DetachSoundsEffectsTemplate(name);
+		DestroySoundEffectInstances(name);
+		EraseSoundEffect(name);
+		soundTemplates.erase(name);
+	}
+
+	void DrawSoundsPopups()
+	{
+		Editor::DrawOkPopup(Sound::popupModalId, SoundPopupModal_CannotDelete, "CannotDeleteSoundPopup", []
+			{
+				ImGui::Text("Cannot delete a system created sound");
+			}
+		);
 	}
 
 	/*

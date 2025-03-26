@@ -32,6 +32,7 @@ namespace Editor {
 
 	void CreateRenderableBoundingBox();
 	void WriteRenderableBoundingBoxConstantsBuffer();
+	void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent);
 
 }
 #endif

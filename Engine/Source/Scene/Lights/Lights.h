@@ -249,6 +249,7 @@ namespace Scene {
 	void DeSelectLight(void*& ptr);
 	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
 	void DeleteLight(std::string name);
+	void DrawLightsPopups();
 #endif
 };
 

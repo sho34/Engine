@@ -786,6 +786,10 @@ namespace Scene {
 		lightsToDestroy.push_back(lightsByName.at(name));
 	}
 
+	void DrawLightsPopups()
+	{
+	}
+
 #endif
 
 	void Light::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)

@@ -65,6 +65,7 @@ namespace Templates {
 	void DrawModel3DPanel(std::string& model, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetModel3DInstanceTemplateName(std::shared_ptr<Model3DInstance> model3D);
 	void DeleteModel3D(std::string name);
+	void DrawModels3DsPopups();
 	//nlohmann::json json();
 #endif
 }

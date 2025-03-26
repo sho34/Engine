@@ -242,6 +242,7 @@ namespace Scene
 	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetRenderableName(void* ptr);
 	void DeleteRenderable(std::string name);
+	void DrawRenderablesPopups();
 #endif
 
 	//DELETE

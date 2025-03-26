@@ -1179,6 +1179,10 @@ namespace Scene {
 		renderable->renderableUpdateFlags |= RenderableFlags_Destroy;
 	}
 
+	void DrawRenderablesPopups()
+	{
+	}
+
 	/*
 	nlohmann::json Renderable::json() {
 		nlohmann::json j = nlohmann::json({});

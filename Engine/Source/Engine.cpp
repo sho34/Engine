@@ -233,21 +233,19 @@ void CreateSystemTemplates() {
 			{ "value": [ 1.0, 0.0, 0.0 ], "variable": "baseColor", "variableType": "FLOAT3" }
 		]
 	})"_json);
-	CreateShader("Teapot", R"( {
+	CreateShader("BaseLighting", R"( {
 		"systemCreated" : true,
 		"mappedValues": [
 			{ "value": [ 0.11764706671237946, 0.5647059082984924, 1.0 ], "variable": "baseColor", "variableType": "FLOAT3" },
 			{ "value": 400.0, "variable": "specularExponent", "variableType": "FLOAT" }
-		],
-		"fileName": "BaseLighting"
+		]
 	})"_json);
-	CreateShader("Floor", R"( {
+	CreateShader("Grid", R"( {
 		"systemCreated" : true,
 		"mappedValues": [
 			{ "value": [ 1.0, 0.0, 1.0 ], "variable": "baseColor", "variableType": "RGB" },
 			{ "value": 1024.0, "variable": "specularExponent", "variableType": "FLOAT" }
-		],
-		"fileName": "Grid"
+		]
 	})"_json);
 	CreateShader("ShadowMap", R"( { "systemCreated" : true })"_json);
 	CreateShader("DepthMinMax", R"( { "systemCreated" : true })"_json);
@@ -255,8 +253,8 @@ void CreateSystemTemplates() {
 	CreateShader("FullScreenQuad", R"( { "systemCreated" : true })"_json);
 	CreateShader("LoadingBar", R"( { "systemCreated" : true })"_json);
 	CreateMaterial("BoundingBox", R"({ "shader":"BoundingBox", "systemCreated":true })"_json);
-	CreateMaterial("Teapot", R"({ "shader":"Teapot", "systemCreated":true, "samplers":[{ "Filter":"MIN_MAG_MIP_LINEAR", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
-	CreateMaterial("Floor", R"({ "shader":"Floor", "systemCreated":true, "samplers":[{ "Filter":"MIN_MAG_MIP_LINEAR", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
+	CreateMaterial("Teapot", R"({ "shader":"BaseLighting", "systemCreated":true, "samplers":[{ "Filter":"MIN_MAG_MIP_LINEAR", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
+	CreateMaterial("Floor", R"({ "shader":"Grid", "systemCreated":true, "samplers":[{ "Filter":"MIN_MAG_MIP_LINEAR", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
 	CreateMaterial("ShadowMap", R"({ "shader":"ShadowMap", "systemCreated":true, "samplers":[{ "Filter":"MIN_MAG_MIP_LINEAR", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
 	CreateMaterial("DepthMinMax", R"({ "shader":"DepthMinMax", "systemCreated":true, "twoSided": true, "samplers":[{ "Filter":"MIN_MAG_MIP_POINT", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
 	CreateMaterial("DepthMinMaxToRGBA", R"({ "shader":"DepthMinMaxToRGBA", "systemCreated":true, "twoSided": true, "samplers":[{ "Filter":"MIN_MAG_MIP_POINT", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);

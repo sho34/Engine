@@ -54,6 +54,13 @@ static const std::map<_Templates, std::function<void(std::string&, ImVec2, ImVec
 	{ T_Sounds, DrawSoundPanel }
 };
 
+static const std::map<_Templates, std::function<void()>> DrawTemplatesPopups = {
+	{ T_Materials, DrawMaterialsPopups },
+	{ T_Models3D, DrawModels3DsPopups },
+	{ T_Shaders, DrawShadersPopups },
+	{ T_Sounds, DrawSoundsPopups }
+};
+
 static const std::map<_Templates, std::function<std::string(std::string)>> GetTemplateName = {
 	{ T_Materials, getX },
 	{ T_Models3D, getX },

@@ -16,6 +16,7 @@
 #include <DXTypes.h>
 
 #if defined(_EDITOR)
+#include "../Editor/Editor.h"
 #include "../Templates.h"
 namespace Editor {
 	extern _Templates tempTab;
@@ -31,11 +32,30 @@ namespace Templates {
 	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
 	static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
 
+#if defined(_EDITOR)
+	enum MaterialPopupModal
+	{
+		MaterialPopupModal_CannotDelete = 1,
+	};
+
+	namespace Material
+	{
+		unsigned int popupModalId = 0U;
+	};
+#endif
+
 	//CREATE
 	void CreateMaterial(std::string name, nlohmann::json json)
 	{
 		if (materialTemplates.contains(name)) return;
 		materialTemplates.insert_or_assign(name, json);
+
+		nlohmann::json mat = GetMaterialTemplate(name);
+		nlohmann::json shader = GetShaderTemplate(mat.at("shader"));
+
+		std::string shaderName = shader.contains("fileName") ? std::string(shader.at("fileName")) : std::string(mat.at("shader"));
+
+		AttachMaterialToShader(shaderName, name);
 	}
 
 	static std::mt19937 g;
@@ -426,7 +446,36 @@ namespace Templates {
 
 	void DeleteMaterial(std::string name)
 	{
+		nlohmann::json material = materialTemplates.at(name);
+		if (material.contains("systemCreated") && material.at("systemCreated") == true)
+		{
+			Material::popupModalId = MaterialPopupModal_CannotDelete;
+		}
+	}
 
+	void DrawMaterialsPopups()
+	{
+		Editor::DrawOkPopup(Material::popupModalId, MaterialPopupModal_CannotDelete, "CannotDeleteMaterialPopup", []
+			{
+				ImGui::Text("Cannot delete a system created material");
+			}
+		);
+	}
+
+	void DetachShader(std::string material)
+	{
+		nlohmann::json& mat = materialTemplates.at(material);
+		mat.at("shader") = Material::fallbackShader;
+
+		for (auto& [_, instance] : refTracker.instances)
+		{
+			if (instance->material != material) continue;
+
+			for (auto& cb : instance->rebuildCallbacks)
+			{
+				cb();
+			}
+		}
 	}
 
 	/*

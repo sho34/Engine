@@ -29,17 +29,20 @@ namespace Scene {
 		SetIfMissingJson(fx->json, "instanceFlags", static_cast<int>(SoundEffectInstance_Default));
 		SetIfMissingJson(fx->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 
-		fx->CreateSoundEffectInstance();
-
-		soundsEffects.insert_or_assign(fx->name(), fx);
-		if (nostd::bytesHas(fx->instanceFlags(), SoundEffectInstance_Use3D))
+		if (!fx->json.at("sound").empty())
 		{
-			sounds3DEffects.push_back(fx);
-		}
+			fx->CreateSoundEffectInstance();
+
+			soundsEffects.insert_or_assign(fx->name(), fx);
+			if (nostd::bytesHas(fx->instanceFlags(), SoundEffectInstance_Use3D))
+			{
+				sounds3DEffects.push_back(fx);
+			}
 
 #if defined(_EDITOR)
-		Templates::BindNotifications(fx->sound(), fx->this_ptr);
+			Templates::BindNotifications(fx->sound(), fx->this_ptr);
 #endif
+		}
 
 		return fx;
 	}
@@ -108,6 +111,11 @@ namespace Scene {
 	void SoundEffect::instanceFlags(SOUND_EFFECT_INSTANCE_FLAGS instanceFlags)
 	{
 		json.at("instanceFlags") = static_cast<int>(instanceFlags);
+	}
+
+	void SoundEffect::DetachSoundEffectTemplate()
+	{
+		sound("");
 	}
 
 	void SoundEffect::CreateSoundEffectInstance()
@@ -197,6 +205,10 @@ namespace Scene {
 		soundEffect->soundEffectUpdateFlags |= SoundEffectFlags_Destroy;
 	}
 
+	void DrawSoundEffectsPopups()
+	{
+	}
+
 	void SoundEffectsStep()
 	{
 #if defined(_EDITOR)
@@ -263,10 +275,13 @@ namespace Scene {
 
 		ImGui::PushID("sound-effect-template");
 		{
-			std::vector<std::string> selectables = GetSoundsNames();
+			std::vector<std::string> selectables = { " " };
+			std::vector<std::string> soundNames = GetSoundsNames();
+			nostd::AppendToVector(selectables, soundNames);
 			std::string selected = sound();
+			if (selected == "") { selected = " "; }
 
-			if (!selected.empty())
+			if (!selected.empty() && selected != " ")
 			{
 				if (ImGui::Button(ICON_FA_FILE_AUDIO))
 				{
@@ -278,11 +293,17 @@ namespace Scene {
 
 			DrawComboSelection(selected, selectables, [this, selected](std::string sound)
 				{
-					Templates::UnbindNotifications(selected, this_ptr);
-					DestroySoundEffectInstance();
-					this->sound(sound);
-					CreateSoundEffectInstance();
-					Templates::BindNotifications(sound, this_ptr);
+					if (selected != " ")
+					{
+						Templates::UnbindNotifications(selected, this_ptr);
+						DestroySoundEffectInstance();
+					}
+					this->sound((sound == " ") ? "" : sound);
+					if (sound != " ")
+					{
+						CreateSoundEffectInstance();
+						Templates::BindNotifications(sound, this_ptr);
+					}
 				}
 			);
 		}

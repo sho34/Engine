@@ -16,6 +16,18 @@ namespace Templates {
 	std::map<std::string, std::map<std::string, MaterialVariablesTypes>> shaderConstantVariablesTypes;
 	std::map<std::string, std::set<TextureType>> shaderTexturesTypes;
 	std::map<std::string, unsigned int> shaderSamplers;
+	std::map<std::string, std::vector<std::string>> materialReferences;
+
+	enum ShaderPopupModal
+	{
+		ShaderPopupModal_CannotDelete = 1,
+	};
+
+	namespace Shader
+	{
+		unsigned int popupModalId = 0U;
+	};
+
 #endif
 
 	nostd::RefTracker<Source, std::shared_ptr<ShaderInstance>> refTracker;
@@ -393,8 +405,44 @@ namespace Templates {
 		ImDrawMappedValues(sha, GetShaderMappeableVariables(fileName.data()));
 	}
 
+	void AttachMaterialToShader(std::string shader, std::string material)
+	{
+		materialReferences[shader].push_back(material);
+	}
+
+	void DetachMaterialsFromShader(std::string shader)
+	{
+		for (auto& it : materialReferences.at(shader))
+		{
+			DetachShader(it);
+		}
+	}
+
 	void DeleteShader(std::string name)
 	{
+		nlohmann::json shader = shaderTemplates.at(name);
+		if (shader.contains("systemCreated") && shader.at("systemCreated") == true)
+		{
+			Shader::popupModalId = ShaderPopupModal_CannotDelete;
+			return;
+		}
+
+		DetachMaterialsFromShader(name);
+
+		shaderTemplates.erase(name);
+		shaderConstantVariablesTypes.erase(name);
+		shaderTexturesTypes.erase(name);
+		shaderSamplers.erase(name);
+		materialReferences.erase(name);
+	}
+
+	void DrawShadersPopups()
+	{
+		Editor::DrawOkPopup(Shader::popupModalId, ShaderPopupModal_CannotDelete, "CannotDeleteShaderPopup", []
+			{
+				ImGui::Text("Cannot delete a system created shader");
+			}
+		);
 	}
 
 	/*

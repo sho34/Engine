@@ -36,6 +36,7 @@ namespace Scene {
 
 		std::unique_ptr<DirectX::SoundEffectInstance> soundEffectInstance;
 
+		void DetachSoundEffectTemplate();
 		void CreateSoundEffectInstance();
 		void DestroySoundEffectInstance();
 
@@ -71,6 +72,7 @@ namespace Scene {
 	void DrawSoundEffectPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetSoundEffectName(void* ptr);
 	void DeleteSoundEffect(std::string name);
+	void DrawSoundEffectsPopups();
 #endif
 
 	void SoundEffectsStep();
