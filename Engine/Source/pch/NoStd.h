@@ -43,6 +43,13 @@ namespace nostd {
 		return names;
 	}
 
+	template<typename T>
+	inline void RenameKey(std::map<std::string, T>& map, std::string from, std::string to)
+	{
+		map[to] = map[from];
+		map.erase(from);
+	}
+
 	inline std::vector<std::string> GetKeysFromSet(std::set<std::string>& set) {
 		std::vector<std::string> names;
 		std::transform(set.begin(), set.end(), std::back_inserter(names), [](std::string name) { return name; });
@@ -189,6 +196,12 @@ namespace nostd {
 		V FindValue(K key)
 		{
 			return instances.at(key);
+		}
+
+		void RenameKey(K from, K to)
+		{
+			instances[to] = instances[from];
+			instances.erase(from);
 		}
 	};
 }

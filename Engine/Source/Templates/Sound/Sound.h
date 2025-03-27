@@ -13,6 +13,8 @@ namespace Templates {
 		inline static const std::string templateName = "audio.json";
 #if defined(_EDITOR)
 		void ReleaseSoundEffectsInstances();
+		void DrawEditorInformationAttributes(std::string& sound);
+		void DrawEditorAssetAttributes(std::string sound);
 #endif
 	}
 

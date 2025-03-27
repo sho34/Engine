@@ -13,6 +13,14 @@
 
 using namespace AudioSystem;
 using namespace DirectX;
+
+#if defined(_EDITOR)
+namespace Editor {
+	extern _Templates tempTab;
+	extern std::string selTemp;
+}
+#endif
+
 namespace Templates
 {
 	std::map<std::string, nlohmann::json> soundTemplates;
@@ -128,24 +136,65 @@ namespace Templates
 		soundEffects.erase(sound);
 	}
 
+	void RenameSound(std::string& from, std::string to)
+	{
+		if (soundTemplates.contains(to) || to == "") return;
+		nostd::RenameKey(soundTemplates, from, to);
+		nostd::RenameKey(soundEffects, from, to);
+		nostd::RenameKey(soundInstances, from, to);
+		Editor::selTemp = to;
+		from = to;
+	}
+
 	void DrawSoundPanel(std::string sound, ImVec2 pos, ImVec2 size, bool pop)
 	{
-		nlohmann::json& snd = soundTemplates.at(sound);
+		std::string tableName = "sound-panel";
+		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+		{
+			Sound::DrawEditorInformationAttributes(sound);
+			Sound::DrawEditorAssetAttributes(sound);
+			ImGui::EndTable();
+		}
+	}
+
+	void Sound::DrawEditorInformationAttributes(std::string& sound)
+	{
+		nlohmann::json& json = soundTemplates.at(sound);
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		std::string tableName = "sound-information-atts";
+		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			std::string currentName = sound;
+			if (ImGui::InputText("name", &currentName))
+			{
+				RenameSound(sound, currentName);
+			}
+			ImGui::EndTable();
+		}
+	}
+
+	void Sound::DrawEditorAssetAttributes(std::string sound)
+	{
+		nlohmann::json& json = soundTemplates.at(sound);
 
 		std::string parentFolder = defaultAssetsFolder;
 		std::string fileName = "";
-		if (snd.contains("path") && !snd.at("path").empty())
+		if (json.contains("path") && !json.at("path").empty())
 		{
-			fileName = snd.at("path");
+			fileName = json.at("path");
 			std::filesystem::path rootFolder = fileName;
 			parentFolder = rootFolder.parent_path().string();
 		}
 
-		ImDrawFileSelector("##", fileName, [&snd, sound](std::filesystem::path path)
+		ImDrawFileSelector("##", fileName, [&json, sound](std::filesystem::path path)
 			{
 				std::filesystem::path curPath = std::filesystem::current_path();
 				std::filesystem::path relPath = std::filesystem::relative(path, curPath);
-				snd.at("path") = relPath.string();
+				json.at("path") = relPath.string();
 				DestroySoundEffectInstances(sound);
 				EraseSoundEffect(sound);
 				CreateSoundEffectInstances(sound);

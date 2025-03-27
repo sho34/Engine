@@ -18,6 +18,9 @@ namespace Templates {
 		inline static const std::string templateName = "model3d.json";
 #if defined(_EDITOR)
 		void ReleaseRenderablesInstances();
+		void DrawEditorInformationAttributes(std::string& model3d);
+		void DrawEditorAssetAttributes(std::string model3d);
+		void DrawEditorMaterialAttributes(std::string model3d);
 #endif
 	}
 

@@ -8,6 +8,10 @@
 #include "../../Animation/Animated.h"
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
+namespace Editor {
+	extern _Templates tempTab;
+	extern std::string selTemp;
+}
 #endif
 
 using namespace Animation;
@@ -18,7 +22,7 @@ using namespace DeviceUtils;
 namespace Templates
 {
 	static std::map<std::string, nlohmann::json> model3DTemplates;
-	static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker;
+	static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker; //? -> model3dInstance
 #if defined(_EDITOR)
 	std::map<std::string, std::vector<std::shared_ptr<Scene::Renderable>>> renderableInstances;
 
@@ -369,49 +373,111 @@ namespace Templates
 		}
 	}
 
+	void RenameModel3D(std::string& from, std::string to)
+	{
+		if (model3DTemplates.contains(to) || to == "") return;
+
+		nostd::RenameKey(model3DTemplates, from, to);
+		refTracker.instances[to] = refTracker.instances[from];
+		refTracker.instances.erase(from);
+		for (auto& [instance, _] : refTracker.instancesRefCount)
+		{
+			if (instance->name == from)
+			{
+				instance->name = to;
+			}
+		}
+
+		nostd::RenameKey(renderableInstances, from, to);
+		for (auto& renderable : renderableInstances.at(to))
+		{
+			renderable->json.at("model") = to;
+		}
+
+		Editor::selTemp = to;
+		from = to;
+	}
+
 	void DrawModel3DPanel(std::string& model, ImVec2 pos, ImVec2 size, bool pop)
 	{
-		nlohmann::json& mdl = model3DTemplates.at(model);
+		std::string tableName = "model3d-panel";
+		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+		{
+			Model3D::DrawEditorInformationAttributes(model);
+			Model3D::DrawEditorAssetAttributes(model);
+			Model3D::DrawEditorMaterialAttributes(model);
+			ImGui::EndTable();
+		}
+	}
+
+	void Model3D::DrawEditorInformationAttributes(std::string& model3d)
+	{
+		nlohmann::json& json = model3DTemplates.at(model3d);
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		std::string tableName = "model3d-information-atts";
+		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			std::string currentName = model3d;
+			if (ImGui::InputText("name", &currentName))
+			{
+				RenameModel3D(model3d, currentName);
+			}
+			ImGui::EndTable();
+		}
+	}
+
+	void Model3D::DrawEditorAssetAttributes(std::string model3d)
+	{
+		nlohmann::json& json = model3DTemplates.at(model3d);
 
 		std::string parentFolder = default3DModelsFolder;
 		std::string fileName = "";
-		if (mdl.contains("path") && !mdl.at("path").empty())
+		if (json.contains("path") && !json.at("path").empty())
 		{
-			fileName = mdl.at("path");
+			fileName = json.at("path");
 			std::filesystem::path rootFolder = fileName;
 			parentFolder = default3DModelsFolder + rootFolder.parent_path().string();
 		}
 
 		ImGui::PushID("File-Selector");
 		{
-			ImDrawFileSelector("##", fileName, [&mdl, model](std::filesystem::path path)
+			ImDrawFileSelector("##", fileName, [&json, model3d](std::filesystem::path path)
 				{
 					std::filesystem::path curPath = std::filesystem::current_path().append(default3DModelsFolder);
 					std::filesystem::path relPath = std::filesystem::relative(path, curPath);
-					mdl.at("path") = relPath.string();
-					ReloadModel3DInstances(model);
+					json.at("path") = relPath.string();
+					ReloadModel3DInstances(model3d);
 				},
 				parentFolder, "3d model files. (*.gltf)", "*.gltf"
 			);
 		}
 		ImGui::PopID();
+	}
+
+	void Model3D::DrawEditorMaterialAttributes(std::string model3d)
+	{
+		nlohmann::json& json = model3DTemplates.at(model3d);
 
 		ImGui::PushID("Auto-Create-Material");
 		{
-			drawFromCheckBox(mdl, "autoCreateMaterial", "Auto create material");
+			drawFromCheckBox(json, "autoCreateMaterial", "Auto create material");
 		}
 		ImGui::PopID();
 
-		std::string currentShader = mdl.at("materialsShader");
+		std::string currentShader = json.at("materialsShader");
 		std::vector<std::string> selectables = { " " };
 		std::vector<std::string> shaders = GetShadersNames();
 		nostd::AppendToVector(selectables, shaders);
 		ImGui::PushID("Select-Shader");
 		{
-			DrawComboSelection(currentShader, selectables, [&mdl, model](std::string newShader)
+			DrawComboSelection(currentShader, selectables, [&json, model3d](std::string newShader)
 				{
-					mdl.at("materialsShader") = newShader;
-					ReloadModel3DInstances(model);
+					json.at("materialsShader") = newShader;
+					ReloadModel3DInstances(model3d);
 				}, "Shader"
 			);
 		}

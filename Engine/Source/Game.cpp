@@ -373,9 +373,9 @@ void EditorModeCreate()
 			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
 			//LoadDefaultLevel();
-			LoadLevel("knight-original");
+			//LoadLevel("knight-original");
 			//LoadLevel("female");
-			//LoadLevel("knight");
+			LoadLevel("knight");
 			//LoadLevel("baseLevel");
 			//LoadLevel("jumpsuit");
 			//LoadLevel("venom");

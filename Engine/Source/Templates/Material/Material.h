@@ -18,7 +18,9 @@ namespace Templates {
 	namespace Material
 	{
 		inline static const std::string templateName = "materials.json";
+#if defined(_EDITOR)
 		inline static const std::string fallbackShader = "BaseLighting";
+#endif
 	};
 
 	struct MaterialInstance {

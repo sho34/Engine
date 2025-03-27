@@ -33,6 +33,8 @@ namespace Templates {
 	static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
 
 #if defined(_EDITOR)
+	std::map<std::string, std::vector<std::tuple<std::shared_ptr<Renderable>, unsigned int>>> renderablesInstances;
+
 	enum MaterialPopupModal
 	{
 		MaterialPopupModal_CannotDelete = 1,
@@ -450,6 +452,7 @@ namespace Templates {
 		if (material.contains("systemCreated") && material.at("systemCreated") == true)
 		{
 			Material::popupModalId = MaterialPopupModal_CannotDelete;
+			return;
 		}
 	}
 

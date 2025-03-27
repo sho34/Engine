@@ -1150,22 +1150,7 @@ namespace Scene {
 		ptr = nullptr;
 	}
 
-	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop)
-	{
-		Renderable* renderable = (Renderable*)ptr;
 
-		std::string tableName = "renderable-panel";
-		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
-		{
-			renderable->DrawEditorInformationAttributes();
-			renderable->DrawEditorWorldAttributes();
-			renderable->DrawEditorAnimationAttributes();
-			renderable->DrawEditorShaderAttributes();
-			renderable->DrawEditorMeshesAttributes();
-			renderable->DrawEditorPipelineStateAttributes();
-			ImGui::EndTable();
-		}
-	}
 
 	std::string GetRenderableName(void* ptr)
 	{
@@ -1220,6 +1205,23 @@ namespace Scene {
 		return j;
 	}
 	*/
+
+	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop)
+	{
+		Renderable* renderable = (Renderable*)ptr;
+
+		std::string tableName = "renderable-panel";
+		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
+		{
+			renderable->DrawEditorInformationAttributes();
+			renderable->DrawEditorWorldAttributes();
+			renderable->DrawEditorAnimationAttributes();
+			renderable->DrawEditorShaderAttributes();
+			renderable->DrawEditorMeshesAttributes();
+			renderable->DrawEditorPipelineStateAttributes();
+			ImGui::EndTable();
+		}
+	}
 
 	void Renderable::DrawEditorInformationAttributes()
 	{

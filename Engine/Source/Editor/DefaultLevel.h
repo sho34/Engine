@@ -19,7 +19,7 @@ namespace Editor::DefaultLevel {
       {
         "meshMaterials": [
           {
-            "material": "Teapot",
+            "material": "BaseLighting",
             "mesh": "utahteapot"
           }
         ],
