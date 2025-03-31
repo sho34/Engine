@@ -131,7 +131,14 @@ namespace Scene
 
 	std::vector<UUIDName> GetCamerasUUIDNames()
 	{
-		return GetSceneObjectsUUIDsNames(cameraByUUID);
+		std::map<std::string, std::shared_ptr<Camera>> ret;
+		std::copy_if(cameraByUUID.begin(), cameraByUUID.end(), std::inserter(ret, ret.end()), [](const auto& pair)
+			{
+				return !pair.second->hidden() && pair.second->light == nullptr;
+			}
+		);
+
+		return GetSceneObjectsUUIDsNames(ret);
 	}
 
 #if defined(_EDITOR)
@@ -184,10 +191,31 @@ namespace Scene
 	void DeleteCamera(std::string uuid)
 	{
 		std::shared_ptr<Camera> camera = cameraByUUID.at(uuid);
-		camera->cameraUpdateFlags |= CameraFlags_Destroy;
+		if (camera->hidden() || !camera->light)
+		{
+			camera->cameraUpdateFlags |= CameraFlags_Destroy;
+		}
 	}
 	void DrawCamerasPopups()
 	{
+	}
+	void WriteCamerasJson(nlohmann::json& json)
+	{
+		std::map<std::string, std::shared_ptr<Camera>> filtered;
+		std::copy_if(cameraByUUID.begin(), cameraByUUID.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
+			{
+				auto& [uuid, camera] = pair;
+				return !camera->hidden() && camera->light == nullptr;
+			}
+		);
+		std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
+			{
+				auto& [uuid, camera] = pair;
+				nlohmann::json ret = camera->json;
+				ret["uuid"] = uuid;
+				return ret;
+			}
+		);
 	}
 #endif
 

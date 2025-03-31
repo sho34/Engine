@@ -715,6 +715,25 @@ namespace Scene {
 	{
 	}
 
+	void WriteLightsJson(nlohmann::json& json)
+	{
+		std::map<std::string, std::shared_ptr<Light>> filtered;
+		std::copy_if(lightsByUUID.begin(), lightsByUUID.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
+			{
+				auto& [uuid, light] = pair;
+				return !light->hidden();
+			}
+		);
+		std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
+			{
+				auto& [uuid, light] = pair;
+				nlohmann::json ret = light->json;
+				ret["uuid"] = uuid;
+				return ret;
+			}
+		);
+	}
+
 #endif
 
 	void Light::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)

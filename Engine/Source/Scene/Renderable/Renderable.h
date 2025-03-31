@@ -249,6 +249,7 @@ namespace Scene
 	std::string GetRenderableName(std::string uuid);
 	void DeleteRenderable(std::string uuid);
 	void DrawRenderablesPopups();
+	void WriteRenderablesJson(nlohmann::json& json);
 #endif
 
 	//DELETE

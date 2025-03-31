@@ -79,6 +79,7 @@ namespace Scene {
 	std::string GetSoundEffectName(std::string uuid);
 	void DeleteSoundEffect(std::string uuid);
 	void DrawSoundEffectsPopups();
+	void WriteSoundEffectsJson(nlohmann::json& json);
 #endif
 
 	void SoundEffectsStep();

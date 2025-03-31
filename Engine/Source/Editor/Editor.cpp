@@ -366,8 +366,8 @@ namespace Editor {
 					ImGuiTabItemFlags_ flag = (tab == type) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
 					if (flag == ImGuiTabItemFlags_SetSelected)
 					{
-						ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.230, 0.230, 0.230, 1));
-						ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.230, 0.230, 0.230, 1));
+						ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.230f, 0.230f, 0.230f, 1.0f));
+						ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.230f, 0.230f, 0.230f, 1.0f));
 					}
 					if (ImGui::TabItemButton(name.c_str(), flag))
 					{
@@ -452,9 +452,9 @@ namespace Editor {
 					}
 				);
 
-				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO, SetSelectedSceneObjectProxy, [](std::string name)
+				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO, SetSelectedSceneObjectProxy, [](std::string uuid)
 					{
-
+						DeleteSceneObject.at(soTab)(uuid);
 					}
 				);
 			}
@@ -478,9 +478,9 @@ namespace Editor {
 
 			if (selTemp.empty())
 			{
-				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp, SetSelectedTemplate, [](std::string name)
+				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp, SetSelectedTemplate, [](std::string uuid)
 					{
-						DeleteTemplate.at(tempTab)(name);
+						DeleteTemplate.at(tempTab)(uuid);
 					}
 				);
 			}
@@ -511,7 +511,9 @@ namespace Editor {
 				jsonFilePath.replace_extension(".json");
 				levelToLoad = jsonFilePath;
 				soTab = _SceneObjects::SO_Renderables;
+				selSO = "";
 				tempTab = _Templates::T_Materials;
+				selTemp = "";
 			},
 			defaultLevelsFolder
 		);
@@ -519,7 +521,6 @@ namespace Editor {
 
 	void SaveLevelToFile(std::string levelFileName)
 	{
-		/*
 		using namespace nlohmann;
 
 		nlohmann::json level;
@@ -529,26 +530,10 @@ namespace Editor {
 		level["cameras"] = json::array();
 		level["sounds"] = json::array();
 
-		using namespace Scene::Renderable;
-		for (auto& [name, renderable] : GetRenderables()) {
-			level["renderables"].push_back(renderable->json());
-		}
-
-		using namespace Scene::Lights;
-		for (auto& light : GetLights()) {
-			level["lights"].push_back(light->json());
-		}
-
-		using namespace Scene::Camera;
-		for (auto& camera : GetCameras()) {
-			if (camera->light != nullptr) continue;
-			level["cameras"].push_back(camera->json());
-		}
-
-		using namespace Scene::SoundEffect;
-		for (auto& [name, sfx] : GetSoundsEffects()) {
-			level["sounds"].push_back(sfx->json());
-		}
+		WriteRenderablesJson(level["renderables"]);
+		WriteLightsJson(level["lights"]);
+		WriteCamerasJson(level["cameras"]);
+		WriteSoundEffectsJson(level["sounds"]);
 
 		std::string levelString = level.dump(4);
 
@@ -566,12 +551,10 @@ namespace Editor {
 		file.open(pathStr);
 		file.write(levelString.c_str(), levelString.size());
 		file.close();
-		*/
 	}
 
 	bool SaveFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr)
 	{
-		/*
 		IFileSaveDialog* p_file_save = nullptr;
 		bool are_all_operation_success = false;
 		while (!are_all_operation_success)
@@ -647,31 +630,29 @@ namespace Editor {
 		if (p_file_save)
 			p_file_save->Release();
 		return are_all_operation_success;
-		*/
-		return false;
 	}
 
 	void SaveLevelAs()
 	{
-		/*
-		std::thread saveAs([]() {
-			//first create the directory if needed
-			std::filesystem::path directory(nostd::StringToWString(defaultLevelsFolder));
-			std::filesystem::create_directory(directory);
+		std::thread saveAs([]()
+			{
+				//first create the directory if needed
+				std::filesystem::path directory(nostd::StringToWString(defaultLevelsFolder));
+				std::filesystem::create_directory(directory);
 
-			std::wstring path = L"";
-			COMDLG_FILTERSPEC filters[] = { {.pszName = L"JSON files. (*.json)", .pszSpec = L"*.json" } };
-			std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
-			if (!SaveFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
-			if (path.empty()) return;
+				std::wstring path = L"";
+				COMDLG_FILTERSPEC filters[] = { {.pszName = L"JSON files. (*.json)", .pszSpec = L"*.json" } };
+				std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
+				if (!SaveFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
+				if (path.empty()) return;
 
-			std::filesystem::path jsonFilePath = path;
-			jsonFilePath.replace_extension(".json");
+				std::filesystem::path jsonFilePath = path;
+				jsonFilePath.replace_extension(".json");
 
-			SaveLevelToFile(nostd::WStringToString(jsonFilePath.filename()));
-			});
+				SaveLevelToFile(nostd::WStringToString(jsonFilePath.filename()));
+			}
+		);
 		saveAs.detach();
-		*/
 	}
 
 	void SaveTemplates()

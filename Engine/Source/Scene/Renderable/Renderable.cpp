@@ -1188,6 +1188,25 @@ namespace Scene {
 	{
 	}
 
+	void WriteRenderablesJson(nlohmann::json& json)
+	{
+		std::map<std::string, std::shared_ptr<Renderable>> filtered;
+		std::copy_if(renderables.begin(), renderables.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
+			{
+				auto& [uuid, renderable] = pair;
+				return !renderable->hidden();
+			}
+		);
+		std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
+			{
+				auto& [uuid, renderable] = pair;
+				nlohmann::json ret = renderable->json;
+				ret["uuid"] = uuid;
+				return ret;
+			}
+		);
+	}
+
 	void DrawRenderablePanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
 	{
 		std::shared_ptr<Renderable> renderable = renderables.at(uuid);

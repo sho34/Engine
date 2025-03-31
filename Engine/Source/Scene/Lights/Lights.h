@@ -256,6 +256,7 @@ namespace Scene {
 	void DrawLightPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	void DeleteLight(std::string uuid);
 	void DrawLightsPopups();
+	void WriteLightsJson(nlohmann::json& json);
 #endif
 };
 

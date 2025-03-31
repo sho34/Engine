@@ -137,6 +137,7 @@ namespace Scene {
 	std::string GetCameraName(std::string uuid);
 	void DeleteCamera(std::string uuid);
 	void DrawCamerasPopups();
+	void WriteCamerasJson(nlohmann::json& json);
 #endif
 	void CamerasStep();
 	void DestroyCamera(std::shared_ptr<Camera>& camera);

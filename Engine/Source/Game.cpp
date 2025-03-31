@@ -421,9 +421,9 @@ void EditorModeRender()
 	{
 		WriteConstantsBuffers();
 
-		RenderSelectedLightShadowMapChain();
-
 		RenderSceneShadowMaps();
+
+		RenderSelectedLightShadowMapChain();
 
 		mainPass->BeginRenderPass();
 		{

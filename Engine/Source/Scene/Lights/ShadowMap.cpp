@@ -290,6 +290,7 @@ namespace Scene {
 						}
 					}
 				},
+				{ "uniqueMaterialInstance", true },
 				{ "meshShadowMapMaterials", {} },
 				{ "name", "ShadowMapMinMaxChainQuadResult" },
 				{ "uuid", getUUID() },

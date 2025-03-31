@@ -221,6 +221,25 @@ namespace Scene {
 	{
 	}
 
+	void WriteSoundEffectsJson(nlohmann::json& json)
+	{
+		std::map<std::string, std::shared_ptr<SoundEffect>> filtered;
+		std::copy_if(soundsEffects.begin(), soundsEffects.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
+			{
+				auto& [uuid, sfx] = pair;
+				return !sfx->hidden();
+			}
+		);
+		std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
+			{
+				auto& [uuid, sfx] = pair;
+				nlohmann::json ret = sfx->json;
+				ret["uuid"] = uuid;
+				return ret;
+			}
+		);
+	}
+
 	void SoundEffectsStep()
 	{
 #if defined(_EDITOR)
