@@ -2,6 +2,7 @@
 #include <memory>
 #include <string>
 #include <Audio.h>
+#include <Application.h>
 #include "../../Scene/Sound/SoundEffect.h"
 
 using namespace DirectX;
@@ -49,6 +50,7 @@ namespace Templates {
 	void DrawSoundPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	void DeleteSound(std::string uuid);
 	void DrawSoundsPopups();
+	void WriteSoundsJson(nlohmann::json& json);
 #endif
 
 };

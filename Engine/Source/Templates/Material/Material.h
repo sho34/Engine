@@ -93,5 +93,6 @@ namespace Templates {
 	void DeleteMaterial(std::string uuid);
 	void DrawMaterialsPopups();
 	void DetachShader(std::string uuid);
+	void WriteMaterialsJson(nlohmann::json& json);
 #endif
 };

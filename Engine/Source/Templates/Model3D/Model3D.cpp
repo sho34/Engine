@@ -529,6 +529,11 @@ namespace Templates
 		);
 	}
 
+	void WriteModel3DsJson(nlohmann::json& json)
+	{
+		WriteTemplateJson(json, model3ds);
+	}
+
 #endif
 
 	BoundingBox Model3DInstance::GetAnimatedBoundingBox(XMMATRIX* bones)

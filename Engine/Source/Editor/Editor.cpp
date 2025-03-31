@@ -657,12 +657,11 @@ namespace Editor {
 
 	void SaveTemplates()
 	{
-		/*
-		Templates::SaveTemplates(defaultTemplatesFolder, Templates::Shader::templateName, Templates::Shader::json());
-		Templates::SaveTemplates(defaultTemplatesFolder, Templates::Material::templateName, Templates::Material::json());
-		Templates::SaveTemplates(defaultTemplatesFolder, Templates::Model3D::templateName, Templates::Model3D::json());
-		Templates::SaveTemplates(defaultTemplatesFolder, Templates::Sound::templateName, Templates::Sound::json());
-		*/
+		using namespace Templates;
+		Templates::SaveTemplates(defaultTemplatesFolder, Shader::templateName, WriteShadersJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, Material::templateName, WriteMaterialsJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, Model3D::templateName, WriteModel3DsJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, Sound::templateName, WriteSoundsJson);
 	}
 
 	void SelectSceneObject(_SceneObjects objectType, std::string uuid)

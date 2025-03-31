@@ -24,10 +24,7 @@ namespace Editor {
 namespace Templates
 {
 	std::map<std::string, SoundTemplate> sounds;
-	//std::map<std::string, nlohmann::json> soundTemplates;
-	//std::map<std::string, std::shared_ptr<DirectX::SoundEffect>> soundEffects;
 #if defined(_EDITOR)
-	//std::map<std::string, std::vector<std::shared_ptr<Scene::SoundEffect>>> soundInstances;
 
 	enum SoundPopupModal
 	{
@@ -243,6 +240,11 @@ namespace Templates
 				ImGui::Text("Cannot delete a system created sound");
 			}
 		);
+	}
+
+	void WriteSoundsJson(nlohmann::json& json)
+	{
+		WriteTemplateJson(json, sounds);
 	}
 
 #endif

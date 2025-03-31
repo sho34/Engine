@@ -1,11 +1,12 @@
 #include "pch.h"
 #include "Templates.h"
+#include <fstream>
 
 namespace Templates
 {
 #if defined(_EDITOR)
 
-	void SaveTemplates(const std::string folder, const std::string fileName, nlohmann::json data)
+	void SaveTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json&)> writer)
 	{
 		//first create the directory if needed
 		std::filesystem::path directory(folder);
@@ -17,6 +18,8 @@ namespace Templates
 		std::string pathStr = path.generic_string();
 		std::ofstream file;
 		file.open(pathStr);
+		nlohmann::json data = nlohmann::json::array();
+		writer(data);
 		std::string dataString = data.dump(4);
 		file.write(dataString.c_str(), dataString.size());
 		file.close();

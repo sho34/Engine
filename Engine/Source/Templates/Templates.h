@@ -277,7 +277,7 @@ namespace Templates {
 	])"_json;
 
 #if defined(_EDITOR)
-	void SaveTemplates(const std::string folder, const std::string fileName, nlohmann::json data);
+	void SaveTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json&)> writer);
 #endif
 
 	void LoadTemplates(nlohmann::json templates, std::function<void(nlohmann::json)> loader);
@@ -288,6 +288,27 @@ namespace Templates {
 	void DestroyTemplatesReferences();
 #endif
 
+	template<typename T>
+	void WriteTemplateJson(nlohmann::json& json, std::map<std::string, T> Ts)
+	{
+		std::map<std::string, T> filtered;
+
+		std::copy_if(Ts.begin(), Ts.end(), std::inserter(filtered, filtered.end()), [](auto pair)
+			{
+				nlohmann::json j = std::get<1>(pair.second);
+				return !(j.contains("systemCreated") && j.at("systemCreated") == true);
+			}
+		);
+
+		std::transform(filtered.begin(), filtered.end(), std::inserter(json, json.end()), [](const auto& pair)
+			{
+				nlohmann::json j = std::get<1>(pair.second);
+				j["uuid"] = pair.first;
+				j["name"] = std::get<0>(pair.second);
+				return j;
+			}
+		);
+	}
 
 	inline std::vector<std::string> GetNames(auto& items)
 	{

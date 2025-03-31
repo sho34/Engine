@@ -519,20 +519,11 @@ namespace Templates {
 		);
 	}
 
-	/*
-	nlohmann::json json()
+	void WriteShadersJson(nlohmann::json& json)
 	{
-		nlohmann::json j = nlohmann::json({});
-
-		//for (auto& [name, shader] : shaderTemplates) {
-		//	if (shader->defaultValues.systemCreated) continue;
-		//	j[name] = nlohmann::json({});
-		//	j[name]["fileName"] = shader->defaultValues.shaderFileName;
-		//	j[name]["mappedValues"] = TransformMaterialValueMappingToJson(shader->defaultValues.mappedValues);
-		//}
-		return j;
+		WriteTemplateJson(json, shaders);
 	}
-	*/
+
 #endif
 
 }

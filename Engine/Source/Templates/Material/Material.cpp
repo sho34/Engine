@@ -541,5 +541,10 @@ namespace Templates {
 		}
 	}
 
+	void WriteMaterialsJson(nlohmann::json& json)
+	{
+		WriteTemplateJson(json, materials);
+	}
+
 #endif
 }

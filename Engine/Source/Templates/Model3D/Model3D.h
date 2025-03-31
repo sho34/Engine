@@ -81,6 +81,6 @@ namespace Templates {
 	void DrawModel3DPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	void DeleteModel3D(std::string uuid);
 	void DrawModels3DsPopups();
-	//nlohmann::json json();
+	void WriteModel3DsJson(nlohmann::json& json);
 #endif
 }

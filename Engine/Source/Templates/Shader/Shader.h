@@ -110,9 +110,7 @@ namespace Templates {
 	void DetachMaterialsFromShader(std::string uuid);
 	void DeleteShader(std::string uuid);
 	void DrawShadersPopups();
-	/*
-	nlohmann::json json();
-	*/
+	void WriteShadersJson(nlohmann::json& json);
 #endif
 }
 
