@@ -26,7 +26,7 @@ namespace Editor {
 	void SaveLevelAs();
 	void SaveTemplates();
 
-	void SelectSceneObject(_SceneObjects objectType, void* obj);
+	void SelectSceneObject(_SceneObjects objectType, std::string uuid);
 
 	void RenderSelectedLightShadowMapChain();
 

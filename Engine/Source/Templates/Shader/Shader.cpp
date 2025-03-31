@@ -7,31 +7,28 @@
 #include "../../Editor/Editor.h"
 #include <Application.h>
 #endif
+#include <Editor.h>
 
 namespace Templates {
 
-	std::map<std::string, nlohmann::json> shaderTemplates;
+	//uuid to ShaderTemplates
+	std::map<std::string, ShaderTemplate> shaders;
 
 #if defined(_EDITOR)
-	std::map<std::string, std::map<std::string, MaterialVariablesTypes>> shaderConstantVariablesTypes;
-	std::map<std::string, std::set<TextureType>> shaderTexturesTypes;
-	std::map<std::string, unsigned int> shaderSamplers;
-	std::map<std::string, std::vector<std::string>> materialReferences;
-
 	enum ShaderPopupModal
 	{
 		ShaderPopupModal_CannotDelete = 1,
 	};
+#endif
 
 	namespace Shader
 	{
+#if defined(_EDITOR)
 		unsigned int popupModalId = 0U;
-	};
-
 #endif
-
-	nostd::RefTracker<Source, std::shared_ptr<ShaderInstance>> refTracker;
-	ShaderIncludesDependencies dependencies;
+		static nostd::RefTracker<Source, std::shared_ptr<ShaderInstance>> refTracker;
+		ShaderIncludesDependencies dependencies;
+	};
 
 	void ShaderInstance::CopyFrom(std::shared_ptr<ShaderInstance>& src) {
 		shaderSource = src->shaderSource;
@@ -89,7 +86,8 @@ namespace Templates {
 				TextureType textureType = strToTextureType.at(resourceName);
 				if (materialTexturesTypes.contains(textureType))
 				{
-					shaderTexturesTypes[shaderSource.shaderName].insert(textureType);
+					auto& textureTypes = std::get<3>(shaders.at(shaderSource.shaderUUID));
+					textureTypes.insert(textureType);
 				}
 #endif
 			}
@@ -97,7 +95,8 @@ namespace Templates {
 			{
 				samplersParameters.insert_or_assign(resourceName, ShaderSamplerParameter({ .registerId = bindDesc.BindPoint, .numSamplers = bindDesc.BindCount }));
 #if defined(_EDITOR)
-				shaderSamplers[shaderSource.shaderName]++;
+				auto& numSamplers = std::get<4>(shaders.at(shaderSource.shaderUUID));
+				numSamplers++;
 #endif
 			}
 		}
@@ -108,7 +107,8 @@ namespace Templates {
 		using namespace Animation;
 		using namespace Scene;
 
-		for (unsigned int paramIdx = 0; paramIdx < desc.ConstantBuffers; paramIdx++) {
+		for (unsigned int paramIdx = 0; paramIdx < desc.ConstantBuffers; paramIdx++)
+		{
 			auto cbReflection = reflection->GetConstantBufferByIndex(paramIdx);
 			D3D12_SHADER_BUFFER_DESC paramDesc{};
 			cbReflection->GetDesc(&paramDesc);
@@ -120,7 +120,8 @@ namespace Templates {
 			bool isShadowMapParam = cbufferName == ShadowMapConstantBufferName;
 			if (isCameraParam || isLightParam || isAnimationParam || isShadowMapParam) continue;
 
-			for (unsigned int varIdx = 0; varIdx < paramDesc.Variables; varIdx++) {
+			for (unsigned int varIdx = 0; varIdx < paramDesc.Variables; varIdx++)
+			{
 				ID3D12ShaderReflectionVariable* varReflection = cbReflection->GetVariableByIndex(varIdx);
 				D3D12_SHADER_VARIABLE_DESC varDesc;
 				varReflection->GetDesc(&varDesc);
@@ -144,12 +145,11 @@ namespace Templates {
 					std::string tiePattern = std::get<1>(it->first);
 
 					std::string lowerVarName = varName;
-					std::transform(lowerVarName.begin(), lowerVarName.end(), lowerVarName.begin(),
-						[](unsigned char c) { return std::tolower(c); });
+					nostd::ToLower(lowerVarName);
 
 					if (lowerVarName.find(tiePattern) == std::string::npos) continue;
 
-					SetShaderMappedVariable(shaderSource.shaderName, varName, it->second);
+					SetShaderMappedVariable(shaderSource.shaderUUID, varName, it->second);
 
 					useNamePattern = true;
 					break;
@@ -157,7 +157,7 @@ namespace Templates {
 
 				if (useNamePattern) continue;
 
-				SetShaderMappedVariable(shaderSource.shaderName, varName, HLSLVariableClassToMaterialVariableTypes.at(varClass));
+				SetShaderMappedVariable(shaderSource.shaderUUID, varName, HLSLVariableClassToMaterialVariableTypes.at(varClass));
 			}
 			cbufferSize.push_back(paramDesc.Size);
 		}
@@ -185,23 +185,54 @@ namespace Templates {
 		}
 	}
 
-	//NOTIFICATIONS
-
 	//CREATE
-	void CreateShader(std::string name, nlohmann::json json)
+	void CreateShader(nlohmann::json json)
 	{
-		if (shaderTemplates.contains(name)) return;
-		shaderTemplates.insert_or_assign(name, json);
+		std::string uuid = json.at("uuid");
+
+		if (shaders.contains("uuid"))
+		{
+			assert(!!!"shader creation collision");
+		}
+		ShaderTemplate t;
+
+		std::string& name = std::get<0>(t);
+		name = json.at("name");
+
+		nlohmann::json& data = std::get<1>(t);
+		data = json;
+		data.erase("name");
+		data.erase("uuid");
+
+		shaders.insert_or_assign(uuid, t);
 	}
 
 	//READ&GET
-	nlohmann::json GetShaderTemplate(std::string name)
+	nlohmann::json GetShaderTemplate(std::string uuid)
 	{
-		return shaderTemplates.at(name);
+		return std::get<1>(shaders.at(uuid));
 	}
+
+#if defined(_EDITOR)
+	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string uuid)
+	{
+		return std::get<2>(shaders.at(uuid));
+	}
+
+	std::set<TextureType> GetShaderTextureParameters(std::string uuid)
+	{
+		return std::get<3>(shaders.at(uuid));
+	}
+
+	unsigned int GetShaderSamplerParameters(std::string uuid)
+	{
+		return std::get<4>(shaders.at(uuid));
+	}
+#endif
 
 	std::shared_ptr<ShaderInstance> GetShaderInstance(Source params)
 	{
+		using namespace Shader;
 		return refTracker.AddRef(params, [&params]()
 			{
 				using namespace ShaderCompiler;
@@ -219,17 +250,41 @@ namespace Templates {
 	}
 
 	std::vector<std::string> GetShadersNames() {
-		return nostd::GetKeysFromMap(shaderTemplates);
+		return GetNames(shaders);
 	}
+
+	std::string GetShaderName(std::string uuid)
+	{
+		return std::get<0>(shaders.at(uuid));
+	}
+
+	std::vector<UUIDName> GetShadersUUIDsNames()
+	{
+		return GetUUIDsNames(shaders);
+	}
+
 	//UPDATE
+#if defined(_EDITOR)
+
+	void SetShaderMappedVariable(std::string uuid, std::string varName, MaterialVariablesTypes type)
+	{
+		auto& variables = std::get<2>(shaders.at(uuid));
+		variables.insert_or_assign(varName, type);
+	}
+#endif
+
 	void BuildShader(std::string shaderFile)
 	{
+		using namespace Shader;
+		std::vector<std::shared_ptr<ShaderInstance>> binaries;
 		for (auto it = refTracker.instances.begin(); it != refTracker.instances.end(); it++)
 		{
 			Source source = it->first;
-			std::shared_ptr<ShaderInstance> instance = it->second;
+			std::shared_ptr<ShaderInstance> binary = it->second;
 
-			if (source.shaderName != shaderFile) continue;
+			nlohmann::json json = GetShaderTemplate(source.shaderUUID);
+			std::string path = json.at("path");
+			if (shaderFile != path) continue;
 
 			using namespace ShaderCompiler;
 			std::shared_ptr<ShaderInstance> test = Compile(source, dependencies);
@@ -238,24 +293,32 @@ namespace Templates {
 				OutputDebugStringA((std::string("Error found compiling ") + source.to_string()).c_str());
 				return;
 			}
+
+			binaries.push_back(binary);
 		}
 
-		for (auto& [source, binary] : refTracker.instances)
+		for (auto& binary : binaries)
 		{
-			if (source.shaderName != shaderFile) continue;
 			binary->NotifyChanges();
 		}
 	}
 
 	void BuildShaderFromDependency(std::string dependency)
 	{
+		using namespace Shader;
 		std::set<std::string> shaderFiles;
-		for (auto& [src, deps] : dependencies) {
-			if (deps.contains(dependency)) {
-				shaderFiles.insert(src.shaderName);
-			}
-		}
-		for (auto shaderFile : shaderFiles) {
+		for (auto& [src, deps] : dependencies)
+		{
+			//if the file is not in the dependency skip
+			if (!deps.contains(dependency)) continue;
+
+			//get the hlsl and skip if already built
+			nlohmann::json json = GetShaderTemplate(src.shaderUUID);
+			std::string shaderFile = json.at("path");
+			if (shaderFiles.contains(shaderFile)) continue;
+
+			//build
+			shaderFiles.insert(shaderFile);
 			BuildShader(shaderFile);
 		}
 	}
@@ -356,11 +419,12 @@ namespace Templates {
 	//DELETE
 	void ReleaseShaderTemplates()
 	{
-		shaderTemplates.clear();
+		shaders.clear();
 	}
 
 	void DestroyShaderBinary(std::shared_ptr<ShaderInstance>& shaderBinary)
 	{
+		using namespace Shader;
 		Source key = refTracker.FindKey(shaderBinary);
 		refTracker.RemoveRef(key, shaderBinary);
 	}
@@ -368,72 +432,82 @@ namespace Templates {
 	//EDITOR
 #if defined(_EDITOR)
 
-	void SetShaderMappedVariable(std::string shaderName, std::string varName, MaterialVariablesTypes type)
+	void DrawShaderPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
 	{
-		shaderConstantVariablesTypes[shaderName].insert_or_assign(varName, type);
-	}
-
-	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string shaderName)
-	{
-		return (shaderConstantVariablesTypes.contains(shaderName)) ? shaderConstantVariablesTypes.at(shaderName) : std::map<std::string, MaterialVariablesTypes>();
-	}
-
-	std::set<TextureType> GetShaderTextureParameters(std::string shaderName)
-	{
-		return (shaderTexturesTypes.contains(shaderName)) ? shaderTexturesTypes.at(shaderName) : std::set<TextureType>();
-	}
-
-	unsigned int GetShaderSamplerParameters(std::string shaderName)
-	{
-		return (shaderSamplers.contains(shaderName)) ? shaderSamplers.at(shaderName) : 0U;
-	}
-
-	void DrawShaderPanel(std::string& shader, ImVec2 pos, ImVec2 size, bool pop)
-	{
-		nlohmann::json& sha = shaderTemplates.at(shader);
-
-		std::string fileName = sha.contains("fileName") ? std::string(sha.at("fileName")) : shader;
-		ImDrawFileSelector("##", fileName, [&sha](std::filesystem::path shaderPath)
-			{
-				std::filesystem::path hlslFilePath = shaderPath;
-				hlslFilePath.replace_extension(".hlsl");
-				sha.at("fileName") = hlslFilePath.stem().string();
-			},
-			defaultShadersFolder, "Shader files. (*.hlsl)", "*.hlsl"
-		);
-
-		ImDrawMappedValues(sha, GetShaderMappeableVariables(fileName.data()));
-	}
-
-	void AttachMaterialToShader(std::string shader, std::string material)
-	{
-		materialReferences[shader].push_back(material);
-	}
-
-	void DetachMaterialsFromShader(std::string shader)
-	{
-		for (auto& it : materialReferences.at(shader))
+		std::string tableName = "shader-panel";
+		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
 		{
-			DetachShader(it);
+			Shader::DrawEditorInformationAttributes(uuid);
+			Shader::DrawEditorAssetAttributes(uuid);
+			ImGui::EndTable();
 		}
 	}
 
-	void DeleteShader(std::string name)
+	void Shader::DrawEditorInformationAttributes(std::string uuid)
 	{
-		nlohmann::json shader = shaderTemplates.at(name);
-		if (shader.contains("systemCreated") && shader.at("systemCreated") == true)
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		std::string tableName = "shader-information-atts";
+
+		ShaderTemplate& t = shaders.at(uuid);
+
+		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
+		{
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			std::string& currentName = std::get<0>(t);
+			nlohmann::json& json = std::get<1>(t);
+			int inputTextFlag = (json.contains("systemCreated") && json.at("systemCreated") == true) ? ImGuiInputTextFlags_ReadOnly : 0;
+			ImGui::InputText("name", &currentName, inputTextFlag);
+			ImGui::EndTable();
+		}
+	}
+
+	void Shader::DrawEditorAssetAttributes(std::string uuid)
+	{
+		ShaderTemplate& t = shaders.at(uuid);
+
+		std::string name = std::get<0>(t);
+		nlohmann::json& json = std::get<1>(t);
+		std::string fileName = (json.contains("path") ? std::string(json.at("path")) : name);
+		bool fileSelectionEnabled = (json.contains("systemCreated") && json.at("systemCreated") == true);
+		ImDrawFileSelector("##", fileName, [&json](std::filesystem::path shaderPath)
+			{
+				std::filesystem::path hlslFilePath = shaderPath;
+				hlslFilePath.replace_extension(".hlsl");
+				json.at("path") = hlslFilePath.stem().string();
+			},
+			defaultShadersFolder, "Shader files. (*.hlsl)", "*.hlsl", !fileSelectionEnabled
+		);
+
+		ImDrawMappedValues(json, GetShaderMappeableVariables(uuid));
+	}
+
+	void AttachMaterialToShader(std::string uuid, std::string materialUUID)
+	{
+		auto& matRef = std::get<5>(shaders.at(uuid));
+		matRef.push_back(materialUUID);
+	}
+
+	void DetachMaterialsFromShader(std::string uuid)
+	{
+		for (auto& materialUUID : std::get<5>(shaders.at(uuid)))
+		{
+			DetachShader(materialUUID);
+		}
+	}
+
+	void DeleteShader(std::string uuid)
+	{
+		nlohmann::json json = GetShaderTemplate(uuid);
+		if (json.contains("systemCreated") && json.at("systemCreated") == true)
 		{
 			Shader::popupModalId = ShaderPopupModal_CannotDelete;
 			return;
 		}
 
-		DetachMaterialsFromShader(name);
-
-		shaderTemplates.erase(name);
-		shaderConstantVariablesTypes.erase(name);
-		shaderTexturesTypes.erase(name);
-		shaderSamplers.erase(name);
-		materialReferences.erase(name);
+		DetachMaterialsFromShader(uuid);
+		shaders.erase(uuid);
 	}
 
 	void DrawShadersPopups()

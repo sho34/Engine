@@ -29,8 +29,8 @@ namespace Editor {
 	bool boundingBoxRendering = false;
 	std::shared_ptr<Renderable> boundingBox = nullptr;
 	_SceneObjects soTab = _SceneObjects::SO_Renderables;
+	std::string selSO = "";
 	_Templates tempTab = _Templates::T_Materials;
-	void* selSO = nullptr;
 	std::string selTemp = "";
 	float titleBH = 19.0f;
 	float panW = 400.0f;
@@ -101,9 +101,10 @@ namespace Editor {
 	{
 		boundingBox = CreateRenderable(R"(
 			{
-				"meshMaterials": [ { "material": "BoundingBox", "mesh" : "boxlines" } ],
+				"meshMaterials": [ { "material": "2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc", "mesh" : "30f15e68-db42-46fa-b846-b2647a0ac9b9" } ],
 				"meshMaterialsShadowMap": [],
 				"name": "EditorBoundingBox",
+				"uuid": "797b3a2b-6854-47ab-8e07-1974055e490d",
 				"position": [ 0.0, 0.0, 0.0],
 				"rotation": [ 0.0, 0.0, 0.0 ],
 				"scale": [ 1.0, 1.0, 1.0],
@@ -113,7 +114,8 @@ namespace Editor {
 				},
 				"visible":false,
 				"hidden":true
-			})"_json);
+			}
+		)"_json);
 	}
 
 	void ImGuiImplRenderInit()
@@ -314,15 +316,17 @@ namespace Editor {
 		ImGui::TableHeader("Object");
 
 		int row = 0;
-		for (auto name : GetObjects())
+		for (UUIDName uuidName : GetObjects())
 		{
-			std::string rowName = "table-row-" + name;
+			std::string name = std::get<1>(uuidName);
+			std::string uuid = std::get<0>(uuidName);
+			std::string rowName = "table-row-" + uuid;
 			ImGui::PushID(rowName.c_str());
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
-			if (ImGui::SmallButton(ICON_FA_TIMES)) { OnDelete(name); }
+			if (ImGui::SmallButton(ICON_FA_TIMES)) { OnDelete(uuid); }
 			ImGui::TableSetColumnIndex(1);
-			if (ImGui::TextLink(name.c_str())) { OnSelect(name); }
+			if (ImGui::TextLink(name.c_str())) { OnSelect(uuid); }
 			ImGui::PopID();
 		}
 	}
@@ -344,7 +348,7 @@ namespace Editor {
 	template<typename T, typename V>
 	void DrawTabPanel(ImVec2 pos, ImVec2 size, const char* name, T& tab,
 		std::unordered_map<T, std::string> TabToStr,
-		std::map<T, std::function<std::vector<std::string>()>> GetTabList,
+		std::map<T, std::function<std::vector<UUIDName>()>> GetTabList,
 		V& selected,
 		std::map<T, std::function<void(std::string, V&)>> OnSelect,
 		std::function<void(std::string)> OnDelete
@@ -383,7 +387,7 @@ namespace Editor {
 		V& selected,
 		std::unordered_map<T, std::string> SelectedPrefix,
 		std::map<T, std::function<std::string(V)>> GetSelectedName,
-		std::map<T, std::function<void(V&, ImVec2, ImVec2, bool)>> DrawSelectedPanel,
+		std::map<T, std::function<void(V, ImVec2, ImVec2, bool)>> DrawSelectedPanel,
 		std::map<T, std::function<void(V&)>> OnDeSelect
 	)
 	{
@@ -419,13 +423,13 @@ namespace Editor {
 			ImVec2 soSize = ImVec2(panSize.x, panSize.y * 0.5f);
 			ImVec2 tempSize = ImVec2(panSize.x, panSize.y * 0.5f - 20.0f);
 
-			if (selSO == nullptr)
+			if (selSO.empty())
 			{
-				std::map<_SceneObjects, std::function<void(std::string, void*&)>> SetSelectedSceneObjectProxy;
+				std::map<_SceneObjects, std::function<void(std::string, std::string&)>> SetSelectedSceneObjectProxy;
 
 				std::transform(SetSelectedSceneObject.begin(), SetSelectedSceneObject.end(), std::inserter(SetSelectedSceneObjectProxy, SetSelectedSceneObjectProxy.end()), [](auto pair)
 					{
-						return std::pair<_SceneObjects, std::function<void(std::string, void*&)>>(pair.first, [pair](std::string a, void*& b)
+						return std::pair<_SceneObjects, std::function<void(std::string, std::string&)>>(pair.first, [pair](std::string a, std::string& b)
 							{
 								boundingBox->visible(true);
 								pair.second(a, b);
@@ -442,11 +446,11 @@ namespace Editor {
 			}
 			else
 			{
-				std::map<_SceneObjects, std::function<void(void*&)>> DeSelectSceneObjectProxy;
+				std::map<_SceneObjects, std::function<void(std::string&)>> DeSelectSceneObjectProxy;
 
 				std::transform(DeSelectSceneObject.begin(), DeSelectSceneObject.end(), std::inserter(DeSelectSceneObjectProxy, DeSelectSceneObjectProxy.end()), [](auto pair)
 					{
-						return std::pair<_SceneObjects, std::function<void(void*&)>>(pair.first, [pair](void*& b)
+						return std::pair<_SceneObjects, std::function<void(std::string&)>>(pair.first, [pair](std::string& b)
 							{
 								boundingBox->visible(false);
 								pair.second(b);
@@ -666,17 +670,17 @@ namespace Editor {
 		*/
 	}
 
-	void SelectSceneObject(_SceneObjects objectType, void* obj)
+	void SelectSceneObject(_SceneObjects objectType, std::string uuid)
 	{
 		soTab = objectType;
-		selSO = obj;
+		selSO = uuid;
 	}
 
 	void RenderSelectedLightShadowMapChain()
 	{
-		if (soTab != _SceneObjects::SO_Lights || selSO == nullptr/* || shadowMapChainLight == nullptr*/) return;
+		if (soTab != _SceneObjects::SO_Lights || selSO == "") return;
 
-		Light* light = (Light*)selSO;
+		std::shared_ptr<Light> light = GetLight(selSO);
 		if (!light->hasShadowMaps()) return;
 
 		light->RenderShadowMapMinMaxChain();
@@ -684,46 +688,37 @@ namespace Editor {
 
 	void WriteRenderableBoundingBoxConstantsBuffer()
 	{
-		if (!selSO) return;
+		if (selSO.empty()) return;
 
 		switch (soTab)
 		{
 		case SO_Renderables:
 		{
-			Renderable* renderable = (Renderable*)selSO;
-			renderable->FillRenderableBoundingBox(boundingBox);
+			GetRenderable(selSO)->FillRenderableBoundingBox(boundingBox);
 		}
 		break;
 		case SO_Lights:
 		{
-			Light* light = (Light*)selSO;
-			light->FillRenderableBoundingBox(boundingBox);
+			GetLight(selSO)->FillRenderableBoundingBox(boundingBox);
 		}
 		break;
 		case SO_Cameras:
 		{
-			Camera* camera = (Camera*)selSO;
-			camera->FillRenderableBoundingBox(boundingBox);
+			GetCamera(selSO)->FillRenderableBoundingBox(boundingBox);
 		}
 		break;
 		case SO_SoundEffects:
 		{
-			Scene::SoundEffect* fx = (Scene::SoundEffect*)selSO;
-			fx->FillRenderableBoundingBox(boundingBox);
+			GetSoundEffect(selSO)->FillRenderableBoundingBox(boundingBox);
+		}
+		break;
+		default:
+		{
 		}
 		break;
 		}
 
 		boundingBox->WriteConstantsBuffer(renderer->backBufferIndex);
-		/*
-		if (soTab != _SceneObjects::Renderables || selSO == nullptr) return;
-
-		Renderable* renderable = (Renderable*)selSO;
-
-		renderable->FillRenderableBoundingBox(boundingBox);
-		boundingBox->WriteConstantsBuffer(renderer->backBufferIndex);
-		boundingBox->RenderLines(renderer, camera);
-		*/
 	}
 
 	void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent)

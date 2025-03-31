@@ -20,8 +20,10 @@ namespace Scene
 	using namespace DeviceUtils;
 	using namespace DirectX;
 
+	static inline std::string defaultCamUUID = "br0ken-camuuid";
+
 	std::vector<std::shared_ptr<Camera>> cameraByIndex;
-	std::map<std::string, std::shared_ptr<Camera>> cameraByNames;
+	std::map<std::string, std::shared_ptr<Camera>> cameraByUUID;
 #if defined(_EDITOR)
 	std::map<std::shared_ptr<Camera>, std::vector<std::function<void()>>> cameraDestructionCallbacks;
 #endif
@@ -33,8 +35,7 @@ namespace Scene
 		camera->this_ptr = camera;
 
 		SetIfMissingJson(camera->json, "name", "cam." + std::to_string(cameraByIndex.size()));
-		assert(!cameraByNames.contains(camera->json.at("name")));
-
+		SetIfMissingJson(camera->json, "uuid", defaultCamUUID);
 		SetIfMissingJson(camera->json, "fitWindow", false);
 		SetIfMissingJson(camera->json, "projectionType", ProjectionTypesToStr.at(PROJ_Perspective));
 
@@ -101,7 +102,7 @@ namespace Scene
 		camera->CreateConstantsBuffer();
 
 		cameraByIndex.push_back(camera);
-		cameraByNames[camera->json.at("name")] = camera;
+		cameraByUUID.insert_or_assign(camera->json.at("uuid"), camera);
 
 		return camera;
 	}
@@ -114,28 +115,39 @@ namespace Scene
 	std::vector<std::string> GetCamerasNames()
 	{
 		std::map<std::string, std::shared_ptr<Camera>> c;
-		std::copy_if(cameraByNames.begin(), cameraByNames.end(), std::inserter(c, c.end()), [](const auto& pair)
+		std::copy_if(cameraByUUID.begin(), cameraByUUID.end(), std::inserter(c, c.end()), [](const auto& pair)
 			{
 				return !pair.second->light;
 			}
 		);
-		return nostd::GetKeysFromMap(c);
+		std::vector<std::string> cameraNames;
+		std::transform(c.begin(), c.end(), std::back_inserter(cameraNames), [](const auto& pair)
+			{
+				return pair.second->name();
+			}
+		);
+		return cameraNames;
+	}
+
+	std::vector<UUIDName> GetCamerasUUIDNames()
+	{
+		return GetSceneObjectsUUIDsNames(cameraByUUID);
 	}
 
 #if defined(_EDITOR)
-	void SelectCamera(std::string cameraName, void*& ptr)
+	void SelectCamera(std::string uuid, std::string& edSO)
 	{
-		ptr = cameraByNames.at(cameraName).get();
+		edSO = uuid;
 	}
 
-	void DeSelectCamera(void*& ptr)
+	void DeSelectCamera(std::string& edSO)
 	{
-		ptr = nullptr;
+		edSO = "";
 	}
 
-	void DrawCameraPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop)
+	void DrawCameraPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
 	{
-		Camera* camera = (Camera*)ptr;
+		std::shared_ptr<Camera> camera = cameraByUUID.at(uuid);
 
 		if (camera->light != nullptr)
 		{
@@ -143,7 +155,7 @@ namespace Scene
 			ImGui::SameLine();
 			if (ImGui::TextLink(camera->light->name().c_str()))
 			{
-				Editor::SelectSceneObject(_SceneObjects::SO_Lights, camera->light.get());
+				Editor::SelectSceneObject(_SceneObjects::SO_Lights, camera->light->uuid());
 			}
 			return;
 		}
@@ -158,10 +170,10 @@ namespace Scene
 		}
 	}
 
-	std::string GetCameraName(void* ptr)
+	std::string GetCameraName(std::string uuid)
 	{
-		Camera* cam = (Camera*)ptr;
-		return cam->json.at("name");
+		std::shared_ptr<Camera> camera = cameraByUUID.at(uuid);
+		return camera->json.at("name");
 	}
 
 	void Camera::BindDestruction(std::function<void()> cb)
@@ -169,10 +181,10 @@ namespace Scene
 		cameraDestructionCallbacks[this_ptr].push_back(cb);
 	}
 
-	void DeleteCamera(std::string name)
+	void DeleteCamera(std::string uuid)
 	{
-		std::shared_ptr<Camera> cam = cameraByNames.at(name);
-		cam->cameraUpdateFlags |= CameraFlags_Destroy;
+		std::shared_ptr<Camera> camera = cameraByUUID.at(uuid);
+		camera->cameraUpdateFlags |= CameraFlags_Destroy;
 	}
 	void DrawCamerasPopups()
 	{
@@ -215,7 +227,7 @@ namespace Scene
 	{
 		if (camera == nullptr) return;
 		nostd::vector_erase(cameraByIndex, camera);
-		cameraByNames.erase(camera->json.at("name"));
+		cameraByUUID.erase(camera->json.at("uuid"));
 		camera->this_ptr = nullptr;
 		camera = nullptr;
 	}
@@ -228,10 +240,20 @@ namespace Scene
 			cam->light = nullptr;
 		}
 		cameraByIndex.clear();
-		cameraByNames.clear();
+		cameraByUUID.clear();
 #if defined(_EDITOR)
 		cameraDestructionCallbacks.clear();
 #endif
+	}
+
+	std::string Camera::uuid()
+	{
+		return json.at("uuid");
+	}
+
+	void Camera::uuid(std::string uuid)
+	{
+		json["uuid"] = uuid;
 	}
 
 	std::string Camera::name()
@@ -501,62 +523,17 @@ namespace Scene
 
 	size_t GetNumCameras() { return cameraByIndex.size(); }
 	std::shared_ptr<Camera> GetCamera(unsigned int index) { return cameraByIndex[index]; }
-	std::shared_ptr<Camera> GetCamera(std::string name) { return cameraByNames.at(name); }
+	std::shared_ptr<Camera> GetCamera(std::string uuid) { return cameraByUUID.at(uuid); }
+	std::shared_ptr<Camera> GetCameraByName(std::string name)
+	{
+		for (auto& [_, cam] : cameraByUUID)
+		{
+			if (cam->name() == name) return cam;
+		}
+		return nullptr;
+	}
 
 #if defined(_EDITOR)
-	/*
-	nlohmann::json Camera::json()
-	{
-		nlohmann::json j = nlohmann::json({});
-
-		j["name"] = name;
-		j["fitWindow"] = fitWindow;
-		j["projectionType"] = ProjectionsTypesStr[projectionType];
-
-		auto buildOrthographicJsonCamera = [this](auto& j)
-			{
-				j["orthographic"]["nearZ"] = orthographic.nearZ;
-				j["orthographic"]["farZ"] = orthographic.farZ;
-				if (!fitWindow)
-				{
-					j["orthographic"]["width"] = orthographic.width;
-					j["orthographic"]["height"] = orthographic.height;
-				}
-			};
-
-		auto buildPerspectiveJsonCamera = [this](auto& j)
-			{
-				j["perspective"]["nearZ"] = perspective.nearZ;
-				j["perspective"]["farZ"] = perspective.farZ;
-				j["perspective"]["fovAngleY"] = perspective.fovAngleY;
-				if (!fitWindow)
-				{
-					j["perspective"]["width"] = perspective.width;
-					j["perspective"]["height"] = perspective.height;
-				}
-			};
-
-		switch (projectionType)
-		{
-		case PROJ_Orthographic:
-		{
-			buildOrthographicJsonCamera(j);
-		}
-		break;
-		case PROJ_Perspective:
-		{
-			buildPerspectiveJsonCamera(j);
-		}
-		break;
-		}
-
-		j["position"] = { position.x, position.y, position.z };
-		j["rotation"] = { rotation.x, rotation.y };
-		j["speed"] = speed;
-
-		return j;
-	}
-	*/
 
 	void Camera::DrawEditorInformationAttributes()
 	{
@@ -567,15 +544,10 @@ namespace Scene
 		{
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
-			std::string currentName = json.at("name");
+			std::string currentName = name();
 			if (ImGui::InputText("name", &currentName))
 			{
-				if (!cameraByNames.contains(currentName))
-				{
-					cameraByNames[currentName] = cameraByNames[json.at("name")];
-					cameraByNames.erase(json.at("name"));
-				}
-				json["name"] = currentName;
+				name(currentName);
 			}
 			ImGui::EndTable();
 		}

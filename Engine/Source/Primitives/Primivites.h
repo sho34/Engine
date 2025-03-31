@@ -27,7 +27,8 @@ namespace Primitives {
 	}
 }
 
-static std::map<std::string, std::function<void(const std::shared_ptr<Templates::MeshInstance>&)>> LoadPrimitiveIntoMeshFunctions = {
+static const std::map<std::string, std::function<void(const std::shared_ptr<Templates::MeshInstance>&)>> LoadPrimitiveIntoMeshFunctions =
+{
 	{ "utahteapot", Primitives::LoadPrimitiveIntoMesh<UtahTeapot> },
 	{ "cube", Primitives::LoadPrimitiveIntoMesh<Cube> },
 	{ "pyramid", Primitives::LoadPrimitiveIntoMesh<Pentahedron> },

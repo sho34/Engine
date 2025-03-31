@@ -13,15 +13,15 @@ inline static std::map<ShaderType, std::string> ShaderTypeToStr = {
 	{ GEOMETRY_SHADER, "GEOMETRY_SHADER" },
 };
 
-//shader compilation source (shaderName + it's shader type)
+//shader compilation source (it's shader type, the hlsl path, the uuid and defines)
 struct Source {
 	ShaderType shaderType;
-	std::string shaderName;
+	std::string shaderUUID;
 	std::vector<std::string> defines;
 
 	bool operator<(const Source& other) const
 	{
-		return std::tie(shaderName, shaderType, defines) < std::tie(other.shaderName, other.shaderType, other.defines);
+		return std::tie(shaderType, shaderUUID, defines) < std::tie(other.shaderType, other.shaderUUID, other.defines);
 	}
 
 	std::string to_string()
@@ -33,7 +33,7 @@ struct Source {
 			if (i < (defines.size() - 1))
 				defs += ",";
 		}
-		return ShaderTypeToStr.at(shaderType) + ":" + shaderName + ".hlsl (" + defs + ")";
+		return ShaderTypeToStr.at(shaderType) + ":" + shaderUUID + " (" + defs + ")";
 	}
 };
 
@@ -148,7 +148,7 @@ struct ShaderConstantsBufferVariable {
 typedef std::map<std::string, ShaderConstantsBufferVariable> ShaderConstantsBufferVariablesMap;
 typedef std::pair<std::string, ShaderConstantsBufferVariable> ShaderConstantsBufferVariablesPair;
 
-//Dependencies of hlsl+shaderType(Source) file to many .h files
+//Collection of header(.h) files
 typedef std::unordered_set<std::string> ShaderDependencies;
 
 //Dependencies of hlsl+shaderType(Source) file to many .h files

@@ -1,8 +1,40 @@
 #pragma once
+#include <string>
+#include <functional>
+#include <Application.h>
 
 #if defined(_EDITOR)
 
 static const std::string defaultLevelName = "baseLevel.json";
+
+inline bool DrawComboSelection(UUIDName selected, std::vector<UUIDName> selectables, std::function<void(UUIDName)> onSelect, std::string label = "")
+{
+	bool ret = false;
+	int current_item = static_cast<int>(std::find(selectables.begin(), selectables.end(), selected) - selectables.begin());
+	std::string& preview = std::get<1>(selected);
+	if (ImGui::BeginCombo(label.c_str(), preview.c_str()))
+	{
+		for (int i = 0; i < selectables.size(); i++)
+		{
+			std::string selectableId = "combo#selectable#" + label + "#" + std::to_string(i);
+			ImGui::PushID(selectableId.c_str());
+			std::string selectableName = std::get<1>(selectables[i]);
+			if (ImGui::Selectable(selectableName.c_str(), current_item == i, (current_item == i) ? ImGuiSelectableFlags_Highlight : 0))
+			{
+				ret = true;
+				onSelect(selectables[i]);
+			}
+			if (current_item == i)
+			{
+				ImGui::SetItemDefaultFocus();
+			}
+			ImGui::PopID();
+		}
+
+		ImGui::EndCombo();
+	}
+	return ret;
+}
 
 inline bool DrawComboSelection(std::string selected, std::vector<std::string> selectables, std::function<void(std::string)> onSelect, std::string label = "")
 {
@@ -14,9 +46,13 @@ inline bool DrawComboSelection(std::string selected, std::vector<std::string> se
 		{
 			std::string selectableId = "combo#selectable#" + label + "#" + std::to_string(i);
 			ImGui::PushID(selectableId.c_str());
-			if (ImGui::Selectable(selectables[i].c_str(), current_item == i)) {
+			if (ImGui::Selectable(selectables[i].c_str(), current_item == i, (current_item == i) ? ImGuiSelectableFlags_Highlight : 0)) {
 				ret = true;
 				onSelect(selectables[i]);
+			}
+			if (current_item == i)
+			{
+				ImGui::SetItemDefaultFocus();
 			}
 			ImGui::PopID();
 		}
@@ -573,11 +609,14 @@ inline void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, 
 	}
 }
 
-inline void ImDrawFileSelector(std::string label, std::string fileName, std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName, std::string filterPattern)
+inline void ImDrawFileSelector(std::string label, std::string fileName, std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::string filterName, std::string filterPattern, bool enabled = true)
 {
 	if (ImGui::Button(ICON_FA_ELLIPSIS_H))
 	{
-		OpenFile(onFileSelected, defaultDirectory, filterName, filterPattern);
+		if (enabled)
+		{
+			OpenFile(onFileSelected, defaultDirectory, filterName, filterPattern);
+		}
 	}
 	ImGui::SameLine();
 	ImGui::InputText(label.c_str(), fileName.data(), fileName.size(), ImGuiInputTextFlags_ReadOnly);

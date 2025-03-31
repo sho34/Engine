@@ -1,4 +1,5 @@
 #pragma once
+#include <set>
 #include <map>
 #include <vector>
 #include <memory>
@@ -13,9 +14,25 @@
 
 namespace Templates {
 
+	typedef std::tuple<
+		std::string, //name
+		nlohmann::json //json data
+#if defined(_EDITOR)
+		,
+		std::map<std::string, MaterialVariablesTypes>, // constant variables types
+		std::set<TextureType>, // textures types
+		unsigned int, // num samplers
+		std::vector<std::string> //materials uuid references
+#endif
+	> ShaderTemplate;
+
 	namespace Shader
 	{
 		inline static const std::string templateName = "shaders.json";
+#if defined(_EDITOR)
+		void DrawEditorInformationAttributes(std::string uuid);
+		void DrawEditorAssetAttributes(std::string uuid);
+#endif
 	};
 
 	struct ShaderInstance {
@@ -62,14 +79,24 @@ namespace Templates {
 	};
 
 	//CREATE
-	void CreateShader(std::string name, nlohmann::json json);
+	void CreateShader(nlohmann::json json);
 
 	//READ&GET
-	nlohmann::json GetShaderTemplate(std::string name);
+	nlohmann::json GetShaderTemplate(std::string uuid);
 	std::vector<std::string> GetShadersNames();
+	std::string GetShaderName(std::string uuid);
+	std::vector<UUIDName> GetShadersUUIDsNames();
 	std::shared_ptr<ShaderInstance> GetShaderInstance(Source params);
+#if defined(_EDITOR)
+	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string uuid);
+	std::set<TextureType> GetShaderTextureParameters(std::string uuid);
+	unsigned int GetShaderSamplerParameters(std::string uuid);
+#endif
 
 	//UPDATE
+#if defined(_EDITOR)
+	void SetShaderMappedVariable(std::string uuid, std::string varName, MaterialVariablesTypes type);
+#endif
 	void MonitorShaderChanges(std::string folder);
 
 	//DESTROY
@@ -78,14 +105,10 @@ namespace Templates {
 
 	//EDITOR
 #if defined(_EDITOR)
-	void SetShaderMappedVariable(std::string shaderName, std::string varName, MaterialVariablesTypes type);
-	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string shaderName);
-	std::set<TextureType> GetShaderTextureParameters(std::string shaderName);
-	unsigned int GetShaderSamplerParameters(std::string shaderName);
-	void DrawShaderPanel(std::string& shader, ImVec2 pos, ImVec2 size, bool pop);
-	void AttachMaterialToShader(std::string shader, std::string material);
-	void DetachMaterialsFromShader(std::string shader);
-	void DeleteShader(std::string name);
+	void DrawShaderPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	void AttachMaterialToShader(std::string uuid, std::string materialUUID);
+	void DetachMaterialsFromShader(std::string uuid);
+	void DeleteShader(std::string uuid);
 	void DrawShadersPopups();
 	/*
 	nlohmann::json json();

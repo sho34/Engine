@@ -4,12 +4,13 @@
 #include "../../Renderer/Renderer.h"
 #include "../../Renderer/DeviceUtils/Resources/Resources.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
-#include <NoStd.h>
 #include <wrl.h>
 #include <wrl/client.h>
 #include <d3d12.h>
 #include <atlbase.h>
 #include <nlohmann/json.hpp>
+#include <NoStd.h>
+#include <ShaderMaterials.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -17,7 +18,10 @@ std::unordered_map<std::string, CComPtr<ID3D12Resource>> texturesCache;
 std::unordered_map<std::string, unsigned int> texturesCacheMipMaps;
 std::unordered_map<std::string, unsigned int> texturesCacheRefCount;
 
-nostd::RefTracker<MaterialTexture, std::shared_ptr<MaterialTextureInstance>> refTracker;
+namespace Textures
+{
+	static nostd::RefTracker<MaterialTexture, std::shared_ptr<MaterialTextureInstance>> refTracker;
+};
 
 void TransformJsonToMaterialTextures(std::map<TextureType, MaterialTexture>& textures, nlohmann::json object, const std::string& key) {
 
@@ -44,6 +48,7 @@ std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> GetTextures(cons
 	std::transform(textures.begin(), textures.end(), std::inserter(texInstances, texInstances.end()), [](auto pair)
 		{
 			MaterialTexture& texture = pair.second;
+			using namespace Textures;
 			std::shared_ptr<MaterialTextureInstance> instance = refTracker.AddRef(texture, [&texture]()
 				{
 					std::shared_ptr<MaterialTextureInstance> instance = std::make_shared<MaterialTextureInstance>();
@@ -60,6 +65,7 @@ std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> GetTextures(cons
 
 std::shared_ptr<MaterialTextureInstance> GetTextureFromGPUHandle(const MaterialTexture& texture)
 {
+	using namespace Textures;
 	return refTracker.AddRef(texture, [texture]()
 		{
 			std::shared_ptr<MaterialTextureInstance> instance = std::make_shared<MaterialTextureInstance>();
@@ -72,6 +78,7 @@ std::shared_ptr<MaterialTextureInstance> GetTextureFromGPUHandle(const MaterialT
 
 void DestroyMaterialTextureInstance(std::shared_ptr<MaterialTextureInstance>& texture)
 {
+	using namespace Textures;
 	auto key = refTracker.FindKey(texture);
 	refTracker.RemoveRef(key, texture);
 }

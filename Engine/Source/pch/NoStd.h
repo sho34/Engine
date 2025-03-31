@@ -56,7 +56,8 @@ namespace nostd {
 		return names;
 	}
 
-	inline void AppendToVector(std::vector<std::string>& dst, std::vector<std::string>& src)
+	template<typename T>
+	inline void AppendToVector(std::vector<T>& dst, std::vector<T>& src)
 	{
 		dst.insert(dst.end(), src.begin(), src.end());
 	}
@@ -129,6 +130,11 @@ namespace nostd {
 		result.resize(length);
 		std::sample(std::cbegin(charset), std::cend(charset), std::begin(result), std::intptr_t(length), std::forward<URBG>(g));
 		return result;
+	}
+
+	inline void ToLower(std::string& str)
+	{
+		std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
 	}
 
 	template<typename K, typename V>

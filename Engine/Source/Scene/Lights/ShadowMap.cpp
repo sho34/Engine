@@ -83,6 +83,7 @@ namespace Scene {
 		shadowMapTexelInvSize = { 1.0f / static_cast<float>(json.at("shadowMapWidth")), 1.0f / static_cast<float>(json.at("shadowMapHeight")) };
 
 		auto camera = CreateCamera({
+			{ "uuid", uuid() + "-cam"},
 			{ "name", name() + ".cam"},
 			{ "projectionType", "Orthographic" },
 			{ "orthographic", {
@@ -92,7 +93,7 @@ namespace Scene {
 				{ "height", json.at("viewHeight") },
 			}},
 			{ "rotation", { rotation().x, rotation().y, 0.0f}},
-			{ "light", name()}
+			{ "light", uuid()}
 			}
 		);
 		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(camera->CameraFw()), -directionalDistance());
@@ -112,6 +113,7 @@ namespace Scene {
 		shadowMapTexelInvSize = { 1.0f / static_cast<float>(json.at("shadowMapWidth")), 1.0f / static_cast<float>(json.at("shadowMapHeight")) };
 
 		auto camera = CreateCamera({
+			{ "uuid", uuid() + "-cam"},
 			{ "name", name() + ".cam"},
 			{ "projectionType", "Perspective" },
 			{ "perspective", {
@@ -121,7 +123,7 @@ namespace Scene {
 			}},
 			{ "position", { position().x, position().y, position().z}},
 			{ "rotation", { rotation().x, rotation().y, 0.0f }},
-			{ "light", name()}
+			{ "light", uuid()}
 			});
 		camera->perspective.updateProjectionMatrix(json.at("viewWidth"), json.at("viewHeight"));
 		shadowMapCameras.push_back(camera);
@@ -129,7 +131,6 @@ namespace Scene {
 
 	void Light::CreatePointLightShadowMap()
 	{
-
 		shadowMapScissorRect.clear();
 		shadowMapViewport.clear();
 		for (unsigned int i = 0U; i < 6U; i++)
@@ -146,6 +147,7 @@ namespace Scene {
 			auto camera = CreateCamera(
 				{
 					{ "name", name() + ".cam." + std::to_string(i)},
+					{ "uuid", uuid() + "-cam-" + std::to_string(i)},
 					{ "projectionType", "Perspective" },
 					{ "perspective",
 					{
@@ -155,7 +157,7 @@ namespace Scene {
 					}
 					},
 					{ "position", { position().x, position().y, position().z}},
-					{ "light", name()}
+					{ "light", uuid()}
 				}
 			);
 			camera->perspective.updateProjectionMatrix(static_cast<float>(json.at("shadowMapWidth")), static_cast<float>(json.at("shadowMapHeight")));
@@ -211,23 +213,34 @@ namespace Scene {
 
 			//push a renderable for the current
 			shadowMapMinMaxChainRenderable.push_back(
-				CreateRenderable(R"(
-				{
-					"meshMaterials": [ { "material": "DepthMinMax", "mesh" : "decal" } ],
-					"uniqueMaterialInstance": true,
-					"meshShadowMapMaterials": [],
-					"name": "ShadowMapMinMaxChainQuad",
-					"hidden":true,
-					"visible":false,
-					"position": [ 0.0, 0.0, 0.0],
-					"rotation": [ 0.0, 0.0, 0.0 ],
-					"scale": [ 1.0, 1.0, 1.0],
-					"skipMeshes":[],
-					"pipelineState": {
-						"renderTargetsFormats":["R32_FLOAT","R32_FLOAT"],
-						"depthStencilFormat":"UNKNOWN"
+				CreateRenderable(
+					{
+						{ "meshMaterials" ,
+							{
+								{
+									{ "material", FindMaterialUUIDByName("DepthMinMax") },
+									{ "mesh", FindMeshUUIDByName("decal") }
+								}
+							}
+						},
+						{ "uniqueMaterialInstance", true },
+						{ "meshShadowMapMaterials", {} },
+						{ "name", "ShadowMapMinMaxChainQuad" },
+						{ "uuid", getUUID() },
+						{ "hidden", true},
+						{ "visible", false},
+						{ "position", {0.0, 0.0, 0.0} },
+						{ "rotation",{0.0, 0.0, 0.0 } },
+						{ "scale", { 1.0, 1.0, 1.0} },
+						{ "skipMeshes", {} },
+						{ "pipelineState" ,
+							{
+								{ "renderTargetsFormats", { "R32_FLOAT","R32_FLOAT" } },
+								{ "depthStencilFormat" , "UNKNOWN" }
+							}
+						}
 					}
-				})"_json)
+				)
 			);
 
 			//write the TexelInvSize to constants buffers
@@ -267,22 +280,33 @@ namespace Scene {
 		);
 
 		//create the end result renderable
-		shadowMapMinMaxChainResultRenderable = CreateRenderable(R"(
-		{
-			"meshMaterials": [ { "material": "DepthMinMaxToRGBA", "mesh" : "decal" } ],
-			"meshShadowMapMaterials": [],
-			"name": "ShadowMapMinMaxChainQuadResult",
-			"hidden":true,
-			"visible":false,
-			"position": [ 0.0, 0.0, 0.0],
-			"rotation": [ 0.0, 0.0, 0.0 ],
-			"scale": [ 1.0, 1.0, 1.0],
-			"skipMeshes":[],
-			"pipelineState": {
-				"renderTargetsFormats":["R8G8B8A8_UNORM"],
-				"depthStencilFormat":"UNKNOWN"
+		shadowMapMinMaxChainResultRenderable = CreateRenderable(
+			{
+				{ "meshMaterials" ,
+					{
+						{
+							{ "material", FindMaterialUUIDByName("DepthMinMaxToRGBA") },
+							{ "mesh", FindMeshUUIDByName("decal") }
+						}
+					}
+				},
+				{ "meshShadowMapMaterials", {} },
+				{ "name", "ShadowMapMinMaxChainQuadResult" },
+				{ "uuid", getUUID() },
+				{ "hidden", true },
+				{ "visible", false },
+				{ "position", { 0.0, 0.0, 0.0 } },
+				{ "rotation", { 0.0, 0.0, 0.0 } },
+				{ "scale", { 1.0, 1.0, 1.0 } } ,
+				{ "skipMeshes", {} },
+				{ "pipelineState" ,
+					{
+						{ "renderTargetsFormats", { "R8G8B8A8_UNORM" } },
+						{ "depthStencilFormat", "UNKNOWN" }
+					}
+				}
 			}
-		})"_json);
+		);
 
 		std::shared_ptr<RenderToTexturePass>& lastMinMaxPass = shadowMapMinMaxChainRenderPass.back();
 		std::shared_ptr<MaterialInstance>& shadowMapMinMaxChainResultMaterial = shadowMapMinMaxChainResultRenderable->meshMaterials.begin()->second;

@@ -46,10 +46,13 @@ namespace Scene
 
 	struct Renderable
 	{
-		~Renderable() { Destroy(); } //will this work?
+		~Renderable() { Destroy(); }
 		std::shared_ptr<Renderable> this_ptr = nullptr; //dumb but efective
 
 		nlohmann::json json;
+
+		std::string uuid();
+		void uuid(std::string uuid);
 
 		std::string name();
 		void name(std::string name);
@@ -134,7 +137,7 @@ namespace Scene
 		void TransformJsonToRasterizerState(D3D12_RASTERIZER_DESC& RasterizerState, nlohmann::json j, std::string key);
 		void BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons);
 		void SetMeshMaterial(std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material);
-		void CreateFromModel3D(std::string model3DName);
+		void CreateFromModel3D(std::string model3DUUID);
 		void CreateMeshesComponents();
 		void CreateMeshConstantsBuffers(std::shared_ptr<MeshInstance> mesh);
 		void CreateMeshShadowMapConstantsBuffers(std::shared_ptr<MeshInstance> mesh);
@@ -217,6 +220,7 @@ namespace Scene
 		void DrawEditorWorldAttributes();
 		void DrawEditorAnimationAttributes();
 		void DrawEditorShaderAttributes();
+		void DrawEditorModelSelectionAttributes();
 		void DrawEditorMeshesAttributes();
 		void DrawEditorPipelineStateAttributes();
 #endif
@@ -225,11 +229,13 @@ namespace Scene
 	//CREATE
 	std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej);
 
-	//READ
+	//READ&GET
+	std::shared_ptr<Renderable> GetRenderable(std::string uuid);
 	std::map<std::string, std::shared_ptr<Renderable>>& GetRenderables();
 	std::map<std::string, std::shared_ptr<Renderable>>& GetAnimables();
 #if defined(_EDITOR)
 	std::vector<std::string> GetRenderablesNames();
+	std::vector<UUIDName> GetRenderablesUUIDNames();
 #endif
 
 	//UPDATE
@@ -237,11 +243,11 @@ namespace Scene
 
 	//EDITOR
 #if defined(_EDITOR)
-	void SelectRenderable(std::string renderableName, void*& ptr);
-	void DeSelectRenderable(void*& ptr);
-	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
-	std::string GetRenderableName(void* ptr);
-	void DeleteRenderable(std::string name);
+	void SelectRenderable(std::string uuid, std::string& edSO);
+	void DeSelectRenderable(std::string& edSO);
+	void DrawRenderablePanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	std::string GetRenderableName(std::string uuid);
+	void DeleteRenderable(std::string uuid);
 	void DrawRenderablesPopups();
 #endif
 

@@ -15,6 +15,9 @@ namespace Scene {
 
 		nlohmann::json json;
 
+		std::string uuid();
+		void uuid(std::string uuid);
+
 		std::string name();
 		void name(std::string name);
 
@@ -26,6 +29,8 @@ namespace Scene {
 
 		bool autoPlay();
 		void autoPlay(bool autoPlay);
+
+		bool hidden() { return false; }
 
 		XMFLOAT3 position();
 		void position(XMFLOAT3 f3);
@@ -48,7 +53,6 @@ namespace Scene {
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorSoundAttributes();
-		//nlohmann::json json();
 #endif
 		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
 	};
@@ -57,9 +61,11 @@ namespace Scene {
 	std::shared_ptr<SoundEffect> CreateSoundEffect(nlohmann::json soundj);
 
 	//READ&GET
+	std::shared_ptr<SoundEffect> GetSoundEffect(std::string uuid);
 	std::map<std::string, std::shared_ptr<SoundEffect>> GetSoundsEffects();
 	std::vector<std::shared_ptr<SoundEffect>> Get3DSoundsEffects();
 	std::vector<std::string> GetSoundEffectsNames();
+	std::vector<UUIDName> GetSoundEffectsUUIDNames();
 
 	//UPDATE
 
@@ -67,11 +73,11 @@ namespace Scene {
 	void DestroySoundEffects();
 
 #if defined(_EDITOR)
-	void SelectSoundEffect(std::string soundEffectName, void*& ptr);
-	void DeSelectSoundEffect(void*& ptr);
-	void DrawSoundEffectPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
-	std::string GetSoundEffectName(void* ptr);
-	void DeleteSoundEffect(std::string name);
+	void SelectSoundEffect(std::string uuid, std::string& edSO);
+	void DeSelectSoundEffect(std::string& edSO);
+	void DrawSoundEffectPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	std::string GetSoundEffectName(std::string uuid);
+	void DeleteSoundEffect(std::string uuid);
 	void DrawSoundEffectsPopups();
 #endif
 

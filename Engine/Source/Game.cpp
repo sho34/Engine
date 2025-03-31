@@ -28,7 +28,7 @@ std::shared_ptr<Camera> UICamera;
 std::shared_ptr<Camera> mainPassCamera;
 std::filesystem::path levelToLoad;
 namespace Editor {
-	extern void* selSO;
+	extern std::string selSO;
 	extern std::string selTemp;
 };
 extern std::shared_ptr<Renderer> renderer;
@@ -327,7 +327,7 @@ void PlayModeCreate()
 			mainPass = CreateRenderPass("mainPass", { DXGI_FORMAT_R8G8B8A8_UNORM }, DXGI_FORMAT_D32_FLOAT, width, height);
 		}
 	);
-	mainPassCamera = GetCamera("cam.0");
+	mainPassCamera = GetCameraByName("cam.0");
 }
 
 void PlayModeStep()
@@ -375,8 +375,8 @@ void EditorModeCreate()
 			//LoadDefaultLevel();
 			//LoadLevel("knight-original");
 			//LoadLevel("female");
-			LoadLevel("knight");
-			//LoadLevel("baseLevel");
+			//LoadLevel("knight");
+			LoadLevel("baseLevel");
 			//LoadLevel("jumpsuit");
 			//LoadLevel("venom");
 			unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
@@ -386,7 +386,7 @@ void EditorModeCreate()
 			CreateRenderableBoundingBox();
 		}
 	);
-	mainPassCamera = GetCamera("cam.0");
+	mainPassCamera = GetCameraByName("cam.0");
 	mainPassCamera->BindDestruction([]
 		{
 			mainPassCamera = nullptr;
@@ -402,14 +402,14 @@ void EditorModeStep()
 		renderer->RenderCriticalFrame([]
 			{
 				DestroySceneObjects();
-				selSO = nullptr;
+				selSO = "";
 				selTemp = "";
 				LoadLevel(levelToLoad);
 				levelToLoad = "";
 				CreateRenderableBoundingBox();
 			}
 		);
-		mainPassCamera = GetCamera("cam.0");
+		mainPassCamera = GetCameraByName("cam.0");
 		return;
 	}
 	WriteRenderableBoundingBoxConstantsBuffer();

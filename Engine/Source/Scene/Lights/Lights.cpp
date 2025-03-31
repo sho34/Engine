@@ -25,7 +25,7 @@ namespace Scene {
 	using namespace Editor;
 #endif
 
-	static std::map<std::string, std::shared_ptr<Light>> lightsByName;
+	static std::map<std::string, std::shared_ptr<Light>> lightsByUUID;
 	static std::vector<std::shared_ptr<Light>> lights;
 	static std::shared_ptr<ConstantsBuffer> lightsCbv = nullptr; //CBV for lights pool
 #if defined(_EDITOR)
@@ -72,11 +72,21 @@ namespace Scene {
 #endif
 
 		lights.push_back(light);
-		lightsByName[light->name()] = light;
+		lightsByUUID[light->uuid()] = light;
 
 		if (light->hasShadowMaps()) light->CreateShadowMap();
 
 		return light;
+	}
+
+	std::string Light::uuid()
+	{
+		return json.at("uuid");
+	}
+
+	void Light::uuid(std::string uuid)
+	{
+		json.at("uuid") = uuid;
 	}
 
 	std::string Light::name()
@@ -188,12 +198,23 @@ namespace Scene {
 		return lights;
 	}
 
-	std::shared_ptr<Light> GetLight(std::string lightName) {
-		return lightsByName.at(lightName);
+	std::shared_ptr<Light> GetLight(std::string uuid) {
+		return lightsByUUID.at(uuid);
 	}
 
 	std::vector<std::string> GetLightsNames() {
-		return nostd::GetKeysFromMap(lightsByName);
+		std::vector<std::string> lightsNames;
+		std::transform(lights.begin(), lights.end(), std::back_inserter(lightsNames), [](auto& l)
+			{
+				return l->name();
+			}
+		);
+		return lightsNames;
+	}
+
+	std::vector<UUIDName> GetLightsUUIDNames()
+	{
+		return GetSceneObjectsUUIDsNames(lightsByUUID);
 	}
 
 	std::shared_ptr<ConstantsBuffer> GetLightsConstantsBuffer() {
@@ -201,10 +222,9 @@ namespace Scene {
 	}
 
 #if defined(_EDITOR)
-	std::string GetLightName(void* ptr)
+	std::string GetLightName(std::string uuid)
 	{
-		Light* l = (Light*)ptr;
-		return l->name();
+		return lightsByUUID.at(uuid)->name();
 	}
 #endif
 
@@ -224,7 +244,7 @@ namespace Scene {
 					for (auto& l : lightsToDestroy)
 					{
 						nostd::vector_erase(lights, l);
-						lightsByName.erase(l->name());
+						lightsByUUID.erase(l->uuid());
 
 						if (l->hasShadowMaps())
 						{
@@ -392,7 +412,7 @@ namespace Scene {
 			l->this_ptr = nullptr;
 		}
 		lights.clear();
-		lightsByName.clear();
+		lightsByUUID.clear();
 	}
 
 	//EDITOR
@@ -410,11 +430,6 @@ namespace Scene {
 			std::string currentName = name();
 			if (ImGui::InputText("name", &currentName))
 			{
-				if (!lightsByName.contains(currentName))
-				{
-					lightsByName[currentName] = lightsByName[name()];
-					lightsByName.erase(name());
-				}
 				name(currentName);
 			}
 			ImGui::EndTable();
@@ -555,115 +570,25 @@ namespace Scene {
 		ImDrawPointShadowMap();
 	}
 
-	/*
-	nlohmann::json Light::json() {
-		nlohmann::json j = nlohmann::json({});
-
-		j["name"] = name;
-		j["lightType"] = LightTypesStr[lightType];
-
-		auto buildJsonAmbientLight = [this](auto& j) {
-			j["ambient"]["color"] = { ambient.color.x, ambient.color.y, ambient.color.z };
-			};
-
-		auto buildJsonDirectionalLight = [this](auto& j) {
-			j["directional"]["color"] = { directional.color.x, directional.color.y, directional.color.z };
-			j["directional"]["distance"] = directional.distance;
-			j["directional"]["rotation"] = { directional.rotation.x, directional.rotation.y };
-			j["directional"]["hasShadowMaps"] = hasShadowMaps;
-			if (hasShadowMaps) {
-				j["directional"]["directionalShadowMap"]["shadowMapWidth"] = shadowMapParams.shadowMapWidth;
-				j["directional"]["directionalShadowMap"]["shadowMapHeight"] = shadowMapParams.shadowMapHeight;
-				j["directional"]["directionalShadowMap"]["viewWidth"] = shadowMapParams.viewWidth;
-				j["directional"]["directionalShadowMap"]["viewHeight"] = shadowMapParams.viewHeight;
-				j["directional"]["directionalShadowMap"]["nearZ"] = shadowMapParams.nearZ;
-				j["directional"]["directionalShadowMap"]["farZ"] = shadowMapParams.farZ;
-			}
-			};
-
-		auto buildJsonSpotLight = [this](auto& j) {
-			j["spot"]["color"] = { spot.color.x, spot.color.y, spot.color.z };
-			j["spot"]["position"] = { spot.position.x, spot.position.y, spot.position.z };
-			j["spot"]["rotation"] = { spot.rotation.x, spot.rotation.y };
-			j["spot"]["coneAngle"] = spot.coneAngle;
-			j["spot"]["attenuation"] = { spot.attenuation.x, spot.attenuation.y, spot.attenuation.z };
-			j["spot"]["hasShadowMaps"] = hasShadowMaps;
-			if (hasShadowMaps) {
-				j["spot"]["spotShadowMap"]["shadowMapWidth"] = shadowMapParams.shadowMapWidth;
-				j["spot"]["spotShadowMap"]["shadowMapHeight"] = shadowMapParams.shadowMapHeight;
-				j["spot"]["spotShadowMap"]["viewWidth"] = shadowMapParams.viewWidth;
-				j["spot"]["spotShadowMap"]["viewHeight"] = shadowMapParams.viewHeight;
-				j["spot"]["spotShadowMap"]["nearZ"] = shadowMapParams.nearZ;
-				j["spot"]["spotShadowMap"]["farZ"] = shadowMapParams.farZ;
-			}
-			};
-
-		auto buildJsonPointLight = [this](auto& j) {
-			j["point"]["color"] = { point.color.x, point.color.y, point.color.z };
-			j["point"]["position"] = { point.position.x, point.position.y, point.position.z };
-			j["point"]["attenuation"] = { point.attenuation.x, point.attenuation.y, point.attenuation.z };
-			j["point"]["hasShadowMaps"] = hasShadowMaps;
-			if (hasShadowMaps) {
-				j["point"]["pointShadowMap"]["shadowMapWidth"] = shadowMapParams.shadowMapWidth;
-				j["point"]["pointShadowMap"]["shadowMapHeight"] = shadowMapParams.shadowMapHeight;
-				j["point"]["pointShadowMap"]["nearZ"] = shadowMapParams.nearZ;
-				j["point"]["pointShadowMap"]["farZ"] = shadowMapParams.farZ;
-			}
-			};
-
-		switch (lightType)
-		{
-		case LT_Ambient:
-		{
-			buildJsonAmbientLight(j);
-		}
-		break;
-		case LT_Directional:
-		{
-			buildJsonDirectionalLight(j);
-		}
-		break;
-		case LT_Spot:
-		{
-			buildJsonSpotLight(j);
-		}
-		break;
-		case LT_Point:
-		{
-			buildJsonPointLight(j);
-		}
-		break;
-		}
-
-		//using namespace Animation::Effects;
-		//auto effects = GetLightEffects(this_ptr);
-		//if (!effects.empty()) {
-		//	j["effects"] = effects;
-		//}
-
-	return j;
-}
-*/
-
-	void SelectLight(std::string lightName, void*& ptr)
+	void SelectLight(std::string uuid, std::string& edSO)
 	{
-		std::shared_ptr<Light> light = lightsByName.at(lightName);
+		std::shared_ptr<Light> light = lightsByUUID.at(uuid);
 
 		if (light->hasShadowMaps())
 		{
 			light->shadowMapUpdateFlags |= ShadowMapUpdateFlags_CreateShadowMapMinMaxChain;
 		}
-		ptr = light.get();
+		edSO = uuid;
 	}
 
-	void DeSelectLight(void*& ptr)
+	void DeSelectLight(std::string& edSO)
 	{
-		Light* light = (Light*)ptr;
+		std::shared_ptr<Light> light = lightsByUUID.at(edSO);
 		if (light->hasShadowMaps())
 		{
 			light->shadowMapUpdateFlags |= ShadowMapUpdateFlags_DestroyShadowMapMinMaxChain;
 		}
-		ptr = nullptr;
+		edSO = "";
 	}
 
 	static void ReplaceLightsJsonAttributes(nlohmann::json& dst, nlohmann::json src, nlohmann::json attributesToAdd, nlohmann::json attributesToDelete)
@@ -695,12 +620,12 @@ namespace Scene {
 		"shadowMapWidth", "shadowMapHeight", "viewWidth", "viewHeight", "nearZ", "farZ",
 	};
 
-	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop)
+	void DrawLightPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
 	{
 		std::string tableName = "light-panel";
 		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
 		{
-			Light* light = (Light*)ptr;
+			std::shared_ptr<Light> light = lightsByUUID.at(uuid);
 			light->DrawEditorInformationAttributes();
 
 			std::vector<std::string> selectables = LightTypesStr;
@@ -781,9 +706,9 @@ namespace Scene {
 		}
 	}
 
-	void DeleteLight(std::string name)
+	void DeleteLight(std::string uuid)
 	{
-		lightsToDestroy.push_back(lightsByName.at(name));
+		lightsToDestroy.push_back(lightsByUUID.at(uuid));
 	}
 
 	void DrawLightsPopups()

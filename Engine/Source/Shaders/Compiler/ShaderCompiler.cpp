@@ -29,7 +29,9 @@ namespace ShaderCompiler {
 		std::lock_guard<std::mutex> lock(compileMutex);
 		//read the shader
 
-		const std::string filename = defaultShadersFolder + params.shaderName + ".hlsl";
+		nlohmann::json json = GetShaderTemplate(params.shaderUUID);
+
+		const std::string filename = defaultShadersFolder + (json.contains("path") ? std::string(json.at("path")) : GetShaderName(params.shaderUUID)) + ".hlsl";
 		ShaderByteCode shaderSource = DX::ReadDataAsync(filename.c_str()).get();
 
 		//create a blob for the shader source code
@@ -77,6 +79,7 @@ namespace ShaderCompiler {
 		ComPtr<IDxcBlobUtf8> pErrors;
 		pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pErrors.GetAddressOf()), nullptr);
 		if (pErrors && pErrors->GetStringLength() > 0) {
+			OutputDebugStringA(("compilation error:" + filename + "\n").c_str());
 			OutputDebugStringA((char*)pErrors->GetBufferPointer());
 			return nullptr;
 		}

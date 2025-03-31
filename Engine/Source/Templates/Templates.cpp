@@ -24,7 +24,15 @@ namespace Templates
 
 #endif
 
-	void LoadTemplates(const std::string folder, const std::string fileName, std::function<void(std::string, nlohmann::json)> loader)
+	void LoadTemplates(nlohmann::json templates, std::function<void(nlohmann::json)> loader)
+	{
+		for (unsigned int i = 0; i < templates.size(); i++)
+		{
+			loader(templates.at(i));
+		}
+	}
+
+	void LoadTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json)> loader)
 	{
 		//first create the directory if needed
 		std::filesystem::path directory(folder);
@@ -35,9 +43,9 @@ namespace Templates
 		nlohmann::json data = nlohmann::json::parse(file);
 		file.close();
 
-		for (auto& [key, value] : data.items())
+		for (unsigned int i = 0; i < data.size(); i++)
 		{
-			loader(key, value);
+			loader(data.at(i));
 		}
 	}
 

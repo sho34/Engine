@@ -13,7 +13,7 @@ namespace Editor {
 using namespace Templates;
 namespace Scene {
 
-	std::map<std::string, std::shared_ptr<SoundEffect>> soundsEffects;
+	std::map<std::string, std::shared_ptr<SoundEffect>> soundsEffects; //uuid -> SoundEffect
 	std::vector<std::shared_ptr<SoundEffect>> sounds3DEffects;
 
 	//CREATE
@@ -29,11 +29,12 @@ namespace Scene {
 		SetIfMissingJson(fx->json, "instanceFlags", static_cast<int>(SoundEffectInstance_Default));
 		SetIfMissingJson(fx->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 
+		soundsEffects.insert_or_assign(fx->uuid(), fx);
+
 		if (!fx->json.at("sound").empty())
 		{
 			fx->CreateSoundEffectInstance();
 
-			soundsEffects.insert_or_assign(fx->name(), fx);
 			if (nostd::bytesHas(fx->instanceFlags(), SoundEffectInstance_Use3D))
 			{
 				sounds3DEffects.push_back(fx);
@@ -45,6 +46,16 @@ namespace Scene {
 		}
 
 		return fx;
+	}
+
+	std::string SoundEffect::uuid()
+	{
+		return json.at("uuid");
+	}
+
+	void SoundEffect::uuid(std::string uuid)
+	{
+		json.at("uuid") = uuid;
 	}
 
 	std::string SoundEffect::name()
@@ -132,11 +143,19 @@ namespace Scene {
 
 	void SoundEffect::DestroySoundEffectInstance()
 	{
-		soundEffectInstance->Stop(true);
-		soundEffectInstance = nullptr;
+		if (soundEffectInstance)
+		{
+			soundEffectInstance->Stop(true);
+			soundEffectInstance = nullptr;
+		}
 	}
 
 	//READ&GET
+	std::shared_ptr<SoundEffect> GetSoundEffect(std::string uuid)
+	{
+		return soundsEffects.at(uuid);
+	}
+
 	std::map<std::string, std::shared_ptr<SoundEffect>> GetSoundsEffects()
 	{
 		return soundsEffects;
@@ -152,33 +171,26 @@ namespace Scene {
 		return nostd::GetKeysFromMap(soundsEffects);
 	}
 
+	std::vector<UUIDName> GetSoundEffectsUUIDNames()
+	{
+		return GetSceneObjectsUUIDsNames(soundsEffects);
+	}
+
 #if defined(_EDITOR)
-	/*
-	nlohmann::json SoundEffect::json() {
-		nlohmann::json soundj = {
-			{ "name", name },
-			{ "sound", soundTemplate->name },
-			{ "volume", volume },
-			{ "autoPlay", autoPlay },
-			{ "position", { position.x, position.y, position.z } },
-			{ "instanceFlags", soundEffectInstanceFlagToString[instanceFlags] }
-		};
-		return soundj;
-	}
-	*/
 
-	void SelectSoundEffect(std::string soundEffectName, void*& ptr) {
-		ptr = soundsEffects.at(soundEffectName).get();
-	}
-
-	void DeSelectSoundEffect(void*& ptr)
+	void SelectSoundEffect(std::string uuid, std::string& edSO)
 	{
-		ptr = nullptr;
+		edSO = uuid;
 	}
 
-	void DrawSoundEffectPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop)
+	void DeSelectSoundEffect(std::string& edSO)
 	{
-		SoundEffect* fx = (SoundEffect*)ptr;
+		edSO = "";
+	}
+
+	void DrawSoundEffectPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
+	{
+		std::shared_ptr<SoundEffect> fx = soundsEffects.at(uuid);
 
 		std::string tableName = "sound-effect-panel";
 		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
@@ -193,15 +205,15 @@ namespace Scene {
 		ImGui::EndTable();
 	}
 
-	std::string GetSoundEffectName(void* ptr)
+	std::string GetSoundEffectName(std::string uuid)
 	{
-		SoundEffect* soundEffect = (SoundEffect*)ptr;
-		return soundEffect->name();
+		std::shared_ptr<SoundEffect> fx = soundsEffects.at(uuid);
+		return fx->name();
 	}
 
-	void DeleteSoundEffect(std::string name)
+	void DeleteSoundEffect(std::string uuid)
 	{
-		std::shared_ptr<SoundEffect> soundEffect = soundsEffects.at(name);
+		std::shared_ptr<SoundEffect> soundEffect = soundsEffects.at(uuid);
 		soundEffect->soundEffectUpdateFlags |= SoundEffectFlags_Destroy;
 	}
 
@@ -221,10 +233,10 @@ namespace Scene {
 
 		if (soundEffectsToDestroy.size() > 0ULL)
 		{
-			for (auto& [name, soundEffect] : soundEffectsToDestroy)
+			for (auto& [uuid, soundEffect] : soundEffectsToDestroy)
 			{
 				soundEffect->DestroySoundEffectInstance();
-				soundsEffects.erase(name);
+				soundsEffects.erase(uuid);
 				nostd::vector_erase(sounds3DEffects, soundEffect);
 			}
 		}
@@ -243,11 +255,6 @@ namespace Scene {
 			std::string currentName = name();
 			if (ImGui::InputText("name", &currentName))
 			{
-				if (!soundsEffects.contains(currentName))
-				{
-					soundsEffects[currentName] = soundsEffects.at(name());
-					soundsEffects.erase(name());
-				}
 				name(currentName);
 			}
 			ImGui::EndTable();
@@ -275,6 +282,36 @@ namespace Scene {
 
 		ImGui::PushID("sound-effect-template");
 		{
+			std::vector<UUIDName> selectables = { std::tie(" ", " ") };
+			std::vector<UUIDName> soundUUIDNames = GetSoundsUUIDsNames();
+			nostd::AppendToVector(selectables, soundUUIDNames);
+
+			UUIDName selected;
+			std::string& soundUUID = std::get<0>(selected);
+			std::string& soundName = std::get<1>(selected);
+
+			if (sound() != "")
+			{
+				soundUUID = sound();
+				soundName = GetSoundName(soundUUID);
+			}
+			else
+			{
+				soundUUID = " ";
+				soundName = " ";
+			}
+
+			if (!sound().empty())
+			{
+				if (ImGui::Button(ICON_FA_FILE_AUDIO))
+				{
+					Editor::tempTab = T_Sounds;
+					Editor::selTemp = sound();
+				}
+				ImGui::SameLine();
+			}
+
+			/*
 			std::vector<std::string> selectables = { " " };
 			std::vector<std::string> soundNames = GetSoundsNames();
 			nostd::AppendToVector(selectables, soundNames);
@@ -290,19 +327,22 @@ namespace Scene {
 				}
 				ImGui::SameLine();
 			}
+			*/
 
-			DrawComboSelection(selected, selectables, [this, selected](std::string sound)
+			DrawComboSelection(selected, selectables, [this, selected, soundUUID](UUIDName sound)
 				{
-					if (selected != " ")
+					if (soundUUID != " ")
 					{
-						Templates::UnbindNotifications(selected, this_ptr);
+						Templates::UnbindNotifications(soundUUID, this_ptr);
 						DestroySoundEffectInstance();
+						nostd::vector_erase(sounds3DEffects, this_ptr);
 					}
-					this->sound((sound == " ") ? "" : sound);
-					if (sound != " ")
+					std::string newSoundUUID = std::get<0>(sound);
+					this->sound((newSoundUUID == " ") ? "" : newSoundUUID);
+					if (newSoundUUID != " ")
 					{
 						CreateSoundEffectInstance();
-						Templates::BindNotifications(sound, this_ptr);
+						Templates::BindNotifications(newSoundUUID, this_ptr);
 					}
 				}
 			);

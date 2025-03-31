@@ -3,6 +3,7 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "Renderable.h"
+#include "../Scene.h"
 #include "../Camera/Camera.h"
 #include "../Lights/Lights.h"
 #include "../../Common/d3dx12.h"
@@ -22,6 +23,9 @@
 #include <imgui.h>
 #endif
 #include "../../Templates/Templates.h"
+#include <Application.h>
+#include <NoStd.h>
+#include <Editor.h>
 
 extern std::mutex rendererMutex;
 extern std::shared_ptr<Renderer> renderer;
@@ -138,7 +142,7 @@ namespace Scene {
 		using namespace Templates;
 
 		assert((renderablej["meshMaterials"].empty() and renderablej.count("meshMaterials") > 0) xor renderablej["model"].empty());
-		assert(renderablej["name"] != "");
+		assert(renderablej["name"] != "" && renderablej["uuid"] != "");
 
 		std::shared_ptr<Renderable> renderable = std::make_shared<Renderable>();
 
@@ -175,14 +179,14 @@ namespace Scene {
 
 		renderable->CreateMeshesComponents();
 
-		renderables.insert_or_assign(renderable->name(), renderable);
+		renderables.insert_or_assign(renderable->uuid(), renderable);
 
 		return renderable;
 	}
 
-	void Renderable::CreateFromModel3D(std::string model3DName)
+	void Renderable::CreateFromModel3D(std::string model3DUUID)
 	{
-		std::shared_ptr<Model3DInstance> model = GetModel3DInstance(model3DName, json);
+		std::shared_ptr<Model3DInstance> model = GetModel3DInstance(model3DUUID, json);
 
 		model3D = model;
 
@@ -197,13 +201,23 @@ namespace Scene {
 		{
 			animable = model;
 			AttachAnimation(this_ptr, model->animations);
-			animables.insert_or_assign(name(), this_ptr);
+			animables.insert_or_assign(uuid(), this_ptr);
 			StepAnimation(0.0f);
 		}
 
 #if defined(_EDITOR)
-		BindNotifications(model3DName, this_ptr);
+		BindNotifications(model3DUUID, this_ptr);
 #endif
+	}
+
+	std::string Renderable::uuid()
+	{
+		return json.at("uuid");
+	}
+
+	void Renderable::uuid(std::string uuid)
+	{
+		json.at("uuid") = uuid;
 	}
 
 	std::string Renderable::name()
@@ -346,7 +360,7 @@ namespace Scene {
 			shadowMapBaseTexture.insert_or_assign(TextureType_Base, textures.at(TextureType_Base));
 		}
 
-		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance("ShadowMap", shadowMapBaseTexture, mesh, defaultShadowMapShaderAttributes);
+		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance(FindMaterialUUIDByName("ShadowMap"), shadowMapBaseTexture, mesh, defaultShadowMapShaderAttributes);
 		meshShadowMapMaterials.insert_or_assign(mesh, shadowMapMaterial);
 	}
 
@@ -426,7 +440,7 @@ namespace Scene {
 
 		for (size_t size : material->variablesBufferSize)
 		{
-			std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name() + "." + mesh->name);
+			std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name() + "." + mesh->uuid);
 			for (unsigned int n = 0; n < renderer->numFrames; n++)
 			{
 				WriteMaterialVariablesToConstantsBufferSpace(material, cbvData, n);
@@ -445,7 +459,7 @@ namespace Scene {
 
 		for (size_t size : material->variablesBufferSize)
 		{
-			std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name() + ".sm." + mesh->name);
+			std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name() + ".sm." + mesh->uuid);
 			for (unsigned int n = 0; n < renderer->numFrames; n++)
 			{
 				WriteMaterialVariablesToConstantsBufferSpace(material, cbvData, n);
@@ -469,7 +483,7 @@ namespace Scene {
 		auto& psSamplersParams = material->pixelShader->samplersParameters;
 		auto& samplers = material->samplers;
 
-		meshRootSignatures.insert_or_assign(mesh, CreateRootSignature(mesh->name, vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers));
+		meshRootSignatures.insert_or_assign(mesh, CreateRootSignature(mesh->uuid, vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers));
 	}
 
 	void Renderable::CreateMeshShadowMapRootSignatures(std::shared_ptr<MeshInstance> mesh)
@@ -488,7 +502,7 @@ namespace Scene {
 		auto& psSamplersParams = material->pixelShader->samplersParameters;
 		auto& samplers = material->samplers;
 
-		meshShadowMapRootSignatures.insert_or_assign(mesh, CreateRootSignature(mesh->name, vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers));
+		meshShadowMapRootSignatures.insert_or_assign(mesh, CreateRootSignature(mesh->uuid, vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers));
 	}
 
 	void Renderable::CreateMeshPipelineState(std::shared_ptr<MeshInstance> mesh)
@@ -513,7 +527,7 @@ namespace Scene {
 		RenderablePipelineState pipelineState;
 		BuildPipelineStateFromJsonChain(pipelineState, { GetMaterialTemplate(material->material), json });
 		topology(primitiveTopologyToString.at(topologyMap.at(pipelineState.PrimitiveTopologyType)));
-		meshPipelineStates.insert_or_assign(mesh, CreatePipelineState(mesh->name, vsLayout, vsByteCode, psByteCode, rootSignature, pipelineState));
+		meshPipelineStates.insert_or_assign(mesh, CreatePipelineState(mesh->uuid, vsLayout, vsByteCode, psByteCode, rootSignature, pipelineState));
 	}
 
 	void Renderable::CreateMeshShadowMapPipelineState(std::shared_ptr<MeshInstance> mesh)
@@ -533,7 +547,7 @@ namespace Scene {
 
 		RenderablePipelineState pipelineState;
 		BuildPipelineStateFromJsonChain(pipelineState, { GetMaterialTemplate(material->material), json });
-		meshShadowMapPipelineStates.insert_or_assign(mesh, CreatePipelineState(mesh->name, vsLayout, vsByteCode, psByteCode, rootSignature, pipelineState));
+		meshShadowMapPipelineStates.insert_or_assign(mesh, CreatePipelineState(mesh->uuid, vsLayout, vsByteCode, psByteCode, rootSignature, pipelineState));
 	}
 
 	void Renderable::CreateBoundingBox()
@@ -558,6 +572,11 @@ namespace Scene {
 		}
 	}
 
+	std::shared_ptr<Renderable> GetRenderable(std::string uuid)
+	{
+		return renderables.at(uuid);
+	}
+
 	//READ
 	std::map<std::string, std::shared_ptr<Renderable>>& GetRenderables() { return renderables; }
 
@@ -574,6 +593,11 @@ namespace Scene {
 		);
 
 		return nostd::GetKeysFromMap(r);
+	}
+
+	std::vector<UUIDName> GetRenderablesUUIDNames()
+	{
+		return GetSceneObjectsUUIDsNames(renderables);
 	}
 #endif
 
@@ -848,9 +872,9 @@ namespace Scene {
 
 	void Renderable::SwapMaterials()
 	{
-		for (auto& [mesh, materialName] : materialSwaps)
+		for (auto& [mesh, materialUUID] : materialSwaps)
 		{
-			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialName, std::map<TextureType, MaterialTexture>(), mesh, json);
+			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialUUID, std::map<TextureType, MaterialTexture>(), mesh, json);
 			SetMeshMaterial(mesh, materialInstance);
 			CreateMeshConstantsBuffers(mesh);
 			CreateMeshRootSignatures(mesh);
@@ -1141,74 +1165,32 @@ namespace Scene {
 	//EDITOR
 #if defined(_EDITOR)
 
-	void SelectRenderable(std::string renderableName, void*& ptr) {
-		ptr = renderables.at(renderableName).get();
+	void SelectRenderable(std::string uuid, std::string& edSO) {
+		edSO = uuid;
 	}
 
-	void DeSelectRenderable(void*& ptr)
+	void DeSelectRenderable(std::string& edSO)
 	{
-		ptr = nullptr;
+		edSO = "";
 	}
 
-
-
-	std::string GetRenderableName(void* ptr)
+	std::string GetRenderableName(std::string uuid)
 	{
-		Renderable* renderable = (Renderable*)ptr;
-		return renderable->name();
+		return renderables.at(uuid)->json.at("name");
 	}
 
-	void DeleteRenderable(std::string name)
+	void DeleteRenderable(std::string uuid)
 	{
-		std::shared_ptr<Renderable> renderable = renderables.at(name);
-		renderable->renderableUpdateFlags |= RenderableFlags_Destroy;
+		renderables.at(uuid)->renderableUpdateFlags |= RenderableFlags_Destroy;
 	}
 
 	void DrawRenderablesPopups()
 	{
 	}
 
-	/*
-	nlohmann::json Renderable::json() {
-		nlohmann::json j = nlohmann::json({});
-
-		j["name"] = name;
-		j["position"] = { position.x, position.y, position.z };
-		j["scale"] = { scale.x, scale.y, scale.z };
-		j["rotation"] = { rotation.x, rotation.y, rotation.z };
-
-		auto buildJsonMeshMaterials = [](auto& j, std::string objectName, MeshMaterialMap& meshMatMap) {
-			j[objectName] = nlohmann::json::array();
-			for (auto& [mesh, material] : meshMatMap) {
-				j[objectName].push_back({ {"mesh", mesh->name }, {"material", material->name } });
-			}
-			};
-
-		if (model3DName == "") {
-			buildJsonMeshMaterials(j, "meshMaterials", meshMaterials);
-			buildJsonMeshMaterials(j, "meshShadowMapMaterials", meshShadowMapMaterials);
-		}
-		else {
-			j["model"] = model3DName;
-		}
-
-		j["skipMeshes"] = nlohmann::json::array();
-		for (MeshPtr mesh : skipMeshes) {
-			j["skipMeshes"].push_back(mesh->name);
-		}
-
-		using namespace Animation::Effects;
-		auto effects = GetRenderableEffects(this_ptr);
-		if (!effects.empty()) {
-			j["effects"] = effects;
-		}
-		return j;
-	}
-	*/
-
-	void DrawRenderablePanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop)
+	void DrawRenderablePanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
 	{
-		Renderable* renderable = (Renderable*)ptr;
+		std::shared_ptr<Renderable> renderable = renderables.at(uuid);
 
 		std::string tableName = "renderable-panel";
 		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
@@ -1217,6 +1199,7 @@ namespace Scene {
 			renderable->DrawEditorWorldAttributes();
 			renderable->DrawEditorAnimationAttributes();
 			renderable->DrawEditorShaderAttributes();
+			renderable->DrawEditorModelSelectionAttributes();
 			renderable->DrawEditorMeshesAttributes();
 			renderable->DrawEditorPipelineStateAttributes();
 			ImGui::EndTable();
@@ -1372,72 +1355,88 @@ namespace Scene {
 		if (ImGui::Checkbox("Cast Shadows", json.at("castShadows").get_ptr<bool*>())) { rebuildMaterials(); }
 	}
 
-	void Renderable::DrawEditorMeshesAttributes()
+	void Renderable::DrawEditorModelSelectionAttributes()
 	{
-		std::vector<std::string> modelsNames = GetModels3DNames();
-		std::vector<std::string> meshesNames = GetMeshesNames();
+		std::vector<UUIDName> modelsUUIDNames = GetModels3DUUIDsNames();
+		std::vector<UUIDName> meshesUUIDNames = GetMeshesUUIDsNames();
 
-		std::vector<std::string> selectables = { " " };
-		selectables.insert(selectables.end(), modelsNames.begin(), modelsNames.end());
-		selectables.insert(selectables.end(), meshesNames.begin(), meshesNames.end());
+		std::vector<UUIDName> selectables = { std::tie(" ", " ") };
+		selectables.insert(selectables.end(), modelsUUIDNames.begin(), modelsUUIDNames.end());
+		selectables.insert(selectables.end(), meshesUUIDNames.begin(), meshesUUIDNames.end());
 
-		std::string model3DName = "";
-
+		UUIDName model3dUUIDName;
+		bool model3DSelected = false;
 		if (model3D != nullptr)
 		{
-			model3DName = GetModel3DInstanceTemplateName(model3D);
+			model3DSelected = true;
+
+			Model3DTemplate t = GetModel3DTemplate(model3D->uuid);
+
+			std::string& mUUID = std::get<0>(model3dUUIDName);
+			mUUID = model3D->uuid;
+
+			std::string& mName = std::get<1>(model3dUUIDName);
+			mName = std::get<0>(t);
 		}
 
 		int current_item = 0;
-		int current_model = static_cast<int>(std::find(modelsNames.begin(), modelsNames.end(), model3DName) - modelsNames.begin());
+		int current_model = static_cast<int>(std::find(modelsUUIDNames.begin(), modelsUUIDNames.end(), model3dUUIDName) - modelsUUIDNames.begin());
 
-		if (current_model != modelsNames.size())
+		if (current_model != modelsUUIDNames.size())
 		{
 			current_item = 1 + current_model;
 		}
 		else if (meshes.size() > 0)
 		{
-			std::string meshName = meshes[0]->name;
-			int current_mesh = static_cast<int>(std::find(meshesNames.begin(), meshesNames.end(), meshName) - meshesNames.begin());
-			if (current_mesh != meshesNames.size())
+			std::string meshUUID = meshes.at(0)->uuid;
+			int current_mesh = static_cast<int>(std::find_if(meshesUUIDNames.begin(), meshesUUIDNames.end(), [meshUUID](UUIDName uuidName)
+				{
+					return meshUUID == std::get<0>(uuidName);
+				}
+			) - meshesUUIDNames.begin());
+			if (current_mesh != meshesUUIDNames.size())
 			{
-				current_item = 1 + static_cast<int>(modelsNames.size()) + current_mesh;
+				current_item = 1 + static_cast<int>(modelsUUIDNames.size()) + current_mesh;
 			}
 		}
 
 		ImGui::PushID("renderable-mesh-model-selector");
 		{
-			if (model3DName != "")
+			if (model3DSelected)
 			{
 				if (ImGui::Button(ICON_FA_CUBE))
 				{
 					Editor::tempTab = T_Models3D;
-					Editor::selTemp = model3DName;
+					Editor::selTemp = model3D->uuid;
 				}
 				ImGui::SameLine();
 			}
 
-			DrawComboSelection(selectables[current_item], selectables, [this, modelsNames, meshesNames](std::string m)
+			DrawComboSelection(selectables[current_item], selectables, [this, modelsUUIDNames, meshesUUIDNames](UUIDName uuidName)
 				{
-					if (m == " ")
+					std::string uuid = std::get<0>(uuidName);
+					if (uuid == " ")
 					{
 						renderableUpdateFlags |= RenderableFlags_DestroyMeshes;
 					}
-					else if (std::find(modelsNames.begin(), modelsNames.end(), m) != modelsNames.end())
+					else if (std::find(modelsUUIDNames.begin(), modelsUUIDNames.end(), uuidName) != modelsUUIDNames.end())
 					{
 						renderableUpdateFlags |= RenderableFlags_RebuildMeshesFromModel3D;
-						model3DSwap = m;
+						model3DSwap = uuid;
 					}
-					else if (std::find(meshesNames.begin(), meshesNames.end(), m) != meshesNames.end())
+					else if (std::find(meshesUUIDNames.begin(), meshesUUIDNames.end(), uuidName) != meshesUUIDNames.end())
 					{
 						renderableUpdateFlags |= RenderableFlags_RebuildMeshes;
-						meshSwap = m;
+						meshSwap = uuid;
 					}
 				}, "model"
 			);
 		}
 		ImGui::PopID();
+	}
 
+	void Renderable::DrawEditorMeshesAttributes()
+	{
 		std::string tableName = "renderable-meshes-atts";
 		if (ImGui::BeginTable(tableName.c_str(), 3, ImGuiTableFlags_NoSavedSettings))
 		{
@@ -1453,6 +1452,10 @@ namespace Scene {
 			ImGui::TableSetColumnIndex(2);
 			ImGui::TableHeader("material");
 
+			std::vector<UUIDName> materialsUUIDNames = GetMaterialsUUIDsNames();
+			std::vector<UUIDName> selectables = { std::tie(" ", " ") };
+			nostd::AppendToVector(selectables, materialsUUIDNames);
+
 			for (unsigned int i = 0; i < meshes.size(); i++)
 			{
 				std::shared_ptr<MeshInstance>& mesh = meshes[i];
@@ -1461,8 +1464,7 @@ namespace Scene {
 
 				bool skip_v = skipMeshes.contains(i);
 				ImGui::TableSetColumnIndex(0);
-				std::string comboIdSkip = "mesh#" + mesh->name + "#skip";
-				ImGui::PushID(comboIdSkip.c_str());
+				ImGui::PushID(("mesh#" + mesh->uuid + "#skip").c_str());
 				{
 					if (ImGui::Checkbox("", &skip_v))
 					{
@@ -1479,39 +1481,51 @@ namespace Scene {
 				ImGui::PopID();
 
 				ImGui::TableSetColumnIndex(1);
-				ImGui::Text(mesh->name.c_str());
+				if (model3D != nullptr)
+				{
+					ImGui::Text((std::get<0>(GetModel3DTemplate(model3D->uuid)) + "." + std::to_string(i)).c_str());
+				}
+				else
+				{
+					ImGui::Text(GetMeshName(mesh->uuid).c_str());
+				}
 
 				ImGui::TableSetColumnIndex(2);
 
-				std::vector materialList = GetMaterialsNames();
-				materialList.insert(materialList.begin(), " ");
-
-				std::string comboId = "mesh#" + mesh->name + "#material";
-				ImGui::PushID(comboId.c_str());
+				ImGui::PushID(("mesh#" + mesh->uuid + "#material").c_str());
 				{
+					bool selectedMaterial = false;
+					UUIDName currentMaterial = std::tie(" ", " ");
 
-					std::string materialName = " ";
 					if (meshMaterials.contains(mesh))
 					{
 						std::shared_ptr<MaterialInstance> material = meshMaterials.at(mesh);
-						materialName = material->material;
+						nlohmann::json json = GetMaterialTemplate(material->material);
+
+						std::string& uuid = std::get<0>(currentMaterial);
+						std::string& name = std::get<1>(currentMaterial);
+
+						uuid = material->material;
+						name = GetMaterialName(uuid);
+						selectedMaterial = true;
 					}
 
-					if (materialName != " ")
+					if (selectedMaterial)
 					{
 						if (ImGui::Button(ICON_FA_TSHIRT))
 						{
 							Editor::tempTab = T_Materials;
-							Editor::selTemp = materialName;
+							Editor::selTemp = std::get<0>(currentMaterial);
 						}
 						ImGui::SameLine();
 					}
 
+
 					ImGui::SetNextItemWidth(-1);
 
-					DrawComboSelection(materialName, materialList, [this, mesh](std::string matName)
+					DrawComboSelection(currentMaterial, selectables, [this, mesh](UUIDName matUUIDName)
 						{
-							materialSwaps.insert_or_assign(mesh, matName);
+							materialSwaps.insert_or_assign(mesh, std::get<0>(matUUIDName));
 							renderableUpdateFlags |= RenderableFlags_SwapMaterialsFromMesh;
 						}
 					);
@@ -1519,6 +1533,7 @@ namespace Scene {
 				}
 				ImGui::PopID();
 			}
+
 			ImGui::EndTable();
 		}
 	}
@@ -1543,8 +1558,11 @@ namespace Scene {
 	void DestroyRenderable(std::shared_ptr<Renderable>& renderable)
 	{
 		if (renderable == nullptr) return;
-		if (renderables.contains(renderable->name())) renderables.erase(renderable->name());
-		if (animables.contains(renderable->name())) animables.erase(renderable->name());
+#if defined(_EDITOR)
+		if (renderable->model3D != nullptr) UnbindNotifications(renderable->model3D->uuid, renderable);
+#endif
+		if (renderables.contains(renderable->uuid())) renderables.erase(renderable->uuid());
+		if (animables.contains(renderable->uuid())) animables.erase(renderable->uuid());
 		renderable->this_ptr = nullptr;
 		renderable = nullptr;
 	}
@@ -1554,6 +1572,9 @@ namespace Scene {
 		for (auto& [name, renderable] : renderables)
 		{
 			DEBUG_PTR_COUNT_JSON(renderable);
+#if defined(_EDITOR)
+			if (renderable->model3D != nullptr) UnbindNotifications(renderable->model3D->uuid, renderable);
+#endif
 			renderable->this_ptr = nullptr;
 		}
 		animables.clear();

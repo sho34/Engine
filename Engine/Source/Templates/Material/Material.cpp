@@ -18,6 +18,7 @@
 #if defined(_EDITOR)
 #include "../Editor/Editor.h"
 #include "../Templates.h"
+#include <Editor.h>
 namespace Editor {
 	extern _Templates tempTab;
 	extern std::string selTemp;
@@ -26,70 +27,86 @@ namespace Editor {
 
 namespace Templates {
 
-	static std::map<std::string, nlohmann::json> materialTemplates;
+	std::map<std::string, MaterialTemplate> materials;
 
 	//Material+Mesh = MaterialInstance
 	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
-	static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
 
 #if defined(_EDITOR)
-	std::map<std::string, std::vector<std::tuple<std::shared_ptr<Renderable>, unsigned int>>> renderablesInstances;
-
 	enum MaterialPopupModal
 	{
 		MaterialPopupModal_CannotDelete = 1,
 	};
+#endif
 
 	namespace Material
 	{
+#if defined(_EDITOR)
 		unsigned int popupModalId = 0U;
-	};
 #endif
+		static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
+	};
 
 	//CREATE
-	void CreateMaterial(std::string name, nlohmann::json json)
+	void CreateMaterial(nlohmann::json json)
 	{
-		if (materialTemplates.contains(name)) return;
-		materialTemplates.insert_or_assign(name, json);
+		std::string uuid = json.at("uuid");
 
-		nlohmann::json mat = GetMaterialTemplate(name);
-		nlohmann::json shader = GetShaderTemplate(mat.at("shader"));
+		if (materials.contains(uuid))
+		{
+			assert(!!!"materials creation collision");
+		}
 
-		std::string shaderName = shader.contains("fileName") ? std::string(shader.at("fileName")) : std::string(mat.at("shader"));
+		MaterialTemplate t;
+		std::string& name = std::get<0>(t);
+		name = json.at("name");
 
-		AttachMaterialToShader(shaderName, name);
+		nlohmann::json& data = std::get<1>(t);
+		data = json;
+		data.erase("name");
+		data.erase("uuid");
+
+		materials.insert_or_assign(uuid, t);
+		AttachMaterialToShader(json.at("shader"), uuid);
 	}
 
 	static std::mt19937 g;
 
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string name, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
 	{
-		if (!materialTemplates.contains(name)) return nullptr;
+		if (!materials.contains(uuid))
+		{
+			assert(!!!"material doesn't exist");
+			return nullptr;
+		}
 
-		std::string instanceName = name;
-		if (shaderAttributes.at("uniqueMaterialInstance")) { instanceName += nostd::gen_string(8, g); }
+		std::string instanceName = uuid;
+		if (shaderAttributes.at("uniqueMaterialInstance"))
+		{
+			instanceName += nostd::gen_string(8, g);
+		}
 
 		auto key = MaterialMeshInstancePair(std::make_tuple(instanceName, textures, shaderAttributes.at("castShadows")), mesh);
 
-		return refTracker.AddRef(key, [name, mesh, textures, shaderAttributes]()
+		using namespace Material;
+		return refTracker.AddRef(key, [uuid, mesh, textures, shaderAttributes]()
 			{
 				std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
-				LoadMaterialInstance(name, mesh, instance, textures, shaderAttributes.at("castShadows"));
+				LoadMaterialInstance(uuid, mesh, instance, textures, shaderAttributes.at("castShadows"));
 				return instance;
 			}
 		);
 	}
 
-	void LoadMaterialInstance(std::string name, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures, bool castShadows)
+	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures, bool castShadows)
 	{
 		material->vertexClass = mesh->vertexClass;
-		material->material = name;
+		material->material = uuid;
 		material->tupleTextures = textures;
 
-		nlohmann::json mat = GetMaterialTemplate(name);
-		nlohmann::json shader = GetShaderTemplate(mat.at("shader"));
+		nlohmann::json mat = GetMaterialTemplate(uuid);
 
-		material->shaderName = shader.contains("fileName") ? std::string(shader.at("fileName")) : std::string(mat.at("shader"));
+		material->shader = mat.at("shader");
 		std::vector<std::string> vertexClassDefines = VertexClassDefines.at(mesh->vertexClass);
 		std::move(vertexClassDefines.begin(), vertexClassDefines.end(), std::back_inserter(material->defines));
 		if (mat.contains("textures"))
@@ -100,11 +117,13 @@ namespace Templates {
 				TextureType texType = strToTextureType.at(it.key());
 				DXGI_FORMAT texFormat = stringToDxgiFormat.at(it.value().at("format"));
 				material->defines.push_back(textureTypeToShaderDefine.at(texType));
-				if (texType == TextureType_Base && FormatsInGammaSpace.contains(texFormat)) {
+				if (texType == TextureType_Base && FormatsInGammaSpace.contains(texFormat))
+				{
 					material->defines.push_back(BaseTextureFromGammaSpaceDefine);
 				}
 			}
 		}
+
 		if (castShadows)
 		{
 			material->defines.push_back(textureTypeToShaderDefine.at(TextureType_ShadowMaps));
@@ -127,8 +146,8 @@ namespace Templates {
 	void MaterialInstance::GetShaderInstances()
 	{
 		using namespace ShaderCompiler;
-		Source compVS = { .shaderType = VERTEX_SHADER, .shaderName = shaderName, .defines = defines };
-		Source compPS = { .shaderType = PIXEL_SHADER, .shaderName = shaderName, .defines = defines };
+		Source compVS = { .shaderType = VERTEX_SHADER, .shaderUUID = shader, .defines = defines };
+		Source compPS = { .shaderType = PIXEL_SHADER, .shaderUUID = shader, .defines = defines };
 		vertexShader = GetShaderInstance(compVS);
 		pixelShader = GetShaderInstance(compPS);
 		vertexShader->BindChange([this] { NotifyRebuild(); });
@@ -218,12 +237,14 @@ namespace Templates {
 		nlohmann::json shaderMappedValues = nlohmann::json::array();
 		std::map<std::string, nlohmann::json> mappedValues;
 
-		if (material.contains("mappedValues")) {
+		if (material.contains("mappedValues"))
+		{
 			materialMappedValues = material.at("mappedValues");
 		}
 
 		nlohmann::json shader = GetShaderTemplate(material.at("shader"));
-		if (shader.contains("mappedValues")) {
+		if (shader.contains("mappedValues"))
+		{
 			shaderMappedValues = shader.at("mappedValues");
 		}
 
@@ -343,43 +364,88 @@ namespace Templates {
 		NotifyMappedValueChange();
 	}
 
-	nlohmann::json GetMaterialTemplate(std::string name)
+	nlohmann::json GetMaterialTemplate(std::string uuid)
 	{
-		return (materialTemplates.contains(name)) ? materialTemplates.at(name) : nlohmann::json();
+		return (materials.contains(uuid)) ? std::get<1>(materials.at(uuid)) : nlohmann::json();
+	}
+
+	std::string GetMaterialName(std::string uuid)
+	{
+		return std::get<0>(materials.at(uuid));
 	}
 
 	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
 	{
 		auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures, shaderAttributes.at("castShadows")), mesh);
+		using namespace Material;
 		refTracker.RemoveRef(key, material);
 	}
 
-	void DestroyMaterial(std::string name)
+	void DestroyMaterial(std::string uuid)
 	{
-		materialTemplates.erase(name);
+		materials.erase(uuid);
 	}
 
 	//DESTROY
 	void ReleaseMaterialTemplates()
 	{
+		using namespace Material;
 		refTracker.Clear();
-		materialTemplates.clear();
+		materials.clear();
 	}
 
 	std::vector<std::string> GetMaterialsNames() {
-		return nostd::GetKeysFromMap(materialTemplates);
+		return GetNames(materials);
+	}
+
+	std::vector<UUIDName> GetMaterialsUUIDsNames()
+	{
+		return GetUUIDsNames(materials);
+	}
+
+	std::string FindMaterialUUIDByName(std::string name)
+	{
+		for (auto& [materialUUID, materialTemplate] : materials)
+		{
+			if (std::get<0>(materialTemplate) == name) return materialUUID;
+		}
+
+		assert(!!!"material not found");
+		return "";
 	}
 
 	//EDITOR
 #if defined(_EDITOR)
 
-	void DrawMaterialPanel(std::string& material, ImVec2 pos, ImVec2 size, bool pop)
+	void DrawMaterialPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
 	{
-		nlohmann::json& mat = materialTemplates.at(material);
+		MaterialTemplate& material = materials.at(uuid);
+
+		nlohmann::json& mat = std::get<1>(material);
 
 		std::string shader = mat.at("shader");
 
-		std::vector<std::string> selectables = GetShadersNames();
+		auto uuidsNames = GetShadersUUIDsNames();
+		std::vector<std::string> selectables;
+		std::transform(uuidsNames.begin(), uuidsNames.end(), std::back_inserter(selectables), [](auto& tuple)
+			{
+				return std::get<1>(tuple);
+			}
+		);
+
+		std::map<std::string, std::string> namesToUUIDs;
+		std::transform(uuidsNames.begin(), uuidsNames.end(), std::inserter(namesToUUIDs, namesToUUIDs.end()), [](auto& tuple)
+			{
+				return std::pair<std::string, std::string>(std::get<1>(tuple), std::get<0>(tuple));
+			}
+		);
+
+		std::map<std::string, std::string> uuidsToNames;
+		std::transform(uuidsNames.begin(), uuidsNames.end(), std::inserter(uuidsToNames, uuidsToNames.end()), [](auto& tuple)
+			{
+				return std::pair<std::string, std::string>(std::get<0>(tuple), std::get<1>(tuple));
+			}
+		);
 
 		ImGui::Text("Shader");
 		ImGui::PushID("shader-name-combo");
@@ -394,61 +460,57 @@ namespace Templates {
 				ImGui::SameLine();
 			}
 
-			DrawComboSelection(shader, selectables, [&mat](std::string shaderName)
+			DrawComboSelection(uuidsToNames.at(shader), selectables, [&mat, namesToUUIDs](std::string shaderName)
 				{
-					mat.at("shader") = shaderName;
+					mat.at("shader") = namesToUUIDs.at(shaderName);
 				}, ""
 			);
 		}
 		ImGui::PopID();
 
-		nlohmann::json sha = GetShaderTemplate(shader);
-		std::string fileName = sha.contains("fileName") ? std::string(sha.at("fileName")) : shader;
 		bool updateMappedValues = false;
 		bool rebuildMaterial = false;
 		ImGui::PushID("material-mapped-values");
 		{
-			updateMappedValues |= ImDrawMappedValues(mat, GetShaderMappeableVariables(fileName.data()));
+			updateMappedValues |= ImDrawMappedValues(mat, GetShaderMappeableVariables(shader));
 		}
 		ImGui::PopID();
 
 		ImGui::PushID("material-textures");
 		{
-			rebuildMaterial |= ImDrawTextureParameters(mat, GetShaderTextureParameters(fileName.data()));
+			rebuildMaterial |= ImDrawTextureParameters(mat, GetShaderTextureParameters(shader));
 		}
 		ImGui::PopID();
 
 		ImGui::PushID("material-samplers");
 		{
-			rebuildMaterial |= ImDrawSamplerParameters(mat, GetShaderSamplerParameters(fileName.data()), [] { return MaterialSamplerDesc().json(); });
+			rebuildMaterial |= ImDrawSamplerParameters(mat, GetShaderSamplerParameters(shader), [] { return MaterialSamplerDesc().json(); });
 		}
 		ImGui::PopID();
 
 		if (updateMappedValues || rebuildMaterial)
 		{
+			using namespace Material;
 			for (auto& [_, instance] : refTracker.instances)
 			{
-				if (instance->material != material) continue;
+				if (instance->material != uuid) continue;
 
 				if (updateMappedValues)
 				{
 					instance->UpdateMappedValues(mat.at("mappedValues"));
 				}
+
 				if (rebuildMaterial)
 				{
-					for (auto& cb : instance->rebuildCallbacks)
-					{
-						cb();
-					}
+					instance->CallRebuildCallbacks();
 				}
 			}
 		}
-
 	}
 
-	void DeleteMaterial(std::string name)
+	void DeleteMaterial(std::string uuid)
 	{
-		nlohmann::json material = materialTemplates.at(name);
+		nlohmann::json material = GetMaterialTemplate(uuid);
 		if (material.contains("systemCreated") && material.at("systemCreated") == true)
 		{
 			Material::popupModalId = MaterialPopupModal_CannotDelete;
@@ -465,51 +527,19 @@ namespace Templates {
 		);
 	}
 
-	void DetachShader(std::string material)
+	void DetachShader(std::string uuid)
 	{
-		nlohmann::json& mat = materialTemplates.at(material);
+		nlohmann::json& mat = std::get<1>(materials.at(uuid));
 		mat.at("shader") = Material::fallbackShader;
 
+		using namespace Material;
 		for (auto& [_, instance] : refTracker.instances)
 		{
-			if (instance->material != material) continue;
+			if (instance->material != uuid) continue;
 
-			for (auto& cb : instance->rebuildCallbacks)
-			{
-				cb();
-			}
+			instance->CallRebuildCallbacks();
 		}
 	}
 
-	/*
-	nlohmann::json json()
-	{
-		nlohmann::json j = nlohmann::json({});
-
-		for (auto& [name, material] : materialTemplates) {
-			if (material->materialDefinition.systemCreated) continue;
-
-			j[name] = nlohmann::json({});
-			j[name]["shaderTemplate"] = material->materialDefinition.shaderTemplate;
-			j[name]["mappedValues"] = TransformMaterialValueMappingToJson(material->materialDefinition.mappedValues);
-
-			if (material->materialDefinition.textures.size() > 0) {
-				j[name]["textures"] = TransformTexturesDefinitionToJson(material->materialDefinition.textures);
-			}
-
-			if (material->materialDefinition.samplers.size() > 0) {
-				j[name]["samplers"] = nlohmann::json::array();
-
-				for (auto& sampler : material->materialDefinition.samplers) {
-					j[name]["samplers"].push_back(sampler.json());
-				}
-
-			}
-
-			j[name]["twoSided"] = material->materialDefinition.twoSided;
-		}
-		return j;
-	}
-	*/
 #endif
 }

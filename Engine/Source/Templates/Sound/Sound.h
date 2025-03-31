@@ -6,6 +6,16 @@
 
 using namespace DirectX;
 
+typedef std::tuple<
+	std::string, //name
+	nlohmann::json, //data
+	std::shared_ptr<DirectX::SoundEffect> //DirectXTK SoundEffect Instance
+#if defined(_EDITOR)
+	,
+	std::vector<std::shared_ptr<Scene::SoundEffect>> //Scene's SoundEffect instances
+#endif
+> SoundTemplate;
+
 namespace Templates {
 
 	namespace Sound
@@ -13,17 +23,19 @@ namespace Templates {
 		inline static const std::string templateName = "audio.json";
 #if defined(_EDITOR)
 		void ReleaseSoundEffectsInstances();
-		void DrawEditorInformationAttributes(std::string& sound);
-		void DrawEditorAssetAttributes(std::string sound);
+		void DrawEditorInformationAttributes(std::string uuid);
+		void DrawEditorAssetAttributes(std::string uuid);
 #endif
 	}
 
 	//CREATE
-	void CreateSound(std::string name, nlohmann::json json);
-	std::unique_ptr<DirectX::SoundEffectInstance> GetSoundEffectInstance(std::string name, SOUND_EFFECT_INSTANCE_FLAGS flags);
+	void CreateSound(nlohmann::json json);
+	std::unique_ptr<DirectX::SoundEffectInstance> GetSoundEffectInstance(std::string uuid, SOUND_EFFECT_INSTANCE_FLAGS flags);
 
 	//READ&GET
 	std::vector<std::string> GetSoundsNames();
+	std::string GetSoundName(std::string uuid);
+	std::vector<UUIDName> GetSoundsUUIDsNames();
 
 	//UPDATE
 
@@ -32,12 +44,11 @@ namespace Templates {
 
 	//EDITOR
 #if defined(_EDITOR)
-	void BindNotifications(std::string sound, std::shared_ptr<Scene::SoundEffect> soundEffect);
-	void UnbindNotifications(std::string sound, std::shared_ptr<Scene::SoundEffect> soundEffect);
-	void DrawSoundPanel(std::string sound, ImVec2 pos, ImVec2 size, bool pop);
-	void DeleteSound(std::string name);
+	void BindNotifications(std::string uuid, std::shared_ptr<Scene::SoundEffect> soundEffect);
+	void UnbindNotifications(std::string uuid, std::shared_ptr<Scene::SoundEffect> soundEffect);
+	void DrawSoundPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	void DeleteSound(std::string uuid);
 	void DrawSoundsPopups();
-	//nlohmann::json json();
 #endif
 
 };

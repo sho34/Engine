@@ -227,45 +227,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 void CreateSystemTemplates() {
 	using namespace Templates;
 
-	CreateShader("BoundingBox", R"( {
-		"systemCreated" : true,
-		"mappedValues": [
-			{ "value": [ 1.0, 0.0, 0.0 ], "variable": "baseColor", "variableType": "FLOAT3" }
-		]
-	})"_json);
-	CreateShader("BaseLighting", R"( {
-		"systemCreated" : true,
-		"mappedValues": [
-			{ "value": [ 0.11764706671237946, 0.5647059082984924, 1.0 ], "variable": "baseColor", "variableType": "FLOAT3" },
-			{ "value": 400.0, "variable": "specularExponent", "variableType": "FLOAT" }
-		]
-	})"_json);
-	CreateShader("Grid", R"( {
-		"systemCreated" : true,
-		"mappedValues": [
-			{ "value": [ 1.0, 0.0, 1.0 ], "variable": "baseColor", "variableType": "RGB" },
-			{ "value": 1024.0, "variable": "specularExponent", "variableType": "FLOAT" }
-		]
-	})"_json);
-	CreateShader("ShadowMap", R"( { "systemCreated" : true })"_json);
-	CreateShader("DepthMinMax", R"( { "systemCreated" : true })"_json);
-	CreateShader("DepthMinMaxToRGBA", R"( { "systemCreated" : true })"_json);
-	CreateShader("FullScreenQuad", R"( { "systemCreated" : true })"_json);
-	CreateShader("LoadingBar", R"( { "systemCreated" : true })"_json);
-	CreateMaterial("BoundingBox", R"({ "shader":"BoundingBox", "systemCreated":true })"_json);
-	CreateMaterial("BaseLighting", R"({ "shader":"BaseLighting", "systemCreated":true, "samplers":[{ "Filter":"MIN_MAG_MIP_LINEAR", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
-	CreateMaterial("Floor", R"({ "shader":"Grid", "systemCreated":true, "samplers":[{ "Filter":"MIN_MAG_MIP_LINEAR", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
-	CreateMaterial("ShadowMap", R"({ "shader":"ShadowMap", "systemCreated":true, "samplers":[{ "Filter":"MIN_MAG_MIP_LINEAR", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
-	CreateMaterial("DepthMinMax", R"({ "shader":"DepthMinMax", "systemCreated":true, "twoSided": true, "samplers":[{ "Filter":"MIN_MAG_MIP_POINT", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
-	CreateMaterial("DepthMinMaxToRGBA", R"({ "shader":"DepthMinMaxToRGBA", "systemCreated":true, "twoSided": true, "samplers":[{ "Filter":"MIN_MAG_MIP_POINT", "AddressU":"ADDRESS_MODE_BORDER", "AddressV":"ADDRESS_MODE_BORDER", "AddressW":"ADDRESS_MODE_BORDER", "MipLODBias":0, "MaxAnisotropy":0, "ComparisonFunc":"NEVER", "BorderColor":"OPAQUE_WHITE", "MinLOD":0.0, "MaxLOD":3.4028234663852886e+38, "ShaderRegister":0, "RegisterSpace":0, "ShaderVisibility":"PIXEL" }] })"_json);
-	CreateMaterial("FullScreenQuad", R"({ "shader":"FullScreenQuad", "systemCreated":true})"_json);
-	CreateMaterial("LoadingBar", R"({ "shader":"LoadingBar", "systemCreated":true})"_json);
-	CreatePrimitiveMeshTemplate("floor");
-	CreatePrimitiveMeshTemplate("utahteapot");
-	CreatePrimitiveMeshTemplate("cube");
-	CreatePrimitiveMeshTemplate("pyramid");
-	CreatePrimitiveMeshTemplate("decal");
-	CreatePrimitiveMeshTemplate("boxlines");
+	Templates::LoadTemplates(Templates::systemShaders, Templates::CreateShader);
+	Templates::LoadTemplates(Templates::systemMaterials, Templates::CreateMaterial);
+
+	CreatePrimitiveMeshTemplate("d41e5c29-49bb-4f2c-aa2b-da781fbac512", "floor");
+	CreatePrimitiveMeshTemplate("d8bfdef4-55f9-4f6e-b4a8-20915eb854d6", "utahteapot");
+	CreatePrimitiveMeshTemplate("f7786ac1-e296-4e9a-a7e6-6f1949de75ef", "cube");
+	CreatePrimitiveMeshTemplate("d76b3bd8-0f53-4128-974e-2d6d5062bc00", "pyramid");
+	CreatePrimitiveMeshTemplate("7dec1229-075f-4599-95e1-9ccfad0d48b1", "decal");
+	CreatePrimitiveMeshTemplate("30f15e68-db42-46fa-b846-b2647a0ac9b9", "boxlines");
 }
 
 void CreateTemplates() {
@@ -324,44 +294,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (wParam == VK_RETURN && (lParam & 0x60000000) == 0x20000000)
 		{
 			//implement fullscreen with ALT+ENTER
-			/*
-			if (inFullScreen) {
-				SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
-				SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
-
-				ShowWindow(hWnd, SW_SHOWNORMAL);
-
-				SetWindowPos(hWnd, HWND_TOP, hWndRect.left, hWndRect.top, hWndRect.right - hWndRect.left, hWndRect.bottom - hWndRect.top, SWP_NOZORDER | SWP_FRAMECHANGED);
-			}
-			else {
-				SetWindowLongPtr(hWnd, GWL_STYLE, WS_POPUP);
-				SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
-
-				SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-
-				ShowWindow(hWnd, SW_SHOWMAXIMIZED);
-			}
-			*/
-			/*
-			//implement fullscreen with ALT+ENTER
-			if (inFullScreen) {
-				SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPEDWINDOW);
-				//SetWindowLongPtr(hWnd, GWL_EXSTYLE, 0);
-				SetWindowLongPtr(hWnd, GWL_STYLE, 0);
-
-				ShowWindow(hWnd, SW_SHOWNORMAL);
-				//SetWindowLong(hWnd, GWL_STYLE, 0);
-				SetWindowPos(hWnd, HWND_TOP, hWndRect.left, hWndRect.top, hWndRect.right - hWndRect.left, hWndRect.bottom - hWndRect.top, SWP_NOZORDER | SWP_FRAMECHANGED);
-			}
-			else {
-				SetWindowLongPtr(hWnd, GWL_STYLE, WS_POPUP);
-				SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
-
-				SetWindowPos(hWnd, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
-
-				ShowWindow(hWnd, SW_SHOWMAXIMIZED);
-			}
-			*/
 #if !defined(_EDITOR)
 			inFullScreen = !inFullScreen;
 			ResetWindowStyle(inFullScreen);

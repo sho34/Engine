@@ -1,8 +1,3 @@
-{
-    "fireplace": {
-        "path": "Assets/sounds/fireplace.wav"
-    },
-    "music": {
-        "path": "Assets/sounds/music.wav"
-    }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:2ee5f8796b149665aa5a1c14559a8920459cdb544bae499fc0d958f263e63546
+size 260

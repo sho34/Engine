@@ -6,8 +6,11 @@
 #include "../Scene/Renderable/Renderable.h"
 #include "../../Renderer/VertexFormats.h"
 #include "../../Animation/Animated.h"
+#include <Application.h>
+#include <NoStd.h>
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
+#include <Editor.h>
 namespace Editor {
 	extern _Templates tempTab;
 	extern std::string selTemp;
@@ -15,41 +18,56 @@ namespace Editor {
 #endif
 
 using namespace Animation;
-using namespace Templates::Model3D;
-
 using namespace DeviceUtils;
 
 namespace Templates
 {
-	static std::map<std::string, nlohmann::json> model3DTemplates;
-	static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker; //? -> model3dInstance
-#if defined(_EDITOR)
-	std::map<std::string, std::vector<std::shared_ptr<Scene::Renderable>>> renderableInstances;
+	std::map<std::string, Model3DTemplate> model3ds;
 
+#if defined(_EDITOR)
 	enum Model3DPopupModal
 	{
 		Model3DPopupModal_CannotDelete = 1,
 	};
+#endif
 
 	namespace Model3D
 	{
+#if defined(_EDITOR)
 		unsigned int popupModalId = 0U;
-	};
 #endif
+		static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker; //uuid -> model3dInstance
+	};
+
 
 	//CREATE
-	void CreateModel3D(std::string name, nlohmann::json json)
+	void CreateModel3D(nlohmann::json json)
 	{
-		if (model3DTemplates.contains(name)) return;
-		model3DTemplates.insert_or_assign(name, json);
+		std::string uuid = json.at("uuid");
+
+		if (model3ds.contains("uuid"))
+		{
+			assert(!!!"model3d creation collision");
+		}
+		Model3DTemplate t;
+
+		std::string& name = std::get<0>(t);
+		name = json.at("name");
+
+		nlohmann::json& data = std::get<1>(t);
+		data = json;
+		data.erase("name");
+		data.erase("uuid");
+
+		model3ds.insert_or_assign(uuid, t);
 	}
 
-	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string name, nlohmann::json shaderAttributes)
+	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string uuid, nlohmann::json shaderAttributes)
 	{
-		model->name = name;
+		model->uuid = uuid;
 		model->shaderAttributes = shaderAttributes;
 
-		nlohmann::json mdl = model3DTemplates.at(name);
+		nlohmann::json mdl = std::get<1>(model3ds.at(uuid));
 
 		std::string filename = default3DModelsFolder + std::string(mdl.at("path"));
 
@@ -93,24 +111,29 @@ namespace Templates
 			}
 
 			unsigned int indicesCount = aMesh->mNumFaces * aMesh->mFaces[0].mNumIndices;
-			std::shared_ptr<MeshInstance> mesh = GetMeshInstance(GetModel3DMeshInstanceName(name, meshIndex), model->vertexClass, vertexData.data(), static_cast<unsigned int>(vertexSize), aMesh->mNumVertices, indicesData.data(), indicesCount);
+			std::shared_ptr<MeshInstance> mesh = GetMeshInstance(GetModel3DMeshInstanceUUID(uuid, meshIndex), model->vertexClass, vertexData.data(), static_cast<unsigned int>(vertexSize), aMesh->mNumVertices, indicesData.data(), indicesCount);
 
 			CreateBoundingBox(mesh->boundingBox, aMesh);
 
 			model->meshes.push_back(mesh);
 
-			std::string materialName;
-
+			std::string materialUUID = "";
 			if (mdl.at("autoCreateMaterial"))
 			{
-				materialName = GetModel3DMaterialInstanceName(name, meshIndex);
-				nlohmann::json materialTemplate = GetMaterialTemplate(materialName);
+				materialUUID = GetModel3DMaterialInstanceUUID(uuid, meshIndex);
+				nlohmann::json materialTemplate = GetMaterialTemplate(materialUUID);
 
 				if (materialTemplate.empty())
 				{
 #if defined(_DEVELOPMENT)
-					nlohmann::json materialJson = CreateModel3DMaterialJson(mdl.at("materialsShader"), path.relative_path(), aiModel->mMaterials[aMesh->mMaterialIndex]);
-					CreateMaterial(materialName, materialJson);
+					nlohmann::json materialJson = CreateModel3DMaterialJson(
+						materialUUID,
+						GetModel3DMaterialInstanceName(std::get<0>(model3ds.at(uuid)), meshIndex),
+						mdl.at("shader"),
+						path.relative_path(),
+						aiModel->mMaterials[aMesh->mMaterialIndex]
+					);
+					CreateMaterial(materialJson);
 #else
 					assert(!!!"Non development will never create a material");
 #endif
@@ -118,15 +141,15 @@ namespace Templates
 			}
 			else
 			{
-				materialName = mdl.at("materials").at(meshIndex);
-
+				materialUUID = mdl.at("materials").at(meshIndex);
 			}
-			model->materialNames.push_back(materialName);
+
+			model->materialUUIDs.push_back(materialUUID);
 		}
 
 		importer.FreeScene();
 
-		for (unsigned int i = 0; i < model->materialNames.size(); i++)
+		for (unsigned int i = 0; i < model->materialUUIDs.size(); i++)
 		{
 			std::shared_ptr<MaterialInstance> materialInstance = model->GetModel3DMaterialInstance(i);
 			model->materials.push_back(materialInstance);
@@ -204,10 +227,12 @@ namespace Templates
 
 	};
 
-	nlohmann::json CreateModel3DMaterialJson(std::string shader, std::filesystem::path relativePath, aiMaterial* material)
+	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string shader, std::filesystem::path relativePath, aiMaterial* material)
 	{
 		nlohmann::json matJson = { {"pipelineState",{}} };
 
+		matJson["uuid"] = materialUUID;
+		matJson["name"] = materialName;
 		matJson["shader"] = shader;
 
 		bool twoSided;
@@ -279,30 +304,51 @@ namespace Templates
 		boundingBox = BoundingBox(center, extents);
 	}
 
-	//READ&GET
-	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string name, nlohmann::json shaderAttributes)
+	Model3DTemplate GetModel3DTemplate(std::string uuid)
 	{
-		if (!model3DTemplates.contains(name)) return nullptr;
+		return model3ds.at(uuid);
+	}
 
-		return refTracker.AddRef(name, [name, shaderAttributes]()
+	//READ&GET
+	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string uuid, nlohmann::json shaderAttributes)
+	{
+		if (!model3ds.contains(uuid)) return nullptr;
+
+		using namespace Model3D;
+		return refTracker.AddRef(uuid, [uuid, shaderAttributes]()
 			{
 				std::shared_ptr<Model3DInstance> instance = std::make_shared<Model3DInstance>();
-				LoadModel3DInstance(instance, name, shaderAttributes);
+				LoadModel3DInstance(instance, uuid, shaderAttributes);
 				return instance;
 			}
 		);
 	}
 
 	std::vector<std::string> GetModels3DNames() {
-		return nostd::GetKeysFromMap(model3DTemplates);
+		return GetNames(model3ds);
 	}
 
-	std::string GetModel3DMeshInstanceName(std::string name, unsigned int index) {
-		return "mesh." + name + "." + std::to_string(index);
+	std::string GetModel3DName(std::string uuid)
+	{
+		return std::get<0>(model3ds.at(uuid));
 	}
 
-	std::string GetModel3DMaterialInstanceName(std::string name, unsigned int index) {
-		return "mat." + name + "." + std::to_string(index);
+	std::vector<UUIDName> GetModels3DUUIDsNames()
+	{
+		return GetUUIDsNames(model3ds);
+	}
+
+	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index) {
+		return "mesh-" + uuid + "-" + std::to_string(index);
+	}
+
+	std::string GetModel3DMaterialInstanceUUID(std::string uuid, unsigned int index) {
+		return "mat-" + uuid + "-" + std::to_string(index);
+	}
+
+	std::string GetModel3DMaterialInstanceName(std::string model3dName, unsigned int index)
+	{
+		return "mat-" + model3dName + "-" + std::to_string(index);
 	}
 
 	//UPDATE
@@ -311,25 +357,30 @@ namespace Templates
 #if defined(_EDITOR)
 	void Model3D::ReleaseRenderablesInstances()
 	{
-		renderableInstances.clear();
+		for (auto& [uuid, tuple] : model3ds)
+		{
+			auto& instances = std::get<2>(tuple);
+			instances.clear();
+		}
 	}
 #endif
 
 	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D)
 	{
-		std::string modelName = model3D->name;
-		std::vector<std::string> matNames = model3D->materialNames; //666 <- avoid like cancer please
+		std::string uuid = model3D->uuid;
 
-		refTracker.RemoveRef(model3D->name, model3D);
-		if (!refTracker.Has(modelName) && model3DTemplates.contains(modelName))
+		using namespace Model3D;
+		std::vector<std::string> materialUUIDs = model3D->materialUUIDs;
+		refTracker.RemoveRef(uuid, model3D);
+		if (!refTracker.Has(uuid) && model3ds.contains(uuid))
 		{
-			nlohmann::json& mdl = model3DTemplates.at(modelName);
+			nlohmann::json& mdl = std::get<1>(model3ds.at(uuid));
 
 			if (mdl.at("autoCreateMaterial"))
 			{
-				for (auto& matNames : matNames)
+				for (auto& matUUID : materialUUIDs)
 				{
-					DestroyMaterial(matNames);
+					DestroyMaterial(matUUID);
 				}
 			}
 		}
@@ -338,19 +389,21 @@ namespace Templates
 	//EDITOR
 	void ReleaseModel3DTemplates()
 	{
+		using namespace Model3D;
 		refTracker.Clear();
-		model3DTemplates.clear();
+		model3ds.clear();
 	}
 
 #if defined(_EDITOR)
-	void BindNotifications(std::string model, std::shared_ptr<Scene::Renderable> renderable)
+	void BindNotifications(std::string uuid, std::shared_ptr<Scene::Renderable> renderable)
 	{
-		renderableInstances[model].push_back(renderable);
+		auto& instances = std::get<2>(model3ds.at(uuid));
+		instances.push_back(renderable);
 	}
 
-	void UnbindNotifications(std::string model, std::shared_ptr<Scene::Renderable> renderable)
+	void UnbindNotifications(std::string uuid, std::shared_ptr<Scene::Renderable> renderable)
 	{
-		auto& instances = renderableInstances.at(model);
+		auto& instances = std::get<2>(model3ds.at(uuid));
 		for (auto it = instances.begin(); it != instances.end(); )
 		{
 			if (*it = renderable)
@@ -364,55 +417,30 @@ namespace Templates
 		}
 	}
 
-	void ReloadModel3DInstances(std::string model)
+	void ReloadModel3DInstances(std::string uuid)
 	{
-		auto& instances = renderableInstances.at(model);
+		auto& instances = std::get<2>(model3ds.at(uuid));
 		for (auto& it : instances)
 		{
 			it->ReloadModel3D();
 		}
 	}
 
-	void RenameModel3D(std::string& from, std::string to)
-	{
-		if (model3DTemplates.contains(to) || to == "") return;
-
-		nostd::RenameKey(model3DTemplates, from, to);
-		refTracker.instances[to] = refTracker.instances[from];
-		refTracker.instances.erase(from);
-		for (auto& [instance, _] : refTracker.instancesRefCount)
-		{
-			if (instance->name == from)
-			{
-				instance->name = to;
-			}
-		}
-
-		nostd::RenameKey(renderableInstances, from, to);
-		for (auto& renderable : renderableInstances.at(to))
-		{
-			renderable->json.at("model") = to;
-		}
-
-		Editor::selTemp = to;
-		from = to;
-	}
-
-	void DrawModel3DPanel(std::string& model, ImVec2 pos, ImVec2 size, bool pop)
+	void DrawModel3DPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
 	{
 		std::string tableName = "model3d-panel";
 		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
 		{
-			Model3D::DrawEditorInformationAttributes(model);
-			Model3D::DrawEditorAssetAttributes(model);
-			Model3D::DrawEditorMaterialAttributes(model);
+			Model3D::DrawEditorInformationAttributes(uuid);
+			Model3D::DrawEditorAssetAttributes(uuid);
+			Model3D::DrawEditorMaterialAttributes(uuid);
 			ImGui::EndTable();
 		}
 	}
 
-	void Model3D::DrawEditorInformationAttributes(std::string& model3d)
+	void Model3D::DrawEditorInformationAttributes(std::string uuid)
 	{
-		nlohmann::json& json = model3DTemplates.at(model3d);
+		nlohmann::json& json = std::get<1>(model3ds.at(uuid));
 
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
@@ -421,18 +449,15 @@ namespace Templates
 		{
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
-			std::string currentName = model3d;
-			if (ImGui::InputText("name", &currentName))
-			{
-				RenameModel3D(model3d, currentName);
-			}
+			std::string& currentName = std::get<0>(model3ds.at(uuid));
+			ImGui::InputText("name", &currentName);
 			ImGui::EndTable();
 		}
 	}
 
-	void Model3D::DrawEditorAssetAttributes(std::string model3d)
+	void Model3D::DrawEditorAssetAttributes(std::string uuid)
 	{
-		nlohmann::json& json = model3DTemplates.at(model3d);
+		nlohmann::json& json = std::get<1>(model3ds.at(uuid));
 
 		std::string parentFolder = default3DModelsFolder;
 		std::string fileName = "";
@@ -445,12 +470,12 @@ namespace Templates
 
 		ImGui::PushID("File-Selector");
 		{
-			ImDrawFileSelector("##", fileName, [&json, model3d](std::filesystem::path path)
+			ImDrawFileSelector("##", fileName, [&json, uuid](std::filesystem::path path)
 				{
 					std::filesystem::path curPath = std::filesystem::current_path().append(default3DModelsFolder);
 					std::filesystem::path relPath = std::filesystem::relative(path, curPath);
 					json.at("path") = relPath.string();
-					ReloadModel3DInstances(model3d);
+					ReloadModel3DInstances(uuid);
 				},
 				parentFolder, "3d model files. (*.gltf)", "*.gltf"
 			);
@@ -458,9 +483,9 @@ namespace Templates
 		ImGui::PopID();
 	}
 
-	void Model3D::DrawEditorMaterialAttributes(std::string model3d)
+	void Model3D::DrawEditorMaterialAttributes(std::string uuid)
 	{
-		nlohmann::json& json = model3DTemplates.at(model3d);
+		nlohmann::json& json = std::get<1>(model3ds.at(uuid));
 
 		ImGui::PushID("Auto-Create-Material");
 		{
@@ -468,31 +493,28 @@ namespace Templates
 		}
 		ImGui::PopID();
 
-		std::string currentShader = json.at("materialsShader");
-		std::vector<std::string> selectables = { " " };
-		std::vector<std::string> shaders = GetShadersNames();
-		nostd::AppendToVector(selectables, shaders);
+		std::string shaderUUID = json.at("shader");
+		std::vector<UUIDName> shadersUUIDNames = GetShadersUUIDsNames();
+		std::vector<UUIDName> selectables = { std::tie(" "," ") };
+		UUIDName currentShader = std::make_tuple(shaderUUID, GetShaderName(shaderUUID));
+
+		nostd::AppendToVector(selectables, shadersUUIDNames);
 		ImGui::PushID("Select-Shader");
 		{
-			DrawComboSelection(currentShader, selectables, [&json, model3d](std::string newShader)
+			DrawComboSelection(currentShader, selectables, [&json, uuid](UUIDName newShader)
 				{
-					json.at("materialsShader") = newShader;
-					ReloadModel3DInstances(model3d);
+					json.at("shader") = std::get<0>(newShader);
+					ReloadModel3DInstances(uuid);
 				}, "Shader"
 			);
 		}
 		ImGui::PopID();
 	}
 
-	std::string GetModel3DInstanceTemplateName(std::shared_ptr<Model3DInstance> model3D)
+	void DeleteModel3D(std::string uuid)
 	{
-		return nostd::GetKeyFromValueInMap(refTracker.instances, model3D);
-	}
-
-	void DeleteModel3D(std::string name)
-	{
-		nlohmann::json model3D = model3DTemplates.at(name);
-		if (model3D.contains("systemCreated") && model3D.at("systemCreated") == true)
+		nlohmann::json json = std::get<1>(model3ds.at(uuid));
+		if (json.contains("systemCreated") && json.at("systemCreated") == true)
 		{
 			Model3D::popupModalId = Model3DPopupModal_CannotDelete;
 		}
@@ -507,23 +529,6 @@ namespace Templates
 		);
 	}
 
-	/*
-	nlohmann::json json()
-	{
-		nlohmann::json models = nlohmann::json({});
-
-		for (auto& [name, model] : model3DTemplates) {
-
-			models[name] = {
-				{ "autoCreateMaterial", model->model3dDefinition.autoCreateMaterial },
-				{ "materialsShader", model->model3dDefinition.materialsShader },
-				{ "assetPath", model->assetPath }
-			};
-		}
-
-		return models;
-	}
-	*/
 #endif
 
 	BoundingBox Model3DInstance::GetAnimatedBoundingBox(XMMATRIX* bones)
@@ -567,6 +572,6 @@ namespace Templates
 
 	std::shared_ptr<MaterialInstance> Model3DInstance::GetModel3DMaterialInstance(unsigned int meshIndex)
 	{
-		return GetMaterialInstance(materialNames[meshIndex], std::map<TextureType, MaterialTexture>(), meshes[meshIndex], shaderAttributes);
+		return GetMaterialInstance(materialUUIDs[meshIndex], std::map<TextureType, MaterialTexture>(), meshes[meshIndex], shaderAttributes);
 	}
 }

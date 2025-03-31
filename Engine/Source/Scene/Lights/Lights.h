@@ -124,6 +124,9 @@ namespace Scene {
 		std::shared_ptr<Light> this_ptr = nullptr; //dumb but efective
 		nlohmann::json json;
 
+		std::string uuid();
+		void uuid(std::string uuid);
+
 		std::string name();
 		void name(std::string name);
 
@@ -153,6 +156,8 @@ namespace Scene {
 
 		bool hasShadowMaps();
 		void hasShadowMaps(bool hasShadowMaps);
+
+		bool hidden() { return false; }
 
 		//the following ones are calculated, so no need to store in json
 		D3D12_RECT shadowMapClearScissorRect; //used in point lights
@@ -227,11 +232,12 @@ namespace Scene {
 
 	//READ&GET
 	std::vector<std::shared_ptr<Light>> GetLights();
-	std::shared_ptr<Light> GetLight(std::string lightName);
+	std::shared_ptr<Light> GetLight(std::string uuid);
 	std::vector<std::string> GetLightsNames();
+	std::vector<UUIDName> GetLightsUUIDNames();
 	std::shared_ptr<ConstantsBuffer> GetLightsConstantsBuffer();
 #if defined(_EDITOR)
-	std::string GetLightName(void* ptr);
+	std::string GetLightName(std::string uuid);
 #endif
 
 	//UPDATE
@@ -245,10 +251,10 @@ namespace Scene {
 
 	//EDITOR
 #if defined(_EDITOR)
-	void SelectLight(std::string lightName, void*& ptr);
-	void DeSelectLight(void*& ptr);
-	void DrawLightPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
-	void DeleteLight(std::string name);
+	void SelectLight(std::string uuid, std::string& edSO);
+	void DeSelectLight(std::string& edSO);
+	void DrawLightPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	void DeleteLight(std::string uuid);
 	void DrawLightsPopups();
 #endif
 };

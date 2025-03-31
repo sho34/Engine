@@ -3,6 +3,11 @@
 #include "Projections/Perspective.h"
 #include "Projections/Orthographic.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
+#include <Keyboard.h>
+#include <SimpleMath.h>
+#include <Mouse.h>
+#include <GamePad.h>
+#include <map>
 
 namespace Scene {
 
@@ -55,6 +60,10 @@ namespace Scene {
 		~Camera() {
 			Destroy();
 		}
+
+		std::string uuid();
+		void uuid(std::string uuid);
+
 		std::string name();
 		void name(std::string name);
 
@@ -80,6 +89,8 @@ namespace Scene {
 		XMFLOAT3 rotation();
 		void rotation(XMFLOAT3 f3);
 		void rotation(nlohmann::json f3);
+
+		bool hidden() { return false; }
 
 		std::shared_ptr<Scene::Light> light = nullptr;
 		std::shared_ptr<ConstantsBuffer> cameraCbv;
@@ -118,12 +129,13 @@ namespace Scene {
 	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraj);
 	std::vector<std::shared_ptr<Camera>> GetCameras();
 	std::vector<std::string> GetCamerasNames();
+	std::vector<UUIDName> GetCamerasUUIDNames();
 #if defined(_EDITOR)
-	void SelectCamera(std::string cameraName, void*& ptr);
-	void DeSelectCamera(void*& ptr);
-	void DrawCameraPanel(void*& ptr, ImVec2 pos, ImVec2 size, bool pop);
-	std::string GetCameraName(void* ptr);
-	void DeleteCamera(std::string name);
+	void SelectCamera(std::string uuid, std::string& edSO);
+	void DeSelectCamera(std::string& edSO);
+	void DrawCameraPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	std::string GetCameraName(std::string uuid);
+	void DeleteCamera(std::string uuid);
 	void DrawCamerasPopups();
 #endif
 	void CamerasStep();
@@ -132,6 +144,7 @@ namespace Scene {
 
 	size_t GetNumCameras();
 	std::shared_ptr<Camera> GetCamera(unsigned int index);
-	std::shared_ptr<Camera> GetCamera(std::string name);
+	std::shared_ptr<Camera> GetCamera(std::string uuid);
+	std::shared_ptr<Camera> GetCameraByName(std::string name);
 
 };

@@ -3,6 +3,12 @@
 #include "../../Renderer/VertexFormats.h"
 #include "../../Renderer/DeviceUtils/VertexBuffer/VertexBuffer.h"
 #include "../../Renderer/DeviceUtils/IndexBuffer/IndexBuffer.h"
+#include <DirectXCollision.h>
+#include <Application.h>
+
+typedef std::tuple<
+	std::string //name
+> MeshTemplate;
 
 namespace Templates {
 
@@ -10,7 +16,7 @@ namespace Templates {
 
 	struct MeshInstance
 	{
-		std::string name;
+		std::string uuid;
 		VertexClass vertexClass;
 		VertexBufferViewData vbvData;
 		IndexBufferViewData	ibvData;
@@ -18,13 +24,14 @@ namespace Templates {
 	};
 
 	//CREATE
-	void CreatePrimitiveMeshTemplate(const std::string name);
-	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string name);
-	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string name, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount);
+	void CreatePrimitiveMeshTemplate(const std::string uuid, const std::string name);
+	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string uuid);
+	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string uuid, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount);
 
 	//READ&GET
-	//std::shared_ptr<Mesh> GetMeshTemplate(std::string meshName);
-	std::vector<std::string> GetMeshesNames();
+	std::string GetMeshName(std::string uuid);
+	std::vector<UUIDName> GetMeshesUUIDsNames();
+	std::string FindMeshUUIDByName(std::string name);
 
 	//UPDATE
 
@@ -34,13 +41,7 @@ namespace Templates {
 
 	//EDITOR
 #if defined(_EDITOR)
-	/*
-	void SelectMesh(std::string meshName, void*& ptr);
-	*/
 	void DrawMeshPanel(std::string& mesh, ImVec2 pos, ImVec2 size, bool pop);
-	/*
-	std::string GetMeshName(void* ptr);
-	*/
 #endif
 
 };
