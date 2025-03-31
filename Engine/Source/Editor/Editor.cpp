@@ -364,7 +364,21 @@ namespace Editor {
 			{
 				for (auto& [type, name] : TabToStr) {
 					ImGuiTabItemFlags_ flag = (tab == type) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
-					if (ImGui::TabItemButton(name.c_str(), flag)) { tab = type; }
+					if (flag == ImGuiTabItemFlags_SetSelected)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.230, 0.230, 0.230, 1));
+						ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.230, 0.230, 0.230, 1));
+					}
+					if (ImGui::TabItemButton(name.c_str(), flag))
+					{
+						tab = type;
+					}
+					if (flag == ImGuiTabItemFlags_SetSelected)
+					{
+						ImGui::PopStyleColor();
+						ImGui::PopStyleColor();
+					}
+
 				}
 				DrawListPanel((TabToStr.at(tab) + "-table").c_str(), GetTabList.at(tab),
 					[tab, &selected, OnSelect](std::string name)

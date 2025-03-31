@@ -512,7 +512,7 @@ namespace Templates {
 
 	void DrawShadersPopups()
 	{
-		Editor::DrawOkPopup(Shader::popupModalId, ShaderPopupModal_CannotDelete, "CannotDeleteShaderPopup", []
+		Editor::DrawOkPopup(Shader::popupModalId, ShaderPopupModal_CannotDelete, "Cannot delete shader", []
 			{
 				ImGui::Text("Cannot delete a system created shader");
 			}

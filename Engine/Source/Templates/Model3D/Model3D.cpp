@@ -522,7 +522,7 @@ namespace Templates
 
 	void DrawModels3DsPopups()
 	{
-		Editor::DrawOkPopup(Model3D::popupModalId, Model3DPopupModal_CannotDelete, "CannotDeleteModel3DPopup", []
+		Editor::DrawOkPopup(Model3D::popupModalId, Model3DPopupModal_CannotDelete, "Cannot delete model3d", []
 			{
 				ImGui::Text("Cannot delete a system created model 3D");
 			}

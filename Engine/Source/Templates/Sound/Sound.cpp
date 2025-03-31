@@ -238,7 +238,7 @@ namespace Templates
 
 	void DrawSoundsPopups()
 	{
-		Editor::DrawOkPopup(Sound::popupModalId, SoundPopupModal_CannotDelete, "CannotDeleteSoundPopup", []
+		Editor::DrawOkPopup(Sound::popupModalId, SoundPopupModal_CannotDelete, "Cannot delete sound", []
 			{
 				ImGui::Text("Cannot delete a system created sound");
 			}

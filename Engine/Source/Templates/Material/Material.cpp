@@ -425,23 +425,23 @@ namespace Templates {
 
 		std::string shader = mat.at("shader");
 
-		auto uuidsNames = GetShadersUUIDsNames();
+		std::vector<UUIDName> shadersUUIDNames = GetShadersUUIDsNames();
 		std::vector<std::string> selectables;
-		std::transform(uuidsNames.begin(), uuidsNames.end(), std::back_inserter(selectables), [](auto& tuple)
+		std::transform(shadersUUIDNames.begin(), shadersUUIDNames.end(), std::back_inserter(selectables), [](auto& tuple)
 			{
 				return std::get<1>(tuple);
 			}
 		);
 
 		std::map<std::string, std::string> namesToUUIDs;
-		std::transform(uuidsNames.begin(), uuidsNames.end(), std::inserter(namesToUUIDs, namesToUUIDs.end()), [](auto& tuple)
+		std::transform(shadersUUIDNames.begin(), shadersUUIDNames.end(), std::inserter(namesToUUIDs, namesToUUIDs.end()), [](auto& tuple)
 			{
 				return std::pair<std::string, std::string>(std::get<1>(tuple), std::get<0>(tuple));
 			}
 		);
 
 		std::map<std::string, std::string> uuidsToNames;
-		std::transform(uuidsNames.begin(), uuidsNames.end(), std::inserter(uuidsToNames, uuidsToNames.end()), [](auto& tuple)
+		std::transform(shadersUUIDNames.begin(), shadersUUIDNames.end(), std::inserter(uuidsToNames, uuidsToNames.end()), [](auto& tuple)
 			{
 				return std::pair<std::string, std::string>(std::get<0>(tuple), std::get<1>(tuple));
 			}
@@ -520,7 +520,7 @@ namespace Templates {
 
 	void DrawMaterialsPopups()
 	{
-		Editor::DrawOkPopup(Material::popupModalId, MaterialPopupModal_CannotDelete, "CannotDeleteMaterialPopup", []
+		Editor::DrawOkPopup(Material::popupModalId, MaterialPopupModal_CannotDelete, "Cannot delete material", []
 			{
 				ImGui::Text("Cannot delete a system created material");
 			}
