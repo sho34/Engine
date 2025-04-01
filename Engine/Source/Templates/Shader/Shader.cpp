@@ -14,13 +14,6 @@ namespace Templates {
 	//uuid to ShaderTemplates
 	std::map<std::string, ShaderTemplate> shaders;
 
-#if defined(_EDITOR)
-	enum ShaderPopupModal
-	{
-		ShaderPopupModal_CannotDelete = 1,
-	};
-#endif
-
 	namespace Shader
 	{
 #if defined(_EDITOR)
@@ -495,6 +488,10 @@ namespace Templates {
 		{
 			DetachShader(materialUUID);
 		}
+	}
+
+	void CreateNewShader()
+	{
 	}
 
 	void DeleteShader(std::string uuid)

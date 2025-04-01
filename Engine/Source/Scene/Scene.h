@@ -103,6 +103,14 @@ static const std::map<_SceneObjects, std::function<std::string(std::string)>> Ge
 	{ SO_SoundEffects, GetSoundEffectName }
 };
 
+static const std::map<_SceneObjects, std::function<void()>> CreateSceneObject =
+{
+	{ SO_Renderables, CreateNewRenderable },
+	{ SO_Lights, CreateNewLight },
+	{ SO_Cameras, CreateNewCamera },
+	{ SO_SoundEffects, CreateNewSoundEffect }
+};
+
 static const std::map<_SceneObjects, std::function<void(std::string)>> DeleteSceneObject =
 {
 	{ SO_Renderables, DeleteRenderable },

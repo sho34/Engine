@@ -32,13 +32,6 @@ namespace Templates {
 	//Material+Mesh = MaterialInstance
 	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
 
-#if defined(_EDITOR)
-	enum MaterialPopupModal
-	{
-		MaterialPopupModal_CannotDelete = 1,
-	};
-#endif
-
 	namespace Material
 	{
 #if defined(_EDITOR)
@@ -506,6 +499,10 @@ namespace Templates {
 				}
 			}
 		}
+	}
+
+	void CreateNewMaterial()
+	{
 	}
 
 	void DeleteMaterial(std::string uuid)

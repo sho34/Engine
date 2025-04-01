@@ -16,17 +16,26 @@
 namespace Templates { struct MeshInstance; }
 namespace Scene { struct Renderable; }
 
-namespace Templates {
-	using namespace Scene;
+using namespace Scene;
 
-	typedef std::tuple<
-		std::string, //name
-		nlohmann::json //data
+typedef std::tuple<
+	std::string, //name
+	nlohmann::json //data
 #if defined(_EDITOR)
-		,
-		std::vector<std::tuple<std::shared_ptr<Renderable>, unsigned int>>
+	,
+	std::vector<std::tuple<std::shared_ptr<Renderable>, unsigned int>>
 #endif
-	> MaterialTemplate;
+> MaterialTemplate;
+
+namespace Templates {
+
+#if defined(_EDITOR)
+	enum MaterialPopupModal
+	{
+		MaterialPopupModal_CannotDelete = 1,
+		MaterialPopupModal_CreateNew = 2
+	};
+#endif
 
 	namespace Material
 	{
@@ -90,6 +99,7 @@ namespace Templates {
 	//EDITOR
 #if defined(_EDITOR)
 	void DrawMaterialPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	void CreateNewMaterial();
 	void DeleteMaterial(std::string uuid);
 	void DrawMaterialsPopups();
 	void DetachShader(std::string uuid);

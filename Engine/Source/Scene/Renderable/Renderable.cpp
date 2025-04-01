@@ -21,6 +21,7 @@
 #include "../Level.h"
 #include "../../Effects/Effects.h"
 #include <imgui.h>
+#include "../../Editor/Editor.h"
 #endif
 #include "../../Templates/Templates.h"
 #include <Application.h>
@@ -41,12 +42,25 @@ namespace Scene {
 	std::map<std::string, std::shared_ptr<Renderable>> renderables;
 	std::map<std::string, std::shared_ptr<Renderable>> animables;
 
-	void Renderable::TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes)
+#if defined(_EDITOR)
+	nlohmann::json Renderable::createNewRenderableJson;
+	unsigned int Renderable::popupModalId = 0U;
+#endif
+
+	void Renderable::TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes, std::map<TextureType, MaterialTexture> baseTextures)
 	{
-		std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [shaderAttributes](const nlohmann::json& value)
+		std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [shaderAttributes, baseTextures](const nlohmann::json& value)
 			{
 				std::map<TextureType, MaterialTexture> textures;
-				TransformJsonToMaterialTextures(textures, value, "textures");
+				TransformJsonToMaterialTextures(textures, GetMaterialTemplate(value["material"]), "textures");
+
+				for (auto& [type, base] : baseTextures)
+				{
+					if (!textures.contains(type))
+					{
+						textures.insert_or_assign(type, base);
+					}
+				}
 
 				std::shared_ptr<MeshInstance> mesh = GetMeshInstance(value["mesh"]);
 				std::shared_ptr<MaterialInstance> material = GetMaterialInstance(value["material"], textures, mesh, shaderAttributes);
@@ -166,7 +180,14 @@ namespace Scene {
 			renderable->TransformJsonToMeshMaterialMap(renderable->meshMaterials, renderablej["meshMaterials"], renderable->json);
 			renderable->meshes.push_back(renderable->meshMaterials.begin()->first);
 
-			renderable->TransformJsonToMeshMaterialMap(renderable->meshShadowMapMaterials, renderablej["meshMaterialsShadowMap"], defaultShadowMapShaderAttributes);
+			std::map<TextureType, MaterialTexture> baseTextures;
+			std::shared_ptr<MaterialInstance> matInstance = renderable->meshMaterials.begin()->second;
+			for (auto it = matInstance->textures.begin(); it != matInstance->textures.end(); it++)
+			{
+				baseTextures.insert_or_assign(it->first, it->second->materialTexture);
+			}
+
+			renderable->TransformJsonToMeshMaterialMap(renderable->meshShadowMapMaterials, renderablej["meshMaterialsShadowMap"], defaultShadowMapShaderAttributes, baseTextures);
 			if (renderable->meshShadowMapMaterials.size() > 0)
 			{
 				renderable->meshesShadowMap.push_back(renderable->meshShadowMapMaterials.begin()->first);
@@ -1179,6 +1200,19 @@ namespace Scene {
 		return renderables.at(uuid)->json.at("name");
 	}
 
+	void CreateNewRenderable()
+	{
+		Renderable::popupModalId = RenderablePopupModal_CreateNew;
+
+		Renderable::createNewRenderableJson = R"(
+		{
+			"name" : "",
+			"model": "",
+			"material":""
+		})"_json;
+
+	}
+
 	void DeleteRenderable(std::string uuid)
 	{
 		renderables.at(uuid)->renderableUpdateFlags |= RenderableFlags_Destroy;
@@ -1186,6 +1220,140 @@ namespace Scene {
 
 	void DrawRenderablesPopups()
 	{
+		Editor::DrawCreateWindow(Renderable::popupModalId, RenderablePopupModal_CreateNew, "New Renderable", [](auto OnCancel)
+			{
+				ImGui::PushID("renderable-name");
+				{
+					ImGui::Text("Name");
+					if (ImGui::InputText("##", Renderable::createNewRenderableJson.at("name").get_ptr<std::string*>()))
+					{
+						nostd::trim(Renderable::createNewRenderableJson.at("name").get_ref<std::string&>());
+					}
+				}
+				ImGui::PopID();
+
+				std::vector<UUIDName> modelsUUIDNames = GetModels3DUUIDsNames();
+				std::vector<UUIDName> meshesUUIDNames = GetMeshesUUIDsNames();
+				std::vector<UUIDName> selectables = { std::tie("", " ") };
+				nostd::AppendToVector(selectables, modelsUUIDNames);
+				nostd::AppendToVector(selectables, meshesUUIDNames);
+
+				int current_item = static_cast<int>(std::find_if(selectables.begin(), selectables.end(), [](UUIDName uuidName)
+					{
+						return Renderable::createNewRenderableJson.at("model") == std::get<0>(uuidName);
+					}
+				) - selectables.begin());
+
+				ImGui::PushID("renderable-mesh-model-selector");
+				{
+					ImGui::Text("Select model/mesh");
+
+					DrawComboSelection(selectables[current_item], selectables, [](UUIDName uuidName)
+						{
+							Renderable::createNewRenderableJson.at("model") = std::get<0>(uuidName);
+						}, "model"
+					);
+				}
+				ImGui::PopID();
+
+				int current_material_item = 0;
+
+				if (std::find_if(meshesUUIDNames.begin(), meshesUUIDNames.end(), [selectables, current_item](UUIDName uuidName)
+					{
+						return std::get<0>(selectables[current_item]) == std::get<0>(uuidName);
+					}
+				) != meshesUUIDNames.end())
+				{
+					ImGui::PushID("renderable-material-selector");
+					{
+						ImGui::Text("Select material");
+
+						std::vector<UUIDName> selectablesMaterials = { std::tie("", " ") };
+						std::vector<UUIDName> materialsUUIDNames = GetMaterialsUUIDsNames();
+						nostd::AppendToVector(selectablesMaterials, materialsUUIDNames);
+
+						current_material_item = static_cast<int>(std::find_if(selectablesMaterials.begin(), selectablesMaterials.end(), [](UUIDName uuidName)
+							{
+								return Renderable::createNewRenderableJson.at("material") == std::get<0>(uuidName);
+							}
+						) - selectablesMaterials.begin());
+
+						DrawComboSelection(selectablesMaterials[current_material_item], selectablesMaterials, [materialsUUIDNames](UUIDName uuidName)
+							{
+								Renderable::createNewRenderableJson.at("material") = std::get<0>(uuidName);
+							}, "material"
+						);
+					}
+					ImGui::PopID();
+				}
+
+				bool isModel3D = !!(std::find_if(modelsUUIDNames.begin(), modelsUUIDNames.end(), [](UUIDName selected)
+					{
+						return std::get<0>(selected) == std::string(Renderable::createNewRenderableJson.at("model"));
+					}
+				) - modelsUUIDNames.end());
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+				bool disabledCreate = (current_item == 0 && Renderable::createNewRenderableJson.at("name") == "");
+				if (!isModel3D)
+				{
+					disabledCreate |= (current_material_item == 0);
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				if (ImGui::Button("Create"))
+				{
+					Renderable::popupModalId = 0;
+					if (isModel3D)
+					{
+						nlohmann::json r = {
+							{ "uuid", getUUID() },
+							{ "name", Renderable::createNewRenderableJson.at("name") },
+							{ "model", Renderable::createNewRenderableJson.at("model") }
+						};
+						OutputDebugStringA((r.dump() + "\n").c_str());
+						CreateRenderable(r);
+					}
+					else
+					{
+						nlohmann::json r = {
+							{ "uuid", getUUID() },
+							{ "name", Renderable::createNewRenderableJson.at("name") },
+							{ "meshMaterials",
+								{
+									{
+										{ "material", Renderable::createNewRenderableJson.at("material")},
+										{ "mesh", Renderable::createNewRenderableJson.at("model")}
+									}
+								}
+							},
+							{ "meshMaterialsShadowMap",
+								{
+									{
+										{ "material", FindMaterialUUIDByName("ShadowMap") },
+										{ "mesh", Renderable::createNewRenderableJson.at("model")}
+									}
+								}
+							}
+						};
+						OutputDebugStringA((r.dump() + "\n").c_str());
+						CreateRenderable(r);
+					}
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
+			}
+		);
 	}
 
 	void WriteRenderablesJson(nlohmann::json& json)

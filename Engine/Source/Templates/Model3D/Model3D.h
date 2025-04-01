@@ -22,6 +22,14 @@ typedef std::tuple<
 namespace Animation { struct Animated; };
 namespace Templates {
 
+#if defined(_EDITOR)
+	enum Model3DPopupModal
+	{
+		Model3DPopupModal_CannotDelete = 1,
+		Model3DPopupModal_CreateNew = 2
+	};
+#endif
+
 	namespace Model3D
 	{
 		inline static const std::string templateName = "model3d.json";
@@ -79,6 +87,7 @@ namespace Templates {
 	void BindNotifications(std::string uuid, std::shared_ptr<Scene::Renderable> renderable);
 	void UnbindNotifications(std::string uuid, std::shared_ptr<Scene::Renderable> renderable);
 	void DrawModel3DPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	void CreateNewModel3D();
 	void DeleteModel3D(std::string uuid);
 	void DrawModels3DsPopups();
 	void WriteModel3DsJson(nlohmann::json& json);

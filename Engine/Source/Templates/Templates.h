@@ -69,6 +69,14 @@ static const std::map<_Templates, std::function<std::string(std::string)>> GetTe
 	{ T_Sounds, GetSoundName }
 };
 
+static const std::map<_Templates, std::function<void()>> CreateTemplate =
+{
+	{ T_Materials, CreateNewMaterial },
+	{ T_Models3D, CreateNewModel3D },
+	{ T_Shaders, CreateNewShader },
+	{ T_Sounds, CreateNewSound }
+};
+
 static const std::map<_Templates, std::function<void(std::string)>> DeleteTemplate = {
 	{ T_Materials, DeleteMaterial },
 	{ T_Models3D, DeleteModel3D },

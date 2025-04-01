@@ -331,11 +331,11 @@ namespace Editor {
 		}
 	}
 
-	auto DrawListPanel(const char* tableName, auto GetObjects, auto OnSelect, auto OnDelete)
+	auto DrawListPanel(const char* tableName, auto GetObjects, auto OnSelect, auto OnCreate, auto OnDelete)
 	{
 		if (ImGui::SmallButton(ICON_FA_PLUS))
 		{
-
+			OnCreate();
 		}
 
 		if (ImGui::BeginTable(tableName, 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX))
@@ -351,6 +351,7 @@ namespace Editor {
 		std::map<T, std::function<std::vector<UUIDName>()>> GetTabList,
 		V& selected,
 		std::map<T, std::function<void(std::string, V&)>> OnSelect,
+		std::map<T, std::function<void()>> OnCreate,
 		std::function<void(std::string)> OnDelete
 	)
 	{
@@ -385,6 +386,7 @@ namespace Editor {
 					{
 						OnSelect.at(tab)(name, selected);
 					},
+					OnCreate.at(tab),
 					[OnDelete](std::string name)
 					{
 						OnDelete(name);
@@ -452,10 +454,10 @@ namespace Editor {
 					}
 				);
 
-				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO, SetSelectedSceneObjectProxy, [](std::string uuid)
-					{
-						DeleteSceneObject.at(soTab)(uuid);
-					}
+				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO,
+					SetSelectedSceneObjectProxy,
+					CreateSceneObject,
+					[](std::string uuid) { DeleteSceneObject.at(soTab)(uuid); }
 				);
 			}
 			else
@@ -478,10 +480,10 @@ namespace Editor {
 
 			if (selTemp.empty())
 			{
-				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp, SetSelectedTemplate, [](std::string uuid)
-					{
-						DeleteTemplate.at(tempTab)(uuid);
-					}
+				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp,
+					SetSelectedTemplate,
+					CreateTemplate,
+					[](std::string uuid) { DeleteTemplate.at(tempTab)(uuid); }
 				);
 			}
 			else
@@ -491,12 +493,10 @@ namespace Editor {
 		}
 		ImGui::End();
 
-		/*
-		if (selSO == nullptr)
+		if (selSO == "")
 		{
 			DrawSceneObjectsPopups.at(soTab)();
 		}
-		*/
 		if (selTemp == "")
 		{
 			DrawTemplatesPopups.at(tempTab)();
@@ -724,6 +724,20 @@ namespace Editor {
 			{
 				drawContent();
 				if (ImGui::Button("Ok")) { flag = 0U; }
+				ImGui::EndPopup();
+			}
+		}
+	}
+
+	void DrawCreateWindow(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void(std::function<void()>)> drawContent)
+	{
+		if (flag == cmpFlag)
+		{
+			ImGui::OpenPopup(popupId.c_str());
+			if (ImGui::BeginPopupModal(popupId.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+			{
+				drawContent([&flag] {flag = 0U; });
+				//if (ImGui::Button("Ok")) { flag = 0U; }
 				ImGui::EndPopup();
 			}
 		}

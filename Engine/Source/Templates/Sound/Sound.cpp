@@ -26,11 +26,6 @@ namespace Templates
 	std::map<std::string, SoundTemplate> sounds;
 #if defined(_EDITOR)
 
-	enum SoundPopupModal
-	{
-		SoundPopupModal_CannotDelete = 1,
-	};
-
 	namespace Sound
 	{
 		unsigned int popupModalId = 0U;
@@ -173,6 +168,10 @@ namespace Templates
 			Sound::DrawEditorAssetAttributes(uuid);
 			ImGui::EndTable();
 		}
+	}
+
+	void CreateNewSound()
+	{
 	}
 
 	void Sound::DrawEditorInformationAttributes(std::string uuid)

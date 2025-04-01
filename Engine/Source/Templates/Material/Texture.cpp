@@ -85,6 +85,7 @@ void DestroyMaterialTextureInstance(std::shared_ptr<MaterialTextureInstance>& te
 
 void MaterialTextureInstance::Load(MaterialTexture& texture)
 {
+	materialTexture = texture;
 	if (texture.numFrames == 0U)
 	{
 		CreateTextureResource(texture);

@@ -19,6 +19,12 @@ namespace Scene {
 	{
 		CameraFlags_Destroy = 0x1
 	};
+
+	enum Camera_PopupModal
+	{
+		CameraPopupModal_CannotDelete = 1,
+		CameraPopupModal_CreateNew = 2
+	};
 #endif
 
 	using namespace DeviceUtils;
@@ -76,6 +82,7 @@ namespace Scene {
 			CameraProjections::Orthographic orthographic;
 		};
 #if defined(_EDITOR)
+		static unsigned int popupModalId;
 		unsigned int cameraUpdateFlags = 0U;
 		CameraProjections::Perspective editorPerspective;
 		CameraProjections::Orthographic editorOrthographic;
@@ -116,7 +123,6 @@ namespace Scene {
 		void MoveRight(float step);
 
 #if defined(_EDITOR)
-		//nlohmann::json json();
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorCameraAttributes();
@@ -135,6 +141,7 @@ namespace Scene {
 	void DeSelectCamera(std::string& edSO);
 	void DrawCameraPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetCameraName(std::string uuid);
+	void CreateNewCamera();
 	void DeleteCamera(std::string uuid);
 	void DrawCamerasPopups();
 	void WriteCamerasJson(nlohmann::json& json);

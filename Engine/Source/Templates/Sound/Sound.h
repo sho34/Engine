@@ -19,6 +19,14 @@ typedef std::tuple<
 
 namespace Templates {
 
+#if defined(_EDITOR)
+	enum SoundPopupModal
+	{
+		SoundPopupModal_CannotDelete = 1,
+		SoundPopupModal_CreateNew = 2
+	};
+#endif
+
 	namespace Sound
 	{
 		inline static const std::string templateName = "audio.json";
@@ -48,6 +56,7 @@ namespace Templates {
 	void BindNotifications(std::string uuid, std::shared_ptr<Scene::SoundEffect> soundEffect);
 	void UnbindNotifications(std::string uuid, std::shared_ptr<Scene::SoundEffect> soundEffect);
 	void DrawSoundPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	void CreateNewSound();
 	void DeleteSound(std::string uuid);
 	void DrawSoundsPopups();
 	void WriteSoundsJson(nlohmann::json& json);

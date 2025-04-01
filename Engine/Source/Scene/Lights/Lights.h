@@ -23,6 +23,12 @@ namespace Scene {
 	using namespace RenderPass;
 
 #if defined(_EDITOR)
+	enum Light_PopupModal
+	{
+		LightPopupModal_CannotDelete = 1,
+		LightPopupModal_CreateNew = 2
+	};
+
 	static const nlohmann::json editorDefaultAmbient = {
 		{ "color", { 0.3f, 0.3f, 0.3f} }
 	};
@@ -170,6 +176,7 @@ namespace Scene {
 		std::shared_ptr<RenderToTexturePass> shadowMapRenderPass;
 		unsigned int shadowMapIndex = 0xFFFFFFFF;
 #if defined(_EDITOR)
+		static unsigned int popupModalId;
 		unsigned int shadowMapUpdateFlags = 0U;
 		std::vector<std::shared_ptr<RenderToTexturePass>> shadowMapMinMaxChainRenderPass;
 		std::vector<std::shared_ptr<Renderable>> shadowMapMinMaxChainRenderable;
@@ -254,6 +261,7 @@ namespace Scene {
 	void SelectLight(std::string uuid, std::string& edSO);
 	void DeSelectLight(std::string& edSO);
 	void DrawLightPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	void CreateNewLight();
 	void DeleteLight(std::string uuid);
 	void DrawLightsPopups();
 	void WriteLightsJson(nlohmann::json& json);

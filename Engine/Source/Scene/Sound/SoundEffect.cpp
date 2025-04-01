@@ -16,6 +16,10 @@ namespace Scene {
 	std::map<std::string, std::shared_ptr<SoundEffect>> soundsEffects; //uuid -> SoundEffect
 	std::vector<std::shared_ptr<SoundEffect>> sounds3DEffects;
 
+#if defined(_EDITOR)
+	unsigned int SoundEffect::popupModalId = 0U;
+#endif
+
 	//CREATE
 	std::shared_ptr<SoundEffect> CreateSoundEffect(nlohmann::json soundj)
 	{
@@ -209,6 +213,10 @@ namespace Scene {
 	{
 		std::shared_ptr<SoundEffect> fx = soundsEffects.at(uuid);
 		return fx->name();
+	}
+
+	void CreateNewSoundEffect()
+	{
 	}
 
 	void DeleteSoundEffect(std::string uuid)

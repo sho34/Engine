@@ -27,6 +27,12 @@ namespace Scene
 		RenderableFlags_RebuildMaterials = 0x10,
 		RenderableFlags_Destroy = 0x20
 	};
+
+	enum Renderable_PopupModal
+	{
+		RenderablePopupModal_CannotDelete = 1,
+		RenderablePopupModal_CreateNew = 2
+	};
 #endif
 
 	static nlohmann::json defaultShadowMapShaderAttributes = { { "uniqueMaterialInstance", false }, { "castShadows",false } };
@@ -121,6 +127,8 @@ namespace Scene
 		BoundingBox boundingBox;
 
 #if defined(_EDITOR)
+		static nlohmann::json createNewRenderableJson;
+		static unsigned int popupModalId;
 		unsigned int renderableUpdateFlags = 0U;
 		std::map<std::shared_ptr<MeshInstance>, std::string> materialSwaps;
 		std::string model3DSwap;
@@ -130,7 +138,7 @@ namespace Scene
 #endif
 
 		//CREATE
-		void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes);
+		void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes, std::map<TextureType, MaterialTexture> baseTextures = {});
 		void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
 		void TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j);
 		void TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key);
@@ -247,6 +255,7 @@ namespace Scene
 	void DeSelectRenderable(std::string& edSO);
 	void DrawRenderablePanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetRenderableName(std::string uuid);
+	void CreateNewRenderable();
 	void DeleteRenderable(std::string uuid);
 	void DrawRenderablesPopups();
 	void WriteRenderablesJson(nlohmann::json& json);

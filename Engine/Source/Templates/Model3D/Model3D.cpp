@@ -24,13 +24,6 @@ namespace Templates
 {
 	std::map<std::string, Model3DTemplate> model3ds;
 
-#if defined(_EDITOR)
-	enum Model3DPopupModal
-	{
-		Model3DPopupModal_CannotDelete = 1,
-	};
-#endif
-
 	namespace Model3D
 	{
 #if defined(_EDITOR)
@@ -145,7 +138,7 @@ namespace Templates
 			}
 
 			model->materialUUIDs.push_back(materialUUID);
-		}
+			}
 
 		importer.FreeScene();
 
@@ -154,7 +147,7 @@ namespace Templates
 			std::shared_ptr<MaterialInstance> materialInstance = model->GetModel3DMaterialInstance(i);
 			model->materials.push_back(materialInstance);
 		}
-	}
+		}
 
 #if defined(_DEVELOPMENT)
 	std::string GetUtilsPath()
@@ -438,6 +431,10 @@ namespace Templates
 		}
 	}
 
+	void CreateNewModel3D()
+	{
+	}
+
 	void Model3D::DrawEditorInformationAttributes(std::string uuid)
 	{
 		nlohmann::json& json = std::get<1>(model3ds.at(uuid));
@@ -579,4 +576,4 @@ namespace Templates
 	{
 		return GetMaterialInstance(materialUUIDs[meshIndex], std::map<TextureType, MaterialTexture>(), meshes[meshIndex], shaderAttributes);
 	}
-}
+	}

@@ -7,6 +7,14 @@ namespace Scene {
 		SoundEffectFlags_Destroy = 0x1
 	};
 
+#if defined(_EDITOR)
+	enum SoundEffect_PopupModal
+	{
+		SoundEffectPopupModal_CannotDelete = 1,
+		SoundEffectPopupModal_CreateNew = 2
+	};
+#endif
+
 	struct Renderable;
 
 	struct SoundEffect {
@@ -49,6 +57,7 @@ namespace Scene {
 		AudioEmitter audioEmitter;
 
 #if defined(_EDITOR)
+		static unsigned int popupModalId;
 		unsigned int soundEffectUpdateFlags = 0U;
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
@@ -77,6 +86,7 @@ namespace Scene {
 	void DeSelectSoundEffect(std::string& edSO);
 	void DrawSoundEffectPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	std::string GetSoundEffectName(std::string uuid);
+	void CreateNewSoundEffect();
 	void DeleteSoundEffect(std::string uuid);
 	void DrawSoundEffectsPopups();
 	void WriteSoundEffectsJson(nlohmann::json& json);

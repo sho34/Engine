@@ -14,6 +14,14 @@
 
 namespace Templates {
 
+#if defined(_EDITOR)
+	enum ShaderPopupModal
+	{
+		ShaderPopupModal_CannotDelete = 1,
+		ShaderPopupModal_CreateNew = 2
+	};
+#endif
+
 	typedef std::tuple<
 		std::string, //name
 		nlohmann::json //json data
@@ -108,6 +116,7 @@ namespace Templates {
 	void DrawShaderPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	void AttachMaterialToShader(std::string uuid, std::string materialUUID);
 	void DetachMaterialsFromShader(std::string uuid);
+	void CreateNewShader();
 	void DeleteShader(std::string uuid);
 	void DrawShadersPopups();
 	void WriteShadersJson(nlohmann::json& json);

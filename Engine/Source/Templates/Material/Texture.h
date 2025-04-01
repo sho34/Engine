@@ -33,6 +33,8 @@ struct std::hash<MaterialTexture>
 
 struct MaterialTextureInstance
 {
+	MaterialTexture materialTexture;
+
 	//D3D12
 	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
 	CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle;

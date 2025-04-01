@@ -30,6 +30,7 @@ namespace Scene {
 	static std::shared_ptr<ConstantsBuffer> lightsCbv = nullptr; //CBV for lights pool
 #if defined(_EDITOR)
 	static std::vector<std::shared_ptr<Light>> lightsToDestroy;
+	unsigned int Light::popupModalId = 0U;
 #endif
 
 	//CREATE
@@ -704,6 +705,10 @@ namespace Scene {
 
 			ImGui::EndTable();
 		}
+	}
+
+	void CreateNewLight()
+	{
 	}
 
 	void DeleteLight(std::string uuid)

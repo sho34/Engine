@@ -26,6 +26,7 @@ namespace Scene
 	std::map<std::string, std::shared_ptr<Camera>> cameraByUUID;
 #if defined(_EDITOR)
 	std::map<std::shared_ptr<Camera>, std::vector<std::function<void()>>> cameraDestructionCallbacks;
+	unsigned int Camera::popupModalId = 0U;
 #endif
 
 	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraj)
@@ -181,6 +182,10 @@ namespace Scene
 	{
 		std::shared_ptr<Camera> camera = cameraByUUID.at(uuid);
 		return camera->json.at("name");
+	}
+
+	void CreateNewCamera()
+	{
 	}
 
 	void Camera::BindDestruction(std::function<void()> cb)

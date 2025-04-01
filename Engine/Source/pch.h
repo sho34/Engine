@@ -89,6 +89,8 @@
 #include <algorithm>
 #include <random>
 #include <iterator>
+#include <cctype>
+#include <locale>
 
 #if defined(_EDITOR)
 #include "imgui.h"
