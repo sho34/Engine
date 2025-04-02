@@ -1405,16 +1405,6 @@ namespace Scene {
 			std::string currentName = name();
 			if (ImGui::InputText("name", &currentName))
 			{
-				if (!renderables.contains(currentName))
-				{
-					renderables[currentName] = renderables[name()];
-					renderables.erase(name());
-				}
-				if (!animables.contains(currentName) && animables.contains(name()))
-				{
-					animables[currentName] = animables[name()];
-					animables.erase(name());
-				}
 				name(currentName);
 			}
 			ImGui::EndTable();

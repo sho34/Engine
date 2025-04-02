@@ -624,12 +624,10 @@ inline void ImDrawFileSelector(std::string label, std::string fileName, std::fun
 
 inline bool ImDrawTextureParameters(nlohmann::json& mat, std::set<TextureType> texturesInShader)
 {
-	if (texturesInShader.size() == 0ULL) return false;
-
 	ImGui::Separator();
 
 	std::vector<std::string> selectables = { " " };
-	for (TextureType type : texturesInShader)
+	for (TextureType type : materialTexturesTypes)
 	{
 		std::string texture = textureTypeToStr.at(type);
 		if (!mat.contains("textures") || !mat.at("textures").contains(texture))
@@ -683,7 +681,6 @@ inline bool ImDrawTextureParameters(nlohmann::json& mat, std::set<TextureType> t
 
 				ImDrawFileSelector("File", fileName, [&texture, &ret](std::filesystem::path path)
 					{
-						//std::filesystem::path relPath = path.relative_path();
 						std::filesystem::path curPath = std::filesystem::current_path();
 						std::filesystem::path texturePath = std::filesystem::relative(path, curPath);
 						texture.at("path") = texturePath.string();
@@ -732,8 +729,6 @@ inline bool ImDrawSamplerParameters(
 	std::function<nlohmann::json()> getSamplerJson
 )
 {
-	if (totalSamplers == 0U) return false;
-
 	ImGui::Separator();
 
 	ImGui::Text("Samplers");
