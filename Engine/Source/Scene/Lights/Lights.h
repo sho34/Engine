@@ -176,6 +176,7 @@ namespace Scene {
 		std::shared_ptr<RenderToTexturePass> shadowMapRenderPass;
 		unsigned int shadowMapIndex = 0xFFFFFFFF;
 #if defined(_EDITOR)
+		static nlohmann::json creationJson;
 		static unsigned int popupModalId;
 		unsigned int shadowMapUpdateFlags = 0U;
 		std::vector<std::shared_ptr<RenderToTexturePass>> shadowMapMinMaxChainRenderPass;

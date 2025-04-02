@@ -737,7 +737,6 @@ namespace Editor {
 			if (ImGui::BeginPopupModal(popupId.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 			{
 				drawContent([&flag] {flag = 0U; });
-				//if (ImGui::Button("Ok")) { flag = 0U; }
 				ImGui::EndPopup();
 			}
 		}

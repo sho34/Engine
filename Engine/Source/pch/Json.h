@@ -24,6 +24,12 @@ inline void SetIfMissingJson<DirectX::XMFLOAT3>(nlohmann::json& j, std::string k
 	if (!j.contains(key)) { j[key] = nlohmann::json::array({ value.x,value.y,value.z }); }
 }
 
+template<>
+inline void SetIfMissingJson<DirectX::XMFLOAT2>(nlohmann::json& j, std::string key, DirectX::XMFLOAT2 value)
+{
+	if (!j.contains(key)) { j[key] = nlohmann::json::array({ value.x,value.y }); }
+}
+
 inline DirectX::XMFLOAT2 JsonToFloat2(nlohmann::json f2) {
 	return DirectX::XMFLOAT2({ f2[0], f2[1] });
 }

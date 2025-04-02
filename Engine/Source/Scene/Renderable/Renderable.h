@@ -127,7 +127,7 @@ namespace Scene
 		BoundingBox boundingBox;
 
 #if defined(_EDITOR)
-		static nlohmann::json createNewRenderableJson;
+		static nlohmann::json creationJson;
 		static unsigned int popupModalId;
 		unsigned int renderableUpdateFlags = 0U;
 		std::map<std::shared_ptr<MeshInstance>, std::string> materialSwaps;

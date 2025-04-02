@@ -43,7 +43,7 @@ namespace Scene {
 	std::map<std::string, std::shared_ptr<Renderable>> animables;
 
 #if defined(_EDITOR)
-	nlohmann::json Renderable::createNewRenderableJson;
+	nlohmann::json Renderable::creationJson;
 	unsigned int Renderable::popupModalId = 0U;
 #endif
 
@@ -1203,14 +1203,12 @@ namespace Scene {
 	void CreateNewRenderable()
 	{
 		Renderable::popupModalId = RenderablePopupModal_CreateNew;
-
-		Renderable::createNewRenderableJson = R"(
+		Renderable::creationJson = R"(
 		{
 			"name" : "",
 			"model": "",
 			"material":""
 		})"_json;
-
 	}
 
 	void DeleteRenderable(std::string uuid)
@@ -1225,9 +1223,9 @@ namespace Scene {
 				ImGui::PushID("renderable-name");
 				{
 					ImGui::Text("Name");
-					if (ImGui::InputText("##", Renderable::createNewRenderableJson.at("name").get_ptr<std::string*>()))
+					if (ImGui::InputText("##", Renderable::creationJson.at("name").get_ptr<std::string*>()))
 					{
-						nostd::trim(Renderable::createNewRenderableJson.at("name").get_ref<std::string&>());
+						nostd::trim(Renderable::creationJson.at("name").get_ref<std::string&>());
 					}
 				}
 				ImGui::PopID();
@@ -1240,7 +1238,7 @@ namespace Scene {
 
 				int current_item = static_cast<int>(std::find_if(selectables.begin(), selectables.end(), [](UUIDName uuidName)
 					{
-						return Renderable::createNewRenderableJson.at("model") == std::get<0>(uuidName);
+						return Renderable::creationJson.at("model") == std::get<0>(uuidName);
 					}
 				) - selectables.begin());
 
@@ -1250,7 +1248,7 @@ namespace Scene {
 
 					DrawComboSelection(selectables[current_item], selectables, [](UUIDName uuidName)
 						{
-							Renderable::createNewRenderableJson.at("model") = std::get<0>(uuidName);
+							Renderable::creationJson.at("model") = std::get<0>(uuidName);
 						}, "model"
 					);
 				}
@@ -1274,13 +1272,13 @@ namespace Scene {
 
 						current_material_item = static_cast<int>(std::find_if(selectablesMaterials.begin(), selectablesMaterials.end(), [](UUIDName uuidName)
 							{
-								return Renderable::createNewRenderableJson.at("material") == std::get<0>(uuidName);
+								return Renderable::creationJson.at("material") == std::get<0>(uuidName);
 							}
 						) - selectablesMaterials.begin());
 
 						DrawComboSelection(selectablesMaterials[current_material_item], selectablesMaterials, [materialsUUIDNames](UUIDName uuidName)
 							{
-								Renderable::createNewRenderableJson.at("material") = std::get<0>(uuidName);
+								Renderable::creationJson.at("material") = std::get<0>(uuidName);
 							}, "material"
 						);
 					}
@@ -1289,13 +1287,20 @@ namespace Scene {
 
 				bool isModel3D = !!(std::find_if(modelsUUIDNames.begin(), modelsUUIDNames.end(), [](UUIDName selected)
 					{
-						return std::get<0>(selected) == std::string(Renderable::createNewRenderableJson.at("model"));
+						return std::get<0>(selected) == std::string(Renderable::creationJson.at("model"));
 					}
 				) - modelsUUIDNames.end());
 
 				if (ImGui::Button("Cancel")) { OnCancel(); }
 				ImGui::SameLine();
-				bool disabledCreate = (current_item == 0 && Renderable::createNewRenderableJson.at("name") == "");
+				bool disabledCreate = (
+					current_item == 0 ||
+					Renderable::creationJson.at("name") == "" ||
+					renderables.end() != std::find_if(renderables.begin(), renderables.end(), [](auto pair)
+						{
+							return pair.second->name() == std::string(Renderable::creationJson.at("name"));
+						}
+					));
 				if (!isModel3D)
 				{
 					disabledCreate |= (current_material_item == 0);
@@ -1314,22 +1319,21 @@ namespace Scene {
 					{
 						nlohmann::json r = {
 							{ "uuid", getUUID() },
-							{ "name", Renderable::createNewRenderableJson.at("name") },
-							{ "model", Renderable::createNewRenderableJson.at("model") }
+							{ "name", Renderable::creationJson.at("name") },
+							{ "model", Renderable::creationJson.at("model") }
 						};
-						OutputDebugStringA((r.dump() + "\n").c_str());
 						CreateRenderable(r);
 					}
 					else
 					{
 						nlohmann::json r = {
 							{ "uuid", getUUID() },
-							{ "name", Renderable::createNewRenderableJson.at("name") },
+							{ "name", Renderable::creationJson.at("name") },
 							{ "meshMaterials",
 								{
 									{
-										{ "material", Renderable::createNewRenderableJson.at("material")},
-										{ "mesh", Renderable::createNewRenderableJson.at("model")}
+										{ "material", Renderable::creationJson.at("material")},
+										{ "mesh", Renderable::creationJson.at("model")}
 									}
 								}
 							},
@@ -1337,12 +1341,11 @@ namespace Scene {
 								{
 									{
 										{ "material", FindMaterialUUIDByName("ShadowMap") },
-										{ "mesh", Renderable::createNewRenderableJson.at("model")}
+										{ "mesh", Renderable::creationJson.at("model")}
 									}
 								}
 							}
 						};
-						OutputDebugStringA((r.dump() + "\n").c_str());
 						CreateRenderable(r);
 					}
 				}

@@ -15,6 +15,7 @@
 #include <Editor.h>
 #endif
 #include <Json.h>
+#include <NoStd.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -30,6 +31,7 @@ namespace Scene {
 	static std::shared_ptr<ConstantsBuffer> lightsCbv = nullptr; //CBV for lights pool
 #if defined(_EDITOR)
 	static std::vector<std::shared_ptr<Light>> lightsToDestroy;
+	nlohmann::json Light::creationJson;
 	unsigned int Light::popupModalId = 0U;
 #endif
 
@@ -45,6 +47,11 @@ namespace Scene {
 		light->json = lightj;
 		SetIfMissingJson(light->json, "lightType", LightTypeToStr.at(LT_Ambient));
 		SetIfMissingJson(light->json, "hasShadowMaps", false);
+		SetIfMissingJson(light->json, "position", XMFLOAT3(0.0f, 0.0f, 0.0f));
+		SetIfMissingJson(light->json, "attenuation", XMFLOAT3(0.0f, 0.01f, 0.02f));
+		SetIfMissingJson(light->json, "color", XMFLOAT3(1.0f, 1.0f, 1.0f));
+		SetIfMissingJson(light->json, "rotation", XMFLOAT3(0.0f, 0.0f, 0.0f));
+		SetIfMissingJson(light->json, "coneAngle", XM_PIDIV4);
 
 #if defined(_EDITOR)
 		switch (light->lightType())
@@ -709,6 +716,13 @@ namespace Scene {
 
 	void CreateNewLight()
 	{
+		Light::popupModalId = LightPopupModal_CreateNew;
+		Light::creationJson = nlohmann::json(
+			{
+			{ "name" , "" },
+			{ "lightType", LightTypeToStr.at(LT_Ambient) }
+			}
+		);
 	}
 
 	void DeleteLight(std::string uuid)
@@ -718,6 +732,68 @@ namespace Scene {
 
 	void DrawLightsPopups()
 	{
+		Editor::DrawCreateWindow(Light::popupModalId, LightPopupModal_CreateNew, "New Light", [](auto OnCancel)
+			{
+				ImGui::PushID("light-name");
+				{
+					ImGui::Text("Name");
+					if (ImGui::InputText("##", Light::creationJson.at("name").get_ptr<std::string*>()))
+					{
+						nostd::trim(Light::creationJson.at("name").get_ref<std::string&>());
+					}
+				}
+				ImGui::PopID();
+
+				int current_item = StrToLightType.at(Light::creationJson.at("lightType"));
+
+				ImGui::PushID("light-type-selector");
+				{
+					ImGui::Text("Select light type");
+
+					DrawComboSelection(LightTypesStr[current_item], LightTypesStr, [](std::string lightType)
+						{
+							Light::creationJson.at("lightType") = lightType;
+						}, "type"
+					);
+				}
+				ImGui::PopID();
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+
+				bool disabledCreate = (
+					Light::creationJson.at("name") == "" ||
+					lightsByUUID.end() != std::find_if(lightsByUUID.begin(), lightsByUUID.end(), [](auto pair)
+						{
+							return pair.second->name() == std::string(Light::creationJson.at("name"));
+						}
+					));
+
+				if (disabledCreate)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				if (ImGui::Button("Create"))
+				{
+					Light::popupModalId = 0;
+
+					nlohmann::json r = {
+						{ "uuid", getUUID() },
+						{ "name", Light::creationJson.at("name") },
+						{ "lightType", Light::creationJson.at("lightType") },
+					};
+					CreateLight(r);
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
+			}
+		);
 	}
 
 	void WriteLightsJson(nlohmann::json& json)
