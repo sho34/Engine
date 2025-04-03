@@ -11,6 +11,8 @@
 #include <nlohmann/json.hpp>
 #include <NoStd.h>
 #include <ShaderMaterials.h>
+#include <DDSTextureLoader.h>
+#include "../../Common/d3dx12.h"
 
 extern std::shared_ptr<Renderer> renderer;
 

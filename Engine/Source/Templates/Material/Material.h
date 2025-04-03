@@ -75,6 +75,7 @@ namespace Templates {
 		void UpdateMappedValues(nlohmann::json mappedValues);
 		void CallRebuildCallbacks() { for (auto& cb : rebuildCallbacks) { cb(); } }
 		void CallMappedValueChangesPropagation() { for (auto& cb : propagateMappedValueChanges) { cb(); } }
+		void ReleaseGPUUploadIntermediateResources();
 	};
 
 	//CREATE
@@ -95,6 +96,7 @@ namespace Templates {
 	void DestroyMaterial(std::string uuid);
 	void ReleaseMaterialTemplates();
 	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
+	void FreeGPUTexturesUploadIntermediateResources();
 
 	//EDITOR
 #if defined(_EDITOR)

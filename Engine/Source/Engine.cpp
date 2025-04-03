@@ -427,7 +427,7 @@ void AppStep() {
 	CamerasStep();
 	GameStep();
 	Render();
-
+	FreeGPUIntermediateResources();
 }
 
 void GameInputStep()

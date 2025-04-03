@@ -357,6 +357,18 @@ namespace Templates {
 		NotifyMappedValueChange();
 	}
 
+	void MaterialInstance::ReleaseGPUUploadIntermediateResources()
+	{
+		std::for_each(textures.begin(), textures.end(), [](auto& pair)
+			{
+				if (pair.second->upload)
+				{
+					pair.second->upload = nullptr;
+				}
+			}
+		);
+	}
+
 	nlohmann::json GetMaterialTemplate(std::string uuid)
 	{
 		return (materials.contains(uuid)) ? std::get<1>(materials.at(uuid)) : nlohmann::json();
@@ -372,6 +384,16 @@ namespace Templates {
 		auto key = MaterialMeshInstancePair(std::make_tuple(material->material, material->tupleTextures, shaderAttributes.at("castShadows")), mesh);
 		using namespace Material;
 		refTracker.RemoveRef(key, material);
+	}
+
+	void FreeGPUTexturesUploadIntermediateResources()
+	{
+		using namespace Material;
+		std::for_each(refTracker.instances.begin(), refTracker.instances.end(), [](auto& pair)
+			{
+				pair.second->ReleaseGPUUploadIntermediateResources();
+			}
+		);
 	}
 
 	void DestroyMaterial(std::string uuid)

@@ -68,4 +68,9 @@ namespace Templates
 		Model3D::ReleaseRenderablesInstances();
 	}
 #endif
+
+	void FreeGPUIntermediateResources()
+	{
+		FreeGPUTexturesUploadIntermediateResources();
+	}
 }

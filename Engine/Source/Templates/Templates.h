@@ -295,6 +295,7 @@ namespace Templates {
 #if defined(_EDITOR)
 	void DestroyTemplatesReferences();
 #endif
+	void FreeGPUIntermediateResources();
 
 	template<typename T>
 	void WriteTemplateJson(nlohmann::json& json, std::map<std::string, T> Ts)
