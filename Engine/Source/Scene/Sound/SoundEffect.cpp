@@ -2,6 +2,10 @@
 #include "SoundEffect.h"
 #include "../Scene.h"
 #include "../../Templates/Templates.h"
+#include "../../Editor/Editor.h"
+#include <Editor.h>
+#include <NoStd.h>
+#include <UUID.h>
 
 #if defined(_EDITOR)
 namespace Editor {
@@ -17,6 +21,7 @@ namespace Scene {
 	std::vector<std::shared_ptr<SoundEffect>> sounds3DEffects;
 
 #if defined(_EDITOR)
+	nlohmann::json SoundEffect::creationJson;
 	unsigned int SoundEffect::popupModalId = 0U;
 #endif
 
@@ -30,6 +35,7 @@ namespace Scene {
 		SetIfMissingJson(fx->json, "sound", "");
 		SetIfMissingJson(fx->json, "volume", 1.0f);
 		SetIfMissingJson(fx->json, "autoPlay", false);
+		SetIfMissingJson(fx->json, "loop", false);
 		SetIfMissingJson(fx->json, "instanceFlags", static_cast<int>(SoundEffectInstance_Default));
 		SetIfMissingJson(fx->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 
@@ -99,7 +105,17 @@ namespace Scene {
 
 	void SoundEffect::autoPlay(bool autoPlay)
 	{
-		json.at("volume") = autoPlay;
+		json.at("autoPlay") = autoPlay;
+	}
+
+	bool SoundEffect::loop()
+	{
+		return json.at("loop");
+	}
+
+	void SoundEffect::loop(bool loop)
+	{
+		json.at("loop") = loop;
 	}
 
 	XMFLOAT3 SoundEffect::position()
@@ -137,7 +153,7 @@ namespace Scene {
 	{
 		soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags());
 		soundEffectInstance->SetVolume(volume());
-		if (autoPlay()) soundEffectInstance->Play(true);
+		if (autoPlay()) soundEffectInstance->Play(loop());
 
 		if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D))
 		{
@@ -217,6 +233,12 @@ namespace Scene {
 
 	void CreateNewSoundEffect()
 	{
+		SoundEffect::popupModalId = SoundEffectPopupModal_CreateNew;
+		SoundEffect::creationJson = R"(
+		{
+			"name": "",
+			"sound":""
+		})"_json;
 	}
 
 	void DeleteSoundEffect(std::string uuid)
@@ -227,6 +249,64 @@ namespace Scene {
 
 	void DrawSoundEffectsPopups()
 	{
+		Editor::DrawCreateWindow(SoundEffect::popupModalId, SoundEffectPopupModal_CreateNew, "New SoundEffect", [](auto OnCancel)
+			{
+				ImGui::PushID("sfx-name");
+				{
+					ImGui::Text("Name");
+					ImDrawJsonInputText(SoundEffect::creationJson, "name");
+				}
+				ImGui::PopID();
+
+				std::vector<UUIDName> soundsUUIDNames = GetSoundsUUIDsNames();
+				std::vector<UUIDName> selectables = { std::tie("", " ") };
+				nostd::AppendToVector(selectables, soundsUUIDNames);
+
+				int current_item = FindSelectableIndex(selectables, SoundEffect::creationJson, "sound");
+
+				ImGui::PushID("sfx-sound");
+				{
+					ImGui::Text("Sound");
+					DrawComboSelection(selectables[current_item], selectables, [](UUIDName uuidName)
+						{
+							SoundEffect::creationJson.at("sound") = std::get<0>(uuidName);
+						}, "sound"
+					);
+				}
+				ImGui::PopID();
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+				bool disabledCreate = (
+					current_item == 0 ||
+					SoundEffect::creationJson.at("name") == "" ||
+					NameCollideWithSceneObjects(soundsEffects, SoundEffect::creationJson)
+					);
+
+				if (disabledCreate)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				if (ImGui::Button("Create"))
+				{
+					SoundEffect::popupModalId = 0;
+					nlohmann::json r = {
+						{ "uuid", getUUID() },
+						{ "name", SoundEffect::creationJson.at("name") },
+						{ "sound", SoundEffect::creationJson.at("sound") }
+					};
+					CreateSoundEffect(r);
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
+			}
+		);
 	}
 
 	void WriteSoundEffectsJson(nlohmann::json& json)
@@ -338,24 +418,6 @@ namespace Scene {
 				ImGui::SameLine();
 			}
 
-			/*
-			std::vector<std::string> selectables = { " " };
-			std::vector<std::string> soundNames = GetSoundsNames();
-			nostd::AppendToVector(selectables, soundNames);
-			std::string selected = sound();
-			if (selected == "") { selected = " "; }
-
-			if (!selected.empty() && selected != " ")
-			{
-				if (ImGui::Button(ICON_FA_FILE_AUDIO))
-				{
-					Editor::tempTab = T_Sounds;
-					Editor::selTemp = selected;
-				}
-				ImGui::SameLine();
-			}
-			*/
-
 			DrawComboSelection(selected, selectables, [this, selected, soundUUID](UUIDName sound)
 				{
 					if (soundUUID != " ")
@@ -376,26 +438,58 @@ namespace Scene {
 		}
 		ImGui::PopID();
 
+		ImGui::PushID("sound-effect-control-buttons");
+		if (soundEffectInstance->GetState() == SoundState::PLAYING)
+		{
+			if (ImGui::Button(ICON_FA_PAUSE))
+			{
+				soundEffectInstance->Pause();
+			}
+		}
+		else
+		{
+			if (ImGui::Button(ICON_FA_PLAY))
+			{
+				soundEffectInstance->Play();
+			}
+		}
+		ImGui::SameLine();
+
+		if (ImGui::Button(ICON_FA_STOP))
+		{
+			soundEffectInstance->Stop();
+		}
+		ImGui::PopID();
+
 		ImGui::PushID("sound-effect-instance-flag");
 		{
-			std::vector<std::string> selectables = nostd::GetKeysFromMap(strToSoundEffectInstanceFlags);
-			std::string selected = soundEffectInstanceFlagsToStr.at(instanceFlags());
-			DrawComboSelection(selected, selectables, [this](std::string soundEffectInstanceFlag)
+			ImGui::Text("Instance Flags");
+
+			SOUND_EFFECT_INSTANCE_FLAGS flags = instanceFlags();
+			SOUND_EFFECT_INSTANCE_FLAGS newFlags = flags;
+			bool flagsChanged = false;
+
+			std::for_each(soundEffectInstanceFlagsToStr.begin(), soundEffectInstanceFlagsToStr.end(), [flags, &newFlags, &flagsChanged](auto& pair)
 				{
-					SOUND_EFFECT_INSTANCE_FLAGS newSoundInstanceFlags = strToSoundEffectInstanceFlags.at(soundEffectInstanceFlag);
-					DestroySoundEffectInstance();
-					if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D) && !nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
+					bool value = !!(pair.first & flags);
+					if (ImGui::Checkbox(pair.second.c_str(), &value))
 					{
-						nostd::vector_erase(sounds3DEffects, this_ptr);
+						flagsChanged = true;
+						if (value)
+						{
+							newFlags |= pair.first;
+						}
+						else
+						{
+							newFlags &= ~pair.first;
+						}
 					}
-					else if (!nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D) && nostd::bytesHas(newSoundInstanceFlags, SoundEffectInstance_Use3D))
-					{
-						sounds3DEffects.push_back(this_ptr);
-					}
-					instanceFlags(newSoundInstanceFlags);
-					CreateSoundEffectInstance();
 				}
 			);
+			if (flagsChanged)
+			{
+				instanceFlags(newFlags);
+			}
 		}
 		ImGui::PopID();
 
@@ -413,6 +507,43 @@ namespace Scene {
 				{
 					volume(vol);
 					soundEffectInstance->SetVolume(vol);
+				}
+			}
+			ImGui::PopID();
+
+			ImGui::TableNextRow();
+			ImGui::PushID("autoplay");
+			{
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text("autoplay");
+				ImGui::TableSetColumnIndex(1);
+				bool aplay = autoPlay();
+				if (ImGui::Checkbox("", &aplay))
+				{
+					autoPlay(aplay);
+					if (aplay)
+					{
+						soundEffectInstance->Play();
+					}
+					else
+					{
+						soundEffectInstance->Stop();
+					}
+				}
+			}
+			ImGui::PopID();
+
+			ImGui::TableNextRow();
+			ImGui::PushID("looped");
+			{
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text("looped");
+				ImGui::TableSetColumnIndex(1);
+				bool looped = loop();
+				if (ImGui::Checkbox("", &looped))
+				{
+					loop(looped);
+					soundEffectInstance->Play(looped);
 				}
 			}
 			ImGui::PopID();

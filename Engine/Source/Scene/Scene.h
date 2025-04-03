@@ -54,6 +54,16 @@ std::vector<UUIDName> GetSceneObjectsUUIDsNames(std::map<std::string, std::share
 	return uuidNames;
 }
 
+inline bool NameCollideWithSceneObjects(auto map, nlohmann::json& json)
+{
+	std::string name = json.at("name");
+	return map.end() != std::find_if(map.begin(), map.end(), [name](auto pair)
+		{
+			return pair.second->name() == name;
+		}
+	);
+}
+
 #if defined(_EDITOR)
 static const std::map<_SceneObjects, std::function<std::vector<UUIDName>()>> GetSceneObjects =
 {

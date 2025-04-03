@@ -38,6 +38,9 @@ namespace Scene {
 		bool autoPlay();
 		void autoPlay(bool autoPlay);
 
+		bool loop();
+		void loop(bool loop);
+
 		bool hidden() { return false; }
 
 		XMFLOAT3 position();
@@ -57,6 +60,7 @@ namespace Scene {
 		AudioEmitter audioEmitter;
 
 #if defined(_EDITOR)
+		static nlohmann::json creationJson;
 		static unsigned int popupModalId;
 		unsigned int soundEffectUpdateFlags = 0U;
 		void DrawEditorInformationAttributes();

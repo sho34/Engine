@@ -24,7 +24,7 @@
 #include "../../Editor/Editor.h"
 #endif
 #include "../../Templates/Templates.h"
-#include <Application.h>
+#include <UUID.h>
 #include <NoStd.h>
 #include <Editor.h>
 
@@ -1223,10 +1223,7 @@ namespace Scene {
 				ImGui::PushID("renderable-name");
 				{
 					ImGui::Text("Name");
-					if (ImGui::InputText("##", Renderable::creationJson.at("name").get_ptr<std::string*>()))
-					{
-						nostd::trim(Renderable::creationJson.at("name").get_ref<std::string&>());
-					}
+					ImDrawJsonInputText(Renderable::creationJson, "name");
 				}
 				ImGui::PopID();
 
@@ -1236,11 +1233,7 @@ namespace Scene {
 				nostd::AppendToVector(selectables, modelsUUIDNames);
 				nostd::AppendToVector(selectables, meshesUUIDNames);
 
-				int current_item = static_cast<int>(std::find_if(selectables.begin(), selectables.end(), [](UUIDName uuidName)
-					{
-						return Renderable::creationJson.at("model") == std::get<0>(uuidName);
-					}
-				) - selectables.begin());
+				int current_item = FindSelectableIndex(selectables, Renderable::creationJson, "model");
 
 				ImGui::PushID("renderable-mesh-model-selector");
 				{
@@ -1270,11 +1263,7 @@ namespace Scene {
 						std::vector<UUIDName> materialsUUIDNames = GetMaterialsUUIDsNames();
 						nostd::AppendToVector(selectablesMaterials, materialsUUIDNames);
 
-						current_material_item = static_cast<int>(std::find_if(selectablesMaterials.begin(), selectablesMaterials.end(), [](UUIDName uuidName)
-							{
-								return Renderable::creationJson.at("material") == std::get<0>(uuidName);
-							}
-						) - selectablesMaterials.begin());
+						current_material_item = FindSelectableIndex(selectablesMaterials, Renderable::creationJson, "material");
 
 						DrawComboSelection(selectablesMaterials[current_material_item], selectablesMaterials, [materialsUUIDNames](UUIDName uuidName)
 							{
@@ -1285,22 +1274,15 @@ namespace Scene {
 					ImGui::PopID();
 				}
 
-				bool isModel3D = !!(std::find_if(modelsUUIDNames.begin(), modelsUUIDNames.end(), [](UUIDName selected)
-					{
-						return std::get<0>(selected) == std::string(Renderable::creationJson.at("model"));
-					}
-				) - modelsUUIDNames.end());
+				bool isModel3D = !!(FindSelectableIndex(modelsUUIDNames, Renderable::creationJson, "model"));
 
 				if (ImGui::Button("Cancel")) { OnCancel(); }
 				ImGui::SameLine();
 				bool disabledCreate = (
 					current_item == 0 ||
 					Renderable::creationJson.at("name") == "" ||
-					renderables.end() != std::find_if(renderables.begin(), renderables.end(), [](auto pair)
-						{
-							return pair.second->name() == std::string(Renderable::creationJson.at("name"));
-						}
-					));
+					NameCollideWithSceneObjects(renderables, Renderable::creationJson)
+					);
 				if (!isModel3D)
 				{
 					disabledCreate |= (current_material_item == 0);

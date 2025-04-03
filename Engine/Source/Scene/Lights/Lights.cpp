@@ -737,10 +737,7 @@ namespace Scene {
 				ImGui::PushID("light-name");
 				{
 					ImGui::Text("Name");
-					if (ImGui::InputText("##", Light::creationJson.at("name").get_ptr<std::string*>()))
-					{
-						nostd::trim(Light::creationJson.at("name").get_ref<std::string&>());
-					}
+					ImDrawJsonInputText(Light::creationJson, "name");
 				}
 				ImGui::PopID();
 
@@ -763,11 +760,8 @@ namespace Scene {
 
 				bool disabledCreate = (
 					Light::creationJson.at("name") == "" ||
-					lightsByUUID.end() != std::find_if(lightsByUUID.begin(), lightsByUUID.end(), [](auto pair)
-						{
-							return pair.second->name() == std::string(Light::creationJson.at("name"));
-						}
-					));
+					NameCollideWithSceneObjects(lightsByUUID, Light::creationJson)
+					);
 
 				if (disabledCreate)
 				{
