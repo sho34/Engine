@@ -92,8 +92,9 @@ namespace Templates
 		{
 			auto aMesh = aiModel->mMeshes[meshIndex];
 
-			model->vertices.push_back(std::vector<byte>(vertexSize * aMesh->mNumVertices));
-			std::vector<byte>& vertexData = model->vertices.back();
+			//model->vertices.push_back(std::vector<byte>(vertexSize * aMesh->mNumVertices));
+			//std::vector<byte>& vertexData = model->vertices.back();
+			std::vector<byte> vertexData(vertexSize * aMesh->mNumVertices);
 			VerticesLoader.at(model->vertexClass)(aMesh, vertexData);
 
 			std::vector<unsigned int> indicesData;
@@ -138,7 +139,7 @@ namespace Templates
 			}
 
 			model->materialUUIDs.push_back(materialUUID);
-			}
+		}
 
 		importer.FreeScene();
 
@@ -147,7 +148,7 @@ namespace Templates
 			std::shared_ptr<MaterialInstance> materialInstance = model->GetModel3DMaterialInstance(i);
 			model->materials.push_back(materialInstance);
 		}
-		}
+	}
 
 #if defined(_DEVELOPMENT)
 	std::string GetUtilsPath()
@@ -533,6 +534,7 @@ namespace Templates
 
 #endif
 
+	/*
 	BoundingBox Model3DInstance::GetAnimatedBoundingBox(XMMATRIX* bones)
 	{
 		XMFLOAT3 aaMin = { 0.0f, 0.0f, 0.0f };
@@ -571,9 +573,10 @@ namespace Templates
 
 		return BoundingBox(center, extents);
 	}
+	*/
 
 	std::shared_ptr<MaterialInstance> Model3DInstance::GetModel3DMaterialInstance(unsigned int meshIndex)
 	{
 		return GetMaterialInstance(materialUUIDs[meshIndex], std::map<TextureType, MaterialTexture>(), meshes[meshIndex], shaderAttributes);
 	}
-	}
+}

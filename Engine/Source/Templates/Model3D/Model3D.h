@@ -45,7 +45,6 @@ namespace Templates {
 	{
 		std::string uuid;
 		VertexClass vertexClass;
-		std::vector<std::vector<byte>> vertices;
 		std::vector<std::shared_ptr<MeshInstance>> meshes;
 		std::vector<std::shared_ptr<MaterialInstance>> materials;
 		std::vector<std::string> materialUUIDs;
@@ -53,7 +52,7 @@ namespace Templates {
 
 		//animation
 		std::shared_ptr<Animation::Animated> animations = nullptr;
-		BoundingBox GetAnimatedBoundingBox(XMMATRIX* bones);
+		//BoundingBox GetAnimatedBoundingBox(XMMATRIX* bones);
 		std::shared_ptr<MaterialInstance> GetModel3DMaterialInstance(unsigned int meshIndex);
 	};
 
