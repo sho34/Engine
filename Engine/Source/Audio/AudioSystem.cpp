@@ -13,9 +13,9 @@ namespace AudioSystem {
 	{
 		//initialize DirectXTK Audio Engine
 		//inicializar el Audio Engine de DirectXTK
-		AUDIO_ENGINE_FLAGS audioFlags = AudioEngine_Default;
+		AUDIO_ENGINE_FLAGS audioFlags = AudioEngine_EnvironmentalReverb | AudioEngine_ReverbUseFilters;
 #ifdef _DEBUG
-		audioFlags = audioFlags | AudioEngine_Debug;
+		audioFlags |= AudioEngine_Debug;
 #endif
 		audioEngine = std::make_unique<DirectX::AudioEngine>(audioFlags);
 	}
