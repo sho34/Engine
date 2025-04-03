@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 #include <ShaderMaterials.h>
 #include "../Material/Variables.h"
+#include <UUID.h>
 
 namespace Templates {
 
@@ -94,6 +95,7 @@ namespace Templates {
 	std::vector<std::string> GetShadersNames();
 	std::string GetShaderName(std::string uuid);
 	std::vector<UUIDName> GetShadersUUIDsNames();
+	std::vector<UUIDName> GetShadersUUIDsNamesByType(ShaderType type);
 	std::shared_ptr<ShaderInstance> GetShaderInstance(Source params);
 #if defined(_EDITOR)
 	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string uuid);

@@ -60,7 +60,8 @@ namespace Templates {
 		data.erase("uuid");
 
 		materials.insert_or_assign(uuid, t);
-		AttachMaterialToShader(json.at("shader"), uuid);
+		AttachMaterialToShader(json.at("shader_vs"), uuid);
+		AttachMaterialToShader(json.at("shader_ps"), uuid);
 	}
 
 	static std::mt19937 g;
@@ -99,7 +100,8 @@ namespace Templates {
 
 		nlohmann::json mat = GetMaterialTemplate(uuid);
 
-		material->shader = mat.at("shader");
+		material->vertexShaderUUID = mat.at("shader_vs");
+		material->pixelShaderUUID = mat.at("shader_ps");
 		std::vector<std::string> vertexClassDefines = VertexClassDefines.at(mesh->vertexClass);
 		std::move(vertexClassDefines.begin(), vertexClassDefines.end(), std::back_inserter(material->defines));
 		if (mat.contains("textures"))
@@ -139,8 +141,8 @@ namespace Templates {
 	void MaterialInstance::GetShaderInstances()
 	{
 		using namespace ShaderCompiler;
-		Source compVS = { .shaderType = VERTEX_SHADER, .shaderUUID = shader, .defines = defines };
-		Source compPS = { .shaderType = PIXEL_SHADER, .shaderUUID = shader, .defines = defines };
+		Source compVS = { .shaderType = VERTEX_SHADER, .shaderUUID = vertexShaderUUID, .defines = defines };
+		Source compPS = { .shaderType = PIXEL_SHADER, .shaderUUID = pixelShaderUUID, .defines = defines };
 		vertexShader = GetShaderInstance(compVS);
 		pixelShader = GetShaderInstance(compPS);
 		vertexShader->BindChange([this] { NotifyRebuild(); });
@@ -200,6 +202,21 @@ namespace Templates {
 		return (getRegister(vertexShader) != -1) || (getRegister(pixelShader) != -1);
 	}
 
+	bool MaterialInstance::ConstantsBufferContains(std::string varName)
+	{
+		ShaderConstantsBufferVariablesMap& vsVars = vertexShader->constantsBuffersVariables;
+		ShaderConstantsBufferVariablesMap& psVars = pixelShader->constantsBuffersVariables;
+
+		return vsVars.contains(varName) || psVars.contains(varName);
+	}
+
+	ShaderConstantsBufferVariable& MaterialInstance::GetConstantsBufferVariable(std::string varName)
+	{
+		ShaderConstantsBufferVariablesMap& vsVars = vertexShader->constantsBuffersVariables;
+		ShaderConstantsBufferVariablesMap& psVars = pixelShader->constantsBuffersVariables;
+		return (vsVars.contains(varName) ? vsVars.at(varName) : psVars.at(varName));
+	}
+
 	void MaterialInstance::LoadVariablesMapping(nlohmann::json material)
 	{
 		unsigned int numConstantsBuffers = static_cast<unsigned int>(max(
@@ -227,7 +244,8 @@ namespace Templates {
 
 		//initialize the variables mapping
 		nlohmann::json materialMappedValues = nlohmann::json::array();
-		nlohmann::json shaderMappedValues = nlohmann::json::array();
+		nlohmann::json shaderVSMappedValues = nlohmann::json::array();
+		nlohmann::json shaderPSMappedValues = nlohmann::json::array();
 		std::map<std::string, nlohmann::json> mappedValues;
 
 		if (material.contains("mappedValues"))
@@ -235,10 +253,16 @@ namespace Templates {
 			materialMappedValues = material.at("mappedValues");
 		}
 
-		nlohmann::json shader = GetShaderTemplate(material.at("shader"));
-		if (shader.contains("mappedValues"))
+		nlohmann::json shader_vs = GetShaderTemplate(material.at("shader_vs"));
+		if (shader_vs.contains("mappedValues"))
 		{
-			shaderMappedValues = shader.at("mappedValues");
+			shaderVSMappedValues = shader_vs.at("mappedValues");
+		}
+
+		nlohmann::json shader_ps = GetShaderTemplate(material.at("shader_ps"));
+		if (shader_ps.contains("mappedValues"))
+		{
+			shaderPSMappedValues = shader_ps.at("mappedValues");
 		}
 
 		for (nlohmann::json mappedValue : materialMappedValues)
@@ -246,7 +270,12 @@ namespace Templates {
 			mappedValues.insert_or_assign(mappedValue.at("variable"), mappedValue);
 		}
 
-		for (nlohmann::json mappedValue : shaderMappedValues)
+		for (nlohmann::json mappedValue : shaderVSMappedValues)
+		{
+			mappedValues.insert_or_assign(mappedValue.at("variable"), mappedValue);
+		}
+
+		for (nlohmann::json mappedValue : shaderPSMappedValues)
 		{
 			mappedValues.insert_or_assign(mappedValue.at("variable"), mappedValue);
 		}
@@ -274,9 +303,9 @@ namespace Templates {
 		std::set<std::string> unmapped;
 		for (auto& [varName, mappedValue] : mappedValues)
 		{
-			if (!vertexShader->constantsBuffersVariables.contains(varName)) continue;
+			if (!ConstantsBufferContains(varName)) continue;
 
-			auto& def = vertexShader->constantsBuffersVariables.at(varName);
+			auto& def = GetConstantsBufferVariable(varName);
 
 			unmapped.insert(varName);
 
@@ -288,8 +317,8 @@ namespace Templates {
 		}
 
 		//write the values to mapped memory
-		for (auto [varName, mapping] : variablesMapping) {
-
+		for (auto [varName, mapping] : variablesMapping)
+		{
 			if (!mappedValues.contains(varName)) continue;
 
 			nlohmann::json def = mappedValues.at(varName);
@@ -305,14 +334,13 @@ namespace Templates {
 		//map variables defined in the shader that the material has not yet define, so it can be updated in the rendereable cbuffer
 		for (auto varName : unmapped)
 		{
-			//if (!matVarIndex.contains(varName)) continue;
 			if (!mappedValues.contains(varName)) continue;
-			if (!vertexShader->constantsBuffersVariables.contains(varName)) continue;
+			if (!ConstantsBufferContains(varName)) continue;
 
 			//auto& matdef = material.at("mappedValues").at(matVarIndex.at(varName));
 			auto& matdef = mappedValues.at(varName);
 			auto& variableType = StrToMaterialVariablesTypes.at(std::string(matdef.at("variableType")));
-			auto& mapping = vertexShader->constantsBuffersVariables.at(varName);
+			auto& mapping = GetConstantsBufferVariable(varName);
 
 			variablesMapping.insert_or_assign(varName,
 				MaterialVariableMapping
@@ -438,68 +466,35 @@ namespace Templates {
 
 		nlohmann::json& mat = std::get<1>(material);
 
-		std::string shader = mat.at("shader");
+		Editor::ImDrawMaterialShaderSelection(mat, "shader_vs", VERTEX_SHADER);
+		Editor::ImDrawMaterialShaderSelection(mat, "shader_ps", PIXEL_SHADER);
 
-		std::vector<UUIDName> shadersUUIDNames = GetShadersUUIDsNames();
-		std::vector<std::string> selectables;
-		std::transform(shadersUUIDNames.begin(), shadersUUIDNames.end(), std::back_inserter(selectables), [](auto& tuple)
-			{
-				return std::get<1>(tuple);
-			}
-		);
-
-		std::map<std::string, std::string> namesToUUIDs;
-		std::transform(shadersUUIDNames.begin(), shadersUUIDNames.end(), std::inserter(namesToUUIDs, namesToUUIDs.end()), [](auto& tuple)
-			{
-				return std::pair<std::string, std::string>(std::get<1>(tuple), std::get<0>(tuple));
-			}
-		);
-
-		std::map<std::string, std::string> uuidsToNames;
-		std::transform(shadersUUIDNames.begin(), shadersUUIDNames.end(), std::inserter(uuidsToNames, uuidsToNames.end()), [](auto& tuple)
-			{
-				return std::pair<std::string, std::string>(std::get<0>(tuple), std::get<1>(tuple));
-			}
-		);
-
-		ImGui::Text("Shader");
-		ImGui::PushID("shader-name-combo");
-		{
-			if (shader != "")
-			{
-				if (ImGui::Button(ICON_FA_FILE_CODE))
-				{
-					Editor::tempTab = T_Shaders;
-					Editor::selTemp = shader;
-				}
-				ImGui::SameLine();
-			}
-
-			DrawComboSelection(uuidsToNames.at(shader), selectables, [&mat, namesToUUIDs](std::string shaderName)
-				{
-					mat.at("shader") = namesToUUIDs.at(shaderName);
-				}, ""
-			);
-		}
-		ImGui::PopID();
+		std::string shader_vs = mat.at("shader_vs");
+		std::string shader_ps = mat.at("shader_ps");
 
 		bool updateMappedValues = false;
 		bool rebuildMaterial = false;
 		ImGui::PushID("material-mapped-values");
 		{
-			updateMappedValues |= ImDrawMappedValues(mat, GetShaderMappeableVariables(shader));
+			auto mappeableVars = GetShaderMappeableVariables(shader_vs);
+			auto mappeableVarsPS = GetShaderMappeableVariables(shader_ps);
+			mappeableVars.insert(mappeableVarsPS.begin(), mappeableVarsPS.end());
+			updateMappedValues |= ImDrawMappedValues(mat, mappeableVars);
 		}
 		ImGui::PopID();
 
 		ImGui::PushID("material-textures");
 		{
-			rebuildMaterial |= ImDrawTextureParameters(mat, GetShaderTextureParameters(shader));
+			auto texParams = GetShaderTextureParameters(shader_vs);
+			auto texParamsPS = GetShaderTextureParameters(shader_ps);
+			texParams.insert(texParamsPS.begin(), texParamsPS.end());
+			rebuildMaterial |= ImDrawTextureParameters(mat, texParams);
 		}
 		ImGui::PopID();
 
 		ImGui::PushID("material-samplers");
 		{
-			rebuildMaterial |= ImDrawSamplerParameters(mat, GetShaderSamplerParameters(shader), [] { return MaterialSamplerDesc().json(); });
+			rebuildMaterial |= ImDrawSamplerParameters(mat, GetShaderSamplerParameters(shader_ps), [] { return MaterialSamplerDesc().json(); });
 		}
 		ImGui::PopID();
 
@@ -549,7 +544,14 @@ namespace Templates {
 	void DetachShader(std::string uuid)
 	{
 		nlohmann::json& mat = std::get<1>(materials.at(uuid));
-		mat.at("shader") = Material::fallbackShader;
+		if (StrToShaderType.at(mat.at("type")) == VERTEX_SHADER)
+		{
+			mat.at("shader_vs") = Material::fallbackShader_vs;
+		}
+		else
+		{
+			mat.at("shader_ps") = Material::fallbackShader_ps;
+		}
 
 		using namespace Material;
 		for (auto& [_, instance] : refTracker.instances)

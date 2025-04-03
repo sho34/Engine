@@ -41,7 +41,8 @@ namespace Templates {
 	{
 		inline static const std::string templateName = "materials.json";
 #if defined(_EDITOR)
-		inline static const std::string fallbackShader = "BaseLighting";
+		inline static const std::string fallbackShader_vs = "BaseLighting_vs";
+		inline static const std::string fallbackShader_ps = "BaseLighting_ps";
 #endif
 	};
 
@@ -53,7 +54,8 @@ namespace Templates {
 		MaterialVariablesMapping variablesMapping;
 		std::vector<size_t> variablesBufferSize;
 		std::vector<std::vector<byte>> variablesBuffer;
-		std::string shader;
+		std::string vertexShaderUUID;
+		std::string pixelShaderUUID;
 		std::vector<std::string> defines;
 		std::shared_ptr<ShaderInstance> vertexShader;
 		std::shared_ptr<ShaderInstance> pixelShader;
@@ -70,6 +72,8 @@ namespace Templates {
 		void NotifyMappedValueChange();
 		void Destroy();
 		bool ShaderInstanceHasRegister(std::function<int(std::shared_ptr<ShaderInstance>&)> getRegister);
+		bool ConstantsBufferContains(std::string varName);
+		ShaderConstantsBufferVariable& GetConstantsBufferVariable(std::string varName);
 		void LoadVariablesMapping(nlohmann::json material);
 		void SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
 		void UpdateMappedValues(nlohmann::json mappedValues);

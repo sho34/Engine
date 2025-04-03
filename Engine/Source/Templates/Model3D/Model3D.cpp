@@ -123,7 +123,8 @@ namespace Templates
 					nlohmann::json materialJson = CreateModel3DMaterialJson(
 						materialUUID,
 						GetModel3DMaterialInstanceName(std::get<0>(model3ds.at(uuid)), meshIndex),
-						mdl.at("shader"),
+						mdl.at("shader_vs"),
+						mdl.at("shader_ps"),
 						path.relative_path(),
 						aiModel->mMaterials[aMesh->mMaterialIndex]
 					);
@@ -221,13 +222,14 @@ namespace Templates
 
 	};
 
-	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string shader, std::filesystem::path relativePath, aiMaterial* material)
+	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, std::filesystem::path relativePath, aiMaterial* material)
 	{
 		nlohmann::json matJson = { {"pipelineState",{}} };
 
 		matJson["uuid"] = materialUUID;
 		matJson["name"] = materialName;
-		matJson["shader"] = shader;
+		matJson["shader_vs"] = vertexShader;
+		matJson["shader_ps"] = pixelShader;
 
 		bool twoSided;
 		material->Get(AI_MATKEY_TWOSIDED, twoSided);
@@ -491,22 +493,10 @@ namespace Templates
 		}
 		ImGui::PopID();
 
-		std::string shaderUUID = json.at("shader");
-		std::vector<UUIDName> shadersUUIDNames = GetShadersUUIDsNames();
-		std::vector<UUIDName> selectables = { std::tie(" "," ") };
-		UUIDName currentShader = std::make_tuple(shaderUUID, GetShaderName(shaderUUID));
+		auto reloadModel = [uuid]() { ReloadModel3DInstances(uuid); };
 
-		nostd::AppendToVector(selectables, shadersUUIDNames);
-		ImGui::PushID("Select-Shader");
-		{
-			DrawComboSelection(currentShader, selectables, [&json, uuid](UUIDName newShader)
-				{
-					json.at("shader") = std::get<0>(newShader);
-					ReloadModel3DInstances(uuid);
-				}, "Shader"
-			);
-		}
-		ImGui::PopID();
+		Editor::ImDrawMaterialShaderSelection(json, "shader_vs", VERTEX_SHADER, reloadModel);
+		Editor::ImDrawMaterialShaderSelection(json, "shader_ps", PIXEL_SHADER, reloadModel);
 	}
 
 	void DeleteModel3D(std::string uuid)

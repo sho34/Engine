@@ -7,6 +7,7 @@
 #include <imgui.h>
 #include <Mouse.h>
 #include <Application.h>
+#include <Editor.h>
 
 extern HWND hWnd;
 extern std::unique_ptr<DirectX::Mouse> mouse;
@@ -740,6 +741,36 @@ namespace Editor {
 				ImGui::EndPopup();
 			}
 		}
+	}
+
+	void ImDrawMaterialShaderSelection(nlohmann::json& mat, std::string key, ShaderType type, std::function<void()> cb)
+	{
+		ImGui::Text(("Shader " + key).c_str());
+
+		ImGui::PushID(("shader-name-combo-" + key).c_str());
+		{
+			std::string shaderUUID = mat.at(key);
+			if (shaderUUID != "")
+			{
+				if (ImGui::Button(ICON_FA_FILE_CODE))
+				{
+					Editor::tempTab = T_Shaders;
+					Editor::selTemp = shaderUUID;
+				}
+				ImGui::SameLine();
+			}
+
+			std::vector<UUIDName> selectables = GetShadersUUIDsNamesByType(type);
+			std::string shaderName = GetShaderName(shaderUUID);
+			UUIDName selected = std::tie(shaderUUID, shaderName);
+			DrawComboSelection(selected, selectables, [&mat, key, cb](UUIDName shader)
+				{
+					mat.at(key) = shader;
+					cb();
+				}, ""
+			);
+		}
+		ImGui::PopID();
 	}
 };
 

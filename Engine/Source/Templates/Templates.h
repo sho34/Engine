@@ -22,12 +22,26 @@ static const std::unordered_map<_Templates, std::string> TemplatesToStr = {
 };
 
 #if defined(_EDITOR)
+inline static std::function<std::vector<UUIDName>()> SortUUIDNameByName(std::function<std::vector<UUIDName>()> getUUIDNames)
+{
+	return [getUUIDNames]()
+		{
+			std::vector<UUIDName> uuidNames = getUUIDNames();
+			std::sort(uuidNames.begin(), uuidNames.end(), [](UUIDName a, UUIDName b)
+				{
+					return std::get<1>(a) < std::get<1>(b);
+				}
+			);
+			return uuidNames;
+		};
+};
+
 static const std::map<_Templates, std::function<std::vector<UUIDName>()>> GetTemplates =
 {
-	{ T_Materials, GetMaterialsUUIDsNames },
-	{ T_Models3D, GetModels3DUUIDsNames },
-	{ T_Shaders, GetShadersUUIDsNames },
-	{ T_Sounds, GetSoundsUUIDsNames }
+	{ T_Materials, SortUUIDNameByName(GetMaterialsUUIDsNames) },
+	{ T_Models3D, SortUUIDNameByName(GetModels3DUUIDsNames) },
+	{ T_Shaders, SortUUIDNameByName(GetShadersUUIDsNames) },
+	{ T_Sounds, SortUUIDNameByName(GetSoundsUUIDsNames) }
 };
 
 inline auto selectTemplate(std::string from, std::string& to) { to = from; }
@@ -93,55 +107,127 @@ namespace Templates {
 	static const nlohmann::json systemShaders = R"(
 	[
 		{
-			"name":"BoundingBox",
+			"name":"BoundingBox_vs",
+			"path":"BoundingBox",
+			"systemCreated" : true,
+			"uuid":"ae7a35a5-f012-4eb6-bbe1-1f52e6203ccb",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"BoundingBox_ps",
+			"path":"BoundingBox",
 			"systemCreated" : true,
 			"mappedValues": [
 				{ "value": [ 1.0, 0.0, 0.0 ], "variable": "baseColor", "variableType": "RGB" }
 			],
-			"uuid":"ae7a35a5-f012-4eb6-bbe1-1f52e6203ccb"
+			"uuid":"1bf837a7-1282-4fae-a1ba-9e74e6a99b37",
+			"type":"PIXEL_SHADER"
 		},
 		{
-			"name":"BaseLighting",
+			"name":"BaseLighting_vs",
+			"path":"BaseLighting",
+			"systemCreated" : true,
+			"uuid":"bc331f48-6a40-4b48-b435-8276051d6993",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"BaseLighting_ps",
+			"path":"BaseLighting",
 			"systemCreated" : true,
 			"mappedValues": [
 				{ "value": [ 0.11764706671237946, 0.5647059082984924, 1.0 ], "variable": "baseColor", "variableType": "RGB" },
 				{ "value": 400.0, "variable": "specularExponent", "variableType": "FLOAT" }
 			],
-			"uuid":"bc331f48-6a40-4b48-b435-8276051d6993"
+			"uuid":"719c0122-1e9f-46e3-90aa-8f1e5e81c098",
+			"type":"PIXEL_SHADER"
 		},
 		{
-			"name":"Grid",
+			"name":"Grid_vs",
+			"path":"Grid",
+			"systemCreated" : true,
+			"uuid":"5af4ba59-a09c-41ef-bc1f-13a51fc68439",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"Grid_ps",
+			"path":"Grid",
 			"systemCreated" : true,
 			"mappedValues": [
 				{ "value": [ 1.0, 0.0, 1.0 ], "variable": "baseColor", "variableType": "RGB" },
 				{ "value": 1024.0, "variable": "specularExponent", "variableType": "FLOAT" }
 			],
-			"uuid":"5af4ba59-a09c-41ef-bc1f-13a51fc68439"
+			"uuid":"5929c8f6-e9b7-4680-8447-a430b5accdbf",
+			"type":"PIXEL_SHADER"
 		},
 		{
-			"name":"ShadowMap",
+			"name":"ShadowMap_vs",
+			"path":"ShadowMap",
 			"systemCreated" : true,
-			"uuid":"0069d1e9-45b0-4fd3-a28f-1f7508503a91"
+			"uuid":"0069d1e9-45b0-4fd3-a28f-1f7508503a91",
+			"type":"VERTEX_SHADER"
 		},
 		{
-			"name":"DepthMinMax",
+			"name":"ShadowMap_ps",
+			"path":"ShadowMap",
 			"systemCreated" : true,
-			"uuid":"2ad43d9e-8dec-421c-b8f2-bda3520748bd"
+			"uuid":"ed41913d-1a28-40ce-9c92-07549714f367",
+			"type":"PIXEL_SHADER"
 		},
 		{
-			"name":"DepthMinMaxToRGBA",
+			"name":"DepthMinMax_vs",
+			"path":"DepthMinMax",
 			"systemCreated" : true,
-			"uuid":"9815152b-84ad-45e5-8b91-0642cfde0543"
+			"uuid":"2ad43d9e-8dec-421c-b8f2-bda3520748bd",
+			"type":"VERTEX_SHADER"
 		},
 		{
-			"name":"FullScreenQuad",
+			"name":"DepthMinMax_ps",
+			"path":"DepthMinMax",
 			"systemCreated" : true,
-			"uuid":"8e26fbd4-3a2c-4c04-a628-d2f11d474d60"
+			"uuid":"dd93a59f-a87e-4d9a-a57c-b91066e7520e",
+			"type":"PIXEL_SHADER"
 		},
 		{
-			"name":"LoadingBar",
+			"name":"DepthMinMaxToRGBA_vs",
+			"path":"DepthMinMaxToRGBA",
 			"systemCreated" : true,
-			"uuid":"d0192f97-a56a-469d-b6f1-07d403ae331a"
+			"uuid":"9815152b-84ad-45e5-8b91-0642cfde0543",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"DepthMinMaxToRGBA_ps",
+			"path":"DepthMinMaxToRGBA",
+			"systemCreated" : true,
+			"uuid":"22c13e3e-5a88-4868-a5cf-bcc65864cf6c",
+			"type":"PIXEL_SHADER"
+		},
+		{
+			"name":"FullScreenQuad_vs",
+			"path":"FullScreenQuad",
+			"systemCreated" : true,
+			"uuid":"8e26fbd4-3a2c-4c04-a628-d2f11d474d60",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"FullScreenQuad_ps",
+			"path":"FullScreenQuad",
+			"systemCreated" : true,
+			"uuid":"9ab3d65f-be9a-49cc-87f8-bcbf1dafeac7",
+			"type":"PIXEL_SHADER"
+		},
+		{
+			"name":"LoadingBar_vs",
+			"path":"LoadingBar",
+			"systemCreated" : true,
+			"uuid":"d0192f97-a56a-469d-b6f1-07d403ae331a",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"LoadingBar_ps",
+			"path":"LoadingBar",
+			"systemCreated" : true,
+			"uuid":"b5ef5d53-2174-4d12-b231-5e07a7f5a7f8",
+			"type":"PIXEL_SHADER"
 		}
 	])"_json;
 
@@ -149,13 +235,15 @@ namespace Templates {
 	[
 		{
 			"name":"BoundingBox",
-			"shader":"ae7a35a5-f012-4eb6-bbe1-1f52e6203ccb",
+			"shader_vs":"ae7a35a5-f012-4eb6-bbe1-1f52e6203ccb",
+			"shader_ps":"1bf837a7-1282-4fae-a1ba-9e74e6a99b37",
 			"systemCreated":true,
 			"uuid":"2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc"
 		},
 		{
 			"name":"BaseLighting",
-			"shader":"bc331f48-6a40-4b48-b435-8276051d6993",
+			"shader_vs":"bc331f48-6a40-4b48-b435-8276051d6993",
+			"shader_ps":"719c0122-1e9f-46e3-90aa-8f1e5e81c098",
 			"systemCreated":true,
 			"samplers":[
 				{
@@ -178,7 +266,8 @@ namespace Templates {
 		},
 		{
 			"name":"Floor",
-			"shader":"5af4ba59-a09c-41ef-bc1f-13a51fc68439",
+			"shader_vs":"5af4ba59-a09c-41ef-bc1f-13a51fc68439",
+			"shader_ps":"5929c8f6-e9b7-4680-8447-a430b5accdbf",
 			"systemCreated":true,
 			"samplers":[
 				{
@@ -201,7 +290,8 @@ namespace Templates {
 		},
 		{
 			"name":"ShadowMap",
-			"shader":"0069d1e9-45b0-4fd3-a28f-1f7508503a91",
+			"shader_vs":"0069d1e9-45b0-4fd3-a28f-1f7508503a91",
+			"shader_ps":"ed41913d-1a28-40ce-9c92-07549714f367",
 			"systemCreated":true,
 			"samplers":[
 				{
@@ -224,7 +314,8 @@ namespace Templates {
 		},
 		{
 			"name":"DepthMinMax",
-			"shader":"2ad43d9e-8dec-421c-b8f2-bda3520748bd",
+			"shader_vs":"2ad43d9e-8dec-421c-b8f2-bda3520748bd",
+			"shader_ps":"dd93a59f-a87e-4d9a-a57c-b91066e7520e",
 			"systemCreated":true,
 			"twoSided": true,
 			"samplers":[
@@ -248,7 +339,8 @@ namespace Templates {
 		},
 		{
 			"name":"DepthMinMaxToRGBA",
-			"shader":"9815152b-84ad-45e5-8b91-0642cfde0543",
+			"shader_vs":"9815152b-84ad-45e5-8b91-0642cfde0543",
+			"shader_ps":"22c13e3e-5a88-4868-a5cf-bcc65864cf6c",
 			"systemCreated":true,
 			"twoSided": true,
 			"samplers":[
@@ -272,13 +364,15 @@ namespace Templates {
 		},
 		{
 			"name":"FullScreenQuad", 
-			"shader":"8e26fbd4-3a2c-4c04-a628-d2f11d474d60",
+			"shader_vs":"8e26fbd4-3a2c-4c04-a628-d2f11d474d60",
+			"shader_ps":"9ab3d65f-be9a-49cc-87f8-bcbf1dafeac7",
 			"systemCreated":true,
 			"uuid" : "8e98708c-fe2e-4123-b1f0-5b80fabd1888"
 		},
 		{
 			"name":"LoadingBar",
-			"shader" : "d0192f97-a56a-469d-b6f1-07d403ae331a",
+			"shader_vs" : "d0192f97-a56a-469d-b6f1-07d403ae331a",
+			"shader_ps":"b5ef5d53-2174-4d12-b231-5e07a7f5a7f8",
 			"systemCreated" : true,
 			"uuid":"28c4d879-6d21-408f-acbb-120f9fdc05b0"
 		}

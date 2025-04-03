@@ -4,13 +4,22 @@
 enum ShaderType {
 	VERTEX_SHADER,
 	PIXEL_SHADER,
-	GEOMETRY_SHADER
+	GEOMETRY_SHADER,
+	COMPUTE_SHADER,
 };
 
 inline static std::map<ShaderType, std::string> ShaderTypeToStr = {
 	{ VERTEX_SHADER, "VERTEX_SHADER" },
 	{ PIXEL_SHADER, "PIXEL_SHADER" },
 	{ GEOMETRY_SHADER, "GEOMETRY_SHADER" },
+	{ COMPUTE_SHADER, "GEOMETRY_SHADER" },
+};
+
+inline static std::map<std::string, ShaderType> StrToShaderType = {
+	{ "VERTEX_SHADER", VERTEX_SHADER },
+	{ "PIXEL_SHADER", PIXEL_SHADER },
+	{ "GEOMETRY_SHADER", GEOMETRY_SHADER },
+	{ "COMPUTE_SHADER", GEOMETRY_SHADER },
 };
 
 //shader compilation source (it's shader type, the hlsl path, the uuid and defines)

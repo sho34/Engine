@@ -256,6 +256,18 @@ namespace Templates {
 		return GetUUIDsNames(shaders);
 	}
 
+	std::vector<UUIDName> GetShadersUUIDsNamesByType(ShaderType type)
+	{
+		std::map<std::string, ShaderTemplate> shadersByType;
+		std::copy_if(shaders.begin(), shaders.end(), std::inserter(shadersByType, shadersByType.end()), [type](auto pair)
+			{
+				nlohmann::json& json = std::get<1>(pair.second);
+				return StrToShaderType.at(json.at("type"));
+			}
+		);
+		return GetUUIDsNames(shadersByType);
+	}
+
 	//UPDATE
 #if defined(_EDITOR)
 

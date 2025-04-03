@@ -61,7 +61,7 @@ namespace Templates {
 	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string uuid, nlohmann::json shaderAttributes);
 
 #if defined(_DEVELOPMENT)
-	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string shader, std::filesystem::path relativePath, aiMaterial* material);
+	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, std::filesystem::path relativePath, aiMaterial* material);
 #endif
 	void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh);
 
