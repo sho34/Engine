@@ -550,7 +550,8 @@ static std::map<D3D12_BLEND, std::string> blendToString =
 	{ D3D12_BLEND_INV_ALPHA_FACTOR, "INV_ALPHA_FACTOR" },
 };
 
-static std::map<std::string, D3D12_BLEND> stringToBlend = {
+static std::map<std::string, D3D12_BLEND> stringToBlend =
+{
 	{ "ZERO", D3D12_BLEND_ZERO},
 	{ "ONE", D3D12_BLEND_ONE},
 	{ "SRC_COLOR",  D3D12_BLEND_SRC_COLOR},
@@ -572,7 +573,8 @@ static std::map<std::string, D3D12_BLEND> stringToBlend = {
 	{ "INV_ALPHA_FACTOR", D3D12_BLEND_INV_ALPHA_FACTOR },
 };
 
-static std::map<D3D12_BLEND_OP, std::string> blendOpToString = {
+static std::map<D3D12_BLEND_OP, std::string> blendOpToString =
+{
 	{ D3D12_BLEND_OP_ADD, "ADD" },
 	{ D3D12_BLEND_OP_SUBTRACT, "SUBTRACT" },
 	{ D3D12_BLEND_OP_REV_SUBTRACT, "REV_SUBTRACT" },
@@ -580,7 +582,8 @@ static std::map<D3D12_BLEND_OP, std::string> blendOpToString = {
 	{ D3D12_BLEND_OP_MAX, "MAX" },
 };
 
-static std::map<std::string, D3D12_BLEND_OP> stringToBlendOp = {
+static std::map<std::string, D3D12_BLEND_OP> stringToBlendOp =
+{
 	{ "ADD", D3D12_BLEND_OP_ADD },
 	{ "SUBTRACT", D3D12_BLEND_OP_SUBTRACT },
 	{ "REV_SUBTRACT", D3D12_BLEND_OP_REV_SUBTRACT },
@@ -588,7 +591,8 @@ static std::map<std::string, D3D12_BLEND_OP> stringToBlendOp = {
 	{ "MAX", D3D12_BLEND_OP_MAX },
 };
 
-static std::map<D3D12_LOGIC_OP, std::string> logicOpToString = {
+static std::map<D3D12_LOGIC_OP, std::string> logicOpToString =
+{
 	{ D3D12_LOGIC_OP_CLEAR, "CLEAR" },
 	{ D3D12_LOGIC_OP_SET, "SET" },
 	{ D3D12_LOGIC_OP_COPY, "COPY" },
@@ -607,7 +611,8 @@ static std::map<D3D12_LOGIC_OP, std::string> logicOpToString = {
 	{ D3D12_LOGIC_OP_OR_INVERTED, "OR_INVERTED" },
 };
 
-static std::map<std::string, D3D12_LOGIC_OP> stringToLogicOp = {
+static std::map<std::string, D3D12_LOGIC_OP> stringToLogicOp =
+{
 	{ "CLEAR", D3D12_LOGIC_OP_CLEAR },
 	{ "SET", D3D12_LOGIC_OP_SET },
 	{ "COPY", D3D12_LOGIC_OP_COPY },
@@ -626,7 +631,8 @@ static std::map<std::string, D3D12_LOGIC_OP> stringToLogicOp = {
 	{ "OR_INVERTED", D3D12_LOGIC_OP_OR_INVERTED },
 };
 
-static std::map<SOUND_EFFECT_INSTANCE_FLAGS, std::string> soundEffectInstanceFlagsToStr = {
+static std::map<SOUND_EFFECT_INSTANCE_FLAGS, std::string> soundEffectInstanceFlagsToStr =
+{
 	{ SoundEffectInstance_Default ,"Default"},
 	{ SoundEffectInstance_Use3D , "Use3D"},
 	{ SoundEffectInstance_ReverbUseFilters ,"ReverbUseFilters"},
@@ -634,10 +640,81 @@ static std::map<SOUND_EFFECT_INSTANCE_FLAGS, std::string> soundEffectInstanceFla
 	{ SoundEffectInstance_UseRedirectLFE, "UseRedirectLFE"},
 };
 
-static std::map<std::string, SOUND_EFFECT_INSTANCE_FLAGS> strToSoundEffectInstanceFlags = {
+static std::map<std::string, SOUND_EFFECT_INSTANCE_FLAGS> strToSoundEffectInstanceFlags =
+{
 	{ "Default", SoundEffectInstance_Default },
 	{ "Use3D", SoundEffectInstance_Use3D },
 	{ "ReverbUseFilters", SoundEffectInstance_ReverbUseFilters },
 	{ "NoSetPitch", SoundEffectInstance_NoSetPitch },
 	{ "UseRedirectLFE", SoundEffectInstance_UseRedirectLFE },
+};
+
+static std::map<AUDIO_ENGINE_REVERB, std::string> audioEngineReverbToStr =
+{
+	{ Reverb_Off, "Off" },
+	{ Reverb_Default, "Default" },
+	{ Reverb_Generic, "Generic" },
+	{ Reverb_Forest, "Forest" },
+	{ Reverb_PaddedCell, "PaddedCell" },
+	{ Reverb_Room, "Room" },
+	{ Reverb_Bathroom, "Bathroom" },
+	{ Reverb_LivingRoom, "LivingRoom" },
+	{ Reverb_StoneRoom, "StoneRoom" },
+	{ Reverb_Auditorium, "Auditorium" },
+	{ Reverb_ConcertHall, "ConcertHall" },
+	{ Reverb_Cave, "Cave" },
+	{ Reverb_Arena, "Arena" },
+	{ Reverb_Hangar, "Hangar" },
+	{ Reverb_CarpetedHallway, "CarpetedHallway" },
+	{ Reverb_Hallway, "Hallway" },
+	{ Reverb_StoneCorridor, "StoneCorridor" },
+	{ Reverb_Alley, "Alley" },
+	{ Reverb_City, "City" },
+	{ Reverb_Mountains, "Mountains" },
+	{ Reverb_Quarry, "Quarry" },
+	{ Reverb_Plain, "Plain" },
+	{ Reverb_ParkingLot, "ParkingLot" },
+	{ Reverb_SewerPipe, "SewerPipe" },
+	{ Reverb_Underwater, "Underwater" },
+	{ Reverb_SmallRoom, "SmallRoom" },
+	{ Reverb_MediumRoom, "MediumRoom" },
+	{ Reverb_LargeRoom, "LargeRoom" },
+	{ Reverb_MediumHall, "MediumHall" },
+	{ Reverb_LargeHall, "LargeHall" },
+	{ Reverb_Plate, "Plate" },
+};
+
+static std::map<std::string, AUDIO_ENGINE_REVERB> strToAudioEngineReverb =
+{
+	{ "Off", Reverb_Off },
+	{ "Default", Reverb_Default },
+	{ "Generic", Reverb_Generic },
+	{ "Forest", Reverb_Forest },
+	{ "PaddedCell", Reverb_PaddedCell },
+	{ "Room", Reverb_Room },
+	{ "Bathroom", Reverb_Bathroom },
+	{ "LivingRoom", Reverb_LivingRoom },
+	{ "StoneRoom", Reverb_StoneRoom },
+	{ "Auditorium", Reverb_Auditorium },
+	{ "ConcertHall", Reverb_ConcertHall },
+	{ "Cave", Reverb_Cave },
+	{ "Arena", Reverb_Arena },
+	{ "Hangar", Reverb_Hangar },
+	{ "CarpetedHallway", Reverb_CarpetedHallway },
+	{ "Hallway", Reverb_Hallway },
+	{ "StoneCorridor", Reverb_StoneCorridor },
+	{ "Alley", Reverb_Alley },
+	{ "City", Reverb_City },
+	{ "Mountains", Reverb_Mountains },
+	{ "Quarry", Reverb_Quarry },
+	{ "Plain", Reverb_Plain },
+	{ "ParkingLot", Reverb_ParkingLot },
+	{ "SewerPipe", Reverb_SewerPipe },
+	{ "Underwater", Reverb_Underwater },
+	{ "SmallRoom", Reverb_SmallRoom },
+	{ "MediumRoom", Reverb_MediumRoom },
+	{ "LargeRoom", Reverb_LargeRoom },
+	{ "MediumHall", Reverb_MediumHall },
+	{ "LargeHall", Reverb_LargeHall },
+	{ "Plate", Reverb_Plate },
 };
