@@ -779,4 +779,12 @@ inline bool ImDrawSamplerParameters(
 	return ret;
 }
 
+inline void ImDrawJsonInputText(nlohmann::json& json, std::string att)
+{
+	if (ImGui::InputText("##", json.at(att).get_ptr<std::string*>()))
+	{
+		nostd::trim(json.at(att).get_ref<std::string&>());
+	}
+}
+
 #endif
