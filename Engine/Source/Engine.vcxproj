@@ -286,6 +286,7 @@
     <ClInclude Include="pch\DDSTextures.h" />
     <ClInclude Include="pch\Debug.h" />
     <ClInclude Include="pch\ShaderMaterials.h" />
+    <ClInclude Include="pch\UUID.h" />
     <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />
     <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h" />
     <ClInclude Include="pch\DXTypes.h" />

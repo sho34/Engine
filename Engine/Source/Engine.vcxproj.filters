@@ -261,6 +261,9 @@
     <ClInclude Include="pch\DDSTextures.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pch\UUID.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
