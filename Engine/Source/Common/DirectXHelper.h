@@ -33,26 +33,6 @@ namespace DX
 		return Concurrency::task_from_result<std::vector<byte>>(returnBuffer);
 	}
 
-	inline Concurrency::task<std::vector<byte>> ReadShader(const std::string& shaderName, const std::string target) {
-		using namespace Concurrency;
-
-		const std::string filename = "Shaders/" + shaderName + ".hlsl";
-#if defined(_DEBUG)
-		// Enable better shader debugging with the graphics debugging tools.
-		UINT compileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-#else
-		UINT compileFlags = 0;
-#endif
-		compileFlags |= D3DCOMPILE_ENABLE_UNBOUNDED_DESCRIPTOR_TABLES;
-		ComPtr<ID3DBlob> shaderBlob;
-		ComPtr<ID3DBlob> shaderError;
-		DX::ThrowIfFailed(D3DCompileFromFile(nostd::StringToWString(filename).c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", target.c_str(), compileFlags, 0, &shaderBlob, &shaderError));
-
-		std::vector<byte> returnBuffer(shaderBlob->GetBufferSize());
-		memcpy(&returnBuffer[0], shaderBlob->GetBufferPointer(), returnBuffer.size());
-		return Concurrency::task_from_result<std::vector<byte>>(returnBuffer);
-	}
-
 	/*
 	// Convierte una longitud expresada en píxeles independientes del dispositivo (PID) en una longitud expresada en píxeles físicos.
 	inline float ConvertDipsToPixels(float dips, float dpi)
@@ -114,6 +94,7 @@ namespace DX
 #define DEBUG_INSTANCE_REF_COUNT(instanceName,refCountMap,key) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + instanceName + "(" + std::to_string(refCountMap.find(key)->second) + ")\n").c_str());
 #else
 #define DEBUG_PTR_COUNT(x) 
+#define DEBUG_PTR_COUNT_JSON(x)
 #define DEBUG_INSTANCE_REF_COUNT(instanceName,refCountMap,key) 
 #endif
 
