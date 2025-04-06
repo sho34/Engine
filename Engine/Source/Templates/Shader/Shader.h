@@ -97,6 +97,48 @@ namespace Templates {
 	std::vector<UUIDName> GetShadersUUIDsNames();
 	std::vector<UUIDName> GetShadersUUIDsNamesByType(ShaderType type);
 	std::shared_ptr<ShaderInstance> GetShaderInstance(Source params);
+
+	std::shared_ptr<ShaderInstance> LoadShaderInstanceFromBinary(size_t hash);
+#if defined(_DEVELOPMENT)
+	void SaveShaderInstanceFromBinary(std::shared_ptr<ShaderInstance> instance);
+#endif
+	void LoadShaderSource(std::ifstream& file, Source& source);
+#if defined(_DEVELOPMENT)
+	void WriteShaderSource(std::ofstream& file, Source& source);
+#endif
+	void LoadShaderVSSemantics(std::ifstream& file, std::vector<std::string>& vsSemantics);
+#if defined(_DEVELOPMENT)
+	void WriteShaderVSSemantics(std::ofstream& file, std::vector<std::string>& vsSemantics);
+#endif
+	void LoadShaderConstantsBufferParameters(std::ifstream& file, ShaderConstantsBufferParametersMap& constantsBuffersParameters);
+#if defined(_DEVELOPMENT)
+	void WriteShaderConstantsBufferParameters(std::ofstream& file, ShaderConstantsBufferParametersMap& constantsBuffersParameters);
+#endif
+	void LoadShaderConstantsBufferVariables(std::ifstream& file, ShaderConstantsBufferVariablesMap& constantsBuffersVariables);
+#if defined(_DEVELOPMENT)
+	void WriteShaderConstantsBufferVariables(std::ofstream& file, ShaderConstantsBufferVariablesMap& constantsBuffersVariables);
+#endif
+	void LoadShaderTextureParameters(std::ifstream& file, ShaderTextureParametersMap& texturesParameters);
+#if defined(_DEVELOPMENT)
+	void WriteShaderTextureParameters(std::ofstream& file, ShaderTextureParametersMap& texturesParameters);
+#endif
+	void LoadShaderSamplerParameters(std::ifstream& file, ShaderSamplerParametersMap& samplersParameters);
+#if defined(_DEVELOPMENT)
+	void WriteShaderSamplerParameters(std::ofstream& file, ShaderSamplerParametersMap& samplersParameters);
+#endif
+	void LoadShaderBufferSizes(std::ifstream& file, std::vector<size_t>& cbufferSize);
+#if defined(_DEVELOPMENT)
+	void WriteShaderBufferSizes(std::ofstream& file, std::vector<size_t>& cbufferSize);
+#endif
+	void LoadShaderCBVRegister(std::ifstream& file, int& reg);
+#if defined(_DEVELOPMENT)
+	void WriteShaderCBVRegister(std::ofstream& file, int& reg);
+#endif	
+	void LoadShaderByteCode(std::ifstream& file, ShaderByteCode& byteCode);
+#if defined(_DEVELOPMENT)
+	void WriteShaderByteCode(std::ofstream& file, ShaderByteCode& byteCode);
+#endif
+
 #if defined(_EDITOR)
 	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string uuid);
 	std::set<TextureType> GetShaderTextureParameters(std::string uuid);

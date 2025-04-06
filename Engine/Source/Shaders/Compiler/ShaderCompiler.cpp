@@ -24,8 +24,8 @@ namespace ShaderCompiler {
 	};
 
 	static std::mutex compileMutex;
-	std::shared_ptr<ShaderInstance> ShaderCompiler::Compile(Source params, ShaderIncludesDependencies& dependencies) {
-
+	std::shared_ptr<ShaderInstance> ShaderCompiler::Compile(Source params, ShaderIncludesDependencies& dependencies)
+	{
 		std::lock_guard<std::mutex> lock(compileMutex);
 		//read the shader
 

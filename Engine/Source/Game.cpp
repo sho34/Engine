@@ -376,7 +376,8 @@ void EditorModeCreate()
 			//LoadLevel("knight-original");
 			//LoadLevel("female");
 			//LoadLevel("knight");
-			LoadLevel("baseLevel");
+			//LoadLevel("baseLevel");
+			LoadLevel("pyramid");
 			//LoadLevel("jumpsuit");
 			//LoadLevel("venom");
 			unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);

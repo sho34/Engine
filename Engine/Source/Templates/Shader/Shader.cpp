@@ -229,9 +229,28 @@ namespace Templates {
 		return refTracker.AddRef(params, [&params]()
 			{
 				using namespace ShaderCompiler;
-				std::shared_ptr<ShaderInstance> newInstance = Compile(params, dependencies);
+
+				std::shared_ptr<ShaderInstance> newInstance;
+				size_t hash = std::hash<Source>()(params);
+				newInstance = LoadShaderInstanceFromBinary(hash);
+
+#if defined(_DEVELOPMENT)
+				bool saveBinary = false;
+				if (newInstance == nullptr)
+				{
+					newInstance = Compile(params, dependencies);
+					saveBinary = true;
+				}
+#endif
+
 				if (newInstance != nullptr)
 				{
+#if defined(_DEVELOPMENT)
+					if (saveBinary)
+					{
+						SaveShaderInstanceFromBinary(newInstance);
+					}
+#endif
 					return newInstance;
 				}
 				else
@@ -242,7 +261,288 @@ namespace Templates {
 		);
 	}
 
-	std::vector<std::string> GetShadersNames() {
+	std::string GetShaderBinaryFileName(size_t hash)
+	{
+		return std::to_string(hash) +
+#if defined(_DEBUG)
+			"_d" +
+#endif
+			".bin";
+	}
+
+	std::shared_ptr<ShaderInstance> LoadShaderInstanceFromBinary(size_t hash)
+	{
+		std::filesystem::path shaderFile = defaultShadersBinariesFolder + GetShaderBinaryFileName(hash);
+
+		if (!std::filesystem::exists(shaderFile))
+		{
+			return nullptr;
+		}
+
+		std::ifstream file(shaderFile, std::ios_base::binary);
+		std::shared_ptr<ShaderInstance> instance = std::make_shared<ShaderInstance>();
+		LoadShaderSource(file, instance->shaderSource);
+		LoadShaderVSSemantics(file, instance->vsSemantics);
+		LoadShaderConstantsBufferParameters(file, instance->constantsBuffersParameters);
+		LoadShaderConstantsBufferVariables(file, instance->constantsBuffersVariables);
+		LoadShaderTextureParameters(file, instance->texturesParameters);
+		LoadShaderSamplerParameters(file, instance->samplersParameters);
+		LoadShaderBufferSizes(file, instance->cbufferSize);
+		LoadShaderCBVRegister(file, instance->cameraCBVRegister);
+		LoadShaderCBVRegister(file, instance->lightCBVRegister);
+		LoadShaderCBVRegister(file, instance->animationCBVRegister);
+		LoadShaderCBVRegister(file, instance->lightsShadowMapCBVRegister);
+		LoadShaderCBVRegister(file, instance->lightsShadowMapSRVRegister);
+		LoadShaderByteCode(file, instance->byteCode);
+		file.close();
+		return instance;
+	}
+
+#if defined(_DEVELOPMENT)
+	void SaveShaderInstanceFromBinary(std::shared_ptr<ShaderInstance> instance)
+	{
+		//first create the directory if needed
+		std::filesystem::path directory(defaultShadersBinariesFolder);
+		std::filesystem::create_directory(directory);
+
+		size_t hash = std::hash<Source>()(instance->shaderSource);
+		std::filesystem::path shaderFile = directory;
+		shaderFile.append(GetShaderBinaryFileName(hash));
+
+		std::ofstream file(shaderFile, std::ios_base::binary);
+		WriteShaderSource(file, instance->shaderSource);
+		WriteShaderVSSemantics(file, instance->vsSemantics);
+		WriteShaderConstantsBufferParameters(file, instance->constantsBuffersParameters);
+		WriteShaderConstantsBufferVariables(file, instance->constantsBuffersVariables);
+		WriteShaderTextureParameters(file, instance->texturesParameters);
+		WriteShaderSamplerParameters(file, instance->samplersParameters);
+		WriteShaderBufferSizes(file, instance->cbufferSize);
+		WriteShaderCBVRegister(file, instance->cameraCBVRegister);
+		WriteShaderCBVRegister(file, instance->lightCBVRegister);
+		WriteShaderCBVRegister(file, instance->animationCBVRegister);
+		WriteShaderCBVRegister(file, instance->lightsShadowMapCBVRegister);
+		WriteShaderCBVRegister(file, instance->lightsShadowMapSRVRegister);
+		WriteShaderByteCode(file, instance->byteCode);
+		file.close();
+		return;
+	}
+#endif
+
+	void LoadShaderSource(std::ifstream& file, Source& source)
+	{
+		file.read(reinterpret_cast<char*>(&source.shaderType), sizeof(source.shaderType));
+		source.shaderUUID.resize(36);
+		file.read(source.shaderUUID.data(), 36);
+		source.defines = nostd::readVectorFromIfstream(file);
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderSource(std::ofstream& file, Source& source)
+	{
+		file.write(reinterpret_cast<char*>(&source.shaderType), sizeof(source.shaderType));
+		file.write(source.shaderUUID.c_str(), source.shaderUUID.size());
+		nostd::writeVectorToOfsream(file, source.defines);
+	}
+#endif
+
+	void LoadShaderVSSemantics(std::ifstream& file, std::vector<std::string>& vsSemantics)
+	{
+		vsSemantics = nostd::readVectorFromIfstream(file);
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderVSSemantics(std::ofstream& file, std::vector<std::string>& vsSemantics)
+	{
+		nostd::writeVectorToOfsream(file, vsSemantics);
+	}
+#endif
+
+	void LoadShaderConstantsBufferParameters(std::ifstream& file, ShaderConstantsBufferParametersMap& constantsBuffersParameters)
+	{
+		nostd::loadMapFromIfstream(file, constantsBuffersParameters, [](std::ifstream& file)
+			{
+				size_t size;
+				file.read(reinterpret_cast<char*>(&size), sizeof(size));
+				ShaderConstantsBufferParametersPair pair;
+				pair.first.resize(size);
+				file.read(pair.first.data(), size);
+				file.read(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
+				file.read(reinterpret_cast<char*>(&pair.second.numConstantsBuffers), sizeof(pair.second.numConstantsBuffers));
+				return pair;
+			}
+		);
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderConstantsBufferParameters(std::ofstream& file, ShaderConstantsBufferParametersMap& constantsBuffersParameters)
+	{
+		nostd::writeMapToOfstream(file, constantsBuffersParameters, [](std::ofstream& file, auto& pair)
+			{
+				std::string str = pair.first;
+				size_t size = str.size();
+				file.write(reinterpret_cast<char*>(&size), sizeof(size));
+				file.write(str.c_str(), size);
+				file.write(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
+				file.write(reinterpret_cast<char*>(&pair.second.numConstantsBuffers), sizeof(pair.second.numConstantsBuffers));
+			}
+		);
+	}
+#endif
+
+	void LoadShaderConstantsBufferVariables(std::ifstream& file, ShaderConstantsBufferVariablesMap& constantsBuffersVariables)
+	{
+		nostd::loadMapFromIfstream(file, constantsBuffersVariables, [](std::ifstream& file)
+			{
+				size_t size;
+				file.read(reinterpret_cast<char*>(&size), sizeof(size));
+				ShaderConstantsBufferVariablesPair pair;
+				pair.first.resize(size);
+				file.read(pair.first.data(), size);
+				file.read(reinterpret_cast<char*>(&pair.second.bufferIndex), sizeof(pair.second.bufferIndex));
+				file.read(reinterpret_cast<char*>(&pair.second.size), sizeof(pair.second.size));
+				file.read(reinterpret_cast<char*>(&pair.second.offset), sizeof(pair.second.offset));
+				return pair;
+			}
+		);
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderConstantsBufferVariables(std::ofstream& file, ShaderConstantsBufferVariablesMap& constantsBuffersVariables)
+	{
+		nostd::writeMapToOfstream(file, constantsBuffersVariables, [](std::ofstream& file, auto& pair)
+			{
+				std::string str = pair.first;
+				size_t size = str.size();
+				file.write(reinterpret_cast<char*>(&size), sizeof(size));
+				file.write(str.c_str(), size);
+				file.write(reinterpret_cast<char*>(&pair.second.bufferIndex), sizeof(pair.second.bufferIndex));
+				file.write(reinterpret_cast<char*>(&pair.second.size), sizeof(pair.second.size));
+				file.write(reinterpret_cast<char*>(&pair.second.offset), sizeof(pair.second.offset));
+			}
+		);
+	}
+#endif
+
+	void LoadShaderTextureParameters(std::ifstream& file, ShaderTextureParametersMap& texturesParameters)
+	{
+		nostd::loadMapFromIfstream(file, texturesParameters, [](std::ifstream& file)
+			{
+				ShaderTextureParametersPair pair;
+				file.read(reinterpret_cast<char*>(&pair.first), sizeof(pair.first));
+				file.read(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
+				file.read(reinterpret_cast<char*>(&pair.second.numTextures), sizeof(pair.second.numTextures));
+				return pair;
+			}
+		);
+
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderTextureParameters(std::ofstream& file, ShaderTextureParametersMap& texturesParameters)
+	{
+		nostd::writeMapToOfstream(file, texturesParameters, [](std::ofstream& file, auto& pair)
+			{
+				TextureType type = pair.first;
+				file.write(reinterpret_cast<char*>(&type), sizeof(type));
+				file.write(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
+				file.write(reinterpret_cast<char*>(&pair.second.numTextures), sizeof(pair.second.numTextures));
+			}
+		);
+	}
+#endif
+
+	void LoadShaderSamplerParameters(std::ifstream& file, ShaderSamplerParametersMap& samplersParameters)
+	{
+		nostd::loadMapFromIfstream(file, samplersParameters, [](std::ifstream& file)
+			{
+				size_t size;
+				file.read(reinterpret_cast<char*>(&size), sizeof(size));
+				ShaderSamplerParametersPair pair;
+				pair.first.resize(size);
+				file.read(pair.first.data(), size);
+				file.read(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
+				file.read(reinterpret_cast<char*>(&pair.second.numSamplers), sizeof(pair.second.numSamplers));
+				return pair;
+			}
+		);
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderSamplerParameters(std::ofstream& file, ShaderSamplerParametersMap& samplersParameters)
+	{
+		nostd::writeMapToOfstream(file, samplersParameters, [](std::ofstream& file, auto& pair)
+			{
+				std::string str = pair.first;
+				size_t size = str.size();
+				file.write(reinterpret_cast<char*>(&size), sizeof(size));
+				file.write(str.c_str(), size);
+				file.write(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
+				file.write(reinterpret_cast<char*>(&pair.second.numSamplers), sizeof(pair.second.numSamplers));
+			}
+		);
+	}
+#endif
+
+	void LoadShaderBufferSizes(std::ifstream& file, std::vector<size_t>& cbufferSize)
+	{
+		size_t size;
+		file.read(reinterpret_cast<char*>(&size), sizeof(size));
+		if (size > 0ULL)
+		{
+			cbufferSize.resize(size);
+			file.read(reinterpret_cast<char*>(cbufferSize.data()), size * sizeof(cbufferSize[0]));
+		}
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderBufferSizes(std::ofstream& file, std::vector<size_t>& cbufferSize)
+	{
+		size_t size = cbufferSize.size();
+		file.write(reinterpret_cast<char*>(&size), sizeof(size));
+		if (size > 0ULL)
+		{
+			file.write(reinterpret_cast<char*>(cbufferSize.data()), sizeof(cbufferSize[0]) * size);
+		}
+	}
+#endif
+
+	void LoadShaderCBVRegister(std::ifstream& file, int& reg)
+	{
+		file.read(reinterpret_cast<char*>(&reg), sizeof(reg));
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderCBVRegister(std::ofstream& file, int& reg)
+	{
+		file.write(reinterpret_cast<char*>(&reg), sizeof(reg));
+	}
+#endif
+
+	void LoadShaderByteCode(std::ifstream& file, ShaderByteCode& byteCode)
+	{
+		size_t size;
+		file.read(reinterpret_cast<char*>(&size), sizeof(size));
+		if (size > 0ULL)
+		{
+			byteCode.resize(size);
+			file.read(reinterpret_cast<char*>(byteCode.data()), size * sizeof(byteCode[0]));
+		}
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderByteCode(std::ofstream& file, ShaderByteCode& byteCode)
+	{
+		size_t size = byteCode.size();
+		file.write(reinterpret_cast<char*>(&size), sizeof(size));
+		if (size > 0ULL)
+		{
+			file.write(reinterpret_cast<char*>(byteCode.data()), sizeof(byteCode[0]) * size);
+		}
+	}
+#endif
+
+	std::vector<std::string> GetShadersNames()
+	{
 		return GetNames(shaders);
 	}
 

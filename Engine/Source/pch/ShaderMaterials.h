@@ -1,6 +1,5 @@
 #pragma once
 
-
 enum ShaderType {
 	VERTEX_SHADER,
 	PIXEL_SHADER,
@@ -43,6 +42,20 @@ struct Source {
 				defs += ",";
 		}
 		return ShaderTypeToStr.at(shaderType) + ":" + shaderUUID + " (" + defs + ")";
+	}
+};
+
+template <>
+struct std::hash<Source>
+{
+	std::size_t operator()(const Source& src) const
+	{
+		using std::hash;
+		std::string s = "";
+		s += ShaderTypeToStr.at(src.shaderType);
+		s += src.shaderUUID;
+		for (auto& v : src.defines) { s += v; }
+		return hash<std::string>()(s);
 	}
 };
 

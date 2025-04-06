@@ -25,6 +25,65 @@ namespace nostd {
 		return list;
 	}
 
+	inline std::string join(const std::vector<std::string>& strings, const std::string delim = ",")
+	{
+		return std::accumulate(strings.begin(), strings.end(), std::string(""), [&strings, delim](std::string a, std::string b)
+			{
+				return std::move(a) + (b == strings[0] ? "" : delim) + b;
+			}
+		);
+	}
+
+	inline std::vector<std::string> readVectorFromIfstream(std::ifstream& file, std::string delim = ",")
+	{
+		std::vector<std::string> strings;
+		size_t size;
+		file.read(reinterpret_cast<char*>(&size), sizeof(size));
+		if (size > 0ULL)
+		{
+			std::string str;
+			str.resize(size);
+			file.read(str.data(), size);
+			strings = nostd::split(str, delim);
+		}
+		return strings;
+	}
+
+	inline void writeVectorToOfsream(std::ofstream& file, std::vector<std::string> strings, std::string delim = ",")
+	{
+		std::string str = nostd::join(strings);
+		size_t size = str.size();
+		file.write(reinterpret_cast<char*>(&size), sizeof(size));
+		if (size > 0ULL)
+		{
+			file.write(str.c_str(), size);
+		}
+	}
+
+	inline void loadMapFromIfstream(std::ifstream& file, auto& map, auto readPair)
+	{
+		size_t size;
+		file.read(reinterpret_cast<char*>(&size), sizeof(size));
+		for (size_t i = 0ULL; i < size; i++)
+		{
+			map.insert(readPair(file));
+		}
+	}
+
+	inline void writeMapToOfstream(std::ofstream& file, auto& map, auto writePair)
+	{
+		size_t size = map.size();
+		file.write(reinterpret_cast<char*>(&size), sizeof(size));
+		if (size > 0ULL)
+		{
+			std::for_each(map.begin(), map.end(), [writePair, &file](auto& pair)
+				{
+					writePair(file, pair);
+				}
+			);
+		}
+	}
+
 	inline std::string WStringToString(std::wstring wstr) {
 		std::string str;
 		std::transform(wstr.begin(), wstr.end(), std::back_inserter(str), [](wchar_t c) { return (char)c; });
