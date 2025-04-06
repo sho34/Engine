@@ -25,7 +25,9 @@ namespace Scene
 
 	void RenderSceneShadowMaps()
 	{
+#if defined(_DEVELOPMENT)
 		PIXBeginEvent(renderer->commandQueue.p, 0, L"ShadowMaps");
+#endif
 		for (auto& l : GetLights())
 		{
 			if (!l->hasShadowMaps()) continue;
@@ -39,19 +41,27 @@ namespace Scene
 					}
 				};
 
+#if defined(_DEVELOPMENT)
 			std::string shadowMapEvent = "ShadowMap:" + l->name();
 			PIXBeginEvent(renderer->commandList.p, 0, nostd::StringToWString(shadowMapEvent).c_str());
+#endif
 
 			l->RenderShadowMap(renderSceneShadowMap);
 
+#if defined(_DEVELOPMENT)
 			PIXEndEvent(renderer->commandList.p);
+#endif
 		}
+#if defined(_DEVELOPMENT)
 		PIXEndEvent(renderer->commandQueue.p);
+#endif
 	}
 
 	void RenderSceneObjects(std::shared_ptr<Camera>& camera)
 	{
+#if defined(_DEVELOPMENT)
 		PIXBeginEvent(renderer->commandList.p, 0, L"Render Scene");
+#endif
 		{
 			unsigned int backBufferIndex = renderer->backBufferIndex;
 
@@ -75,7 +85,9 @@ namespace Scene
 			}
 
 		}
+#if defined(_DEVELOPMENT)
 		PIXEndEvent(renderer->commandList.p);
+#endif
 	}
 
 }
