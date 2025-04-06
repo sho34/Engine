@@ -324,7 +324,6 @@ namespace Templates {
 		WriteShaderCBVRegister(file, instance->lightsShadowMapSRVRegister);
 		WriteShaderByteCode(file, instance->byteCode);
 		file.close();
-		return;
 	}
 #endif
 
