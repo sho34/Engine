@@ -32,7 +32,6 @@ namespace Templates
 		static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker; //uuid -> model3dInstance
 	};
 
-
 	//CREATE
 	void CreateModel3D(nlohmann::json json)
 	{
@@ -55,12 +54,48 @@ namespace Templates
 		model3ds.insert_or_assign(uuid, t);
 	}
 
+	void CreateModel3DMaterialsTemplates(std::string uuid, const aiScene* aiModel)
+	{
+		nlohmann::json& mdl = std::get<1>(model3ds.at(uuid));
+
+		if (mdl.contains("materials") && mdl.at("materials").size() == aiModel->mNumMeshes)
+			return;
+
+		mdl["materials"] = nlohmann::json::array();
+
+		std::string filename = default3DModelsFolder + std::string(mdl.at("path"));
+		std::filesystem::path path(filename);
+
+		//go through all the meshes in the model
+		for (unsigned int meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++)
+		{
+			auto aMesh = aiModel->mMeshes[meshIndex];
+			std::string materialUUID = GetModel3DMaterialInstanceUUID(uuid, meshIndex);
+			nlohmann::json materialTemplate = GetMaterialTemplate(materialUUID);
+
+			if (materialTemplate.empty())
+			{
+				nlohmann::json materialJson = CreateModel3DMaterialJson(
+					materialUUID,
+					GetModel3DMaterialInstanceName(std::get<0>(model3ds.at(uuid)), meshIndex),
+					mdl.at("shader_vs"),
+					mdl.at("shader_ps"),
+					path.relative_path(),
+					aiModel->mMaterials[aMesh->mMaterialIndex]
+				);
+				CreateMaterial(materialJson);
+			}
+
+			mdl["materials"].push_back(materialUUID);
+		}
+	}
+
 	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string uuid, nlohmann::json shaderAttributes)
 	{
 		model->uuid = uuid;
 		model->shaderAttributes = shaderAttributes;
 
-		nlohmann::json mdl = std::get<1>(model3ds.at(uuid));
+		nlohmann::json& mdl = std::get<1>(model3ds.at(uuid));
 
 		std::string filename = default3DModelsFolder + std::string(mdl.at("path"));
 
@@ -84,6 +119,8 @@ namespace Templates
 			model->animations = CreateAnimatedFromAssimp(aiModel);
 		}
 
+		CreateModel3DMaterialsTemplates(uuid, aiModel);
+
 		model->vertexClass = !model->animations ? POS_NORMAL_TANGENT_TEXCOORD0 : POS_NORMAL_TANGENT_TEXCOORD0_SKINNING;
 		size_t vertexSize = !model->animations ? sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0>) : sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>);
 
@@ -92,8 +129,6 @@ namespace Templates
 		{
 			auto aMesh = aiModel->mMeshes[meshIndex];
 
-			//model->vertices.push_back(std::vector<byte>(vertexSize * aMesh->mNumVertices));
-			//std::vector<byte>& vertexData = model->vertices.back();
 			std::vector<byte> vertexData(vertexSize * aMesh->mNumVertices);
 			VerticesLoader.at(model->vertexClass)(aMesh, vertexData);
 
@@ -111,35 +146,7 @@ namespace Templates
 
 			model->meshes.push_back(mesh);
 
-			std::string materialUUID = "";
-			if (mdl.at("autoCreateMaterial"))
-			{
-				materialUUID = GetModel3DMaterialInstanceUUID(uuid, meshIndex);
-				nlohmann::json materialTemplate = GetMaterialTemplate(materialUUID);
-
-				if (materialTemplate.empty())
-				{
-#if defined(_DEVELOPMENT)
-					nlohmann::json materialJson = CreateModel3DMaterialJson(
-						materialUUID,
-						GetModel3DMaterialInstanceName(std::get<0>(model3ds.at(uuid)), meshIndex),
-						mdl.at("shader_vs"),
-						mdl.at("shader_ps"),
-						path.relative_path(),
-						aiModel->mMaterials[aMesh->mMaterialIndex]
-					);
-					CreateMaterial(materialJson);
-#else
-					assert(!!!"Non development will never create a material");
-#endif
-				}
-			}
-			else
-			{
-				materialUUID = mdl.at("materials").at(meshIndex);
-			}
-
-			model->materialUUIDs.push_back(materialUUID);
+			model->materialUUIDs = mdl.at("materials");
 		}
 
 		importer.FreeScene();
@@ -366,20 +373,7 @@ namespace Templates
 		std::string uuid = model3D->uuid;
 
 		using namespace Model3D;
-		std::vector<std::string> materialUUIDs = model3D->materialUUIDs;
 		refTracker.RemoveRef(uuid, model3D);
-		if (!refTracker.Has(uuid) && model3ds.contains(uuid))
-		{
-			nlohmann::json& mdl = std::get<1>(model3ds.at(uuid));
-
-			if (mdl.at("autoCreateMaterial"))
-			{
-				for (auto& matUUID : materialUUIDs)
-				{
-					DestroyMaterial(matUUID);
-				}
-			}
-		}
 	}
 
 	//EDITOR
@@ -486,12 +480,6 @@ namespace Templates
 	void Model3D::DrawEditorMaterialAttributes(std::string uuid)
 	{
 		nlohmann::json& json = std::get<1>(model3ds.at(uuid));
-
-		ImGui::PushID("Auto-Create-Material");
-		{
-			drawFromCheckBox(json, "autoCreateMaterial", "Auto create material");
-		}
-		ImGui::PopID();
 
 		auto reloadModel = [uuid]() { ReloadModel3DInstances(uuid); };
 
