@@ -327,6 +327,7 @@ namespace Scene {
 			}
 		);
 	}
+#endif
 
 	void SoundEffectsStep()
 	{
@@ -350,6 +351,7 @@ namespace Scene {
 #endif
 	}
 
+#if defined(_EDITOR)
 	void SoundEffect::DrawEditorInformationAttributes()
 	{
 		ImGui::TableNextRow();

@@ -5,8 +5,11 @@
 #include <nlohmann/json.hpp>
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
-#include <Application.h>
+#else
+#include "../Templates.h"
+#include "../../Scene/Scene.h"
 #endif
+#include <Application.h>
 #include <Editor.h>
 
 namespace Templates {
@@ -99,6 +102,7 @@ namespace Templates {
 	{
 		using namespace Animation;
 		using namespace Scene;
+		using namespace Templates;
 
 		for (unsigned int paramIdx = 0; paramIdx < desc.ConstantBuffers; paramIdx++)
 		{
@@ -142,7 +146,9 @@ namespace Templates {
 
 					if (lowerVarName.find(tiePattern) == std::string::npos) continue;
 
+#if defined(_EDITOR)
 					SetShaderMappedVariable(shaderSource.shaderUUID, varName, it->second);
+#endif
 
 					useNamePattern = true;
 					break;
@@ -150,7 +156,10 @@ namespace Templates {
 
 				if (useNamePattern) continue;
 
+#if defined(_EDITOR)
 				SetShaderMappedVariable(shaderSource.shaderUUID, varName, HLSLVariableClassToMaterialVariableTypes.at(varClass));
+#endif
+
 			}
 			cbufferSize.push_back(paramDesc.Size);
 		}

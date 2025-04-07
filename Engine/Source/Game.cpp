@@ -124,7 +124,9 @@ void RunRender()
 	{
 		resolvePass->BeginRenderPass();
 		{
+#if defined(_EDITOR)
 			DrawEditor();
+#endif
 		}
 		resolvePass->EndRenderPass();
 		return;
@@ -179,43 +181,57 @@ void BootScreenCreate()
 		{
 			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
-			bootScreen = CreateRenderable(
-				R"(
+			bootScreen = CreateRenderable(nlohmann::json(
 				{
-					"meshMaterials": [
+					{ "uuid", getUUID() },
+					{ "name" ,"bootScreen" },
+					{ "meshMaterials",
 						{
-							"material": "FullScreenQuad",
-							"mesh" : "decal",
-							"textures": [
-								{ "path": "Assets/ui/logo.dds", "format":"R8G8B8A8_UNORM", "numFrames":0 }
-							]
+							{
+								{ "material", FindMaterialUUIDByName("FullScreenQuad") },
+								{ "mesh", FindMeshUUIDByName("decal") },
+								{ "textures",
+									{
+										{
+											"BaseTexture" ,
+											{
+												{ "path", "Assets/ui/logo.dds" },
+												{ "format", "B8G8R8A8_UNORM_SRGB" },
+												{ "numFrames", 0 }
+											}
+										}
+									}
+								}
+							}
 						}
-					],
-					"name": "bootScreen",
-					"pipelineState": {
-						"depthStencilFormat":"UNKNOWN"
+					},
+					{ "pipelineState",
+						{
+							{ "depthStencilFormat", "UNKNOWN" }
+						}
 					}
-				})"_json
-			);
+				}
+			));
 
-			UICamera = CreateCamera(
-				R"(
-					{
-						"fitWindow":true,
-						"name" : "bootCamera",
-						"perspective" : {
-							"farZ": 100.0,
-							"fovAngleY" : 1.2217305898666382,
-							"height" : 920,
-							"nearZ" : 0.009999999776482582,
-							"width" : 1707
-						},
-						"position": [-5.699999809265137, 2.200000047683716, 3.799999952316284] ,
-						"projectionType" : "Perspective",
-						"rotation" : [1.5707963705062866, -0.19634954631328583, 0.0] ,
-						"speed" : 0.05000000074505806
-				})"_json
-			);
+			UICamera = CreateCamera(nlohmann::json(
+				{
+					{ "uuid", getUUID() },
+					{ "name", "bootCamera" },
+					{ "fitWindow", true },
+					{ "perspective", {
+							{ "farZ", 100.0 },
+							{ "fovAngleY", 1.222f },
+							{ "height", 920 },
+							{ "nearZ", 0.01f },
+							{ "width", 1707 },
+						}
+					},
+					{ "position", { -5.7f, 2.2f, 3.8f } },
+					{ "projectionType", "Perspective" },
+					{ "rotation", { 1.6f, -0.2f, 0.0 } },
+					{ "speed", 0.05f }
+				}
+			));
 		}
 	);
 
@@ -257,21 +273,25 @@ void LoadingScreenCreate()
 {
 	renderer->RenderCriticalFrame([]
 		{
-			loadingScreenBar = CreateRenderable(
-				R"(
+			loadingScreenBar = CreateRenderable(nlohmann::json(
 				{
-					"meshMaterials": [
+					{ "uuid", getUUID() },
+					{ "name", "loadingScreenBar" },
+					{ "pipelineState",
 						{
-							"material": "LoadingBar",
-							"mesh" : "decal"
+							{ "depthStencilFormat", "UNKNOWN" }
 						}
-					],
-					"name": "loadingScreenBar",
-					"pipelineState": {
-						"depthStencilFormat":"UNKNOWN"
+					},
+					{ "meshMaterials",
+						{
+							{
+								{ "material", FindMaterialUUIDByName("LoadingBar") },
+								{ "mesh", FindMeshUUIDByName("decal") }
+							}
+						}
 					}
-				})"_json
-			);
+				}
+			));
 		}
 	);
 
@@ -321,7 +341,7 @@ void PlayModeCreate()
 {
 	renderer->RenderCriticalFrame([]
 		{
-			LoadLevel("knight");
+			LoadLevel("family");
 			unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
 			unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
 			mainPass = CreateRenderPass("mainPass", { DXGI_FORMAT_R8G8B8A8_UNORM }, DXGI_FORMAT_D32_FLOAT, width, height);

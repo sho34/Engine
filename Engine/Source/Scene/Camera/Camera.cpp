@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Camera.h"
+#include "../Scene.h"
 #include "../Lights/Lights.h"
 #include "../../Renderer/Renderer.h"
 #include <nlohmann/json.hpp>
@@ -226,6 +227,7 @@ namespace Scene
 
 	void CamerasStep()
 	{
+#if defined(_EDITOR)
 		std::vector<std::shared_ptr<Camera>> camerasToDestroy;
 		std::copy_if(cameraByIndex.begin(), cameraByIndex.end(), std::back_inserter(camerasToDestroy), [](const std::shared_ptr<Camera>& cam)
 			{
@@ -254,6 +256,7 @@ namespace Scene
 				}
 			);
 		}
+#endif
 	}
 
 	void DestroyCamera(std::shared_ptr<Camera>& camera)

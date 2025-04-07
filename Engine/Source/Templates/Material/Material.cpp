@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "../Templates.h"
 #include "Material.h"
 #include "Variables.h"
 #include "../../Renderer/Renderer.h"
@@ -17,7 +18,6 @@
 
 #if defined(_EDITOR)
 #include "../Editor/Editor.h"
-#include "../Templates.h"
 #include <Editor.h>
 namespace Editor {
 	extern _Templates tempTab;
@@ -60,8 +60,10 @@ namespace Templates {
 		data.erase("uuid");
 
 		materials.insert_or_assign(uuid, t);
+#if defined(_EDITOR)
 		AttachMaterialToShader(json.at("shader_vs"), uuid);
 		AttachMaterialToShader(json.at("shader_ps"), uuid);
+#endif
 	}
 
 	static std::mt19937 g;
@@ -437,6 +439,7 @@ namespace Templates {
 		materials.clear();
 	}
 
+#if defined(_DEVELOPMENT)
 	std::vector<std::string> GetMaterialsNames() {
 		return GetNames(materials);
 	}
@@ -445,6 +448,7 @@ namespace Templates {
 	{
 		return GetUUIDsNames(materials);
 	}
+#endif
 
 	std::string FindMaterialUUIDByName(std::string name)
 	{

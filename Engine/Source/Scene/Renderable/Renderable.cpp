@@ -54,6 +54,11 @@ namespace Scene {
 				std::map<TextureType, MaterialTexture> textures;
 				TransformJsonToMaterialTextures(textures, GetMaterialTemplate(value["material"]), "textures");
 
+				if (value.contains("textures"))
+				{
+					TransformJsonToMaterialTextures(textures, value, "textures");
+				}
+
 				for (auto& [type, base] : baseTextures)
 				{
 					if (!textures.contains(type))

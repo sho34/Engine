@@ -16,6 +16,10 @@ namespace Editor {
 	extern std::string selTemp;
 }
 #endif
+#if defined(_DEVELOPMENT)
+#include <Command.h>
+#endif
+#include <DDSTextures.h>
 
 using namespace Animation;
 using namespace DeviceUtils;
@@ -327,19 +331,23 @@ namespace Templates
 		);
 	}
 
+#if defined(_EDITOR)
 	std::vector<std::string> GetModels3DNames() {
 		return GetNames(model3ds);
 	}
+#endif
 
 	std::string GetModel3DName(std::string uuid)
 	{
 		return std::get<0>(model3ds.at(uuid));
 	}
 
+#if defined(_EDITOR)
 	std::vector<UUIDName> GetModels3DUUIDsNames()
 	{
 		return GetUUIDsNames(model3ds);
 	}
+#endif
 
 	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index) {
 		return "mesh-" + uuid + "-" + std::to_string(index);

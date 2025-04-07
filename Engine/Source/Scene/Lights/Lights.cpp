@@ -220,10 +220,12 @@ namespace Scene {
 		return lightsNames;
 	}
 
+#if defined(_EDITOR)
 	std::vector<UUIDName> GetLightsUUIDNames()
 	{
 		return GetSceneObjectsUUIDsNames(lightsByUUID);
 	}
+#endif
 
 	std::shared_ptr<ConstantsBuffer> GetLightsConstantsBuffer() {
 		return lightsCbv;

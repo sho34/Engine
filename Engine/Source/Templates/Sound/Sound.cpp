@@ -70,24 +70,29 @@ namespace Templates
 	}
 
 	//READ&GET
+#if defined(_EDITOR)
 	std::vector<std::string> GetSoundsNames()
 	{
 		return GetNames(sounds);
 	}
+#endif
 
 	std::string GetSoundName(std::string uuid)
 	{
 		return std::get<0>(sounds.at(uuid));
 	}
 
+#if defined(_EDITOR)
 	std::vector<UUIDName> GetSoundsUUIDsNames()
 	{
 		return GetUUIDsNames(sounds);
 	}
+#endif
 
 	//UPDATE
 
 	//DESTROY
+#if defined(_EDITOR)
 	void Sound::ReleaseSoundEffectsInstances()
 	{
 		for (auto& [uuid, t] : sounds)
@@ -95,8 +100,8 @@ namespace Templates
 			auto& instances = std::get<3>(t);
 			instances.clear();
 		}
-		//soundInstances.clear();
-	}
+}
+#endif
 
 	void ReleaseSoundTemplates()
 	{

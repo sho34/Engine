@@ -5,6 +5,7 @@
 #include <Application.h>
 #include <nlohmann/json.hpp>
 #include "../../Scene/Sound/SoundEffect.h"
+#include <UUID.h>
 
 using namespace DirectX;
 
@@ -25,7 +26,7 @@ namespace Templates {
 	{
 		SoundPopupModal_CannotDelete = 1,
 		SoundPopupModal_CreateNew = 2
-	};
+};
 #endif
 
 	namespace Sound

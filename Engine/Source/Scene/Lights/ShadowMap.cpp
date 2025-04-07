@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "Lights.h"
-//#include "../Renderable/Renderable.h"
 #include "../Camera/Camera.h"
 #include "../../Common/d3dx12.h"
 #include "../../Common/DirectXHelper.h"
@@ -182,6 +181,7 @@ namespace Scene {
 		renderer->d3dDevice->CreateShaderResourceView(shadowMapRenderPass->depthStencilTexture, &shadowMapSrvDesc, shadowMapSrvCpuDescriptorHandle[shadowMapIndex]);
 	}
 
+#if defined(_EDITOR)
 	void Light::CreateShadowMapMinMaxChain()
 	{
 		//pick the gpu handles for the final shadowmap and copies for the min/max chain initial calculation
@@ -319,6 +319,7 @@ namespace Scene {
 		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureType_MinTexture, GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapResultChainMat2, .gpuHandle = lastMinMaxPass->renderToTexture[0]->gpuTextureHandle })));
 		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureType_MaxTexture, GetTextureFromGPUHandle(MaterialTexture({ .path = ShadowMapResultChainMat3, .gpuHandle = lastMinMaxPass->renderToTexture[1]->gpuTextureHandle })));
 	}
+#endif
 
 	bool SceneHasShadowMaps()
 	{
@@ -499,7 +500,6 @@ namespace Scene {
 	}
 
 #if defined(_EDITOR)
-
 	void Light::RenderShadowMapMinMaxChain()
 	{
 #if defined(_DEVELOPMENT)
