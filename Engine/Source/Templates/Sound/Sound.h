@@ -3,6 +3,7 @@
 #include <string>
 #include <Audio.h>
 #include <Application.h>
+#include <nlohmann/json.hpp>
 #include "../../Scene/Sound/SoundEffect.h"
 
 using namespace DirectX;

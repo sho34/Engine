@@ -9,6 +9,7 @@
 #include <Application.h>
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
+#include <Editor.h>
 #endif
 
 using namespace AudioSystem;
@@ -28,6 +29,7 @@ namespace Templates
 
 	namespace Sound
 	{
+		nlohmann::json creationJson;
 		unsigned int popupModalId = 0U;
 	};
 #endif
@@ -98,7 +100,6 @@ namespace Templates
 
 	void ReleaseSoundTemplates()
 	{
-		//soundTemplates.clear();
 		sounds.clear();
 	}
 
@@ -172,6 +173,14 @@ namespace Templates
 
 	void CreateNewSound()
 	{
+		Sound::popupModalId = SoundPopupModal_CreateNew;
+		Sound::creationJson = nlohmann::json(
+			{
+				{ "name", "" },
+				{ "path", "" },
+				{ "uuid", getUUID() }
+			}
+		);
 	}
 
 	void Sound::DrawEditorInformationAttributes(std::string uuid)
@@ -237,6 +246,51 @@ namespace Templates
 		Editor::DrawOkPopup(Sound::popupModalId, SoundPopupModal_CannotDelete, "Cannot delete sound", []
 			{
 				ImGui::Text("Cannot delete a system created sound");
+			}
+		);
+
+		Editor::DrawCreateWindow(Sound::popupModalId, SoundPopupModal_CreateNew, "Create new sound", [](auto OnCancel)
+			{
+				nlohmann::json& json = Sound::creationJson;
+
+				ImGui::PushID("sound-name");
+				{
+					ImGui::Text("Name");
+					ImDrawJsonInputText(json, "name");
+				}
+				ImGui::PopID();
+
+				std::string parentFolder = defaultAssetsFolder;
+
+				ImGui::PushID("sound-path");
+				{
+					ImDrawJsonFilePicker(json, "path", parentFolder, "Sound files. (*.wav)", "*.wav");
+				}
+				ImGui::PopID();
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+
+				std::vector<std::string> soundNames = GetSoundsNames();
+				bool disabledCreate = json.at("path") == "" || json.at("name") == "" || std::find(soundNames.begin(), soundNames.end(), std::string(json.at("name"))) != soundNames.end();
+
+				if (disabledCreate)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				if (ImGui::Button("Create"))
+				{
+					Sound::popupModalId = 0;
+					CreateSound(json);
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
 			}
 		);
 	}

@@ -787,4 +787,25 @@ inline void ImDrawJsonInputText(nlohmann::json& json, std::string att)
 	}
 }
 
+inline void ImDrawJsonFilePicker(nlohmann::json& json, std::string att, std::string defaultDirectory, std::string filterName, std::string filterPattern)
+{
+	std::string fileName = "";
+	if (json.contains(att) && json.at(att) != "")
+	{
+		fileName = json.at(att);
+		std::filesystem::path rootFolder = fileName;
+		defaultDirectory = rootFolder.parent_path().string();
+	}
+
+	ImDrawFileSelector("##", fileName, [&json, att](std::filesystem::path path)
+		{
+			std::filesystem::path curPath = std::filesystem::current_path();
+			std::filesystem::path relPath = std::filesystem::relative(path, curPath);
+			json.at(att) = relPath.string();
+		},
+		defaultDirectory, filterName, filterPattern
+	);
+
+}
+
 #endif
