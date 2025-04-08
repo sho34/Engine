@@ -20,6 +20,7 @@ namespace Templates {
 	namespace Shader
 	{
 #if defined(_EDITOR)
+		nlohmann::json creationJson;
 		unsigned int popupModalId = 0U;
 #endif
 		static nostd::RefTracker<Source, std::shared_ptr<ShaderInstance>> refTracker;
@@ -783,15 +784,30 @@ namespace Templates {
 		std::string name = std::get<0>(t);
 		nlohmann::json& json = std::get<1>(t);
 		std::string fileName = (json.contains("path") ? std::string(json.at("path")) : name);
-		bool fileSelectionEnabled = (json.contains("systemCreated") && json.at("systemCreated") == true);
+		bool fileSelectionEnabled = (!json.contains("systemCreated") || json.at("systemCreated") == false);
 		ImDrawFileSelector("##", fileName, [&json](std::filesystem::path shaderPath)
 			{
 				std::filesystem::path hlslFilePath = shaderPath;
 				hlslFilePath.replace_extension(".hlsl");
 				json.at("path") = hlslFilePath.stem().string();
 			},
-			defaultShadersFolder, "Shader files. (*.hlsl)", "*.hlsl", !fileSelectionEnabled
+			defaultShadersFolder, "Shader files. (*.hlsl)", "*.hlsl", fileSelectionEnabled
 		);
+
+		ImGui::PushID("shader-type");
+		{
+			ImGui::Text("Type");
+			if (fileSelectionEnabled)
+			{
+				drawFromCombo(json, "type", StrToShaderType);
+			}
+			else
+			{
+				std::string type = std::string(json.at("type"));
+				ImGui::InputText("##", type.data(), type.size(), ImGuiInputTextFlags_ReadOnly);
+			}
+		}
+		ImGui::PopID();
 
 		ImDrawMappedValues(json, GetShaderMappeableVariables(uuid));
 	}
@@ -812,6 +828,15 @@ namespace Templates {
 
 	void CreateNewShader()
 	{
+		Shader::popupModalId = ShaderPopupModal_CreateNew;
+		Shader::creationJson = nlohmann::json(
+			{
+				{ "name", "" },
+				{ "path", "" },
+				{ "type", ShaderTypeToStr.at(VERTEX_SHADER) },
+				{ "uuid", getUUID() }
+			}
+		);
 	}
 
 	void DeleteShader(std::string uuid)
@@ -832,6 +857,58 @@ namespace Templates {
 		Editor::DrawOkPopup(Shader::popupModalId, ShaderPopupModal_CannotDelete, "Cannot delete shader", []
 			{
 				ImGui::Text("Cannot delete a system created shader");
+			}
+		);
+
+		Editor::DrawCreateWindow(Shader::popupModalId, ShaderPopupModal_CreateNew, "Create new shader", [](auto OnCancel)
+			{
+				nlohmann::json& json = Shader::creationJson;
+
+				ImGui::PushID("shader-name");
+				{
+					ImGui::Text("Name");
+					ImDrawJsonInputText(json, "name");
+				}
+				ImGui::PopID();
+
+				ImGui::PushID("shader-type");
+				{
+					ImGui::Text("Type");
+					drawFromCombo(json, "type", StrToShaderType);
+				}
+				ImGui::PopID();
+
+				std::string parentFolder = defaultShadersFolder;
+
+				ImGui::PushID("shader-path");
+				{
+					ImDrawJsonFilePicker(json, "path", parentFolder, "Shader files. (*.hlsl)", "*.hlsl");
+				}
+				ImGui::PopID();
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+
+				std::vector<std::string> shaderNames = GetShadersNames();
+				bool disabledCreate = json.at("path") == "" || json.at("name") == "" || std::find(shaderNames.begin(), shaderNames.end(), std::string(json.at("name"))) != shaderNames.end();
+
+				if (disabledCreate)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				if (ImGui::Button("Create"))
+				{
+					Shader::popupModalId = 0;
+					CreateShader(json);
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
 			}
 		);
 	}
