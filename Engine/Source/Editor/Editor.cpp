@@ -749,7 +749,7 @@ namespace Editor {
 
 		ImGui::PushID(("shader-name-combo-" + key).c_str());
 		{
-			std::string shaderUUID = mat.at(key);
+			std::string shaderUUID = mat.contains(key) ? mat.at(key) : "";
 			if (shaderUUID != "")
 			{
 				if (ImGui::Button(ICON_FA_FILE_CODE))
@@ -761,11 +761,11 @@ namespace Editor {
 			}
 
 			std::vector<UUIDName> selectables = GetShadersUUIDsNamesByType(type);
-			std::string shaderName = GetShaderName(shaderUUID);
+			std::string shaderName = shaderUUID != "" ? GetShaderName(shaderUUID) : " ";
 			UUIDName selected = std::tie(shaderUUID, shaderName);
 			DrawComboSelection(selected, selectables, [&mat, key, cb](UUIDName shader)
 				{
-					mat.at(key) = shader;
+					mat.at(key) = std::get<0>(shader);
 					cb();
 				}, ""
 			);

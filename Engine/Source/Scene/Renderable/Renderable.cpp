@@ -1225,10 +1225,12 @@ namespace Scene {
 	{
 		Editor::DrawCreateWindow(Renderable::popupModalId, RenderablePopupModal_CreateNew, "New Renderable", [](auto OnCancel)
 			{
+				nlohmann::json& json = Renderable::creationJson;
+
 				ImGui::PushID("renderable-name");
 				{
 					ImGui::Text("Name");
-					ImDrawJsonInputText(Renderable::creationJson, "name");
+					ImDrawJsonInputText(json, "name");
 				}
 				ImGui::PopID();
 
@@ -1238,15 +1240,15 @@ namespace Scene {
 				nostd::AppendToVector(selectables, modelsUUIDNames);
 				nostd::AppendToVector(selectables, meshesUUIDNames);
 
-				int current_item = FindSelectableIndex(selectables, Renderable::creationJson, "model");
+				int current_item = FindSelectableIndex(selectables, json, "model");
 
 				ImGui::PushID("renderable-mesh-model-selector");
 				{
 					ImGui::Text("Select model/mesh");
 
-					DrawComboSelection(selectables[current_item], selectables, [](UUIDName uuidName)
+					DrawComboSelection(selectables[current_item], selectables, [&json](UUIDName uuidName)
 						{
-							Renderable::creationJson.at("model") = std::get<0>(uuidName);
+							json.at("model") = std::get<0>(uuidName);
 						}, "model"
 					);
 				}
@@ -1268,26 +1270,25 @@ namespace Scene {
 						std::vector<UUIDName> materialsUUIDNames = GetMaterialsUUIDsNames();
 						nostd::AppendToVector(selectablesMaterials, materialsUUIDNames);
 
-						current_material_item = FindSelectableIndex(selectablesMaterials, Renderable::creationJson, "material");
+						current_material_item = FindSelectableIndex(selectablesMaterials, json, "material");
 
-						DrawComboSelection(selectablesMaterials[current_material_item], selectablesMaterials, [materialsUUIDNames](UUIDName uuidName)
+						DrawComboSelection(selectablesMaterials[current_material_item], selectablesMaterials, [materialsUUIDNames, &json](UUIDName uuidName)
 							{
-								Renderable::creationJson.at("material") = std::get<0>(uuidName);
+								json.at("material") = std::get<0>(uuidName);
 							}, "material"
 						);
 					}
 					ImGui::PopID();
 				}
 
-				bool isModel3D = !!(FindSelectableIndex(modelsUUIDNames, Renderable::creationJson, "model"));
+				std::vector<UUIDName> selectablesModels3D = { std::tie("", " ") };
+				nostd::AppendToVector(selectablesModels3D, modelsUUIDNames);
+				bool isModel3D = !!(FindSelectableIndex(selectablesModels3D, json, "model"));
 
 				if (ImGui::Button("Cancel")) { OnCancel(); }
 				ImGui::SameLine();
-				bool disabledCreate = (
-					current_item == 0 ||
-					Renderable::creationJson.at("name") == "" ||
-					NameCollideWithSceneObjects(renderables, Renderable::creationJson)
-					);
+				bool disabledCreate = (current_item == 0 || json.at("name") == "" || NameCollideWithSceneObjects(renderables, json));
+
 				if (!isModel3D)
 				{
 					disabledCreate |= (current_material_item == 0);
@@ -1306,8 +1307,8 @@ namespace Scene {
 					{
 						nlohmann::json r = {
 							{ "uuid", getUUID() },
-							{ "name", Renderable::creationJson.at("name") },
-							{ "model", Renderable::creationJson.at("model") }
+							{ "name", json.at("name") },
+							{ "model", json.at("model") }
 						};
 						CreateRenderable(r);
 					}
@@ -1315,12 +1316,12 @@ namespace Scene {
 					{
 						nlohmann::json r = {
 							{ "uuid", getUUID() },
-							{ "name", Renderable::creationJson.at("name") },
+							{ "name", json.at("name") },
 							{ "meshMaterials",
 								{
 									{
-										{ "material", Renderable::creationJson.at("material")},
-										{ "mesh", Renderable::creationJson.at("model")}
+										{ "material", json.at("material")},
+										{ "mesh", json.at("model")}
 									}
 								}
 							},
@@ -1328,7 +1329,7 @@ namespace Scene {
 								{
 									{
 										{ "material", FindMaterialUUIDByName("ShadowMap") },
-										{ "mesh", Renderable::creationJson.at("model")}
+										{ "mesh", json.at("model")}
 									}
 								}
 							}

@@ -571,7 +571,7 @@ namespace Templates {
 		std::copy_if(shaders.begin(), shaders.end(), std::inserter(shadersByType, shadersByType.end()), [type](auto pair)
 			{
 				nlohmann::json& json = std::get<1>(pair.second);
-				return StrToShaderType.at(json.at("type"));
+				return StrToShaderType.at(json.at("type")) == type;
 			}
 		);
 		return GetUUIDsNames(shadersByType);

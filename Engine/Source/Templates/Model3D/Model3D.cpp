@@ -31,6 +31,7 @@ namespace Templates
 	namespace Model3D
 	{
 #if defined(_EDITOR)
+		nlohmann::json creationJson;
 		unsigned int popupModalId = 0U;
 #endif
 		static nostd::RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker; //uuid -> model3dInstance
@@ -438,6 +439,16 @@ namespace Templates
 
 	void CreateNewModel3D()
 	{
+		Model3D::popupModalId = Model3DPopupModal_CreateNew;
+		Model3D::creationJson = nlohmann::json(
+			{
+				{ "name", "" },
+				{ "path", "" },
+				{ "shader_vs", "" },
+				{ "shader_ps", "" },
+				{ "uuid", getUUID() }
+			}
+		);
 	}
 
 	void Model3D::DrawEditorInformationAttributes(std::string uuid)
@@ -509,6 +520,53 @@ namespace Templates
 		Editor::DrawOkPopup(Model3D::popupModalId, Model3DPopupModal_CannotDelete, "Cannot delete model3d", []
 			{
 				ImGui::Text("Cannot delete a system created model 3D");
+			}
+		);
+
+		Editor::DrawCreateWindow(Model3D::popupModalId, Model3DPopupModal_CreateNew, "Create new 3d model", [](auto OnCancel)
+			{
+				nlohmann::json& json = Model3D::creationJson;
+
+				ImGui::PushID("shader-name");
+				{
+					ImGui::Text("Name");
+					ImDrawJsonInputText(json, "name");
+				}
+				ImGui::PopID();
+
+				std::string parentFolder = default3DModelsFolder;
+
+				ImGui::PushID("shader-path");
+				{
+					ImDrawJsonFilePicker(json, "path", parentFolder, "3d model files. (*.gltf)", "*.gltf");
+				}
+				ImGui::PopID();
+
+				Editor::ImDrawMaterialShaderSelection(json, "shader_vs", VERTEX_SHADER);
+				Editor::ImDrawMaterialShaderSelection(json, "shader_ps", PIXEL_SHADER);
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+
+				bool disabledCreate = json.at("path") == "" || json.at("name") == "" || json.at("shader_vs") == "" || json.at("shader_ps") == "";
+
+				if (disabledCreate)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				if (ImGui::Button("Create"))
+				{
+					Model3D::popupModalId = 0;
+					CreateModel3D(json);
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
 			}
 		);
 	}
