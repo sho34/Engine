@@ -24,6 +24,7 @@ namespace Editor {
 	extern std::string selTemp;
 }
 #endif
+extern std::shared_ptr<Renderer> renderer;
 
 namespace Templates {
 
@@ -388,6 +389,15 @@ namespace Templates {
 		NotifyMappedValueChange();
 	}
 
+	bool MaterialInstance::CanReleaseGPUUploadIntermediateResources()
+	{
+		for (auto& it : textures)
+		{
+			if (it.second->upload) return true;
+		}
+		return false;
+	}
+
 	void MaterialInstance::ReleaseGPUUploadIntermediateResources()
 	{
 		std::for_each(textures.begin(), textures.end(), [](auto& pair)
@@ -420,11 +430,26 @@ namespace Templates {
 	void FreeGPUTexturesUploadIntermediateResources()
 	{
 		using namespace Material;
-		std::for_each(refTracker.instances.begin(), refTracker.instances.end(), [](auto& pair)
-			{
-				pair.second->ReleaseGPUUploadIntermediateResources();
-			}
-		);
+
+		bool releaseResources = false;
+		for (auto& pair : refTracker.instances)
+		{
+			releaseResources |= pair.second->CanReleaseGPUUploadIntermediateResources();
+		}
+
+		if (releaseResources)
+		{
+			renderer->Flush();
+			renderer->RenderCriticalFrame([]
+				{
+					std::for_each(refTracker.instances.begin(), refTracker.instances.end(), [](auto& pair)
+						{
+							pair.second->ReleaseGPUUploadIntermediateResources();
+						}
+					);
+				}
+			);
+		}
 	}
 
 	void DestroyMaterial(std::string uuid)

@@ -79,6 +79,7 @@ namespace Templates {
 		void UpdateMappedValues(nlohmann::json mappedValues);
 		void CallRebuildCallbacks() { for (auto& cb : rebuildCallbacks) { cb(); } }
 		void CallMappedValueChangesPropagation() { for (auto& cb : propagateMappedValueChanges) { cb(); } }
+		bool CanReleaseGPUUploadIntermediateResources();
 		void ReleaseGPUUploadIntermediateResources();
 	};
 
