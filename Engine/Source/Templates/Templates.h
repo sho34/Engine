@@ -36,6 +36,15 @@ inline static std::function<std::vector<UUIDName>()> SortUUIDNameByName(std::fun
 		};
 };
 
+inline static void SortUUIDByName(std::vector<UUIDName>& uuidNames)
+{
+	std::sort(uuidNames.begin(), uuidNames.end(), [](UUIDName a, UUIDName b)
+		{
+			return std::get<1>(a) < std::get<1>(b);
+		}
+	);
+}
+
 static const std::map<_Templates, std::function<std::vector<UUIDName>()>> GetTemplates =
 {
 	{ T_Materials, SortUUIDNameByName(GetMaterialsUUIDsNames) },

@@ -12,6 +12,7 @@ namespace Editor {
 	void InitEditor();
 
 	void ImGuiImplRenderInit();
+	void SetupImGuiStyle();
 	void DestroyEditor();
 	bool WndProcHandlerEditor(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	void HandleApplicationDragTitleBar(RECT& dragRect);

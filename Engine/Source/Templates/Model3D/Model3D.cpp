@@ -527,7 +527,7 @@ namespace Templates
 			{
 				nlohmann::json& json = Model3D::creationJson;
 
-				ImGui::PushID("shader-name");
+				ImGui::PushID("model3d-name");
 				{
 					ImGui::Text("Name");
 					ImDrawJsonInputText(json, "name");
@@ -536,7 +536,7 @@ namespace Templates
 
 				std::string parentFolder = default3DModelsFolder;
 
-				ImGui::PushID("shader-path");
+				ImGui::PushID("model3d-path");
 				{
 					ImDrawJsonFilePicker(json, "path", parentFolder, "3d model files. (*.gltf)", "*.gltf");
 				}

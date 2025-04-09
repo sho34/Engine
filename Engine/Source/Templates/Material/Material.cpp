@@ -35,6 +35,7 @@ namespace Templates {
 	namespace Material
 	{
 #if defined(_EDITOR)
+		nlohmann::json creationJson;
 		unsigned int popupModalId = 0U;
 #endif
 		static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
@@ -524,6 +525,15 @@ namespace Templates {
 
 	void CreateNewMaterial()
 	{
+		Material::popupModalId = MaterialPopupModal_CreateNew;
+		Material::creationJson = nlohmann::json(
+			{
+				{ "name", "" },
+				{ "shader_vs", "" },
+				{ "shader_ps", "" },
+				{ "uuid", getUUID() }
+			}
+		);
 	}
 
 	void DeleteMaterial(std::string uuid)
@@ -541,6 +551,45 @@ namespace Templates {
 		Editor::DrawOkPopup(Material::popupModalId, MaterialPopupModal_CannotDelete, "Cannot delete material", []
 			{
 				ImGui::Text("Cannot delete a system created material");
+			}
+		);
+
+		Editor::DrawCreateWindow(Material::popupModalId, MaterialPopupModal_CreateNew, "Create new material", [](auto OnCancel)
+			{
+				nlohmann::json& json = Material::creationJson;
+
+				ImGui::PushID("material-name");
+				{
+					ImGui::Text("Name");
+					ImDrawJsonInputText(json, "name");
+				}
+				ImGui::PopID();
+
+				Editor::ImDrawMaterialShaderSelection(json, "shader_vs", VERTEX_SHADER);
+				Editor::ImDrawMaterialShaderSelection(json, "shader_ps", PIXEL_SHADER);
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+
+				bool disabledCreate = json.at("name") == "" || json.at("shader_vs") == "" || json.at("shader_ps") == "";
+
+				if (disabledCreate)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				if (ImGui::Button("Create"))
+				{
+					Material::popupModalId = 0;
+					CreateMaterial(json);
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
 			}
 		);
 	}
