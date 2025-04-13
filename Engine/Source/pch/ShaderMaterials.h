@@ -70,6 +70,22 @@ struct ShaderConstantsBufferParameter {
 typedef std::map<std::string, ShaderConstantsBufferParameter> ShaderConstantsBufferParametersMap;
 typedef std::pair<std::string, ShaderConstantsBufferParameter> ShaderConstantsBufferParametersPair;
 
+template <>
+struct std::hash<ShaderConstantsBufferParametersMap>
+{
+	std::size_t operator()(const ShaderConstantsBufferParametersMap& m) const
+	{
+		std::string s;
+		for (auto& [k, v] : m)
+		{
+			s += k;
+			s += std::to_string(v.registerId);
+			s += std::to_string(v.numConstantsBuffers);
+		}
+		return hash<std::string>()(s);
+	}
+};
+
 //Texture Type
 enum TextureType
 {
@@ -153,6 +169,22 @@ struct ShaderTextureParameter {
 typedef std::map<TextureType, ShaderTextureParameter> ShaderTextureParametersMap;
 typedef std::pair<TextureType, ShaderTextureParameter> ShaderTextureParametersPair;
 
+template <>
+struct std::hash<ShaderTextureParametersMap>
+{
+	std::size_t operator()(const ShaderTextureParametersMap& m) const
+	{
+		std::string s;
+		for (auto& [k, v] : m)
+		{
+			s += k;
+			s += std::to_string(v.registerId);
+			s += std::to_string(v.numTextures);
+		}
+		return hash<std::string>()(s);
+	}
+};
+
 //define the Samplers binding
 struct ShaderSamplerParameter {
 	unsigned int registerId;
@@ -160,6 +192,22 @@ struct ShaderSamplerParameter {
 };
 typedef std::map<std::string, ShaderSamplerParameter> ShaderSamplerParametersMap;
 typedef std::pair<std::string, ShaderSamplerParameter> ShaderSamplerParametersPair;
+
+template <>
+struct std::hash<ShaderSamplerParametersMap>
+{
+	std::size_t operator()(const ShaderSamplerParametersMap& m) const
+	{
+		std::string s;
+		for (auto& [k, v] : m)
+		{
+			s += k;
+			s += std::to_string(v.registerId);
+			s += std::to_string(v.numSamplers);
+		}
+		return hash<std::string>()(s);
+	}
+};
 
 //define the layout of the cbuffer definition
 struct ShaderConstantsBufferVariable {

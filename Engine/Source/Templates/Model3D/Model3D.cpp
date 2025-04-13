@@ -236,7 +236,7 @@ namespace Templates
 
 	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, std::filesystem::path relativePath, aiMaterial* material)
 	{
-		nlohmann::json matJson = { {"pipelineState",{}} };
+		nlohmann::json matJson = nlohmann::json({});
 
 		matJson["uuid"] = materialUUID;
 		matJson["name"] = materialName;
@@ -245,7 +245,7 @@ namespace Templates
 
 		bool twoSided;
 		material->Get(AI_MATKEY_TWOSIDED, twoSided);
-		matJson["pipelineState"]["RasterizerState"]["CullMode"] = cullModeToString.at((twoSided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK));
+		matJson["rasterizerState"]["CullMode"] = cullModeToString.at((twoSided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK));
 
 		MaterialInitialValueMap matInitialValue;
 

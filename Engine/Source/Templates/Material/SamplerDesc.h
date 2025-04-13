@@ -66,6 +66,32 @@ struct MaterialSamplerDesc : D3D12_STATIC_SAMPLER_DESC {
 	}
 };
 
+template <>
+struct std::hash<std::vector<MaterialSamplerDesc>>
+{
+	std::size_t operator()(const std::vector<MaterialSamplerDesc>& v) const
+	{
+		std::string s;
+		for (auto& e : v)
+		{
+			s += filterToString[e.Filter];
+			s += textureAddressModeToString[e.AddressU];
+			s += textureAddressModeToString[e.AddressV];
+			s += textureAddressModeToString[e.AddressW];
+			s += std::to_string(e.MipLODBias);
+			s += std::to_string(e.MaxAnisotropy);
+			s += comparisonFuncToString[e.ComparisonFunc];
+			s += borderColorToString[e.BorderColor];
+			s += std::to_string(e.MinLOD);
+			s += std::to_string(e.MaxLOD);
+			s += std::to_string(e.ShaderRegister);
+			s += std::to_string(e.RegisterSpace);
+			s += shaderVisibilityToString[e.ShaderVisibility];
+		}
+		return hash<std::string>()(s);
+	}
+};
+
 
 inline void TransformJsonToMaterialSamplers(std::vector<MaterialSamplerDesc>& samplers, nlohmann::json object, const std::string& key) {
 

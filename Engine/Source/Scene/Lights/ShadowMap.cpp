@@ -478,10 +478,29 @@ namespace Scene {
 	//RENDER
 
 	std::set<LightType> onePassTypes = { LT_Directional, LT_Spot };
-	void Light::RenderShadowMap(std::function<void(unsigned int)> renderScene)
+	void Light::RenderShadowMap(std::function<void(size_t passHash, unsigned int)> renderScene)
 	{
 		auto& commandList = renderer->commandList;
 
+		shadowMapRenderPass->Pass([this, renderScene, &commandList](size_t passHash)
+			{
+				if (onePassTypes.contains(lightType()))
+				{
+					renderScene(passHash, 0);
+				}
+				else
+				{
+					for (unsigned int i = 0; i < 6; i++)
+					{
+						commandList->RSSetViewports(1, &shadowMapViewport.at(i));
+						commandList->RSSetScissorRects(1, &shadowMapScissorRect.at(i));
+						renderScene(passHash, i);
+					}
+				}
+			}
+		);
+
+		/*
 		shadowMapRenderPass->BeginRenderPass();
 		if (onePassTypes.contains(lightType()))
 		{
@@ -497,6 +516,7 @@ namespace Scene {
 			}
 		}
 		shadowMapRenderPass->EndRenderPass();
+		*/
 	}
 
 #if defined(_EDITOR)
@@ -516,6 +536,14 @@ namespace Scene {
 #if defined(_DEVELOPMENT)
 			PIXBeginEvent(commandList.p, 0, renderPass->name.c_str());
 #endif
+			renderPass->Pass([&quad](size_t passHash)
+				{
+					quad->visible(true);
+					quad->Render(passHash);
+					quad->visible(false);
+				}
+			);
+			/*
 			renderPass->BeginRenderPass();
 			{
 				quad->visible(true);
@@ -523,6 +551,7 @@ namespace Scene {
 				quad->visible(false);
 			}
 			renderPass->EndRenderPass();
+			*/
 #if defined(_DEVELOPMENT)
 			PIXEndEvent(commandList.p);
 #endif
@@ -531,6 +560,14 @@ namespace Scene {
 #if defined(_DEVELOPMENT)
 		PIXBeginEvent(commandList.p, 0, "ShadowMapMinMaxChainResult");
 #endif
+		shadowMapMinMaxChainResultRenderPass->Pass([this](size_t passHash)
+			{
+				shadowMapMinMaxChainResultRenderable->visible(true);
+				shadowMapMinMaxChainResultRenderable->Render(passHash);
+				shadowMapMinMaxChainResultRenderable->visible(false);
+			}
+		);
+		/*
 		shadowMapMinMaxChainResultRenderPass->BeginRenderPass();
 		{
 			shadowMapMinMaxChainResultRenderable->visible(true);
@@ -538,6 +575,7 @@ namespace Scene {
 			shadowMapMinMaxChainResultRenderable->visible(false);
 		}
 		shadowMapMinMaxChainResultRenderPass->EndRenderPass();
+		*/
 
 #if defined(_DEVELOPMENT)
 		PIXEndEvent(commandList.p);

@@ -10,11 +10,33 @@ using namespace DeviceUtils;
 
 extern std::shared_ptr<Renderer> renderer;
 
+template <>
+struct std::hash<RenderPassRenderTargetDesc>
+{
+	std::size_t operator()(const RenderPassRenderTargetDesc& r) const
+	{
+		using std::hash;
+		const std::vector<DXGI_FORMAT>& rtFormats = std::get<0>(r);
+		DXGI_FORMAT depthFormat = std::get<1>(r);
+		size_t h = 0ULL;
+		nostd::hash_combine(h, rtFormats, depthFormat);
+		return h;
+	}
+};
+
+
 namespace RenderPass {
+
+	static std::map<size_t, RenderPassRenderTargetDesc> hashesRenderPassesRenderTargets;
 
 	std::map<DXGI_FORMAT, DXGI_FORMAT> depthFormatConversion = {
 		{ DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_R32_FLOAT }
 	};
+
+	RenderPassRenderTargetDesc& GetRenderPassRenderTargetDesc(size_t passHash)
+	{
+		return hashesRenderPassesRenderTargets.at(passHash);
+	}
 
 	std::shared_ptr<SwapChainPass> CreateRenderPass(const std::string name, std::shared_ptr<DeviceUtils::DescriptorHeap>& descriptorHeap)
 	{
@@ -32,6 +54,23 @@ namespace RenderPass {
 		swapChainPass->screenViewport = renderer->screenViewport;
 		swapChainPass->scissorRect = renderer->scissorRect;
 		return swapChainPass;
+	}
+
+	void SwapChainPass::Pass(std::function<void(size_t)> renderCallback, std::shared_ptr<DeviceUtils::DescriptorHeap> dsvDescriptorHeap, bool clearRTV, XMVECTORF32 clearColor)
+	{
+		if (passHash == -1)
+		{
+			std::vector<DXGI_FORMAT> rtFormats = { DXGI_FORMAT_R8G8B8A8_UNORM };
+			DXGI_FORMAT dsFormat = (dsvDescriptorHeap ? DXGI_FORMAT_D32_FLOAT : DXGI_FORMAT_UNKNOWN);
+			RenderPassRenderTargetDesc passRTDesc = std::tie(rtFormats, dsFormat);
+
+			passHash = std::hash<RenderPassRenderTargetDesc>()(passRTDesc);
+			hashesRenderPassesRenderTargets.insert_or_assign(passHash, passRTDesc);
+		}
+
+		BeginRenderPass(dsvDescriptorHeap, clearRTV, clearColor);
+		renderCallback(passHash);
+		EndRenderPass();
 	}
 
 	void SwapChainPass::BeginRenderPass(std::shared_ptr<DeviceUtils::DescriptorHeap> dsvDescriptorHeap, bool clearRTV, XMVECTORF32 clearColor)
@@ -179,7 +218,21 @@ namespace RenderPass {
 			d3dDevice->CreateShaderResourceView(renderPass->depthStencilTexture, &depthStencilSRVDesc, renderPass->cpuDepthStencilTextureHandle);
 		}
 
+		if (renderPass->passHash == -1)
+		{
+			RenderPassRenderTargetDesc passRTDesc = std::tie(renderTargetsFormats, depthStencilFormat);
+			renderPass->passHash = std::hash<RenderPassRenderTargetDesc>()(passRTDesc);
+			hashesRenderPassesRenderTargets.insert_or_assign(renderPass->passHash, passRTDesc);
+		}
+
 		return renderPass;
+	}
+
+	void RenderToTexturePass::Pass(std::function<void(size_t)> renderCallback, XMVECTORF32 clearColor)
+	{
+		BeginRenderPass(clearColor);
+		renderCallback(passHash);
+		EndRenderPass();
 	}
 
 	void RenderToTexturePass::BeginRenderPass(XMVECTORF32 clearColor)
@@ -242,11 +295,6 @@ namespace RenderPass {
 		{
 			FreeCSUDescriptor(cpuDepthStencilTextureHandle, gpuDepthStencilTextureHandle);
 		}
-	}
-
-	void RenderToTexturePass::DebugX()
-	{
-		depthStencilTexture.Release();
 	}
 
 	void RenderToTexturePass::ReleaseResources()

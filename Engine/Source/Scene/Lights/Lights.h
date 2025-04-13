@@ -207,7 +207,7 @@ namespace Scene {
 #endif
 
 		//RENDER
-		void RenderShadowMap(std::function<void(unsigned int)> renderScene);
+		void RenderShadowMap(std::function<void(size_t, unsigned int)> renderScene);
 #if defined(_EDITOR)
 		void RenderShadowMapMinMaxChain();
 #endif

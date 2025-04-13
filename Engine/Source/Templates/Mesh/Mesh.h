@@ -3,6 +3,8 @@
 #include "../../Renderer/VertexFormats.h"
 #include "../../Renderer/DeviceUtils/VertexBuffer/VertexBuffer.h"
 #include "../../Renderer/DeviceUtils/IndexBuffer/IndexBuffer.h"
+#include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
+#include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
 #include <DirectXCollision.h>
 #include <Application.h>
 
@@ -45,3 +47,8 @@ namespace Templates {
 #endif
 
 };
+
+//MeshInstance to RootSignature
+typedef std::map<std::shared_ptr<Templates::MeshInstance>, HashedRootSignature> MeshHashedRootSignatureMap;
+//MeshInstance to PipelineState
+typedef std::map<std::shared_ptr<Templates::MeshInstance>, HashedPipelineState> MeshHashedPipelineStateMap;

@@ -108,12 +108,10 @@ namespace Editor {
 				"name": "EditorBoundingBox",
 				"uuid": "797b3a2b-6854-47ab-8e07-1974055e490d",
 				"position": [ 0.0, 0.0, 0.0],
+				"primitiveTopologyType":"LINE",
 				"rotation": [ 0.0, 0.0, 0.0 ],
 				"scale": [ 1.0, 1.0, 1.0],
 				"skipMeshes":[],
-				"pipelineState": {
-					"PrimitiveTopologyType":"LINE"
-				},
 				"visible":false,
 				"hidden":true
 			}

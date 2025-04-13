@@ -3,18 +3,81 @@
 #include "../../Renderer.h"
 #include "../../VertexFormats.h"
 #include "../../../Common/DirectXHelper.h"
+#include <NoStd.h>
 #include <ios>
+#include "../RootSignature/RootSignature.h"
 
 extern std::shared_ptr<Renderer> renderer;
+
+template <>
+struct std::hash<PipelineStateDesc>
+{
+	std::size_t operator()(const PipelineStateDesc& p) const
+	{
+		using std::hash;
+		const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputElementDescs = std::get<0>(p);
+		const ShaderByteCode& vs = std::get<1>(p);
+		const ShaderByteCode& ps = std::get<2>(p);
+		size_t rootSignatureHash = std::get<3>(p);
+		const D3D12_BLEND_DESC& BlendState = std::get<4>(p);
+		const D3D12_RASTERIZER_DESC& RasterizerState = std::get<5>(p);
+		const D3D12_PRIMITIVE_TOPOLOGY_TYPE& PrimitiveTopologyType = std::get<6>(p);
+		const std::vector<DXGI_FORMAT>& renderTargetsFormats = std::get<7>(p);
+		const DXGI_FORMAT& depthStencilForma = std::get<8>(p);
+
+		size_t h = 0ULL;
+		nostd::hash_combine(h,
+			inputElementDescs,
+			std::hash<std::string_view>{}({ reinterpret_cast<const char*>(vs.data()), vs.size() }),
+			std::hash<std::string_view>{}({ reinterpret_cast<const char*>(ps.data()), ps.size() }),
+			rootSignatureHash, BlendState, RasterizerState,
+			PrimitiveTopologyType, renderTargetsFormats, depthStencilForma
+		);
+		return h;
+	}
+};
+
+
+
 namespace DeviceUtils
 {
+	static nostd::RefTracker<size_t, HashedPipelineState> refTracker;
+
+	HashedPipelineState CreatePipelineState(PipelineStateDesc& p)
+	{
+		size_t hash = std::hash<PipelineStateDesc>()(p);
+		return refTracker.AddRef(hash, [hash, &p]()
+			{
+				CComPtr<ID3D12RootSignature> rootSignature = GetRootSignature(std::get<3>(p));
+				return std::make_tuple(hash,
+					CreatePipelineState(
+						std::to_string(hash),
+						std::get<0>(p),
+						std::get<1>(p),
+						std::get<2>(p),
+						rootSignature,
+						std::get<4>(p),
+						std::get<5>(p),
+						std::get<6>(p),
+						std::get<7>(p),
+						std::get<8>(p)
+					)
+				);
+			}
+		);
+	}
+
 	CComPtr<ID3D12PipelineState> CreatePipelineState(
 		std::string name,
 		std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout,
 		ShaderByteCode& vsCode,
 		ShaderByteCode& psCode,
 		CComPtr<ID3D12RootSignature>& rootSignature,
-		const RenderablePipelineState& renderablePipelineState
+		D3D12_BLEND_DESC& BlendState,
+		D3D12_RASTERIZER_DESC& RasterizerState,
+		D3D12_PRIMITIVE_TOPOLOGY_TYPE& PrimitiveTopologyType,
+		std::vector<DXGI_FORMAT>& renderTargetsFormats,
+		DXGI_FORMAT& depthStencilFormat
 	)
 	{
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC state = {};
@@ -30,22 +93,22 @@ namespace DeviceUtils
 		state.PS = CD3DX12_SHADER_BYTECODE(psCode.data(), psCode.size());
 
 		//material based state
-		state.RasterizerState = renderablePipelineState.RasterizerState;
-		state.BlendState = renderablePipelineState.BlendState;
+		state.RasterizerState = RasterizerState;
+		state.BlendState = BlendState;
 		state.SampleDesc.Count = 1;
 
 		//render target based
 		state.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-		if (renderablePipelineState.depthStencilFormat == DXGI_FORMAT_UNKNOWN) { state.DepthStencilState.DepthEnable = false; }
+		if (depthStencilFormat == DXGI_FORMAT_UNKNOWN) { state.DepthStencilState.DepthEnable = false; }
 		state.SampleMask = UINT_MAX;
-		state.PrimitiveTopologyType = renderablePipelineState.PrimitiveTopologyType;
-		state.NumRenderTargets = static_cast<UINT>(max(1, renderablePipelineState.renderTargetsFormats.size()));
+		state.PrimitiveTopologyType = PrimitiveTopologyType;
+		state.NumRenderTargets = static_cast<UINT>(max(1, renderTargetsFormats.size()));
 		state.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-		for (unsigned int i = 0; i < renderablePipelineState.renderTargetsFormats.size(); i++)
+		for (unsigned int i = 0; i < renderTargetsFormats.size(); i++)
 		{
-			state.RTVFormats[i] = renderablePipelineState.renderTargetsFormats[i];
+			state.RTVFormats[i] = renderTargetsFormats[i];
 		}
-		state.DSVFormat = renderablePipelineState.depthStencilFormat;
+		state.DSVFormat = depthStencilFormat;
 
 		CComPtr<ID3D12PipelineState> pipelineState;
 		DX::ThrowIfFailed(renderer->d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState)));
@@ -57,6 +120,7 @@ namespace DeviceUtils
 	}
 
 #if defined(_EDITOR)
+	/*
 	std::map<std::string, std::function<void(nlohmann::json&)>> addToBlendDescRenderTarget = {
 		{ "BlendEnable", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["BlendEnable"] = false; }},
 		{ "LogicOpEnable", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["LogicOpEnable"] = false; }},
@@ -206,7 +270,8 @@ namespace DeviceUtils
 
 	void ImDrawPipelineState(nlohmann::json& PipelineState)
 	{
-		ImDrawObject("PipelineState", PipelineState, addToPipelineState, drawPipelineState);
+		//ImDrawObject("PipelineState", PipelineState, addToPipelineState, drawPipelineState);
 	}
+	*/
 #endif
 };

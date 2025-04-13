@@ -135,5 +135,5 @@ namespace Scene
 {
 	void WriteConstantsBuffers();
 	void RenderSceneShadowMaps();
-	void RenderSceneObjects(std::shared_ptr<Camera>& camera);
+	void RenderSceneObjects(size_t passHash, std::shared_ptr<Camera>& camera);
 }

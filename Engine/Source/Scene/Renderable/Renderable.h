@@ -43,12 +43,6 @@ namespace Scene
 	//MeshInstance to ConstantsBuffer
 	typedef std::pair<std::shared_ptr<MeshInstance>, std::vector<std::shared_ptr<ConstantsBuffer>>> MeshConstantBufferPair;
 	typedef std::map<std::shared_ptr<MeshInstance>, std::vector<std::shared_ptr<ConstantsBuffer>>> MeshConstantsBufferMap;
-	//MeshInstance to RootSignature
-	typedef std::pair<std::shared_ptr<MeshInstance>, CComPtr<ID3D12RootSignature>> MeshRootSignaturePair;
-	typedef std::map<std::shared_ptr<MeshInstance>, CComPtr<ID3D12RootSignature>> MeshRootSignatureMap;
-	//MeshInstance to PipelineState
-	typedef std::pair<std::shared_ptr<MeshInstance>, CComPtr<ID3D12PipelineState>> MeshPipelineStatePair;
-	typedef std::map<std::shared_ptr<MeshInstance>, CComPtr<ID3D12PipelineState>> MeshPipelineStateMap;
 
 	struct Renderable
 	{
@@ -109,12 +103,14 @@ namespace Scene
 		MeshConstantsBufferMap meshShadowMapConstantsBuffer;
 
 		//ROOT SIGNATURE
-		MeshRootSignatureMap meshRootSignatures;
-		MeshRootSignatureMap meshShadowMapRootSignatures;
+		MeshHashedRootSignatureMap meshHashedRootSignatures;
+		MeshHashedRootSignatureMap meshHashedShadowMapRootSignatures;
 
 		//PIPELINE STATE
-		MeshPipelineStateMap meshPipelineStates;
-		MeshPipelineStateMap meshShadowMapPipelineStates;
+		std::map<size_t, MeshHashedPipelineStateMap> meshHashedPipelineStates;
+		//MeshHashedPipelineStateMap meshHashedPipelineStates;
+		std::map<size_t, MeshHashedPipelineStateMap> meshHashedShadowMapPipelineStates;
+		//MeshHashedPipelineStateMap meshHashedShadowMapPipelineStates;
 
 		//ANIMATION
 		std::shared_ptr<Model3DInstance> animable = nullptr;
@@ -139,11 +135,11 @@ namespace Scene
 
 		//CREATE
 		void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes, std::map<TextureType, MaterialTexture> baseTextures = {});
-		void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
+		//void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
 		void TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j);
 		void TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key);
 		void TransformJsonToRasterizerState(D3D12_RASTERIZER_DESC& RasterizerState, nlohmann::json j, std::string key);
-		void BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons);
+		//void BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons);
 		void SetMeshMaterial(std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material);
 		void CreateFromModel3D(std::string model3DUUID);
 		void CreateMeshesComponents();
@@ -151,8 +147,8 @@ namespace Scene
 		void CreateMeshShadowMapConstantsBuffers(std::shared_ptr<MeshInstance> mesh);
 		void CreateMeshRootSignatures(std::shared_ptr<MeshInstance> mesh);
 		void CreateMeshShadowMapRootSignatures(std::shared_ptr<MeshInstance> mesh);
-		void CreateMeshPipelineState(std::shared_ptr<MeshInstance> mesh);
-		void CreateMeshShadowMapPipelineState(std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshPipelineState(size_t passHash, std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshShadowMapPipelineState(size_t passHash, std::shared_ptr<MeshInstance> mesh);
 		void CreateBoundingBox();
 
 		//READ&GET
@@ -218,8 +214,8 @@ namespace Scene
 		void Destroy();
 
 		//RENDER
-		void Render(std::shared_ptr<Camera> camera = nullptr);
-		void RenderShadowMap(const std::shared_ptr<Light>& light, unsigned int cameraIndex);
+		void Render(size_t passHash, std::shared_ptr<Camera> camera = nullptr);
+		void RenderShadowMap(size_t passHash, const std::shared_ptr<Light>& light, unsigned int cameraIndex);
 
 		//EDITOR
 #if defined(_EDITOR)

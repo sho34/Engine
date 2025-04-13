@@ -718,3 +718,81 @@ static std::map<std::string, AUDIO_ENGINE_REVERB> strToAudioEngineReverb =
 	{ "LargeHall", Reverb_LargeHall },
 	{ "Plate", Reverb_Plate },
 };
+
+template<>
+struct std::hash<D3D12_RENDER_TARGET_BLEND_DESC>
+{
+	std::size_t operator()(const D3D12_RENDER_TARGET_BLEND_DESC& r) const
+	{
+		size_t h = 0ULL;
+		nostd::hash_combine(h,
+			r.BlendEnable, r.LogicOpEnable,
+			r.SrcBlend, r.DestBlend, r.BlendOp,
+			r.SrcBlendAlpha, r.DestBlendAlpha, r.BlendOpAlpha,
+			r.LogicOp, r.RenderTargetWriteMask
+		);
+		return h;
+	}
+};
+
+template<>
+struct std::hash<D3D12_BLEND_DESC>
+{
+	std::size_t operator()(const D3D12_BLEND_DESC& r) const
+	{
+		size_t h = 0ULL;
+		nostd::hash_combine(h,
+			r.AlphaToCoverageEnable, r.IndependentBlendEnable,
+			r.RenderTarget[0], r.RenderTarget[1], r.RenderTarget[2], r.RenderTarget[3], r.RenderTarget[4], r.RenderTarget[5], r.RenderTarget[6], r.RenderTarget[7]
+		);
+		return h;
+	}
+};
+
+template<>
+struct std::hash<D3D12_RASTERIZER_DESC>
+{
+	std::size_t operator()(const D3D12_RASTERIZER_DESC& r) const
+	{
+		size_t h = 0ULL;
+		nostd::hash_combine(h,
+			r.FillMode, r.CullMode,
+			r.FrontCounterClockwise,
+			r.DepthBias, r.DepthBiasClamp, r.SlopeScaledDepthBias,
+			r.DepthClipEnable, r.MultisampleEnable, r.AntialiasedLineEnable,
+			r.ForcedSampleCount, r.ConservativeRaster
+		);
+		return h;
+	}
+};
+
+template<>
+struct std::hash<std::vector<DXGI_FORMAT>>
+{
+	std::size_t operator()(const std::vector<DXGI_FORMAT>& v) const
+	{
+		std::string s;
+		for (auto& e : v) { s += dxgiFormatsToString.at(e); }
+		return hash<std::string>()(s);
+	}
+};
+
+template <>
+struct std::hash<std::vector<D3D12_INPUT_ELEMENT_DESC>>
+{
+	std::size_t operator()(const std::vector<D3D12_INPUT_ELEMENT_DESC>& v) const
+	{
+		std::string s;
+		for (auto& e : v)
+		{
+			s += e.SemanticName;
+			s += std::to_string(e.SemanticIndex);
+			s += dxgiFormatsToString.at(e.Format);
+			s += std::to_string(e.InputSlot);
+			s += std::to_string(e.AlignedByteOffset);
+			s += std::to_string(e.InputSlotClass);
+			s += std::to_string(e.InstanceDataStepRate);
+		}
+		return hash<std::string>()(s);
+	}
+};

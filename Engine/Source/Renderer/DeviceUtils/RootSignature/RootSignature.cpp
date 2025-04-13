@@ -5,11 +5,45 @@
 
 extern std::shared_ptr<Renderer> renderer;
 
+template <>
+struct std::hash<RootSignatureDesc>
+{
+	std::size_t operator()(const RootSignatureDesc& r) const
+	{
+		using std::hash;
+		const ShaderConstantsBufferParametersMap& cbufferVSParamsDef = std::get<0>(r);
+		const ShaderConstantsBufferParametersMap& cbufferPSParamsDef = std::get<1>(r);
+		const ShaderTextureParametersMap& srvPSParamsDef = std::get<2>(r);
+		const ShaderSamplerParametersMap& samplersDef = std::get<3>(r);
+		const std::vector<MaterialSamplerDesc>& matSampler = std::get<4>(r);
+		size_t h = 0ULL;
+		nostd::hash_combine(h,
+			std::hash<ShaderConstantsBufferParametersMap>()(cbufferVSParamsDef),
+			std::hash<ShaderConstantsBufferParametersMap>()(cbufferPSParamsDef),
+			std::hash<ShaderTextureParametersMap>()(srvPSParamsDef),
+			std::hash<ShaderSamplerParametersMap>()(samplersDef),
+			std::hash<std::vector<MaterialSamplerDesc>>()(matSampler)
+		);
+		return h;
+	}
+};
+
 namespace DeviceUtils
 {
+	static nostd::RefTracker<size_t, HashedRootSignature> refTracker;
+
 	using namespace Templates;
 
-	//static std::mutex rootSignatureMutex;
+	HashedRootSignature CreateRootSignature(RootSignatureDesc& r)
+	{
+		size_t hash = std::hash<RootSignatureDesc>()(r);
+		return refTracker.AddRef(hash, [hash, &r]()
+			{
+				return std::make_tuple(hash, CreateRootSignature(std::to_string(hash), std::get<0>(r), std::get<1>(r), std::get<2>(r), std::get<3>(r), std::get<4>(r)));
+			}
+		);
+	}
+
 	CComPtr<ID3D12RootSignature> CreateRootSignature(
 		std::string name,
 		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,
@@ -20,7 +54,6 @@ namespace DeviceUtils
 	)
 	{
 		auto& d3dDevice = renderer->d3dDevice;
-		//std::lock_guard<std::mutex> lock(rootSignatureMutex);
 
 		//keep this flags as default??
 		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
@@ -57,6 +90,11 @@ namespace DeviceUtils
 		CCNAME_D3D12_OBJECT_N(rootSignature, name);
 
 		return rootSignature;
+	}
+
+	CComPtr<ID3D12RootSignature> GetRootSignature(size_t rootSignatureHash)
+	{
+		return std::get<1>(refTracker.FindValue(rootSignatureHash));
 	}
 
 	const ShaderConstantsBufferParameter& FindRegisterByName(ShaderConstantsBufferParametersMap& paramsVS, ShaderConstantsBufferParametersMap& paramsPS, std::string name) {

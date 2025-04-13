@@ -210,10 +210,17 @@ namespace nostd {
 		rtrim(s); ltrim(s);
 	}
 
-	template<typename K, typename V>
+	template <typename T, typename... Rest>
+	void hash_combine(std::size_t& seed, const T& v, const Rest&... rest)
+	{
+		seed ^= std::hash<T>{}(v)+0x9e3779b9 + (seed << 6) + (seed >> 2);
+		(hash_combine(seed, rest), ...);
+	}
+
+	template<typename K, typename V, typename C = std::less<K>>
 	struct RefTracker
 	{
-		std::map<K, V> instances;
+		std::map<K, V, C> instances;
 		std::map<V, unsigned int> instancesRefCount;
 
 		V AddRef(K key, std::function<V()> newRefCallback = []() { return V(); })

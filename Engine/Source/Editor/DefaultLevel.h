@@ -31,14 +31,12 @@ namespace Editor::DefaultLevel {
         ],
         "name": "utahteapot",
         "position": [ -2.0, -0.6000000238418579, 2.0 ],
+        "rasterizerState":{
+          "CullMode":"FRONT"
+        },
         "rotation": [ 0.0, 0.0, 0.0 ],
         "scale": [ 0.009999999776482582, 0.009999999776482582, 0.009999999776482582 ],
-        "skipMeshes": [],
-        "pipelineState":{
-          "RasterizerState":{
-            "CullMode":"FRONT"
-          }
-        }
+        "skipMeshes": []  
       }
     ]
   )"_json;

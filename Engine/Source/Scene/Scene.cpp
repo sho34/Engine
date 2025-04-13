@@ -32,12 +32,12 @@ namespace Scene
 		{
 			if (!l->hasShadowMaps()) continue;
 
-			auto renderSceneShadowMap = [&l](unsigned int cameraIndex)
+			auto renderSceneShadowMap = [&l](size_t passHash, unsigned int cameraIndex)
 				{
 					l->shadowMapCameras[cameraIndex]->WriteConstantsBuffer(renderer->backBufferIndex);
 					for (auto& [name, r] : GetRenderables())
 					{
-						r->RenderShadowMap(l, cameraIndex);
+						r->RenderShadowMap(passHash, l, cameraIndex);
 					}
 				};
 
@@ -57,7 +57,7 @@ namespace Scene
 #endif
 	}
 
-	void RenderSceneObjects(std::shared_ptr<Camera>& camera)
+	void RenderSceneObjects(size_t passHash, std::shared_ptr<Camera>& camera)
 	{
 #if defined(_DEVELOPMENT)
 		PIXBeginEvent(renderer->commandList.p, 0, L"Render Scene");
@@ -81,7 +81,7 @@ namespace Scene
 
 			for (auto& [name, r] : GetRenderables())
 			{
-				r->Render(camera);
+				r->Render(passHash, camera);
 			}
 
 		}
