@@ -127,41 +127,6 @@ namespace Scene {
 		nostd::ReplaceFromJsonUsingMap(RasterizerState.ConservativeRaster, stringToConservativeRasterizationMode, rzstate, "ConservativeRaster");
 	}
 
-	/*
-	void Renderable::TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key)
-	{
-		if (!j.contains(key) || j[key].empty()) return;
-		nlohmann::json pstate = j[key];
-
-		nostd::InsertFromJsonUsingMap(pipelineState.renderTargetsFormats, stringToDxgiFormat, pstate, "renderTargetsFormats");
-		nostd::ReplaceFromJsonUsingMap(pipelineState.depthStencilFormat, stringToDxgiFormat, pstate, "depthStencilFormat");
-		nostd::ReplaceFromJsonUsingMap(pipelineState.PrimitiveTopologyType, stringToPrimitiveTopologyType, pstate, "PrimitiveTopologyType");
-		TransformJsonToRasterizerState(pipelineState.RasterizerState, pstate, "RasterizerState");
-		TransformJsonToBlendState(pipelineState.BlendState, pstate, "BlendState");
-	}
-	*/
-
-	/*
-	void Renderable::BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons)
-	{
-		nlohmann::json pipelineStateJson = { {"pipelineState", {}} };
-
-		for (auto& pj : jsons)
-		{
-			if (pj.contains("pipelineState") && !pj["pipelineState"].empty())
-			{
-				if (pj["pipelineState"].contains("renderTargetsFormats") && !pj["pipelineState"]["renderTargetsFormats"].empty())
-				{
-					pipelineState.renderTargetsFormats.clear();
-				}
-				pipelineStateJson["pipelineState"].merge_patch(pj["pipelineState"]);
-			}
-		}
-
-		TransformJsonToPipelineState(pipelineState, pipelineStateJson, "pipelineState");
-	}
-	*/
-
 	//CREATE
 	std::shared_ptr<Renderable> CreateRenderable(nlohmann::json renderablej)
 	{
@@ -456,10 +421,8 @@ namespace Scene {
 		{
 			CreateMeshConstantsBuffers(mesh);
 			CreateMeshRootSignatures(mesh);
-			//CreateMeshPipelineState(mesh);
 			CreateMeshShadowMapConstantsBuffers(mesh);
 			CreateMeshShadowMapRootSignatures(mesh);
-			//CreateMeshShadowMapPipelineState(mesh);
 		}
 
 		CreateBoundingBox();
@@ -545,6 +508,17 @@ namespace Scene {
 		meshHashedShadowMapRootSignatures.insert_or_assign(mesh, CreateRootSignature(rootSignatureDesc));
 	}
 
+	void Renderable::CreateMeshPipelineState(std::shared_ptr<MeshInstance> mesh)
+	{
+		for (auto& [hash, meshHashed] : meshHashedPipelineStates)
+		{
+			if (meshHashed.contains(mesh))
+			{
+				CreateMeshPipelineState(hash, mesh);
+			}
+		}
+	}
+
 	void Renderable::CreateMeshPipelineState(size_t passHash, std::shared_ptr<MeshInstance> mesh)
 	{
 		static std::map<D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D_PRIMITIVE_TOPOLOGY> topologyMap = {
@@ -555,7 +529,6 @@ namespace Scene {
 		std::shared_ptr<MaterialInstance> material = meshMaterials.at(mesh);
 		if (!material)
 		{
-			//meshPipelineStates.insert_or_assign(mesh, nullptr);
 			meshHashedPipelineStates[passHash].insert_or_assign(mesh, HashedPipelineState());
 			return;
 		}
@@ -564,11 +537,6 @@ namespace Scene {
 		auto& rootSignature = std::get<0>(meshHashedRootSignatures[mesh]);
 		auto& vsByteCode = material->vertexShader->byteCode;
 		auto& psByteCode = material->pixelShader->byteCode;
-
-		//RenderablePipelineState pipelineState;
-		//BuildPipelineStateFromJsonChain(pipelineState, { GetMaterialTemplate(material->material), json });
-		//topology(primitiveTopologyToString.at(topologyMap.at(pipelineState.PrimitiveTopologyType)));
-		//meshPipelineStates.insert_or_assign(mesh, CreatePipelineState(mesh->uuid, vsLayout, vsByteCode, psByteCode, rootSignature, pipelineState));
 
 		nlohmann::json matJson = GetMaterialTemplate(material->material);
 		matJson.merge_patch(json);
@@ -594,13 +562,23 @@ namespace Scene {
 		meshHashedPipelineStates[passHash].insert_or_assign(mesh, CreatePipelineState(pipelineStateDesc));
 	}
 
+	void Renderable::CreateMeshShadowMapPipelineState(std::shared_ptr<MeshInstance> mesh)
+	{
+		for (auto& [hash, meshHashed] : meshHashedShadowMapPipelineStates)
+		{
+			if (meshHashed.contains(mesh))
+			{
+				CreateMeshShadowMapPipelineState(hash, mesh);
+			}
+		}
+	}
+
 	void Renderable::CreateMeshShadowMapPipelineState(size_t passHash, std::shared_ptr<MeshInstance> mesh)
 	{
 		if (!meshShadowMapMaterials.contains(mesh)) return;
 		std::shared_ptr<MaterialInstance> material = meshShadowMapMaterials.at(mesh);
 		if (!material)
 		{
-			//meshShadowMapPipelineStates.insert_or_assign(mesh, nullptr);
 			meshHashedShadowMapPipelineStates[passHash].insert_or_assign(mesh, HashedPipelineState());
 			return;
 		}
@@ -612,11 +590,6 @@ namespace Scene {
 
 		nlohmann::json matJson = GetMaterialTemplate(material->material);
 		matJson.merge_patch(json);
-
-		//RenderablePipelineState pipelineState;
-		//BuildPipelineStateFromJsonChain(pipelineState, { GetMaterialTemplate(material->material), json });
-		//meshShadowMapPipelineStates.insert_or_assign(mesh, CreatePipelineState(mesh->uuid, vsLayout, vsByteCode, psByteCode, rootSignature, pipelineState));
-		//PipelineStateDesc pipelineStateDesc = std::tie(vsLayout, vsByteCode, psByteCode, rootSignature, pipelineState);
 
 		D3D12_BLEND_DESC blendDesc;
 		TransformJsonToBlendState(blendDesc, matJson, "blendState");
@@ -887,10 +860,10 @@ namespace Scene {
 			BindChangesToMaterial(meshIndex);
 			CreateMeshConstantsBuffers(mesh);
 			CreateMeshRootSignatures(mesh);
-			//CreateMeshPipelineState(mesh);
+			CreateMeshPipelineState(mesh);
 			CreateMeshShadowMapConstantsBuffers(mesh);
 			CreateMeshShadowMapRootSignatures(mesh);
-			//CreateMeshShadowMapPipelineState(mesh);
+			CreateMeshShadowMapPipelineState(mesh);
 		}
 
 		materialToChangeMeshIndex.clear();
@@ -967,10 +940,10 @@ namespace Scene {
 			SetMeshMaterial(mesh, materialInstance);
 			CreateMeshConstantsBuffers(mesh);
 			CreateMeshRootSignatures(mesh);
-			//CreateMeshPipelineState(mesh);
+			CreateMeshPipelineState(mesh);
 			CreateMeshShadowMapConstantsBuffers(mesh);
 			CreateMeshShadowMapRootSignatures(mesh);
-			//CreateMeshShadowMapPipelineState(mesh);
+			CreateMeshShadowMapPipelineState(mesh);
 		}
 		materialSwaps.clear();
 		renderableUpdateFlags &= ~RenderableFlags_SwapMaterialsFromMesh;
@@ -1140,7 +1113,6 @@ namespace Scene {
 				CreateMeshPipelineState(passHash, mesh);
 			}
 			auto& pipelineState = std::get<1>(meshHashedPipelineStates.at(passHash).at(mesh));
-			//auto& pipelineState = std::get<1>(meshHashedPipelineStates.at(mesh));
 
 			commandList->IASetPrimitiveTopology(topology());
 			commandList->SetGraphicsRootSignature(rootSignature);
@@ -1222,7 +1194,6 @@ namespace Scene {
 				CreateMeshShadowMapPipelineState(passHash, mesh);
 			}
 			auto& pipelineState = std::get<1>(meshHashedShadowMapPipelineStates.at(passHash).at(mesh));
-			//auto& pipelineState = std::get<1>(meshHashedShadowMapPipelineStates.at(mesh));
 
 			//don't draw things without a camera, bad shader(sorry)
 			if (!material->ShaderInstanceHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) continue;
@@ -1783,8 +1754,8 @@ namespace Scene {
 	void Renderable::DrawEditorPipelineStateAttributes()
 	{
 		nlohmann::json currentJson = json;
-		/*
-		ImDrawPipelineState(json.at("pipelineState"));
+
+		ImDrawPipelineState(json);
 		if (currentJson != json)
 		{
 			renderableUpdateFlags |= RenderableFlags_RebuildMaterials;
@@ -1794,7 +1765,6 @@ namespace Scene {
 				materialToRebuild.push_back(meshMaterials.at(meshes.at(i))->material);
 			}
 		}
-		*/
 	}
 #endif
 

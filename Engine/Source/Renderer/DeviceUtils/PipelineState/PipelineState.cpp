@@ -37,8 +37,6 @@ struct std::hash<PipelineStateDesc>
 	}
 };
 
-
-
 namespace DeviceUtils
 {
 	static nostd::RefTracker<size_t, HashedPipelineState> refTracker;
@@ -120,7 +118,6 @@ namespace DeviceUtils
 	}
 
 #if defined(_EDITOR)
-	/*
 	std::map<std::string, std::function<void(nlohmann::json&)>> addToBlendDescRenderTarget = {
 		{ "BlendEnable", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["BlendEnable"] = false; }},
 		{ "LogicOpEnable", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["LogicOpEnable"] = false; }},
@@ -175,35 +172,6 @@ namespace DeviceUtils
 		);
 	}
 
-	void ImDrawPipelineRenderTargetFormats(nlohmann::json& PipelineState)
-	{
-		std::vector<std::string> selectables = nostd::GetKeysFromMap(stringToDxgiFormat);
-		ImDrawDynamicArray(
-			"RT",
-			PipelineState.at("renderTargetsFormats"),
-			[](nlohmann::json& renderTargetsFormats, unsigned int index)
-			{
-				auto pos = renderTargetsFormats.begin() + index + 1;
-				renderTargetsFormats.insert(pos, dxgiFormatsToString.at(DXGI_FORMAT_R8G8B8A8_UNORM));
-			},
-			[selectables](nlohmann::json& format, unsigned int index)
-			{
-				std::string value = format.dump();
-				value.erase(remove(value.begin(), value.end(), '\"'), value.end());
-				DrawComboSelection(value, selectables, [&format](std::string newValue)
-					{
-						format = newValue;
-					}, ""
-				);
-				ImGui::SameLine();
-				std::string label = (std::string("RT#") + std::to_string(index + 1));
-				ImGui::Text(label.c_str());
-			},
-			_countof(D3D12_GRAPHICS_PIPELINE_STATE_DESC::RTVFormats),
-			1U
-		);
-	}
-
 	std::map<std::string, std::function<void(nlohmann::json&)>> addToBlendState = {
 		{ "AlphaToCoverageEnable", [](nlohmann::json& BlendState) { BlendState["AlphaToCoverageEnable"] = false; } },
 		{ "IndependentBlendEnable", [](nlohmann::json& BlendState) { BlendState["IndependentBlendEnable"] = false; } },
@@ -245,33 +213,28 @@ namespace DeviceUtils
 	};
 
 	std::map<std::string, std::function<void(nlohmann::json&)>> addToPipelineState = {
-		{ "BlendState", [](nlohmann::json& PipelineState) { PipelineState["BlendState"] = nlohmann::json::object(); } },
-		{ "RasterizerState", [](nlohmann::json& PipelineState) { PipelineState["RasterizerState"] = nlohmann::json::object(); } },
-		{ "PrimitiveTopologyType", [](nlohmann::json& PipelineState) { PipelineState["PrimitiveTopologyType"] = primitiveTopologyTypeToString.at(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE); } },
-		{ "renderTargetsFormats", [](nlohmann::json& PipelineState) { PipelineState["renderTargetsFormats"] = nlohmann::json::array({ dxgiFormatsToString.at(DXGI_FORMAT_R8G8B8A8_UNORM) }); } },
-		{ "depthStencilFormat", [](nlohmann::json& PipelineState) { PipelineState["depthStencilFormat"] = dxgiFormatsToString.at(DXGI_FORMAT_D32_FLOAT); } },
+		{ "blendState", [](nlohmann::json& json) { json["blendState"] = nlohmann::json::object(); } },
+		{ "rasterizerState", [](nlohmann::json& json) { json["rasterizerState"] = nlohmann::json::object(); } },
+		{ "primitiveTopologyType", [](nlohmann::json& json) { json["primitiveTopologyType"] = primitiveTopologyTypeToString.at(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE); } },
 	};
 
 	std::map<std::string, std::function<void(nlohmann::json&)>> drawPipelineState = {
-		{ "BlendState", [](nlohmann::json& PipelineState)
+		{ "blendState", [](nlohmann::json& json)
 			{
-				ImDrawObject("BlendState", PipelineState.at("BlendState"), addToBlendState, drawBlendState);
+				ImDrawObject("BlendState", json.at("blendState"), addToBlendState, drawBlendState);
 			}
 		},
-		{ "RasterizerState", [](nlohmann::json& PipelineState)
+		{ "rasterizerState", [](nlohmann::json& json)
 			{
-				ImDrawObject("RasterizerState", PipelineState.at("RasterizerState"), addToRasterizerState, drawRasterizerState);
+				ImDrawObject("RasterizerState", json.at("rasterizerState"), addToRasterizerState, drawRasterizerState);
 			}
 		},
-		{ "depthStencilFormat", [](nlohmann::json& PipelineState) { drawFromCombo(PipelineState, "depthStencilFormat", stringToDxgiFormat); } },
-		{ "PrimitiveTopologyType", [](nlohmann::json& PipelineState) { drawFromCombo(PipelineState, "PrimitiveTopologyType", stringToPrimitiveTopologyType); } },
-		{ "renderTargetsFormats", ImDrawPipelineRenderTargetFormats },
+		{ "primitiveTopologyType", [](nlohmann::json& json) { drawFromCombo(json, "primitiveTopologyType", stringToPrimitiveTopologyType); } },
 	};
 
-	void ImDrawPipelineState(nlohmann::json& PipelineState)
+	void ImDrawPipelineState(nlohmann::json& json)
 	{
-		//ImDrawObject("PipelineState", PipelineState, addToPipelineState, drawPipelineState);
+		ImDrawObject("PipelineState", json, addToPipelineState, drawPipelineState);
 	}
-	*/
 #endif
 };

@@ -108,9 +108,7 @@ namespace Scene
 
 		//PIPELINE STATE
 		std::map<size_t, MeshHashedPipelineStateMap> meshHashedPipelineStates;
-		//MeshHashedPipelineStateMap meshHashedPipelineStates;
 		std::map<size_t, MeshHashedPipelineStateMap> meshHashedShadowMapPipelineStates;
-		//MeshHashedPipelineStateMap meshHashedShadowMapPipelineStates;
 
 		//ANIMATION
 		std::shared_ptr<Model3DInstance> animable = nullptr;
@@ -135,11 +133,9 @@ namespace Scene
 
 		//CREATE
 		void TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes, std::map<TextureType, MaterialTexture> baseTextures = {});
-		//void TransformJsonToPipelineState(RenderablePipelineState& pipelineState, nlohmann::json j, std::string key);
 		void TransformJsonToRenderTargetBlendDesc(D3D12_RENDER_TARGET_BLEND_DESC& RenderTarget, nlohmann::json j);
 		void TransformJsonToBlendState(D3D12_BLEND_DESC& BlendState, nlohmann::json j, std::string key);
 		void TransformJsonToRasterizerState(D3D12_RASTERIZER_DESC& RasterizerState, nlohmann::json j, std::string key);
-		//void BuildPipelineStateFromJsonChain(RenderablePipelineState& pipelineState, std::vector<nlohmann::json> jsons);
 		void SetMeshMaterial(std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material);
 		void CreateFromModel3D(std::string model3DUUID);
 		void CreateMeshesComponents();
@@ -147,7 +143,9 @@ namespace Scene
 		void CreateMeshShadowMapConstantsBuffers(std::shared_ptr<MeshInstance> mesh);
 		void CreateMeshRootSignatures(std::shared_ptr<MeshInstance> mesh);
 		void CreateMeshShadowMapRootSignatures(std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshPipelineState(std::shared_ptr<MeshInstance> mesh);
 		void CreateMeshPipelineState(size_t passHash, std::shared_ptr<MeshInstance> mesh);
+		void CreateMeshShadowMapPipelineState(std::shared_ptr<MeshInstance> mesh);
 		void CreateMeshShadowMapPipelineState(size_t passHash, std::shared_ptr<MeshInstance> mesh);
 		void CreateBoundingBox();
 
