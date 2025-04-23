@@ -283,28 +283,21 @@ namespace Scene {
 					NameCollideWithSceneObjects(soundsEffects, SoundEffect::creationJson)
 					);
 
-				if (disabledCreate)
-				{
-					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-				}
+				DrawItemWithEnabledState([]
+					{
+						if (ImGui::Button("Create"))
+						{
+							SoundEffect::popupModalId = 0;
+							nlohmann::json r = {
+								{ "uuid", getUUID() },
+								{ "name", SoundEffect::creationJson.at("name") },
+								{ "sound", SoundEffect::creationJson.at("sound") }
+							};
+							CreateSoundEffect(r);
+						}
+					}, !disabledCreate
+				);
 
-				if (ImGui::Button("Create"))
-				{
-					SoundEffect::popupModalId = 0;
-					nlohmann::json r = {
-						{ "uuid", getUUID() },
-						{ "name", SoundEffect::creationJson.at("name") },
-						{ "sound", SoundEffect::creationJson.at("sound") }
-					};
-					CreateSoundEffect(r);
-				}
-
-				if (disabledCreate)
-				{
-					ImGui::PopItemFlag();
-					ImGui::PopStyleVar();
-				}
 			}
 		);
 	}

@@ -15,6 +15,9 @@ using namespace AudioSystem;
 #include "../Editor/Editor.h"
 #include "../Editor/DefaultLevel.h"
 using namespace Editor;
+namespace Editor {
+	extern std::string currentLevelName;
+}
 #endif
 
 extern std::shared_ptr<Renderer> renderer;
@@ -52,6 +55,9 @@ namespace Scene::Level {
 		LoadSceneObjects(data, "sounds", CreateSoundEffect);
 
 		file.close();
+#if defined(_EDITOR)
+		Editor::currentLevelName = level.filename().string();
+#endif
 	}
 
 	void DestroySceneObjects()

@@ -5,7 +5,7 @@
 
 #if defined(_EDITOR)
 
-static const std::string defaultLevelName = "baseLevel.json";
+static const std::string defaultLevelName = "";
 
 inline bool DrawComboSelection(UUIDName selected, std::vector<UUIDName> selectables, std::function<void(UUIDName)> onSelect, std::string label = "")
 {
@@ -806,6 +806,21 @@ inline void ImDrawJsonFilePicker(nlohmann::json& json, std::string att, std::str
 		defaultDirectory, filterName, filterPattern
 	);
 
+}
+
+inline void DrawItemWithEnabledState(std::function<void()> draw, bool enabled)
+{
+	if (!enabled)
+	{
+		ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+	}
+	draw();
+	if (!enabled)
+	{
+		ImGui::PopItemFlag();
+		ImGui::PopStyleVar();
+	}
 }
 
 #endif

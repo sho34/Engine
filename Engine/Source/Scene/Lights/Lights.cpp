@@ -765,29 +765,21 @@ namespace Scene {
 					NameCollideWithSceneObjects(lightsByUUID, Light::creationJson)
 					);
 
-				if (disabledCreate)
-				{
-					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-				}
+				DrawItemWithEnabledState([]
+					{
+						if (ImGui::Button("Create"))
+						{
+							Light::popupModalId = 0;
 
-				if (ImGui::Button("Create"))
-				{
-					Light::popupModalId = 0;
-
-					nlohmann::json r = {
-						{ "uuid", getUUID() },
-						{ "name", Light::creationJson.at("name") },
-						{ "lightType", Light::creationJson.at("lightType") },
-					};
-					CreateLight(r);
-				}
-
-				if (disabledCreate)
-				{
-					ImGui::PopItemFlag();
-					ImGui::PopStyleVar();
-				}
+							nlohmann::json r = {
+								{ "uuid", getUUID() },
+								{ "name", Light::creationJson.at("name") },
+								{ "lightType", Light::creationJson.at("lightType") },
+							};
+							CreateLight(r);
+						}
+					}, !disabledCreate
+				);
 			}
 		);
 	}

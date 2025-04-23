@@ -1339,55 +1339,47 @@ namespace Scene {
 					disabledCreate |= (current_material_item == 0);
 				}
 
-				if (disabledCreate)
-				{
-					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-				}
-
-				if (ImGui::Button("Create"))
-				{
-					Renderable::popupModalId = 0;
-					if (isModel3D)
+				DrawItemWithEnabledState([isModel3D, json]
 					{
-						nlohmann::json r = {
-							{ "uuid", getUUID() },
-							{ "name", json.at("name") },
-							{ "model", json.at("model") }
-						};
-						CreateRenderable(r);
-					}
-					else
-					{
-						nlohmann::json r = {
-							{ "uuid", getUUID() },
-							{ "name", json.at("name") },
-							{ "meshMaterials",
-								{
-									{
-										{ "material", json.at("material")},
-										{ "mesh", json.at("model")}
-									}
-								}
-							},
-							{ "meshMaterialsShadowMap",
-								{
-									{
-										{ "material", FindMaterialUUIDByName("ShadowMap") },
-										{ "mesh", json.at("model")}
-									}
-								}
+						if (ImGui::Button("Create"))
+						{
+							Renderable::popupModalId = 0;
+							if (isModel3D)
+							{
+								nlohmann::json r = {
+									{ "uuid", getUUID() },
+									{ "name", json.at("name") },
+									{ "model", json.at("model") }
+								};
+								CreateRenderable(r);
 							}
-						};
-						CreateRenderable(r);
-					}
-				}
-
-				if (disabledCreate)
-				{
-					ImGui::PopItemFlag();
-					ImGui::PopStyleVar();
-				}
+							else
+							{
+								nlohmann::json r = {
+									{ "uuid", getUUID() },
+									{ "name", json.at("name") },
+									{ "meshMaterials",
+										{
+											{
+												{ "material", json.at("material")},
+												{ "mesh", json.at("model")}
+											}
+										}
+									},
+									{ "meshMaterialsShadowMap",
+										{
+											{
+												{ "material", FindMaterialUUIDByName("ShadowMap") },
+												{ "mesh", json.at("model")}
+											}
+										}
+									}
+								};
+								CreateRenderable(r);
+							}
+						}
+					}, !disabledCreate
+				);
 			}
 		);
 	}

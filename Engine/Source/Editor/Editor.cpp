@@ -308,9 +308,15 @@ namespace Editor {
 				if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "Open")) {
 					OpenLevelFile();
 				}
-				if (ImGui::MenuItem(ICON_FA_SAVE "Save")) {
-					SaveLevelToFile(currentLevelName);
-				}
+
+				DrawItemWithEnabledState([]
+					{
+						if (ImGui::MenuItem(ICON_FA_SAVE "Save")) {
+							SaveLevelToFile(currentLevelName);
+						}
+					}, currentLevelName != ""
+				);
+
 				if (ImGui::MenuItem(ICON_FA_SAVE "Save As..")) {
 					SaveLevelAs();
 				}
@@ -332,11 +338,17 @@ namespace Editor {
 
 			const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
+			std::string titleBar = gameAppTitle;
+			if (currentLevelName != "")
+			{
+				titleBar += " - " + currentLevelName;
+			}
+
 			auto windowWidth = ImGui::GetWindowSize().x;
-			auto textWidth = ImGui::CalcTextSize(gameAppTitle.c_str()).x;
+			auto textWidth = ImGui::CalcTextSize(titleBar.c_str()).x;
 
 			ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-			ImGui::Text(gameAppTitle.c_str());
+			ImGui::Text(titleBar.c_str());
 
 			struct WinButtonDef {
 				std::string label;
@@ -642,6 +654,8 @@ namespace Editor {
 		file.open(pathStr);
 		file.write(levelString.c_str(), levelString.size());
 		file.close();
+
+		currentLevelName = levelFileName;
 	}
 
 	bool SaveFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr)
