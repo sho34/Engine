@@ -1,2 +1,4 @@
+-Remove shader based approach from materials
+-HDR
 -IBL
--Deferred Shading
+-Deferred Rendering

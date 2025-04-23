@@ -10,8 +10,6 @@
 using namespace Editor;
 #endif
 
-//#include "tweeny-3.2.0.h"
-
 using namespace Scene;
 using namespace RenderPass;
 using namespace DeviceUtils;
@@ -129,15 +127,6 @@ void RunRender()
 #endif
 			}
 		);
-		/*
-		resolvePass->BeginRenderPass();
-		{
-#if defined(_EDITOR)
-			DrawEditor();
-#endif
-		}
-		resolvePass->EndRenderPass();
-		*/
 		return;
 	}
 
@@ -260,14 +249,6 @@ void BootScreenRender()
 			bootScreen->Render(passHash, UICamera);
 		}
 	);
-	/*
-	resolvePass->BeginRenderPass();
-
-	bootScreen->WriteConstantsBuffer<float>("alpha", bootScreenAlpha, renderer->backBufferIndex);
-	bootScreen->Render(UICamera);
-
-	resolvePass->EndRenderPass();
-	*/
 }
 
 void BootScreenLeave()
@@ -343,22 +324,6 @@ void LoadingScreenRender()
 			loadingScreenBar->Render(passHash, UICamera);
 		}
 	);
-	/*
-	resolvePass->BeginRenderPass();
-
-	XMFLOAT2 pos(0.0f, -0.8f);
-	XMFLOAT2 scale(0.8f, 0.02f);
-	auto red = DirectX::Colors::Red;
-	auto blue = DirectX::Colors::Blue;
-	loadingScreenBar->WriteConstantsBuffer<XMFLOAT2>("pos", pos, renderer->backBufferIndex);
-	loadingScreenBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
-	loadingScreenBar->WriteConstantsBuffer<XMVECTORF32>("color1", red, renderer->backBufferIndex);
-	loadingScreenBar->WriteConstantsBuffer<XMVECTORF32>("color2", blue, renderer->backBufferIndex);
-	loadingScreenBar->WriteConstantsBuffer<float>("progress", loadingScreenProgress, renderer->backBufferIndex);
-	loadingScreenBar->Render(UICamera);
-
-	resolvePass->EndRenderPass();
-	*/
 }
 
 //Playing
@@ -391,26 +356,12 @@ void PlayModeRender()
 			RenderSceneObjects(passHash, mainPassCamera);
 		}
 	);
-	/*
-	mainPass->BeginRenderPass();
-	{
-		RenderSceneObjects(mainPassCamera);
-	}
-	mainPass->EndRenderPass();
-	*/
 
 	resolvePass->Pass([](size_t passHash)
 		{
 			resolvePass->CopyFromRenderToTexture(mainPass->renderToTexture[0]);
 		}
 	);
-	/*
-	resolvePass->BeginRenderPass();
-	{
-		resolvePass->CopyFromRenderToTexture(mainPass->renderToTexture[0]);
-	}
-	resolvePass->EndRenderPass();
-	*/
 }
 
 void PlayModeLeave()
@@ -431,9 +382,9 @@ void EditorModeCreate()
 		{
 			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
-			//LoadDefaultLevel();
+			LoadDefaultLevel();
 			//LoadLevel("knight-original");
-			LoadLevel("female");
+			//LoadLevel("female");
 			//LoadLevel("knight");
 			//LoadLevel("baseLevel");
 			//LoadLevel("pyramid");
@@ -490,13 +441,6 @@ void EditorModeRender()
 				RenderSceneObjects(passHash, mainPassCamera);
 			}
 		);
-		/*
-		mainPass->BeginRenderPass();
-		{
-			RenderSceneObjects(mainPassCamera);
-		}
-		mainPass->EndRenderPass();
-		*/
 
 		resolvePass->Pass([](size_t passHash)
 			{
@@ -504,14 +448,6 @@ void EditorModeRender()
 				DrawEditor();
 			}
 		);
-		/*
-		resolvePass->BeginRenderPass();
-		{
-			resolvePass->CopyFromRenderToTexture(mainPass->renderToTexture[0]);
-			DrawEditor();
-		}
-		resolvePass->EndRenderPass();
-		*/
 	}
 	else
 	{
@@ -520,13 +456,6 @@ void EditorModeRender()
 				DrawEditor();
 			}
 		);
-		/*
-		resolvePass->BeginRenderPass();
-		{
-			DrawEditor();
-		}
-		resolvePass->EndRenderPass();
-		*/
 	}
 }
 

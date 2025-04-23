@@ -499,24 +499,6 @@ namespace Scene {
 				}
 			}
 		);
-
-		/*
-		shadowMapRenderPass->BeginRenderPass();
-		if (onePassTypes.contains(lightType()))
-		{
-			renderScene(0);
-		}
-		else
-		{
-			for (unsigned int i = 0; i < 6; i++)
-			{
-				commandList->RSSetViewports(1, &shadowMapViewport.at(i));
-				commandList->RSSetScissorRects(1, &shadowMapScissorRect.at(i));
-				renderScene(i);
-			}
-		}
-		shadowMapRenderPass->EndRenderPass();
-		*/
 	}
 
 #if defined(_EDITOR)
@@ -543,15 +525,6 @@ namespace Scene {
 					quad->visible(false);
 				}
 			);
-			/*
-			renderPass->BeginRenderPass();
-			{
-				quad->visible(true);
-				quad->Render();
-				quad->visible(false);
-			}
-			renderPass->EndRenderPass();
-			*/
 #if defined(_DEVELOPMENT)
 			PIXEndEvent(commandList.p);
 #endif
@@ -567,15 +540,6 @@ namespace Scene {
 				shadowMapMinMaxChainResultRenderable->visible(false);
 			}
 		);
-		/*
-		shadowMapMinMaxChainResultRenderPass->BeginRenderPass();
-		{
-			shadowMapMinMaxChainResultRenderable->visible(true);
-			shadowMapMinMaxChainResultRenderable->Render();
-			shadowMapMinMaxChainResultRenderable->visible(false);
-		}
-		shadowMapMinMaxChainResultRenderPass->EndRenderPass();
-		*/
 
 #if defined(_DEVELOPMENT)
 		PIXEndEvent(commandList.p);
@@ -602,7 +566,7 @@ namespace Scene {
 			}
 		}
 
-		if (shadowMap)
+		if (shadowMap && !shadowMapUpdateFlags)
 		{
 			unsigned int shadowMapWidth = static_cast<unsigned int>(json.at("shadowMapWidth"));
 			unsigned int shadowMapHeight = static_cast<unsigned int>(json.at("shadowMapHeight"));
@@ -688,7 +652,7 @@ namespace Scene {
 			}
 		}
 
-		if (shadowMap)
+		if (shadowMap && !shadowMapUpdateFlags)
 		{
 			unsigned int shadowMapWidth = static_cast<unsigned int>(json.at("shadowMapWidth"));
 			unsigned int shadowMapHeight = static_cast<unsigned int>(json.at("shadowMapHeight"));
@@ -774,7 +738,7 @@ namespace Scene {
 			}
 		}
 
-		if (shadowMap)
+		if (shadowMap && !shadowMapUpdateFlags)
 		{
 			unsigned int shadowMapWidth = static_cast<unsigned int>(json.at("shadowMapWidth"));
 			float nearZ = static_cast<float>(json.at("nearZ"));
