@@ -27,6 +27,7 @@ namespace Scene
 	std::map<std::string, std::shared_ptr<Camera>> cameraByUUID;
 #if defined(_EDITOR)
 	std::map<std::shared_ptr<Camera>, std::vector<std::function<void()>>> cameraDestructionCallbacks;
+	nlohmann::json Camera::creationJson;
 	unsigned int Camera::popupModalId = 0U;
 #endif
 
@@ -187,6 +188,13 @@ namespace Scene
 
 	void CreateNewCamera()
 	{
+		Camera::popupModalId = RenderablePopupModal_CreateNew;
+		Camera::creationJson = nlohmann::json(
+			{
+				{ "name", "" },
+				{ "projectionType", ProjectionTypesToStr.at(PROJ_Perspective) }
+			}
+		);
 	}
 
 	void Camera::BindDestruction(std::function<void()> cb)
@@ -202,9 +210,81 @@ namespace Scene
 			camera->cameraUpdateFlags |= CameraFlags_Destroy;
 		}
 	}
+
 	void DrawCamerasPopups()
 	{
+		Editor::DrawCreateWindow(Camera::popupModalId, CameraPopupModal_CreateNew, "New Camera", [](auto OnCancel)
+			{
+				nlohmann::json& json = Camera::creationJson;
+
+				ImGui::PushID("camera-name");
+				{
+					ImGui::Text("Name");
+					ImDrawJsonInputText(json, "name");
+				}
+				ImGui::PopID();
+
+				ImGui::Text("Projection Type");
+
+				ImGui::PushID("camera-projection-type");
+				{
+					std::string projectionType = json.at("projectionType");
+					DrawComboSelection(projectionType, ProjectionsTypesStr, [&json](std::string newProjection)
+						{
+							json.at("projectionType") = newProjection;
+						}
+					);
+				}
+				ImGui::PopID();
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+				bool disabledCreate = json.at("name") == "";
+
+				DrawItemWithEnabledState([&json]
+					{
+						if (ImGui::Button("Create"))
+						{
+							Camera::popupModalId = 0;
+							nlohmann::json r = {
+								{ "uuid", getUUID() },
+								{ "name", json.at("name") },
+								{ "projectionType", json.at("projectionType") }
+							};
+
+							ProjectionsTypes projType = StrToProjectionTypes.at(json.at("projectionType"));
+							switch (projType)
+							{
+							case PROJ_Perspective:
+							{
+								r["perspective"]["width"] = 1024;
+								r["perspective"]["height"] = 1024;
+								r["perspective"]["nearZ"] = CameraProjections::Perspective::defaultNearZ;
+								r["perspective"]["farZ"] = CameraProjections::Perspective::defaultFarZ;
+								r["perspective"]["fovAngleY"] = CameraProjections::Perspective::defaultFovAngleY;
+							}
+							break;
+							case PROJ_Orthographic:
+							{
+								r["orthographic"]["width"] = 1024;
+								r["orthographic"]["height"] = 1024;
+								r["orthographic"]["nearZ"] = CameraProjections::Orthographic::defaultNearZ;
+								r["orthographic"]["farZ"] = CameraProjections::Orthographic::defaultFarZ;
+							}
+							break;
+							default:
+							{}
+							break;
+							}
+
+							CreateCamera(r);
+						}
+					}, !disabledCreate
+				);
+			}
+		);
 	}
+
 	void WriteCamerasJson(nlohmann::json& json)
 	{
 		std::map<std::string, std::shared_ptr<Camera>> filtered;

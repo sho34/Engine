@@ -82,6 +82,7 @@ namespace Scene {
 			CameraProjections::Orthographic orthographic;
 		};
 #if defined(_EDITOR)
+		static nlohmann::json creationJson;
 		static unsigned int popupModalId;
 		unsigned int cameraUpdateFlags = 0U;
 		CameraProjections::Perspective editorPerspective;
