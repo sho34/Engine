@@ -225,6 +225,20 @@ namespace Templates {
 			"type":"PIXEL_SHADER"
 		},
 		{
+			"name":"ToneMap_vs",
+			"path":"ToneMap",
+			"systemCreated" : true,
+			"uuid":"8ee7a4d0-91f1-4264-aa56-9f82b3c38397",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"ToneMap_ps",
+			"path":"ToneMap",
+			"systemCreated" : true,
+			"uuid":"75e834c4-6898-4156-af67-43abba7fc6b5",
+			"type":"PIXEL_SHADER"
+		},
+		{
 			"name":"LoadingBar_vs",
 			"path":"LoadingBar",
 			"systemCreated" : true,
@@ -377,6 +391,13 @@ namespace Templates {
 			"shader_ps":"9ab3d65f-be9a-49cc-87f8-bcbf1dafeac7",
 			"systemCreated":true,
 			"uuid" : "8e98708c-fe2e-4123-b1f0-5b80fabd1888"
+		},
+		{
+			"name":"ToneMap", 
+			"shader_vs":"8ee7a4d0-91f1-4264-aa56-9f82b3c38397",
+			"shader_ps":"75e834c4-6898-4156-af67-43abba7fc6b5",
+			"systemCreated":true,
+			"uuid" : "8291ba82-165d-464b-be15-d9fa6d7b9a7c"
 		},
 		{
 			"name":"LoadingBar",

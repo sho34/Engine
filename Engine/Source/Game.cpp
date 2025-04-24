@@ -22,6 +22,7 @@ GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
 std::shared_ptr<Renderable> bootScreen;
 std::shared_ptr<Renderable> loadingScreenBar;
+std::shared_ptr<Renderable> toneMapQuad;
 std::shared_ptr<Camera> UICamera;
 std::shared_ptr<Camera> mainPassCamera;
 std::filesystem::path levelToLoad;
@@ -99,6 +100,13 @@ GameStatesMachine<GameStates> gsm =
 	}
 };
 
+std::shared_ptr<RenderToTexturePass> CreateMainPass()
+{
+	unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
+	unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
+	return CreateRenderPass("mainPass", { DXGI_FORMAT_R32G32B32A32_FLOAT }, DXGI_FORMAT_D32_FLOAT, width, height);
+}
+
 void SetupRenderPipeline()
 {
 	mainPassHeap = std::make_shared<DeviceUtils::DescriptorHeap>();
@@ -143,6 +151,7 @@ void GameDestroy()
 	gsm.ChangeState(GS_Destroy);
 	DestroyRenderable(bootScreen);
 	DestroyRenderable(loadingScreenBar);
+	DestroyRenderable(toneMapQuad);
 	DestroyCamera(UICamera);
 	resolvePass = nullptr;
 }
@@ -332,9 +341,7 @@ void PlayModeCreate()
 	renderer->RenderCriticalFrame([]
 		{
 			LoadLevel("family");
-			unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
-			unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
-			mainPass = CreateRenderPass("mainPass", { DXGI_FORMAT_R8G8B8A8_UNORM }, DXGI_FORMAT_D32_FLOAT, width, height);
+			mainPass = CreateMainPass();
 		}
 	);
 	mainPassCamera = GetCameraByName("cam.0");
@@ -383,16 +390,40 @@ void EditorModeCreate()
 			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
 			LoadDefaultLevel();
-			//LoadLevel("knight-original");
-			//LoadLevel("female");
-			//LoadLevel("knight");
-			//LoadLevel("baseLevel");
-			//LoadLevel("pyramid");
-			//LoadLevel("jumpsuit");
-			//LoadLevel("venom");
-			unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
-			unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
-			mainPass = CreateRenderPass("mainPass", { DXGI_FORMAT_R8G8B8A8_UNORM }, DXGI_FORMAT_D32_FLOAT, width, height);
+
+			mainPass = CreateMainPass();
+
+			toneMapQuad = CreateRenderable(
+				{
+					{ "meshMaterials" ,
+						{
+							{
+								{ "material", FindMaterialUUIDByName("ToneMap") },
+								{ "mesh", FindMeshUUIDByName("decal") }
+							}
+						}
+					},
+					{ "uniqueMaterialInstance", true },
+					{ "meshShadowMapMaterials", {} },
+					{ "name", "toneMapQuad" },
+					{ "uuid", getUUID() },
+					{ "hidden", true },
+					{ "visible", false },
+					{ "position", { 0.0, 0.0, 0.0 } },
+					{ "rotation", { 0.0, 0.0, 0.0 } },
+					{ "scale", { 1.0, 1.0, 1.0 } } ,
+					{ "skipMeshes", {} },
+					{ "pipelineState" ,
+						{
+							{ "renderTargetsFormats", { "R8G8B8A8_UNORM" } },
+							{ "depthStencilFormat", "UNKNOWN" }
+						}
+					}
+				}
+			);
+
+			std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
+			toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle(MaterialTexture({ .path = "toneMap", .gpuHandle = mainPass->renderToTexture[0]->gpuTextureHandle })));
 
 			CreateRenderableBoundingBox();
 		}
@@ -444,7 +475,9 @@ void EditorModeRender()
 
 		resolvePass->Pass([](size_t passHash)
 			{
-				resolvePass->CopyFromRenderToTexture(mainPass->renderToTexture[0]);
+				toneMapQuad->visible(true);
+				toneMapQuad->Render(passHash);
+				toneMapQuad->visible(false);
 				DrawEditor();
 			}
 		);

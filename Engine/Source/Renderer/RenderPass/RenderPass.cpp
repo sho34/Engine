@@ -111,8 +111,6 @@ namespace RenderPass {
 		auto backbuffer = renderTargets[backbufferIndex];
 		auto rtt = renderToTexture->renderToTexture;
 
-		//commandList->CopyResource(backbuffer, rtt);
-
 		std::vector<CD3DX12_RESOURCE_BARRIER> hold = {
 			CD3DX12_RESOURCE_BARRIER::Transition(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST),
 			CD3DX12_RESOURCE_BARRIER::Transition(rtt, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_SOURCE),
