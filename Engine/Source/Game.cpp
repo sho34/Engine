@@ -483,6 +483,7 @@ void EditorModeStep()
 			}
 		);
 		mainPassCamera = GetCameraByName("cam.0");
+		Editor::MapPickingRenderables();
 		return;
 	}
 	WriteRenderableBoundingBoxConstantsBuffer();

@@ -46,7 +46,7 @@ namespace Editor {
 	void PickingStep(std::unique_ptr<DirectX::Mouse>& mouse);
 	void RenderPickingPass(std::shared_ptr<Camera> camera);
 	void PickFromScene();
-	void PickSceneObject(unsigned int objectId);
+	void PickSceneObject(unsigned int pickedObjectId);
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);
 	void ReleasePickingPassResources();
 	void ResizePickingPass(unsigned int width, unsigned int height);

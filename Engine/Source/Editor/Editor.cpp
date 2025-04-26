@@ -1012,23 +1012,29 @@ namespace Editor {
 		pickingCpuBuffer->Unmap(0, &emptyRange);
 	}
 
-	void PickSceneObject(unsigned int objectId)
+	void PickSceneObject(unsigned int pickedObjectId)
 	{
-		if (objectId == 0U)
+		if (pickedObjectId == 0U)
 		{
 			SelectSceneObject(_SceneObjects::SO_Renderables, "");
 			boundingBox->visible(false);
 			return;
 		}
 
-		auto renderables = GetRenderables();
-		auto renderable = renderables.begin();
-		for (unsigned int i = 1; i < objectId; i++)
+		unsigned int objectId = 1U;
+		for (auto& [uuid, r] : GetRenderables())
 		{
-			renderable++;
+			if (!r->visible()) continue;
+
+			if (pickedObjectId == objectId)
+			{
+				SelectSceneObject(_SceneObjects::SO_Renderables, uuid);
+				boundingBox->visible(true);
+				break;
+			}
+			objectId++;
 		}
-		SelectSceneObject(_SceneObjects::SO_Renderables, renderable->first);
-		boundingBox->visible(true);
+
 	}
 
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse)
