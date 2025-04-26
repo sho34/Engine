@@ -6,7 +6,6 @@ using namespace DeviceUtils;
 using namespace DirectX;
 struct Renderer;
 
-//typedef std::tuple<DXGI_FORMAT[8], DXGI_FORMAT> RenderPassRenderTargetDesc;
 typedef std::tuple<std::vector<DXGI_FORMAT>, DXGI_FORMAT> RenderPassRenderTargetDesc;
 
 namespace RenderPass

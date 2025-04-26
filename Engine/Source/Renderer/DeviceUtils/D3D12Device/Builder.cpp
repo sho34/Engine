@@ -71,6 +71,7 @@ namespace DeviceUtils {
 				//D3D12_MESSAGE_ID_INVALID_DESCRIPTOR_HANDLE,									// This occurs when there are uninitialized descriptors in a descriptor table, even when a shader does not access the missing descriptors.
 				//D3D12_MESSAGE_ID_CREATERESOURCE_STATE_IGNORED,								// D3D11On12
 				//D3D12_MESSAGE_ID_CREATEGRAPHICSPIPELINESTATE_RENDERTARGETVIEW_NOT_SET		// Shadow Map of 5.1 sucks
+				D3D12_MESSAGE_ID_COPYRESOURCE_INVALIDDSTRESOURCE  //this is because of picking D3D12_RESOURCE_DIMENSION_TEXTURE2D -> D3D12_RESOURCE_DIMENSION_BUFFER
 			};
 
 			D3D12_INFO_QUEUE_FILTER NewFilter = {};

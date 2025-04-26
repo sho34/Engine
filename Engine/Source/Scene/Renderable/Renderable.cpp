@@ -470,7 +470,6 @@ namespace Scene {
 		std::shared_ptr<MaterialInstance> material = meshMaterials.at(mesh);
 		if (!material)
 		{
-			//meshRootSignatures.insert_or_assign(mesh, nullptr);
 			meshHashedRootSignatures.insert_or_assign(mesh, HashedRootSignature());
 			return;
 		}
@@ -481,7 +480,6 @@ namespace Scene {
 		auto& psSamplersParams = material->pixelShader->samplersParameters;
 		auto& samplers = material->samplers;
 
-		//meshRootSignatures.insert_or_assign(mesh, CreateRootSignature(mesh->uuid, vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers));
 		RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers);
 		meshHashedRootSignatures.insert_or_assign(mesh, CreateRootSignature(rootSignatureDesc));
 	}
@@ -492,7 +490,6 @@ namespace Scene {
 		std::shared_ptr<MaterialInstance> material = meshShadowMapMaterials.at(mesh);
 		if (!material)
 		{
-			//meshShadowMapRootSignatures.insert_or_assign(mesh, nullptr);
 			meshHashedShadowMapRootSignatures.insert_or_assign(mesh, HashedRootSignature());
 			return;
 		}
@@ -503,7 +500,6 @@ namespace Scene {
 		auto& psSamplersParams = material->pixelShader->samplersParameters;
 		auto& samplers = material->samplers;
 
-		//meshShadowMapRootSignatures.insert_or_assign(mesh, CreateRootSignature(mesh->uuid, vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers));
 		RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers);
 		meshHashedShadowMapRootSignatures.insert_or_assign(mesh, CreateRootSignature(rootSignatureDesc));
 	}
@@ -521,11 +517,6 @@ namespace Scene {
 
 	void Renderable::CreateMeshPipelineState(size_t passHash, std::shared_ptr<MeshInstance> mesh)
 	{
-		static std::map<D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D_PRIMITIVE_TOPOLOGY> topologyMap = {
-			{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE , D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST },
-			{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, D3D_PRIMITIVE_TOPOLOGY_LINELIST }
-		};
-
 		std::shared_ptr<MaterialInstance> material = meshMaterials.at(mesh);
 		if (!material)
 		{
@@ -610,6 +601,78 @@ namespace Scene {
 
 		meshHashedShadowMapPipelineStates[passHash].insert_or_assign(mesh, CreatePipelineState(pipelineStateDesc));
 	}
+
+#if defined(_EDITOR)
+
+	void Renderable::CreatePickingComponents(size_t passHash, std::string pickingMaterialUUID)
+	{
+		auto MapConstantsBuffers = [this](std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material, std::string name, MeshConstantsBufferMap& map)
+			{
+				for (size_t size : material->variablesBufferSize)
+				{
+					std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(size, name + "." + mesh->uuid);
+					for (unsigned int n = 0; n < renderer->numFrames; n++)
+					{
+						WriteMaterialVariablesToConstantsBufferSpace(material, cbvData, n);
+					}
+					map[mesh].push_back(cbvData);
+				}
+			};
+
+		auto MapRootSignature = [this](std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material, MeshHashedRootSignatureMap& map)
+			{
+				auto& vsCBparams = material->vertexShader->constantsBuffersParameters;
+				auto& psCBparams = material->pixelShader->constantsBuffersParameters;
+				auto& psSRVparams = material->pixelShader->texturesParameters;
+				auto& psSamplersParams = material->pixelShader->samplersParameters;
+				auto& samplers = material->samplers;
+
+				RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers);
+				map.insert_or_assign(mesh, CreateRootSignature(rootSignatureDesc));
+			};
+
+		auto MapPipelineState = [this](size_t passHash, std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material, MeshHashedRootSignatureMap hashedRootSignatures, std::map<size_t, MeshHashedPipelineStateMap>& map)
+			{
+				auto& vsLayout = vertexInputLayoutsMap[mesh->vertexClass];
+				auto& rootSignature = std::get<0>(hashedRootSignatures[mesh]);
+				auto& vsByteCode = material->vertexShader->byteCode;
+				auto& psByteCode = material->pixelShader->byteCode;
+
+				nlohmann::json matJson = GetMaterialTemplate(material->material);
+				matJson.merge_patch(json);
+
+				D3D12_BLEND_DESC blendDesc;
+				TransformJsonToBlendState(blendDesc, matJson, "blendState");
+
+				D3D12_RASTERIZER_DESC rasterizerDesc;
+				TransformJsonToRasterizerState(rasterizerDesc, matJson, "rasterizerState");
+
+				D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+				std::string primType = primitiveTopologyTypeToString.at(primitiveTopologyType);
+				ReplaceFromJson(primType, matJson, "primitiveTopologyType");
+				primitiveTopologyType = stringToPrimitiveTopologyType.at(primType);
+				topology(primitiveTopologyToString.at(topologyMap.at(primitiveTopologyType)));
+
+				RenderPassRenderTargetDesc& RTDesc = RenderPass::GetRenderPassRenderTargetDesc(passHash);
+				const std::vector<DXGI_FORMAT> rtFormats = std::get<0>(RTDesc);
+				DXGI_FORMAT depthFormat = std::get<1>(RTDesc);
+
+				PipelineStateDesc pipelineStateDesc = std::tie(vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtFormats, depthFormat);
+
+				map[passHash].insert_or_assign(mesh, CreatePipelineState(pipelineStateDesc));
+			};
+
+		for (auto& mesh : meshes)
+		{
+			std::map<TextureType, MaterialTexture> textures;
+			std::shared_ptr<MaterialInstance> pickingMaterial = GetMaterialInstance(pickingMaterialUUID, textures, mesh, defaultPickingShaderAttributes);
+			pickingMeshMaterials.insert_or_assign(mesh, pickingMaterial);
+			MapConstantsBuffers(mesh, pickingMaterial, "picking", pickingMeshConstantsBuffer);
+			MapRootSignature(mesh, pickingMaterial, pickingMeshHashedRootSignatures);
+			MapPipelineState(passHash, mesh, pickingMaterial, pickingMeshHashedRootSignatures, pickingMeshHashedPipelineStates);
+		}
+	}
+#endif
 
 	void Renderable::CreateBoundingBox()
 	{
@@ -1232,6 +1295,90 @@ namespace Scene {
 #endif
 
 	}
+
+#if defined(_EDITOR)
+	void Renderable::RenderCustomizable(size_t passHash,
+		MeshMaterialMap materials,
+		MeshConstantsBufferMap constantsBuffers,
+		MeshHashedRootSignatureMap rootSignatures,
+		std::map<size_t, MeshHashedPipelineStateMap> pipelineStates,
+		std::shared_ptr<Camera> camera)
+	{
+		using namespace Animation;
+
+		if (!visible()) return;
+
+		auto& commandList = renderer->commandList;
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(commandList.p, 0, name().c_str());
+#endif
+
+		for (unsigned int i = 0; i < meshes.size(); i++)
+		{
+			if (skipMeshes.contains(i) || !materials.contains(meshes[i])) continue;
+
+			auto& mesh = meshes.at(i);
+			auto& material = materials.at(mesh);
+			auto& rootSignature = std::get<1>(rootSignatures.at(mesh));
+			auto& pipelineState = std::get<1>(pipelineStates.at(passHash).at(mesh));
+
+			commandList->IASetPrimitiveTopology(topology());
+			commandList->SetGraphicsRootSignature(rootSignature);
+			commandList->SetPipelineState(pipelineState);
+
+			unsigned int cbvSlot = 0U;
+
+			if (constantsBuffers.contains(mesh))
+			{
+				auto& constantsBuffer = constantsBuffers.at(mesh);
+				for (unsigned int i = 0U; i < constantsBuffer.size(); i++) {
+					constantsBuffer[i]->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
+				}
+			}
+
+			if (camera && material->ShaderInstanceHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) {
+				camera->cameraCbv->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
+			}
+
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightCBVRegister; })) {
+				GetLightsConstantsBuffer()->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
+			}
+
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightsShadowMapCBVRegister; })) {
+				if (SceneHasShadowMaps()) {
+					GetShadowMapConstantsBuffer()->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
+				}
+				else
+				{
+					cbvSlot++;
+				}
+			}
+
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->animationCBVRegister; })) {
+				GetAnimatedConstantsBuffer(this_ptr)->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
+			}
+
+			material->SetRootDescriptorTable(commandList, cbvSlot);
+
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightsShadowMapSRVRegister; })) {
+				if (SceneHasShadowMaps()) {
+					commandList->SetGraphicsRootDescriptorTable(cbvSlot, GetShadowMapGpuDescriptorHandleStart());
+				}
+				cbvSlot++;
+			}
+
+			commandList->IASetVertexBuffers(0, 1, &mesh->vbvData.vertexBufferView);
+			commandList->IASetIndexBuffer(&mesh->ibvData.indexBufferView);
+			commandList->DrawIndexedInstanced(mesh->ibvData.indexBufferView.SizeInBytes / sizeof(unsigned int), 1, 0, 0, 0);
+		}
+
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(commandList.p);
+#endif
+	}
+
+#endif
 
 	//EDITOR
 #if defined(_EDITOR)

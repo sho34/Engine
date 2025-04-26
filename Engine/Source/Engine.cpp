@@ -499,6 +499,8 @@ void Render()
 
 	renderer->ExecuteCommands();
 	renderer->Present();
+
+	PostRender();
 }
 
 void ResizeWindow()

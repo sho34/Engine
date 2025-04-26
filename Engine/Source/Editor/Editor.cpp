@@ -8,8 +8,10 @@
 #include <Mouse.h>
 #include <Application.h>
 #include <Editor.h>
+#include "../Renderer/DeviceUtils/Resources/Resources.h"
 
 extern HWND hWnd;
+extern RECT hWndRect;
 extern std::unique_ptr<DirectX::Mouse> mouse;
 extern std::shared_ptr<Renderer> renderer;
 extern std::string gameAppTitle;
@@ -33,12 +35,19 @@ namespace Editor {
 	std::string selSO = "";
 	_Templates tempTab = _Templates::T_Materials;
 	std::string selTemp = "";
-	float titleBH = 19.0f;
-	float panW = 400.0f;
+	float titleBH = static_cast<float>(ApplicationBarBottom);
+	float panW = static_cast<float>(RightPanelWidth);
 	ImGuiWindowFlags panFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
 
 	ImGui_ImplDX12_InitInfo init_info = {};
+
+	std::shared_ptr<RenderToTexturePass> pickingPass;
+	CComPtr<ID3D12Resource> pickingCpuBuffer;
+	unsigned int pickingX = 0U;
+	unsigned int pickingY = 0U;
+	bool leftButtonPressed = false;
+	bool doPicking = false;
 
 	void InitEditor()
 	{
@@ -297,7 +306,7 @@ namespace Editor {
 	{
 		RECT dragRect;
 		ZeroMemory(&dragRect, sizeof(dragRect));
-		dragRect.bottom = 19;
+		dragRect.bottom = ApplicationBarBottom;
 
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -876,6 +885,174 @@ namespace Editor {
 			);
 		}
 		ImGui::PopID();
+	}
+
+	void CreatePickingPass()
+	{
+		unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
+		unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
+
+		pickingPass = CreateRenderPass("pickingPass", { DXGI_FORMAT_R32_UINT }, DXGI_FORMAT_D32_FLOAT, width, height);
+	}
+
+	void DestroyPickingPass()
+	{
+		pickingPass = nullptr;
+	}
+
+	void MapPickingRenderables()
+	{
+		std::string pickingMaterialUUID = FindMaterialUUIDByName("Picking");
+
+		auto& renderables = GetRenderables();
+		for (auto& [uuid, renderable] : renderables)
+		{
+			renderable->CreatePickingComponents(pickingPass->passHash, pickingMaterialUUID);
+		}
+	}
+
+	void PickingStep(std::unique_ptr<DirectX::Mouse>& mouse)
+	{
+		if (!leftButtonPressed && mouse->GetState().leftButton)
+		{
+			if (Editor::MouseIsInGameArea(mouse))
+			{
+				leftButtonPressed = true;
+				pickingX = mouse->GetState().x;
+				pickingY = mouse->GetState().y;
+				doPicking = true;
+			}
+		}
+		else if (leftButtonPressed && !mouse->GetState().leftButton)
+		{
+			leftButtonPressed = false;
+		}
+	}
+
+	void RenderPickingPass(std::shared_ptr<Camera> camera)
+	{
+		if (!doPicking) return;
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, L"Scene Picker");
+#endif
+
+		auto WritePickingConstantsBuffer = [](std::shared_ptr<Renderable> r, unsigned int objectId, unsigned int backbufferIndex)
+			{
+				XMFLOAT3 posV = r->position();
+				XMFLOAT3 rotV = r->rotation();
+				XMFLOAT3 scaleV = r->scale();
+				XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+				XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
+				XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
+				XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
+
+				r->WriteConstantsBuffer(r->pickingMeshMaterials, r->pickingMeshConstantsBuffer, "world", world, backbufferIndex);
+				r->WriteConstantsBuffer(r->pickingMeshMaterials, r->pickingMeshConstantsBuffer, "objectId", objectId, backbufferIndex);
+			};
+
+		pickingPass->Pass([WritePickingConstantsBuffer, camera](size_t passHash)
+			{
+				unsigned int backBufferIndex = renderer->backBufferIndex;
+				camera->WriteConstantsBuffer(backBufferIndex);
+
+				unsigned int objectId = 1U;
+				for (auto& [name, r] : GetRenderables())
+				{
+					if (!r->visible()) continue;
+
+					WritePickingConstantsBuffer(r, objectId, backBufferIndex);
+
+					r->RenderCustomizable(passHash,
+						r->pickingMeshMaterials,
+						r->pickingMeshConstantsBuffer,
+						r->pickingMeshHashedRootSignatures,
+						r->pickingMeshHashedPipelineStates,
+						camera
+					);
+					objectId++;
+				}
+			}
+		);
+
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+	}
+
+	void PickFromScene()
+	{
+		if (!doPicking) return;
+		doPicking = false;
+
+		DeviceUtils::CaptureTexture(
+			renderer->d3dDevice,
+			renderer->commandQueue,
+			pickingPass->renderToTexture[0]->renderToTexture,
+			pickingPass->renderToTexture[0]->width * sizeof(unsigned int),
+			pickingPass->renderToTexture[0]->resourceDesc,
+			pickingCpuBuffer,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
+		);
+
+		size_t width = static_cast<size_t>(hWndRect.right - hWndRect.left);
+		size_t height = static_cast<size_t>(hWndRect.bottom - hWndRect.top);
+		size_t Begin = 0;
+		size_t End = width * height * sizeof(unsigned int);
+		size_t offset = (width * pickingY + pickingX);
+
+		D3D12_RANGE readbackBufferRange{ Begin, End };
+		unsigned int* pReadbackBufferData{};
+		pickingCpuBuffer->Map(0, &readbackBufferRange, reinterpret_cast<void**>(&pReadbackBufferData));
+
+		Editor::PickSceneObject(pReadbackBufferData[offset]);
+
+		D3D12_RANGE emptyRange{ 0, 0 };
+		pickingCpuBuffer->Unmap(0, &emptyRange);
+	}
+
+	void PickSceneObject(unsigned int objectId)
+	{
+		if (objectId == 0U)
+		{
+			SelectSceneObject(_SceneObjects::SO_Renderables, "");
+			boundingBox->visible(false);
+			return;
+		}
+
+		auto renderables = GetRenderables();
+		auto renderable = renderables.begin();
+		for (unsigned int i = 1; i < objectId; i++)
+		{
+			renderable++;
+		}
+		SelectSceneObject(_SceneObjects::SO_Renderables, renderable->first);
+		boundingBox->visible(true);
+	}
+
+	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse)
+	{
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+
+		RECT gameArea;
+		ZeroMemory(&gameArea, sizeof(gameArea));
+		gameArea.top = ApplicationBarBottom + 1L;
+		gameArea.bottom = static_cast<LONG>(viewport->Size.y);
+		gameArea.right = static_cast<LONG>(viewport->Size.x - panW);
+		int x = mouse->GetState().x;
+		int y = mouse->GetState().y;
+		return (x > gameArea.left && x<gameArea.right && y > gameArea.top && y < gameArea.bottom);
+	}
+
+	void ReleasePickingPassResources()
+	{
+		if (pickingPass) pickingPass->ReleaseResources();
+	}
+
+	void ResizePickingPass(unsigned int width, unsigned int height)
+	{
+		if (pickingPass) pickingPass->Resize(width, height);
 	}
 };
 

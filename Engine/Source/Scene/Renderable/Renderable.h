@@ -36,6 +36,9 @@ namespace Scene
 #endif
 
 	static nlohmann::json defaultShadowMapShaderAttributes = { { "uniqueMaterialInstance", false }, { "castShadows",false } };
+#if defined(_EDITOR)
+	static nlohmann::json defaultPickingShaderAttributes = R"({ "uniqueMaterialInstance": true, "castShadows": false })"_json;
+#endif
 
 	//Mesh Instance to Material Instance
 	typedef std::pair<std::shared_ptr<MeshInstance>, std::shared_ptr<MaterialInstance>> MeshMaterialPair;
@@ -129,6 +132,12 @@ namespace Scene
 		std::string meshSwap;
 		std::vector<unsigned int> materialToChangeMeshIndex;
 		std::vector<std::string> materialToRebuild;
+
+		void CreatePickingComponents(size_t passHash, std::string pickingMaterialUUID);
+		MeshMaterialMap pickingMeshMaterials;
+		MeshConstantsBufferMap pickingMeshConstantsBuffer;
+		MeshHashedRootSignatureMap pickingMeshHashedRootSignatures;
+		std::map<size_t, MeshHashedPipelineStateMap> pickingMeshHashedPipelineStates;
 #endif
 
 		//CREATE
@@ -165,8 +174,27 @@ namespace Scene
 #endif
 		void WriteMaterialVariablesToConstantsBufferSpace(std::shared_ptr<MaterialInstance>& material, std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int cbvFrameIndex);
 		template<typename T>
-		void WriteConstantsBuffer(std::string constantName, T& data, unsigned int backbufferIndex, unsigned int slot = 0U, size_t offset = 0ULL) {
+		void WriteConstantsBuffer(MeshMaterialMap materials, MeshConstantsBufferMap constantsBuffers, std::string constantName, T& data, unsigned int backbufferIndex, unsigned int slot = 0U, size_t offset = 0ULL)
+		{
+			for (auto& [mesh, cbv] : constantsBuffers)
+			{
+				auto& mat = materials.at(mesh);
+				auto& vsVars = mat->vertexShader->constantsBuffersVariables;
+				auto& psVars = mat->pixelShader->constantsBuffersVariables;
 
+				if (vsVars.contains(constantName)) {
+					auto& vsVar = vsVars.at(constantName);
+					cbv[vsVar.bufferIndex]->push<T>(data, backbufferIndex, vsVar.offset + vsVar.size * slot + offset);
+				}
+				if (psVars.contains(constantName)) {
+					auto& psVar = psVars.at(constantName);
+					cbv[psVar.bufferIndex]->push<T>(data, backbufferIndex, psVar.offset + psVar.size * slot + offset);
+				}
+			}
+		};
+		template<typename T>
+		void WriteConstantsBuffer(std::string constantName, T& data, unsigned int backbufferIndex, unsigned int slot = 0U, size_t offset = 0ULL)
+		{
 			for (auto& [mesh, cbv] : meshConstantsBuffer)
 			{
 				auto& mat = meshMaterials.at(mesh);
@@ -214,6 +242,15 @@ namespace Scene
 		//RENDER
 		void Render(size_t passHash, std::shared_ptr<Camera> camera = nullptr);
 		void RenderShadowMap(size_t passHash, const std::shared_ptr<Light>& light, unsigned int cameraIndex);
+#if defined(_EDITOR)
+		void RenderCustomizable(size_t passHash,
+			MeshMaterialMap materials,
+			MeshConstantsBufferMap constantsBuffer,
+			MeshHashedRootSignatureMap rootSignatures,
+			std::map<size_t, MeshHashedPipelineStateMap> pipelineStates,
+			std::shared_ptr<Camera> camera = nullptr
+		);
+#endif
 
 		//EDITOR
 #if defined(_EDITOR)

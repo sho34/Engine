@@ -251,6 +251,20 @@ namespace Templates {
 			"systemCreated" : true,
 			"uuid":"b5ef5d53-2174-4d12-b231-5e07a7f5a7f8",
 			"type":"PIXEL_SHADER"
+		},
+		{
+			"name":"Picking_vs",
+			"path":"Picking",
+			"systemCreated" : true,
+			"uuid":"79568541-34c8-4464-bec1-77debde975e0",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"Picking_ps",
+			"path":"Picking",
+			"systemCreated" : true,
+			"uuid":"e32c5e9c-26a5-4f2b-8d0c-5899c67f1def",
+			"type":"PIXEL_SHADER"
 		}
 	])"_json;
 
@@ -405,6 +419,13 @@ namespace Templates {
 			"shader_ps":"b5ef5d53-2174-4d12-b231-5e07a7f5a7f8",
 			"systemCreated" : true,
 			"uuid":"28c4d879-6d21-408f-acbb-120f9fdc05b0"
+		},
+		{
+			"name":"Picking",
+			"shader_vs" : "79568541-34c8-4464-bec1-77debde975e0",
+			"shader_ps":"e32c5e9c-26a5-4f2b-8d0c-5899c67f1def",
+			"systemCreated" : true,
+			"uuid":"1896d918-4e47-49a6-950b-3135ab020a0b"
 		}
 	])"_json;
 

@@ -9,15 +9,20 @@
 #include "Editor/Editor.h"
 using namespace Editor;
 #endif
+#include "Renderer/DeviceUtils/Resources/Resources.h"
+#include "Common/DirectXHelper.h"
 
 using namespace Scene;
 using namespace RenderPass;
 using namespace DeviceUtils;
 
 extern RECT hWndRect;
+extern std::unique_ptr<DirectX::Mouse> mouse;
+
 std::shared_ptr<DeviceUtils::DescriptorHeap> mainPassHeap;
 std::shared_ptr<SwapChainPass> resolvePass;
 std::shared_ptr<RenderToTexturePass> mainPass;
+
 GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
 std::shared_ptr<Renderable> bootScreen;
@@ -39,6 +44,7 @@ struct GameStatesMachine {
 	std::map<T, std::function<void()>> onLeave;
 	std::map<T, std::function<void()>> onStep;
 	std::map<T, std::function<void()>> onRender;
+	std::map<T, std::function<void()>> onPostRender;
 
 	void ChangeState(T newState)
 	{
@@ -55,6 +61,11 @@ struct GameStatesMachine {
 	void Render()
 	{
 		if (onRender.contains(currentState)) { onRender.at(currentState)(); }
+	}
+
+	void PostRender()
+	{
+		if (onPostRender.contains(currentState)) { onPostRender.at(currentState)(); }
 	}
 };
 
@@ -97,6 +108,11 @@ GameStatesMachine<GameStates> gsm =
 #if defined(_EDITOR)
 		{ GS_Editor, EditorModeRender },
 #endif
+	},
+	.onPostRender = {
+#if defined(_EDITOR)
+		{ GS_Editor, EditorModePostRender },
+#endif
 	}
 };
 
@@ -104,6 +120,7 @@ std::shared_ptr<RenderToTexturePass> CreateMainPass()
 {
 	unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
 	unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
+
 	return CreateRenderPass("mainPass", { DXGI_FORMAT_R32G32B32A32_FLOAT }, DXGI_FORMAT_D32_FLOAT, width, height);
 }
 
@@ -141,6 +158,11 @@ void RunRender()
 	gsm.Render();
 }
 
+void PostRender()
+{
+	gsm.PostRender();
+}
+
 void GameStep()
 {
 	gsm.Step();
@@ -169,12 +191,18 @@ void GetAudioListenerVectors(std::function<void(XMFLOAT3 pos, XMFLOAT3 fw, XMFLO
 
 void WindowResizeReleaseResources()
 {
+#if defined(_EDITOR)
+	Editor::ReleasePickingPassResources();
+#endif
 	if (mainPass) mainPass->ReleaseResources();
 	if (resolvePass) resolvePass->ReleaseResources();
 }
 
 void WindowResize(unsigned int width, unsigned int height)
 {
+#if defined(_EDITOR)
+	Editor::ResizePickingPass(width, height);
+#endif
 	if (mainPass) mainPass->Resize(width, height);
 	if (resolvePass) resolvePass->Resize(width, height);
 }
@@ -392,6 +420,7 @@ void EditorModeCreate()
 			LoadDefaultLevel();
 
 			mainPass = CreateMainPass();
+			Editor::CreatePickingPass();
 
 			toneMapQuad = CreateRenderable(
 				{
@@ -434,6 +463,8 @@ void EditorModeCreate()
 			mainPassCamera = nullptr;
 		}
 	);
+
+	Editor::MapPickingRenderables();
 }
 
 void EditorModeStep()
@@ -455,6 +486,8 @@ void EditorModeStep()
 		return;
 	}
 	WriteRenderableBoundingBoxConstantsBuffer();
+
+	Editor::PickingStep(mouse);
 }
 
 void EditorModeRender()
@@ -462,6 +495,8 @@ void EditorModeRender()
 	if (mainPassCamera != nullptr)
 	{
 		WriteConstantsBuffers();
+
+		Editor::RenderPickingPass(mainPassCamera);
 
 		RenderSceneShadowMaps();
 
@@ -492,10 +527,16 @@ void EditorModeRender()
 	}
 }
 
+void EditorModePostRender()
+{
+	Editor::PickFromScene();
+}
+
 void EditorModeLeave()
 {
 	renderer->RenderCriticalFrame([]
 		{
+			Editor::DestroyPickingPass();
 			mainPass = nullptr;
 			mainPassCamera = nullptr;
 		}

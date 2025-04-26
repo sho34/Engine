@@ -28,14 +28,12 @@ namespace DeviceUtils {
 		auto& d3dDevice = renderer->d3dDevice;
 
 		const CD3DX12_HEAP_PROPERTIES renderToTextureHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-		const CD3DX12_RESOURCE_DESC renderToTextureRenderTargetDesc = CD3DX12_RESOURCE_DESC::Tex2D(
-			format, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET
-		);
+		resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
 
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&renderToTextureHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
-			&renderToTextureRenderTargetDesc,
+			&resourceDesc,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			nullptr,
 			IID_PPV_ARGS(&renderToTexture)

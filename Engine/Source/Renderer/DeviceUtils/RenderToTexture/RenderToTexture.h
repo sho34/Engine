@@ -15,6 +15,7 @@ namespace DeviceUtils
 		DXGI_FORMAT format;
 		unsigned int width;
 		unsigned int height;
+		D3D12_RESOURCE_DESC resourceDesc;
 		CComPtr<ID3D12Resource> renderToTexture;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuRenderTargetViewHandle;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuTextureHandle;

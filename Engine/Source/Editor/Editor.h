@@ -7,6 +7,9 @@
 
 namespace Editor {
 
+	static const LONG ApplicationBarBottom = 19L;
+	static const LONG RightPanelWidth = 400L;
+
 	using namespace Scene;
 
 	void InitEditor();
@@ -36,6 +39,17 @@ namespace Editor {
 	void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent);
 	void DrawCreateWindow(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void(std::function<void()>)> drawContent);
 	void ImDrawMaterialShaderSelection(nlohmann::json& mat, std::string key, ShaderType type, std::function<void()> cb = [] {});
+
+	void CreatePickingPass();
+	void DestroyPickingPass();
+	void MapPickingRenderables();
+	void PickingStep(std::unique_ptr<DirectX::Mouse>& mouse);
+	void RenderPickingPass(std::shared_ptr<Camera> camera);
+	void PickFromScene();
+	void PickSceneObject(unsigned int objectId);
+	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);
+	void ReleasePickingPassResources();
+	void ResizePickingPass(unsigned int width, unsigned int height);
 
 }
 #endif

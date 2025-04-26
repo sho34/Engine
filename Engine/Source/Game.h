@@ -37,5 +37,6 @@ void PlayModeRender();
 void EditorModeCreate();
 void EditorModeStep();
 void EditorModeRender();
+void EditorModePostRender();
 void EditorModeLeave();
 #endif
