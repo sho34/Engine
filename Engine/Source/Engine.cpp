@@ -487,15 +487,36 @@ void AudioStep()
 	SoundEffectsStep();
 }
 
-//RENDER
+void RunComputeShaders()
+{
+	for (auto& [uuid, renderable] : GetRenderables())
+	{
+		if (!renderable->visible() || renderable->hidden() || !renderable->animable) continue;
 
+		renderable->ComputeBoundingBox();
+	}
+}
+
+void ComputeShaderResolution()
+{
+	for (auto& [uuid, renderable] : GetRenderables())
+	{
+		if (!renderable->visible() || renderable->hidden() || !renderable->animable) continue;
+
+		renderable->BoundingBoxSolution();
+	}
+}
+
+//RENDER
 void Render()
 {
 
 	renderer->ResetCommands();
 	renderer->SetCSUDescriptorHeap();
 
+	RunComputeShaders();
 	RunRender();
+	ComputeShaderResolution();
 
 	renderer->ExecuteCommands();
 	renderer->Present();

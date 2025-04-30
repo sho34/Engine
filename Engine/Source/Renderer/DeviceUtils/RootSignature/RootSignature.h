@@ -6,7 +6,9 @@
 typedef std::tuple<
 	ShaderConstantsBufferParametersMap,
 	ShaderConstantsBufferParametersMap,
-	ShaderTextureParametersMap,
+	ShaderUAVParametersMap,
+	ShaderSRVCSParametersMap,
+	ShaderSRVTexParametersMap,
 	ShaderSamplerParametersMap,
 	std::vector<MaterialSamplerDesc>
 > RootSignatureDesc;
@@ -23,16 +25,24 @@ namespace DeviceUtils
 		std::string name,
 		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,
 		ShaderConstantsBufferParametersMap& cbufferPSParamsDef,
-		ShaderTextureParametersMap& srvPSParamsDef,
+		ShaderUAVParametersMap& uavParamsDef,
+		ShaderSRVCSParametersMap& srvCSParamsDef,
+		ShaderSRVTexParametersMap& srvTexParamsDef,
 		ShaderSamplerParametersMap& samplersDef,
-		std::vector<MaterialSamplerDesc>& matSamplers);
+		std::vector<MaterialSamplerDesc>& matSamplers
+	);
+
+	CComPtr<ID3D12RootSignature> CreateComputeShaderRootSignature(std::string name);
 
 	CComPtr<ID3D12RootSignature> GetRootSignature(size_t rootSignatureHash);
 
 	std::map<INT, CD3DX12_DESCRIPTOR_RANGE> GetRootSignatureRanges(
 		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,
 		ShaderConstantsBufferParametersMap& cbufferPSParamsDef,
-		ShaderTextureParametersMap& srvPSParamsDef);
+		ShaderUAVParametersMap& uavParamsDef,
+		ShaderSRVCSParametersMap& srvCSParamsDef,
+		ShaderSRVTexParametersMap& srvTexParamsDef
+	);
 
 	std::vector<D3D12_STATIC_SAMPLER_DESC> GetRootSignatureSamplerDesc(ShaderSamplerParametersMap& samplersDef, std::vector<MaterialSamplerDesc>& matSamplers);
 

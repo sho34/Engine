@@ -122,6 +122,16 @@ namespace Scene
 		bool playingAnimation = false;
 
 		BoundingBox boundingBox;
+		std::vector<CComPtr<ID3D12Resource>> animableBoundingBox;
+		std::vector<CComPtr<ID3D12Resource>> animableBoundingBoxReadBack;
+		std::vector<std::shared_ptr<ConstantsBuffer>> animableBoundingBoxMeshesConstantsBuffers; //CBV
+		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> animableBoundingBoxMeshesCpuHandles; //SRV
+		std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> animableBoundingBoxMeshesGpuHandles;	//SRV
+		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> animableBoundingBoxCpuHandle;	//UAV
+		std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> animableBoundingBoxGpuHandle; //UAV
+		std::shared_ptr<ShaderInstance> boundingBoxShader;
+		HashedRootSignature boundingBoxRootSignature;
+		HashedPipelineState boundingBoxPipelineState;
 
 #if defined(_EDITOR)
 		static nlohmann::json creationJson;
@@ -235,6 +245,8 @@ namespace Scene
 		void WriteShadowMapConstantsBuffer(unsigned int backbufferIndex);
 		void SetCurrentAnimation(std::string animation, float animationTime = 0.0f, float timeFactor = 1.0f, bool autoPlay = true);
 		void StepAnimation(double elapsedSeconds);
+		void ComputeBoundingBox();
+		void BoundingBoxSolution();
 
 		//DESTROY
 		void Destroy();

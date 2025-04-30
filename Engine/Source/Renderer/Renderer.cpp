@@ -71,6 +71,10 @@ void Renderer::Initialize(HWND coreHwnd) {
 	UpdateViewportPerspective();
 }
 
+void Renderer::CreateComputeEngine()
+{
+}
+
 //DESTROY
 void Renderer::Destroy() {
 	Flush();

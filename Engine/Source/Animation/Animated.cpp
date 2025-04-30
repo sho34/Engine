@@ -244,4 +244,37 @@ namespace Animation {
 		}
 	};
 	*/
+
+	void CreateBoundingBoxComputeResource(CComPtr<ID3D12Resource>& boundingBoxResource, CComPtr<ID3D12Resource>& readBackBoundingBoxResource, CD3DX12_CPU_DESCRIPTOR_HANDLE& animableBoundingBoxCpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& animableBoundingBoxGpuHandle)
+	{
+		size_t dataSize = sizeof(XMFLOAT4) * 2ULL;
+		D3D12_HEAP_PROPERTIES defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
+		D3D12_RESOURCE_DESC bufferDesc = CD3DX12_RESOURCE_DESC::Buffer(dataSize, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
+
+		renderer->d3dDevice->CreateCommittedResource(
+			&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc,
+			D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&boundingBoxResource)
+		);
+
+		// Create UAV
+		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+		uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+		uavDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		uavDesc.Buffer = {
+			.FirstElement = 0ULL, .NumElements = 1U, .StructureByteStride = sizeof(XMFLOAT4) * 2,
+			.CounterOffsetInBytes = 0ULL, .Flags = D3D12_BUFFER_UAV_FLAG_NONE
+		};
+
+		DeviceUtils::AllocCSUDescriptor(animableBoundingBoxCpuHandle, animableBoundingBoxGpuHandle);
+
+		renderer->d3dDevice->CreateUnorderedAccessView(boundingBoxResource, nullptr, &uavDesc, animableBoundingBoxCpuHandle);
+
+		D3D12_HEAP_PROPERTIES readBackHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+		D3D12_RESOURCE_DESC bufferDescReadBack = CD3DX12_RESOURCE_DESC::Buffer(dataSize);
+
+		renderer->d3dDevice->CreateCommittedResource(
+			&readBackHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDescReadBack,
+			D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&readBackBoundingBoxResource)
+		);
+	}
 }

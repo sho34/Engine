@@ -54,8 +54,16 @@ namespace Templates {
 		ShaderConstantsBufferParametersMap constantsBuffersParameters;
 		ShaderConstantsBufferVariablesMap constantsBuffersVariables;
 
-		//texture & samplers
-		ShaderTextureParametersMap texturesParameters;
+		//UAV
+		ShaderUAVParametersMap uavParameters;
+
+		//SRV CS
+		ShaderSRVCSParametersMap srvCSParameters;
+
+		//SRV Tex
+		ShaderSRVTexParametersMap srvTexParameters;
+
+		//Samplers
 		ShaderSamplerParametersMap samplersParameters;
 
 		std::vector<size_t> cbufferSize;
@@ -94,6 +102,7 @@ namespace Templates {
 	nlohmann::json GetShaderTemplate(std::string uuid);
 	std::vector<std::string> GetShadersNames();
 	std::string GetShaderName(std::string uuid);
+	std::string FindShaderByName(std::string name);
 	std::vector<UUIDName> GetShadersUUIDsNames();
 	std::vector<UUIDName> GetShadersUUIDsNamesByType(ShaderType type);
 	std::shared_ptr<ShaderInstance> GetShaderInstance(Source params);
@@ -118,9 +127,13 @@ namespace Templates {
 #if defined(_DEVELOPMENT)
 	void WriteShaderConstantsBufferVariables(std::ofstream& file, ShaderConstantsBufferVariablesMap& constantsBuffersVariables);
 #endif
-	void LoadShaderTextureParameters(std::ifstream& file, ShaderTextureParametersMap& texturesParameters);
+	void LoadShaderComputeParameters(std::ifstream& file, ShaderSRVCSParametersMap& srvCSParameters);
 #if defined(_DEVELOPMENT)
-	void WriteShaderTextureParameters(std::ofstream& file, ShaderTextureParametersMap& texturesParameters);
+	void WriteShaderComputeParameters(std::ofstream& file, ShaderSRVCSParametersMap& srvCSParameters);
+#endif
+	void LoadShaderTextureParameters(std::ifstream& file, ShaderSRVTexParametersMap& srvTexParameters);
+#if defined(_DEVELOPMENT)
+	void WriteShaderTextureParameters(std::ofstream& file, ShaderSRVTexParametersMap& srvTexParameters);
 #endif
 	void LoadShaderSamplerParameters(std::ifstream& file, ShaderSamplerParametersMap& samplersParameters);
 #if defined(_DEVELOPMENT)

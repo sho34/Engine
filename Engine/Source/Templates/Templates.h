@@ -116,6 +116,13 @@ namespace Templates {
 	static const nlohmann::json systemShaders = R"(
 	[
 		{
+			"name":"BoundingBox_cs",
+			"path":"CSBoundingBox",
+			"systemCreated" : true,
+			"uuid":"c23ab559-be11-45ad-b598-1e48e5280914",
+			"type":"COMPUTE_SHADER"
+		},
+		{
 			"name":"BoundingBox_vs",
 			"path":"BoundingBox",
 			"systemCreated" : true,

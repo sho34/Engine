@@ -17,6 +17,7 @@
 #include "../../Renderer/DeviceUtils/D3D12Device/Interop.h"
 #include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
 #include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
+#include "../../Renderer/DeviceUtils/Resources/Resources.h"
 #if defined(_EDITOR)
 #include "../Level.h"
 #include "../../Effects/Effects.h"
@@ -202,6 +203,56 @@ namespace Scene {
 			AttachAnimation(this_ptr, model->animations);
 			animables.insert_or_assign(uuid(), this_ptr);
 			StepAnimation(0.0f);
+
+			for (auto& mesh : meshes)
+			{
+				//Create the bounding box compute resource
+				CD3DX12_CPU_DESCRIPTOR_HANDLE uavCpuHandle;
+				CD3DX12_GPU_DESCRIPTOR_HANDLE uavGpuHandle;
+				CComPtr<ID3D12Resource> bbox;
+				CComPtr<ID3D12Resource> bboxrb;
+				Animation::CreateBoundingBoxComputeResource(bbox, bboxrb, uavCpuHandle, uavGpuHandle);
+				animableBoundingBox.push_back(bbox);
+				animableBoundingBoxReadBack.push_back(bboxrb);
+				animableBoundingBoxCpuHandle.push_back(uavCpuHandle);
+				animableBoundingBoxGpuHandle.push_back(uavGpuHandle);
+
+				//Create the SRV for the vertex buffers of each mesh
+				CD3DX12_CPU_DESCRIPTOR_HANDLE srvCpuHandle;
+				CD3DX12_GPU_DESCRIPTOR_HANDLE srvGpuHandle;
+				CreateMeshVerticesShaderResourceView(mesh, srvCpuHandle, srvGpuHandle);
+				animableBoundingBoxMeshesCpuHandles.push_back(srvCpuHandle);
+				animableBoundingBoxMeshesGpuHandles.push_back(srvGpuHandle);
+			}
+
+			//Get an instance of the BoundingBox Compute shader
+			boundingBoxShader = GetShaderInstance({ .shaderType = COMPUTE_SHADER, .shaderUUID = FindShaderByName("BoundingBox_cs") });
+
+			//Create the Constants Buffer for each mesh
+			std::transform(meshes.begin(), meshes.end(), std::back_inserter(animableBoundingBoxMeshesConstantsBuffers), [this](auto& mesh)
+				{
+					auto cbv = CreateConstantsBuffer(boundingBoxShader->cbufferSize[0], "bboxCS." + mesh->uuid);
+					unsigned int numVertices = mesh->vbvData.vertexBufferView.SizeInBytes / mesh->vbvData.vertexBufferView.StrideInBytes;
+					cbv->push<unsigned int>(numVertices, 0);
+					return cbv;
+				}
+			);
+
+			//Build the shader's root signature
+			auto& vsCBparams = boundingBoxShader->constantsBuffersParameters;
+			auto& psCBparams = boundingBoxShader->constantsBuffersParameters;
+			auto& uavParams = boundingBoxShader->uavParameters;
+			auto& psSRVCSparams = boundingBoxShader->srvCSParameters;
+			auto& psSRVTexparams = boundingBoxShader->srvTexParameters;
+			auto& psSamplersParams = boundingBoxShader->samplersParameters;
+			std::vector<MaterialSamplerDesc> samplers;
+
+			RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
+			boundingBoxRootSignature = CreateRootSignature(rootSignatureDesc);
+
+			size_t rootSignatureHash = std::get<0>(boundingBoxRootSignature);
+			ComputePipelineStateDesc pipelineStateDesc = std::tie(boundingBoxShader->byteCode, rootSignatureHash);
+			boundingBoxPipelineState = CreateComputePipelineState(pipelineStateDesc);
 		}
 
 #if defined(_EDITOR)
@@ -476,11 +527,13 @@ namespace Scene {
 
 		auto& vsCBparams = material->vertexShader->constantsBuffersParameters;
 		auto& psCBparams = material->pixelShader->constantsBuffersParameters;
-		auto& psSRVparams = material->pixelShader->texturesParameters;
+		auto& uavParams = material->pixelShader->uavParameters;
+		auto& psSRVCSparams = material->pixelShader->srvCSParameters;
+		auto& psSRVTexparams = material->pixelShader->srvTexParameters;
 		auto& psSamplersParams = material->pixelShader->samplersParameters;
 		auto& samplers = material->samplers;
 
-		RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers);
+		RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
 		meshHashedRootSignatures.insert_or_assign(mesh, CreateRootSignature(rootSignatureDesc));
 	}
 
@@ -496,11 +549,13 @@ namespace Scene {
 
 		auto& vsCBparams = material->vertexShader->constantsBuffersParameters;
 		auto& psCBparams = material->pixelShader->constantsBuffersParameters;
-		auto& psSRVparams = material->pixelShader->texturesParameters;
+		auto& uavParams = material->pixelShader->uavParameters;
+		auto& psSRVCSparams = material->pixelShader->srvCSParameters;
+		auto& psSRVTexparams = material->pixelShader->srvTexParameters;
 		auto& psSamplersParams = material->pixelShader->samplersParameters;
 		auto& samplers = material->samplers;
 
-		RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers);
+		RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
 		meshHashedShadowMapRootSignatures.insert_or_assign(mesh, CreateRootSignature(rootSignatureDesc));
 	}
 
@@ -548,9 +603,9 @@ namespace Scene {
 		const std::vector<DXGI_FORMAT> rtFormats = std::get<0>(RTDesc);
 		DXGI_FORMAT depthFormat = std::get<1>(RTDesc);
 
-		PipelineStateDesc pipelineStateDesc = std::tie(vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtFormats, depthFormat);
+		GraphicsPipelineStateDesc pipelineStateDesc = std::tie(vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtFormats, depthFormat);
 
-		meshHashedPipelineStates[passHash].insert_or_assign(mesh, CreatePipelineState(pipelineStateDesc));
+		meshHashedPipelineStates[passHash].insert_or_assign(mesh, CreateGraphicsPipelineState(pipelineStateDesc));
 	}
 
 	void Renderable::CreateMeshShadowMapPipelineState(std::shared_ptr<MeshInstance> mesh)
@@ -597,9 +652,9 @@ namespace Scene {
 		const std::vector<DXGI_FORMAT> rtFormats = std::get<0>(RTDesc);
 		DXGI_FORMAT depthFormat = std::get<1>(RTDesc);
 
-		PipelineStateDesc pipelineStateDesc = std::tie(vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtFormats, depthFormat);
+		GraphicsPipelineStateDesc pipelineStateDesc = std::tie(vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtFormats, depthFormat);
 
-		meshHashedShadowMapPipelineStates[passHash].insert_or_assign(mesh, CreatePipelineState(pipelineStateDesc));
+		meshHashedShadowMapPipelineStates[passHash].insert_or_assign(mesh, CreateGraphicsPipelineState(pipelineStateDesc));
 	}
 
 #if defined(_EDITOR)
@@ -623,11 +678,13 @@ namespace Scene {
 			{
 				auto& vsCBparams = material->vertexShader->constantsBuffersParameters;
 				auto& psCBparams = material->pixelShader->constantsBuffersParameters;
-				auto& psSRVparams = material->pixelShader->texturesParameters;
+				auto& uavParams = material->pixelShader->uavParameters;
+				auto& psSRVCSparams = material->pixelShader->srvCSParameters;
+				auto& psSRVTexparams = material->pixelShader->srvTexParameters;
 				auto& psSamplersParams = material->pixelShader->samplersParameters;
 				auto& samplers = material->samplers;
 
-				RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, psSRVparams, psSamplersParams, samplers);
+				RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
 				map.insert_or_assign(mesh, CreateRootSignature(rootSignatureDesc));
 			};
 
@@ -657,9 +714,9 @@ namespace Scene {
 				const std::vector<DXGI_FORMAT> rtFormats = std::get<0>(RTDesc);
 				DXGI_FORMAT depthFormat = std::get<1>(RTDesc);
 
-				PipelineStateDesc pipelineStateDesc = std::tie(vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtFormats, depthFormat);
+				GraphicsPipelineStateDesc pipelineStateDesc = std::tie(vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtFormats, depthFormat);
 
-				map[passHash].insert_or_assign(mesh, CreatePipelineState(pipelineStateDesc));
+				map[passHash].insert_or_assign(mesh, CreateGraphicsPipelineState(pipelineStateDesc));
 			};
 
 		for (auto& mesh : meshes)
@@ -728,19 +785,7 @@ namespace Scene {
 	void Renderable::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox) {
 		BoundingBox bb;
 
-		//if (!animable)
-		{
-			bb = boundingBox;
-		}
-		/*
-		else
-		{
-			using namespace Animation;
-			auto bonesCbv = GetAnimatedConstantsBuffer(this_ptr);
-			XMMATRIX* bones = reinterpret_cast<XMMATRIX*>(bonesCbv->mappedConstantBuffer + bonesCbv->alignedConstantBufferSize * renderer->backBufferIndex);
-			bb = animable->GetAnimatedBoundingBox(bones);
-		}
-		*/
+		bb = boundingBox;
 
 		XMVECTOR pv = { bb.Center.x, bb.Center.y, bb.Center.z };
 		XMFLOAT3 rotV = rotation();
@@ -936,7 +981,6 @@ namespace Scene {
 
 	void Renderable::CleanMeshes()
 	{
-		//model3D = nullptr;
 		skipMeshes.clear();
 
 		auto destroyMeshInstance = [](auto& vec)
@@ -968,22 +1012,28 @@ namespace Scene {
 
 		meshes.clear();
 		meshesShadowMap.clear();
-
-		//meshes.clear();
-		//meshesShadowMap.clear();
-
 		meshMaterials.clear();
 		meshShadowMapMaterials.clear();
-
 		meshConstantsBuffer.clear();
 		meshShadowMapConstantsBuffer.clear();
-		//meshHashedRootSignatures.clear();
-		//meshHashedShadowMapRootSignatures.clear();
-		//meshHashedPipelineStates.clear();
-		//meshHashedShadowMapPipelineStates.clear();
 		if (animables.contains(name()))
 		{
 			animables.erase(name());
+		}
+		if (animable != nullptr)
+		{
+			animableBoundingBox.clear();
+			animableBoundingBoxReadBack.clear();
+			animableBoundingBoxMeshesConstantsBuffers.clear();
+			for (unsigned int i = 0; i < animableBoundingBoxMeshesCpuHandles.size(); i++)
+			{
+				DeviceUtils::FreeCSUDescriptor(animableBoundingBoxMeshesCpuHandles[i], animableBoundingBoxMeshesGpuHandles[i]);
+			}
+			for (unsigned int i = 0; i < animableBoundingBoxCpuHandle.size(); i++)
+			{
+				DeviceUtils::FreeCSUDescriptor(animableBoundingBoxCpuHandle[i], animableBoundingBoxGpuHandle[i]);
+			}
+			DestroyShaderBinary(boundingBoxShader);
 		}
 		animable = nullptr;
 		bonesTransformation.clear();
@@ -1113,6 +1163,72 @@ namespace Scene {
 		TraverseMultiplycationQueue(currentAnimationTime, currentAnimation, animable->animations, bonesTransformation);
 	}
 
+	void Renderable::ComputeBoundingBox()
+	{
+		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
+		CComPtr<ID3D12RootSignature>& rootSignature = std::get<1>(boundingBoxRootSignature);
+		CComPtr<ID3D12PipelineState>& pipelineState = std::get<1>(boundingBoxPipelineState);
+
+		using namespace Animation;
+		auto bonesCbv = GetAnimatedConstantsBuffer(this_ptr);
+
+		commandList->SetComputeRootSignature(rootSignature);
+		commandList->SetPipelineState(pipelineState);
+
+		unsigned int backBufferIndex = renderer->backBufferIndex;
+		commandList->SetComputeRootDescriptorTable(1, bonesCbv->gpu_xhandle[backBufferIndex]);
+
+		for (unsigned int i = 0; i < meshes.size(); i++)
+		{
+			auto& cbv = animableBoundingBoxMeshesConstantsBuffers[i];
+			commandList->SetComputeRootDescriptorTable(0, cbv->gpu_xhandle[0]);
+			commandList->SetComputeRootDescriptorTable(2, animableBoundingBoxGpuHandle[i]);
+			commandList->SetComputeRootDescriptorTable(3, animableBoundingBoxMeshesGpuHandles[i]);
+			commandList->Dispatch(1, 1, 1);
+		}
+	}
+
+	void Renderable::BoundingBoxSolution()
+	{
+		XMFLOAT4* mem{};
+		D3D12_RANGE range{};
+		range.Begin = 0;
+		range.End = sizeof(XMFLOAT4) * 2ULL;
+
+		auto& commandList = renderer->commandList;
+
+		for (unsigned int i = 0; i < meshes.size(); i++)
+		{
+			DeviceUtils::TransitionResource(commandList, animableBoundingBox[i], D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE);
+			DeviceUtils::TransitionResource(commandList, animableBoundingBoxReadBack[i], D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
+			commandList->CopyResource(animableBoundingBoxReadBack[i], animableBoundingBox[i]);
+
+			animableBoundingBoxReadBack[i]->Map(0, &range, reinterpret_cast<void**>(&mem));
+
+			XMFLOAT3 center = { mem[0].x, mem[0].y , mem[0].z };
+			XMFLOAT3 extents = { mem[1].x, mem[1].y , mem[1].z };
+
+			BoundingBox gpuBBox = BoundingBox(center, extents);
+
+			if (i == 0)
+			{
+				boundingBox = gpuBBox;
+			}
+			else
+			{
+				BoundingBox out;
+				BoundingBox::CreateMerged(out, boundingBox, gpuBBox);
+				boundingBox = out;
+			}
+
+			D3D12_RANGE emptyRange{ 0, 0 };
+			animableBoundingBoxReadBack[i]->Unmap(0, &emptyRange);
+
+			DeviceUtils::TransitionResource(commandList, animableBoundingBox[i], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
+			DeviceUtils::TransitionResource(commandList, animableBoundingBoxReadBack[i], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
+		}
+	}
+
 	//DESTROY
 	void Renderable::Destroy()
 	{
@@ -1124,18 +1240,6 @@ namespace Scene {
 
 		auto releaseSecond = [](auto& map) { for (auto& [first, second] : map) { second.Release(); second = nullptr; } };
 		auto releaseHashedSecond = [](auto& map) { for (auto& [first, second] : map) { auto& v = std::get<1>(second); v.Release(); v = nullptr; } };
-
-		//releaseSecond(meshRootSignatures);
-		//releaseHashedSecond(meshHashedRootSignatures);
-		//releaseHashedSecond(meshHashedShadowMapRootSignatures);
-		//releaseHashedSecond(meshHashedPipelineStates);
-		//releaseHashedSecond(meshHashedShadowMapPipelineStates);
-
-		//meshRootSignatures.clear();
-		//meshHashedRootSignatures.clear();
-		//meshHashedShadowMapRootSignatures.clear();
-		//meshHashedPipelineStates.clear();
-		//meshHashedShadowMapPipelineStates.clear();
 
 		auto destroyMeshInstance = [](auto& vec) { for (auto& mesh : vec) { DestroyMeshInstance(mesh); } };
 
@@ -1894,7 +1998,7 @@ namespace Scene {
 	{
 		nlohmann::json currentJson = json;
 
-		ImDrawPipelineState(json);
+		ImDrawGraphicsPipelineState(json);
 		if (currentJson != json)
 		{
 			renderableUpdateFlags |= RenderableFlags_RebuildMaterials;

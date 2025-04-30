@@ -37,6 +37,7 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 
 	//CREATE
 	void Initialize(HWND hwnd);
+	void CreateComputeEngine();
 
 	//READ&GET
 

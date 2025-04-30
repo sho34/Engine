@@ -360,9 +360,9 @@ namespace Templates {
 
 	void MaterialInstance::SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
 	{
-		for (auto& [textureType, texParam] : pixelShader->texturesParameters)
+		for (auto& [textureType, texParam] : pixelShader->srvTexParameters)
 		{
-			if (texParam.numTextures == 0xFFFFFFFF) continue;
+			if (texParam.numSRV == 0xFFFFFFFF) continue;
 			commandList->SetGraphicsRootDescriptorTable(cbvSlot, textures.at(textureType)->gpuHandle);
 			cbvSlot++;
 		}

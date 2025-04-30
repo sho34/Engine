@@ -86,6 +86,30 @@ struct std::hash<ShaderConstantsBufferParametersMap>
 	}
 };
 
+//define the UAV Buffer binding
+struct ShaderUAVParameter {
+	unsigned int registerId;
+	unsigned int numUAV;
+};
+typedef std::map<std::string, ShaderUAVParameter> ShaderUAVParametersMap;
+typedef std::pair<std::string, ShaderUAVParameter> ShaderUAVParametersPair;
+
+template <>
+struct std::hash<ShaderUAVParametersMap>
+{
+	std::size_t operator()(const ShaderUAVParametersMap& m) const
+	{
+		std::string s;
+		for (auto& [k, v] : m)
+		{
+			s += k;
+			s += std::to_string(v.registerId);
+			s += std::to_string(v.numUAV);
+		}
+		return hash<std::string>()(s);
+	}
+};
+
 //Texture Type
 enum TextureType
 {
@@ -162,24 +186,42 @@ inline static std::set<TextureType> materialTexturesTypes = {
 };
 
 //define the Textures binding
-struct ShaderTextureParameter {
+struct ShaderSRVParameter {
 	unsigned int registerId;
-	unsigned int numTextures;
+	unsigned int numSRV;
 };
-typedef std::map<TextureType, ShaderTextureParameter> ShaderTextureParametersMap;
-typedef std::pair<TextureType, ShaderTextureParameter> ShaderTextureParametersPair;
+typedef std::map<TextureType, ShaderSRVParameter> ShaderSRVTexParametersMap;
+typedef std::pair<TextureType, ShaderSRVParameter> ShaderSRVTexParametersPair;
+typedef std::map<std::string, ShaderSRVParameter> ShaderSRVCSParametersMap;
+typedef std::pair<std::string, ShaderSRVParameter> ShaderSRVCSParametersPair;
 
 template <>
-struct std::hash<ShaderTextureParametersMap>
+struct std::hash<ShaderSRVCSParametersMap>
 {
-	std::size_t operator()(const ShaderTextureParametersMap& m) const
+	std::size_t operator()(const ShaderSRVCSParametersMap& m) const
 	{
 		std::string s;
 		for (auto& [k, v] : m)
 		{
 			s += k;
 			s += std::to_string(v.registerId);
-			s += std::to_string(v.numTextures);
+			s += std::to_string(v.numSRV);
+		}
+		return hash<std::string>()(s);
+	}
+};
+
+template <>
+struct std::hash<ShaderSRVTexParametersMap>
+{
+	std::size_t operator()(const ShaderSRVTexParametersMap& m) const
+	{
+		std::string s;
+		for (auto& [k, v] : m)
+		{
+			s += k;
+			s += std::to_string(v.registerId);
+			s += std::to_string(v.numSRV);
 		}
 		return hash<std::string>()(s);
 	}
@@ -293,6 +335,14 @@ static std::map<std::string, MaterialVariablesTypes> HLSLVariableClassToMaterial
 static std::map<std::tuple<std::string, std::string>, MaterialVariablesTypes> HLSLVariablePatternToMaterialVariableTypes = {
 	{ { "float3","color" }, MAT_VAR_RGB },
 	{ { "float4","color" }, MAT_VAR_RGBA },
+};
+
+static std::set<D3D_SHADER_VARIABLE_CLASS> HLSLVariableClassAllowedTypes =
+{
+	D3D_SVC_SCALAR,
+	D3D_SVC_VECTOR,
+	D3D_SVC_MATRIX_ROWS,
+	D3D_SVC_MATRIX_COLUMNS,
 };
 
 static std::map<MaterialVariablesTypes, std::function<void(nlohmann::json&, std::string)>> MaterialVariablesMappedJsonInitializer = {

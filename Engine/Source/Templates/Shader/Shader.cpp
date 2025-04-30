@@ -32,7 +32,9 @@ namespace Templates {
 		vsSemantics = src->vsSemantics;
 		constantsBuffersParameters = src->constantsBuffersParameters;
 		constantsBuffersVariables = src->constantsBuffersVariables;
-		texturesParameters = src->texturesParameters;
+		uavParameters = src->uavParameters;
+		srvCSParameters = src->srvCSParameters;
+		srvTexParameters = src->srvTexParameters;
 		samplersParameters = src->samplersParameters;
 		cbufferSize = src->cbufferSize;
 		cameraCBVRegister = src->cameraCBVRegister;
@@ -76,9 +78,17 @@ namespace Templates {
 			{
 				constantsBuffersParameters.insert_or_assign(resourceName, ShaderConstantsBufferParameter({ .registerId = bindDesc.BindPoint, .numConstantsBuffers = bindDesc.BindCount }));
 			}
+			else if (bindDesc.Type == D3D_SIT_UAV_RWSTRUCTURED)
+			{
+				uavParameters.insert_or_assign(resourceName, ShaderUAVParameter({ .registerId = bindDesc.BindPoint, .numUAV = bindDesc.BindCount }));
+			}
+			else if (bindDesc.Type == D3D_SIT_STRUCTURED)
+			{
+				srvCSParameters.insert_or_assign(resourceName, ShaderSRVParameter({ .registerId = bindDesc.BindPoint, .numSRV = bindDesc.BindCount }));
+			}
 			else if (bindDesc.Type == D3D_SIT_TEXTURE)
 			{
-				texturesParameters.insert_or_assign(strToTextureType.at(resourceName), ShaderTextureParameter({ .registerId = bindDesc.BindPoint, .numTextures = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
+				srvTexParameters.insert_or_assign(strToTextureType.at(resourceName), ShaderSRVParameter({ .registerId = bindDesc.BindPoint, .numSRV = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
 #if defined(_EDITOR)
 				TextureType textureType = strToTextureType.at(resourceName);
 				if (materialTexturesTypes.contains(textureType))
@@ -118,6 +128,7 @@ namespace Templates {
 			bool isShadowMapParam = cbufferName == ShadowMapConstantBufferName;
 			if (isCameraParam || isLightParam || isAnimationParam || isShadowMapParam) continue;
 
+			bool skipVar = false;
 			for (unsigned int varIdx = 0; varIdx < paramDesc.Variables; varIdx++)
 			{
 				ID3D12ShaderReflectionVariable* varReflection = cbReflection->GetVariableByIndex(varIdx);
@@ -126,12 +137,18 @@ namespace Templates {
 
 				if (!(varDesc.uFlags & D3D_SVF_USED)) continue;
 
-				std::string varName(varDesc.Name);
-				constantsBuffersVariables.insert_or_assign(varName, ShaderConstantsBufferVariable({ .bufferIndex = paramIdx, .size = varDesc.Size, .offset = varDesc.StartOffset }));
-
 				ID3D12ShaderReflectionType* varType = varReflection->GetType();
 				D3D12_SHADER_TYPE_DESC varTypeDesc;
 				varType->GetDesc(&varTypeDesc);
+
+				if (!HLSLVariableClassAllowedTypes.contains(varTypeDesc.Class))
+				{
+					skipVar = true;
+					break;
+				}
+
+				std::string varName(varDesc.Name);
+				constantsBuffersVariables.insert_or_assign(varName, ShaderConstantsBufferVariable({ .bufferIndex = paramIdx, .size = varDesc.Size, .offset = varDesc.StartOffset }));
 
 				std::string varClass = varTypeDesc.Name;
 				bool useNamePattern = false;
@@ -162,7 +179,10 @@ namespace Templates {
 #endif
 
 			}
-			cbufferSize.push_back(paramDesc.Size);
+			if (!skipVar)
+			{
+				cbufferSize.push_back(paramDesc.Size);
+			}
 		}
 	}
 
@@ -258,7 +278,7 @@ namespace Templates {
 #if defined(_DEVELOPMENT)
 					if (saveBinary)
 					{
-						SaveShaderInstanceFromBinary(newInstance);
+						//SaveShaderInstanceFromBinary(newInstance);
 					}
 #endif
 					return newInstance;
@@ -295,7 +315,8 @@ namespace Templates {
 		LoadShaderVSSemantics(file, instance->vsSemantics);
 		LoadShaderConstantsBufferParameters(file, instance->constantsBuffersParameters);
 		LoadShaderConstantsBufferVariables(file, instance->constantsBuffersVariables);
-		LoadShaderTextureParameters(file, instance->texturesParameters);
+		LoadShaderComputeParameters(file, instance->srvCSParameters);
+		LoadShaderTextureParameters(file, instance->srvTexParameters);
 		LoadShaderSamplerParameters(file, instance->samplersParameters);
 		LoadShaderBufferSizes(file, instance->cbufferSize);
 		LoadShaderCBVRegister(file, instance->cameraCBVRegister);
@@ -324,7 +345,8 @@ namespace Templates {
 		WriteShaderVSSemantics(file, instance->vsSemantics);
 		WriteShaderConstantsBufferParameters(file, instance->constantsBuffersParameters);
 		WriteShaderConstantsBufferVariables(file, instance->constantsBuffersVariables);
-		WriteShaderTextureParameters(file, instance->texturesParameters);
+		WriteShaderComputeParameters(file, instance->srvCSParameters);
+		WriteShaderTextureParameters(file, instance->srvTexParameters);
 		WriteShaderSamplerParameters(file, instance->samplersParameters);
 		WriteShaderBufferSizes(file, instance->cbufferSize);
 		WriteShaderCBVRegister(file, instance->cameraCBVRegister);
@@ -432,29 +454,60 @@ namespace Templates {
 	}
 #endif
 
-	void LoadShaderTextureParameters(std::ifstream& file, ShaderTextureParametersMap& texturesParameters)
+	void LoadShaderComputeParameters(std::ifstream& file, ShaderSRVCSParametersMap& srvCSParameters)
 	{
-		nostd::loadMapFromIfstream(file, texturesParameters, [](std::ifstream& file)
+		nostd::loadMapFromIfstream(file, srvCSParameters, [](std::ifstream& file)
 			{
-				ShaderTextureParametersPair pair;
-				file.read(reinterpret_cast<char*>(&pair.first), sizeof(pair.first));
+				size_t size;
+				file.read(reinterpret_cast<char*>(&size), sizeof(size));
+				ShaderSRVCSParametersPair pair;
+				pair.first.resize(size);
+				file.read(pair.first.data(), size);
 				file.read(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
-				file.read(reinterpret_cast<char*>(&pair.second.numTextures), sizeof(pair.second.numTextures));
+				file.read(reinterpret_cast<char*>(&pair.second.numSRV), sizeof(pair.second.numSRV));
 				return pair;
 			}
 		);
-
 	}
 
 #if defined(_DEVELOPMENT)
-	void WriteShaderTextureParameters(std::ofstream& file, ShaderTextureParametersMap& texturesParameters)
+	void WriteShaderComputeParameters(std::ofstream& file, ShaderSRVCSParametersMap& srvCSParameters)
 	{
-		nostd::writeMapToOfstream(file, texturesParameters, [](std::ofstream& file, auto& pair)
+		nostd::writeMapToOfstream(file, srvCSParameters, [](std::ofstream& file, auto& pair)
+			{
+				std::string str = pair.first;
+				size_t size = str.size();
+				file.write(reinterpret_cast<char*>(&size), sizeof(size));
+				file.write(str.c_str(), size);
+				file.write(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
+				file.write(reinterpret_cast<char*>(&pair.second.numSRV), sizeof(pair.second.numSRV));
+			}
+		);
+	}
+#endif
+
+	void LoadShaderTextureParameters(std::ifstream& file, ShaderSRVTexParametersMap& srvTexParameters)
+	{
+		nostd::loadMapFromIfstream(file, srvTexParameters, [](std::ifstream& file)
+			{
+				ShaderSRVTexParametersPair pair;
+				file.read(reinterpret_cast<char*>(&pair.first), sizeof(pair.first));
+				file.read(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
+				file.read(reinterpret_cast<char*>(&pair.second.numSRV), sizeof(pair.second.numSRV));
+				return pair;
+			}
+		);
+	}
+
+#if defined(_DEVELOPMENT)
+	void WriteShaderTextureParameters(std::ofstream& file, ShaderSRVTexParametersMap& srvParameters)
+	{
+		nostd::writeMapToOfstream(file, srvParameters, [](std::ofstream& file, auto& pair)
 			{
 				TextureType type = pair.first;
 				file.write(reinterpret_cast<char*>(&type), sizeof(type));
 				file.write(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
-				file.write(reinterpret_cast<char*>(&pair.second.numTextures), sizeof(pair.second.numTextures));
+				file.write(reinterpret_cast<char*>(&pair.second.numSRV), sizeof(pair.second.numSRV));
 			}
 		);
 	}
@@ -558,6 +611,17 @@ namespace Templates {
 	std::string GetShaderName(std::string uuid)
 	{
 		return std::get<0>(shaders.at(uuid));
+	}
+
+	std::string FindShaderByName(std::string name)
+	{
+		for (auto& [shaderlUUID, shaderTemplate] : shaders)
+		{
+			if (std::get<0>(shaderTemplate) == name) return shaderlUUID;
+		}
+
+		assert(!!!"shader not found");
+		return "";
 	}
 
 	std::vector<UUIDName> GetShadersUUIDsNames()

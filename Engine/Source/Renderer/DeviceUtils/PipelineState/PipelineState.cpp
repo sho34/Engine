@@ -10,9 +10,9 @@
 extern std::shared_ptr<Renderer> renderer;
 
 template <>
-struct std::hash<PipelineStateDesc>
+struct std::hash<GraphicsPipelineStateDesc>
 {
-	std::size_t operator()(const PipelineStateDesc& p) const
+	std::size_t operator()(const GraphicsPipelineStateDesc& p) const
 	{
 		using std::hash;
 		const std::vector<D3D12_INPUT_ELEMENT_DESC>& inputElementDescs = std::get<0>(p);
@@ -37,18 +37,36 @@ struct std::hash<PipelineStateDesc>
 	}
 };
 
+template<>
+struct std::hash<ComputePipelineStateDesc>
+{
+	std::size_t operator()(const ComputePipelineStateDesc& p) const
+	{
+		using std::hash;
+		const ShaderByteCode& cs = std::get<0>(p);
+		size_t rootSignatureHash = std::get<1>(p);
+
+		size_t h = 0ULL;
+		nostd::hash_combine(h,
+			std::hash<std::string_view>{}({ reinterpret_cast<const char*>(cs.data()), cs.size() }),
+			rootSignatureHash
+		);
+		return h;
+	}
+};
+
 namespace DeviceUtils
 {
 	static nostd::RefTracker<size_t, HashedPipelineState> refTracker;
 
-	HashedPipelineState CreatePipelineState(PipelineStateDesc& p)
+	HashedPipelineState CreateGraphicsPipelineState(GraphicsPipelineStateDesc& p)
 	{
-		size_t hash = std::hash<PipelineStateDesc>()(p);
+		size_t hash = std::hash<GraphicsPipelineStateDesc>()(p);
 		return refTracker.AddRef(hash, [hash, &p]()
 			{
 				CComPtr<ID3D12RootSignature> rootSignature = GetRootSignature(std::get<3>(p));
 				return std::make_tuple(hash,
-					CreatePipelineState(
+					CreateGraphicsPipelineState(
 						std::to_string(hash),
 						std::get<0>(p),
 						std::get<1>(p),
@@ -65,7 +83,7 @@ namespace DeviceUtils
 		);
 	}
 
-	CComPtr<ID3D12PipelineState> CreatePipelineState(
+	CComPtr<ID3D12PipelineState> CreateGraphicsPipelineState(
 		std::string name,
 		std::vector<D3D12_INPUT_ELEMENT_DESC> inputLayout,
 		ShaderByteCode& vsCode,
@@ -110,6 +128,44 @@ namespace DeviceUtils
 
 		CComPtr<ID3D12PipelineState> pipelineState;
 		DX::ThrowIfFailed(renderer->d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState)));
+		CCNAME_D3D12_OBJECT(pipelineState);
+
+		LogCComPtrAddress(name, pipelineState);
+
+		return pipelineState;
+	}
+
+	HashedPipelineState CreateComputePipelineState(ComputePipelineStateDesc& p)
+	{
+		size_t hash = std::hash<ComputePipelineStateDesc>()(p);
+		return refTracker.AddRef(hash, [hash, &p]()
+			{
+				CComPtr<ID3D12RootSignature> rootSignature = GetRootSignature(std::get<1>(p));
+				return std::make_tuple(hash,
+					CreateComputePipelineState(
+						std::to_string(hash),
+						std::get<0>(p),
+						rootSignature
+					)
+				);
+			}
+		);
+	}
+
+	CComPtr<ID3D12PipelineState> CreateComputePipelineState(std::string name, ShaderByteCode& csCode, CComPtr<ID3D12RootSignature>& rootSignature)
+	{
+		struct PipelineStateStream
+		{
+			CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE RootSignature;
+			CD3DX12_PIPELINE_STATE_STREAM_CS CS;
+		} PSS;
+
+		PSS.RootSignature = rootSignature;
+		PSS.CS = CD3DX12_SHADER_BYTECODE(csCode.data(), csCode.size());
+
+		D3D12_PIPELINE_STATE_STREAM_DESC pssDescription = { sizeof(PSS), &PSS };
+		CComPtr<ID3D12PipelineState> pipelineState;
+		DX::ThrowIfFailed(renderer->d3dDevice->CreatePipelineState(&pssDescription, IID_PPV_ARGS(&pipelineState)));
 		CCNAME_D3D12_OBJECT(pipelineState);
 
 		LogCComPtrAddress(name, pipelineState);
@@ -232,7 +288,7 @@ namespace DeviceUtils
 		{ "primitiveTopologyType", [](nlohmann::json& json) { drawFromCombo(json, "primitiveTopologyType", stringToPrimitiveTopologyType); } },
 	};
 
-	void ImDrawPipelineState(nlohmann::json& json)
+	void ImDrawGraphicsPipelineState(nlohmann::json& json)
 	{
 		ImDrawObject("PipelineState", json, addToPipelineState, drawPipelineState);
 	}

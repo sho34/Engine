@@ -15,12 +15,14 @@ namespace ShaderCompiler {
 	{
 		{	VERTEX_SHADER, L"main_vs"	},
 		{	PIXEL_SHADER, L"main_ps"	},
+		{	COMPUTE_SHADER, L"main_cs"	},
 	};
 
 	std::map<ShaderType, std::wstring> shaderTarget =
 	{
 		{	VERTEX_SHADER, L"vs_6_1"	},
 		{	PIXEL_SHADER, L"ps_6_1" },
+		{	COMPUTE_SHADER, L"cs_6_1" },
 	};
 
 	static std::mutex compileMutex;

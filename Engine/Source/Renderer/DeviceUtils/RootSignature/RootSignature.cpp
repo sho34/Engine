@@ -13,14 +13,19 @@ struct std::hash<RootSignatureDesc>
 		using std::hash;
 		const ShaderConstantsBufferParametersMap& cbufferVSParamsDef = std::get<0>(r);
 		const ShaderConstantsBufferParametersMap& cbufferPSParamsDef = std::get<1>(r);
-		const ShaderTextureParametersMap& srvPSParamsDef = std::get<2>(r);
-		const ShaderSamplerParametersMap& samplersDef = std::get<3>(r);
-		const std::vector<MaterialSamplerDesc>& matSampler = std::get<4>(r);
+		const ShaderUAVParametersMap& uavParamsDef = std::get<2>(r);
+		const ShaderSRVCSParametersMap& srvCSParamsDef = std::get<3>(r);
+		const ShaderSRVTexParametersMap& srvTexParamsDef = std::get<4>(r);
+		const ShaderSamplerParametersMap& samplersDef = std::get<5>(r);
+		const std::vector<MaterialSamplerDesc>& matSampler = std::get<6>(r);
+
 		size_t h = 0ULL;
 		nostd::hash_combine(h,
 			std::hash<ShaderConstantsBufferParametersMap>()(cbufferVSParamsDef),
 			std::hash<ShaderConstantsBufferParametersMap>()(cbufferPSParamsDef),
-			std::hash<ShaderTextureParametersMap>()(srvPSParamsDef),
+			std::hash<ShaderUAVParametersMap>()(uavParamsDef),
+			std::hash<ShaderSRVCSParametersMap>()(srvCSParamsDef),
+			std::hash<ShaderSRVTexParametersMap>()(srvTexParamsDef),
 			std::hash<ShaderSamplerParametersMap>()(samplersDef),
 			std::hash<std::vector<MaterialSamplerDesc>>()(matSampler)
 		);
@@ -39,7 +44,16 @@ namespace DeviceUtils
 		size_t hash = std::hash<RootSignatureDesc>()(r);
 		return refTracker.AddRef(hash, [hash, &r]()
 			{
-				return std::make_tuple(hash, CreateRootSignature(std::to_string(hash), std::get<0>(r), std::get<1>(r), std::get<2>(r), std::get<3>(r), std::get<4>(r)));
+				return std::make_tuple(hash, CreateRootSignature(std::to_string(hash),
+					std::get<0>(r),
+					std::get<1>(r),
+					std::get<2>(r),
+					std::get<3>(r),
+					std::get<4>(r),
+					std::get<5>(r),
+					std::get<6>(r)
+					)
+				);
 			}
 		);
 	}
@@ -48,7 +62,9 @@ namespace DeviceUtils
 		std::string name,
 		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,
 		ShaderConstantsBufferParametersMap& cbufferPSParamsDef,
-		ShaderTextureParametersMap& srvPSParamsDef,
+		ShaderUAVParametersMap& uavParamsDef,
+		ShaderSRVCSParametersMap& srvCSParamsDef,
+		ShaderSRVTexParametersMap& srvTexParamsDef,
 		ShaderSamplerParametersMap& samplersDef,
 		std::vector<MaterialSamplerDesc>& matSamplers
 	)
@@ -56,13 +72,12 @@ namespace DeviceUtils
 		auto& d3dDevice = renderer->d3dDevice;
 
 		//keep this flags as default??
-		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =
-			D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
+		D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS |
 			D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
 
-		std::map<int, CD3DX12_DESCRIPTOR_RANGE> ranges = GetRootSignatureRanges(cbufferVSParamsDef, cbufferPSParamsDef, srvPSParamsDef);
+		std::map<int, CD3DX12_DESCRIPTOR_RANGE> ranges = GetRootSignatureRanges(cbufferVSParamsDef, cbufferPSParamsDef, uavParamsDef, srvCSParamsDef, srvTexParamsDef);
 
 		std::vector<CD3DX12_ROOT_PARAMETER> parameters;
 		for (auto& [reg, range] : ranges)
@@ -92,6 +107,11 @@ namespace DeviceUtils
 		return rootSignature;
 	}
 
+	CComPtr<ID3D12RootSignature> CreateComputeShaderRootSignature(std::string name)
+	{
+		return CComPtr<ID3D12RootSignature>();
+	}
+
 	CComPtr<ID3D12RootSignature> GetRootSignature(size_t rootSignatureHash)
 	{
 		return std::get<1>(refTracker.FindValue(rootSignatureHash));
@@ -105,7 +125,9 @@ namespace DeviceUtils
 	std::map<INT, CD3DX12_DESCRIPTOR_RANGE> GetRootSignatureRanges(
 		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,
 		ShaderConstantsBufferParametersMap& cbufferPSParamsDef,
-		ShaderTextureParametersMap& srvPSParamsDef
+		ShaderUAVParametersMap& uavParamsDef,
+		ShaderSRVCSParametersMap& srvCSParamsDef,
+		ShaderSRVTexParametersMap& srvTexParamsDef
 	) {
 
 		//get the CBuffer Names for VS and PS
@@ -127,10 +149,20 @@ namespace DeviceUtils
 			maxRegister = max(static_cast<int>(cbv.registerId), maxRegister);
 		}
 
-		//fill SRV
-		for (auto& [name, srv] : srvPSParamsDef)
+		//fill UAV
+		for (auto& [name, uav] : uavParamsDef)
 		{
-			ranges[++maxRegister].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, srv.numTextures, srv.registerId);
+			ranges[++maxRegister].Init(D3D12_DESCRIPTOR_RANGE_TYPE_UAV, uav.numUAV, uav.registerId);
+		}
+
+		//fill SRV
+		for (auto& [name, srv] : srvCSParamsDef)
+		{
+			ranges[++maxRegister].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, srv.numSRV, srv.registerId);
+		}
+		for (auto& [name, srv] : srvTexParamsDef)
+		{
+			ranges[++maxRegister].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, srv.numSRV, srv.registerId);
 		}
 
 		return ranges;

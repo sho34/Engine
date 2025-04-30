@@ -45,6 +45,8 @@ void GameInputStep();
 void AnimableStep(double elapsedSeconds);
 void AudioStep();
 void CameraStep();
+void RunComputeShaders();
+void ComputeShaderResolution();
 
 //RENDER
 void Render();

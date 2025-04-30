@@ -54,7 +54,7 @@ namespace DeviceUtils {
 		}
 	}
 
-	void TransitionResource(CComPtr<ID3D12GraphicsCommandList> commandList, CComPtr<ID3D12Resource> pSource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
+	void TransitionResource(CComPtr<ID3D12GraphicsCommandList2> commandList, CComPtr<ID3D12Resource> pSource, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState)
 	{
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(pSource, beforeState, afterState);
 		commandList->ResourceBarrier(1, &barrier);
@@ -114,7 +114,7 @@ namespace DeviceUtils {
 		commandAlloc->SetName(L"ScreenGrab");
 
 		// Spin up a new command list
-		CComPtr<ID3D12GraphicsCommandList> commandList;
+		CComPtr<ID3D12GraphicsCommandList2> commandList;
 		hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAlloc, nullptr, IID_PPV_ARGS(&commandList));
 		if (FAILED(hr))
 			return hr;
