@@ -1,9 +1,11 @@
 #pragma once
 
+#include <set>
+#include <map>
+#include <atlbase.h>
 #include "../../DeviceUtils/D3D12Device/Builder.h"
 
 using namespace Microsoft::WRL;
-using namespace DirectX;
 
 namespace DeviceUtils
 {

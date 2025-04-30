@@ -177,6 +177,8 @@ namespace Scene {
 			renderable->CreateFromModel3D(renderablej["model"]);
 		}
 
+		renderable->boundingBox.Init(renderable);
+
 		renderable->CreateMeshesComponents();
 
 		renderables.insert_or_assign(renderable->uuid(), renderable);
@@ -203,56 +205,6 @@ namespace Scene {
 			AttachAnimation(this_ptr, model->animations);
 			animables.insert_or_assign(uuid(), this_ptr);
 			StepAnimation(0.0f);
-
-			for (auto& mesh : meshes)
-			{
-				//Create the bounding box compute resource
-				CD3DX12_CPU_DESCRIPTOR_HANDLE uavCpuHandle;
-				CD3DX12_GPU_DESCRIPTOR_HANDLE uavGpuHandle;
-				CComPtr<ID3D12Resource> bbox;
-				CComPtr<ID3D12Resource> bboxrb;
-				Animation::CreateBoundingBoxComputeResource(bbox, bboxrb, uavCpuHandle, uavGpuHandle);
-				animableBoundingBox.push_back(bbox);
-				animableBoundingBoxReadBack.push_back(bboxrb);
-				animableBoundingBoxCpuHandle.push_back(uavCpuHandle);
-				animableBoundingBoxGpuHandle.push_back(uavGpuHandle);
-
-				//Create the SRV for the vertex buffers of each mesh
-				CD3DX12_CPU_DESCRIPTOR_HANDLE srvCpuHandle;
-				CD3DX12_GPU_DESCRIPTOR_HANDLE srvGpuHandle;
-				CreateMeshVerticesShaderResourceView(mesh, srvCpuHandle, srvGpuHandle);
-				animableBoundingBoxMeshesCpuHandles.push_back(srvCpuHandle);
-				animableBoundingBoxMeshesGpuHandles.push_back(srvGpuHandle);
-			}
-
-			//Get an instance of the BoundingBox Compute shader
-			boundingBoxShader = GetShaderInstance({ .shaderType = COMPUTE_SHADER, .shaderUUID = FindShaderByName("BoundingBox_cs") });
-
-			//Create the Constants Buffer for each mesh
-			std::transform(meshes.begin(), meshes.end(), std::back_inserter(animableBoundingBoxMeshesConstantsBuffers), [this](auto& mesh)
-				{
-					auto cbv = CreateConstantsBuffer(boundingBoxShader->cbufferSize[0], "bboxCS." + mesh->uuid);
-					unsigned int numVertices = mesh->vbvData.vertexBufferView.SizeInBytes / mesh->vbvData.vertexBufferView.StrideInBytes;
-					cbv->push<unsigned int>(numVertices, 0);
-					return cbv;
-				}
-			);
-
-			//Build the shader's root signature
-			auto& vsCBparams = boundingBoxShader->constantsBuffersParameters;
-			auto& psCBparams = boundingBoxShader->constantsBuffersParameters;
-			auto& uavParams = boundingBoxShader->uavParameters;
-			auto& psSRVCSparams = boundingBoxShader->srvCSParameters;
-			auto& psSRVTexparams = boundingBoxShader->srvTexParameters;
-			auto& psSamplersParams = boundingBoxShader->samplersParameters;
-			std::vector<MaterialSamplerDesc> samplers;
-
-			RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
-			boundingBoxRootSignature = CreateRootSignature(rootSignatureDesc);
-
-			size_t rootSignatureHash = std::get<0>(boundingBoxRootSignature);
-			ComputePipelineStateDesc pipelineStateDesc = std::tie(boundingBoxShader->byteCode, rootSignatureHash);
-			boundingBoxPipelineState = CreateComputePipelineState(pipelineStateDesc);
 		}
 
 #if defined(_EDITOR)
@@ -733,24 +685,7 @@ namespace Scene {
 
 	void Renderable::CreateBoundingBox()
 	{
-		if (meshes.size() == 0ULL)
-		{
-			boundingBox = BoundingBox(
-				{ 0.0f, 0.0f, 0.0f },
-				{ 0.5f, 0.5f, 0.5f }
-			);
-			return;
-		}
-		auto it = meshes.begin();
-		boundingBox = (*it)->boundingBox;
-		it++;
-		while (it != meshes.end())
-		{
-			BoundingBox out;
-			BoundingBox::CreateMerged(out, boundingBox, (*it)->boundingBox);
-			boundingBox = out;
-			it++;
-		}
+		boundingBox.CreateDXBoundingBox();
 	}
 
 	std::shared_ptr<Renderable> GetRenderable(std::string uuid)
@@ -782,19 +717,9 @@ namespace Scene {
 	}
 #endif
 
-	void Renderable::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox) {
-		BoundingBox bb;
-
-		bb = boundingBox;
-
-		XMVECTOR pv = { bb.Center.x, bb.Center.y, bb.Center.z };
-		XMFLOAT3 rotV = rotation();
-		XMVECTOR rot = XMQuaternionRotationRollPitchYaw(rotV.x, rotV.y, rotV.z);
-		pv = XMVector3Rotate(pv, rot);
-		XMFLOAT3 boxP = { pv.m128_f32[0],pv.m128_f32[1],pv.m128_f32[2] };
-		bbox->position(boxP * scale() + position());
-		bbox->scale(bb.Extents * scale());
-		bbox->rotation(rotV);
+	void Renderable::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
+	{
+		boundingBox.FillRenderableBoundingBox(bbox);
 	}
 
 	//UPDATE
@@ -1022,18 +947,7 @@ namespace Scene {
 		}
 		if (animable != nullptr)
 		{
-			animableBoundingBox.clear();
-			animableBoundingBoxReadBack.clear();
-			animableBoundingBoxMeshesConstantsBuffers.clear();
-			for (unsigned int i = 0; i < animableBoundingBoxMeshesCpuHandles.size(); i++)
-			{
-				DeviceUtils::FreeCSUDescriptor(animableBoundingBoxMeshesCpuHandles[i], animableBoundingBoxMeshesGpuHandles[i]);
-			}
-			for (unsigned int i = 0; i < animableBoundingBoxCpuHandle.size(); i++)
-			{
-				DeviceUtils::FreeCSUDescriptor(animableBoundingBoxCpuHandle[i], animableBoundingBoxGpuHandle[i]);
-			}
-			DestroyShaderBinary(boundingBoxShader);
+			boundingBox.Destroy();
 		}
 		animable = nullptr;
 		bonesTransformation.clear();
@@ -1165,68 +1079,12 @@ namespace Scene {
 
 	void Renderable::ComputeBoundingBox()
 	{
-		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
-		CComPtr<ID3D12RootSignature>& rootSignature = std::get<1>(boundingBoxRootSignature);
-		CComPtr<ID3D12PipelineState>& pipelineState = std::get<1>(boundingBoxPipelineState);
-
-		using namespace Animation;
-		auto bonesCbv = GetAnimatedConstantsBuffer(this_ptr);
-
-		commandList->SetComputeRootSignature(rootSignature);
-		commandList->SetPipelineState(pipelineState);
-
-		unsigned int backBufferIndex = renderer->backBufferIndex;
-		commandList->SetComputeRootDescriptorTable(1, bonesCbv->gpu_xhandle[backBufferIndex]);
-
-		for (unsigned int i = 0; i < meshes.size(); i++)
-		{
-			auto& cbv = animableBoundingBoxMeshesConstantsBuffers[i];
-			commandList->SetComputeRootDescriptorTable(0, cbv->gpu_xhandle[0]);
-			commandList->SetComputeRootDescriptorTable(2, animableBoundingBoxGpuHandle[i]);
-			commandList->SetComputeRootDescriptorTable(3, animableBoundingBoxMeshesGpuHandles[i]);
-			commandList->Dispatch(1, 1, 1);
-		}
+		boundingBox.ComputeBoundingBox();
 	}
 
 	void Renderable::BoundingBoxSolution()
 	{
-		XMFLOAT4* mem{};
-		D3D12_RANGE range{};
-		range.Begin = 0;
-		range.End = sizeof(XMFLOAT4) * 2ULL;
-
-		auto& commandList = renderer->commandList;
-
-		for (unsigned int i = 0; i < meshes.size(); i++)
-		{
-			DeviceUtils::TransitionResource(commandList, animableBoundingBox[i], D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_SOURCE);
-			DeviceUtils::TransitionResource(commandList, animableBoundingBoxReadBack[i], D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST);
-			commandList->CopyResource(animableBoundingBoxReadBack[i], animableBoundingBox[i]);
-
-			animableBoundingBoxReadBack[i]->Map(0, &range, reinterpret_cast<void**>(&mem));
-
-			XMFLOAT3 center = { mem[0].x, mem[0].y , mem[0].z };
-			XMFLOAT3 extents = { mem[1].x, mem[1].y , mem[1].z };
-
-			BoundingBox gpuBBox = BoundingBox(center, extents);
-
-			if (i == 0)
-			{
-				boundingBox = gpuBBox;
-			}
-			else
-			{
-				BoundingBox out;
-				BoundingBox::CreateMerged(out, boundingBox, gpuBBox);
-				boundingBox = out;
-			}
-
-			D3D12_RANGE emptyRange{ 0, 0 };
-			animableBoundingBoxReadBack[i]->Unmap(0, &emptyRange);
-
-			DeviceUtils::TransitionResource(commandList, animableBoundingBox[i], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
-			DeviceUtils::TransitionResource(commandList, animableBoundingBoxReadBack[i], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
-		}
+		boundingBox.SolveDXBoundingBox();
 	}
 
 	//DESTROY
@@ -2015,25 +1873,30 @@ namespace Scene {
 	void DestroyRenderable(std::shared_ptr<Renderable>& renderable)
 	{
 		if (renderable == nullptr) return;
+		DEBUG_PTR_COUNT_JSON(renderable);
 #if defined(_EDITOR)
 		if (renderable->model3D != nullptr) UnbindNotifications(renderable->model3D->uuid, renderable);
 #endif
 		if (renderables.contains(renderable->uuid())) renderables.erase(renderable->uuid());
 		if (animables.contains(renderable->uuid())) animables.erase(renderable->uuid());
+		renderable->boundingBox.Destroy();
 		renderable->this_ptr = nullptr;
 		renderable = nullptr;
 	}
 
 	void DestroyRenderables()
 	{
-		for (auto& [name, renderable] : renderables)
-		{
-			DEBUG_PTR_COUNT_JSON(renderable);
-#if defined(_EDITOR)
-			if (renderable->model3D != nullptr) UnbindNotifications(renderable->model3D->uuid, renderable);
-#endif
-			renderable->this_ptr = nullptr;
-		}
+		std::vector<std::shared_ptr<Renderable>> rvec;
+		std::transform(renderables.begin(), renderables.end(), std::back_inserter(rvec), [](auto& pair)
+			{
+				return pair.second;
+			}
+		);
+		std::for_each(rvec.begin(), rvec.end(), [](auto& r)
+			{
+				DestroyRenderable(r);
+			}
+		);
 		animables.clear();
 		renderables.clear();
 	}

@@ -578,47 +578,6 @@ namespace Templates
 
 #endif
 
-	/*
-	BoundingBox Model3DInstance::GetAnimatedBoundingBox(XMMATRIX* bones)
-	{
-		XMFLOAT3 aaMin = { 0.0f, 0.0f, 0.0f };
-		XMFLOAT3 aaMax = { 0.0f, 0.0f, 0.0f };
-		for (unsigned int i = 0; i < static_cast<unsigned int>(vertices.size()); i++) {
-			unsigned int nVertices = static_cast<unsigned int>(vertices[i].size() / sizeof(VertexPosNormalTangentTexCoordSkinning));
-			VertexPosNormalTangentTexCoordSkinning* vertex = reinterpret_cast<VertexPosNormalTangentTexCoordSkinning*>(vertices[i].data());
-			for (unsigned int v = 0; v < nVertices; v++) {
-				XMVECTOR Position = { vertex[v].Position.x, vertex[v].Position.y, vertex[v].Position.z, 1.0f };
-				XMUINT4 BoneIds = vertex[v].BoneIds;
-				XMFLOAT4 BoneWeights = vertex[v].BoneWeights;
-
-				XMMATRIX boneTransform = XMMatrixTranspose(bones[BoneIds.x] * BoneWeights.x +
-					bones[BoneIds.y] * BoneWeights.y +
-					bones[BoneIds.z] * BoneWeights.z +
-					bones[BoneIds.w] * BoneWeights.w);
-
-				XMVECTOR skinnedPos = XMVector3Transform(Position, boneTransform);
-
-				aaMin = { fmin(aaMin.x,skinnedPos.m128_f32[0]), fmin(aaMin.y,skinnedPos.m128_f32[1]), fmin(aaMin.z,skinnedPos.m128_f32[2]) };
-				aaMax = { fmax(aaMax.x,skinnedPos.m128_f32[0]), fmax(aaMax.y,skinnedPos.m128_f32[1]), fmax(aaMax.z,skinnedPos.m128_f32[2]) };
-			}
-		}
-
-		XMFLOAT3 center = {
-			0.5f * (aaMin.x + aaMax.x),
-			0.5f * (aaMin.y + aaMax.y),
-			0.5f * (aaMin.z + aaMax.z),
-		};
-
-		XMFLOAT3 extents = {
-			0.5f * fabs(aaMin.x - aaMax.x),
-			0.5f * fabs(aaMin.y - aaMax.y),
-			0.5f * fabs(aaMin.z - aaMax.z),
-		};
-
-		return BoundingBox(center, extents);
-	}
-	*/
-
 	std::shared_ptr<MaterialInstance> Model3DInstance::GetModel3DMaterialInstance(unsigned int meshIndex)
 	{
 		return GetMaterialInstance(materialUUIDs[meshIndex], std::map<TextureType, MaterialTexture>(), meshes[meshIndex], shaderAttributes);

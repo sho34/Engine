@@ -52,7 +52,6 @@ namespace Templates {
 
 		//animation
 		std::shared_ptr<Animation::Animated> animations = nullptr;
-		//BoundingBox GetAnimatedBoundingBox(XMMATRIX* bones);
 		std::shared_ptr<MaterialInstance> GetModel3DMaterialInstance(unsigned int meshIndex);
 	};
 

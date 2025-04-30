@@ -90,8 +90,8 @@ namespace Editor {
 		init_info.SrvDescriptorHeap = DeviceUtils::GetCSUDescriptorHeap();
 		init_info.SrvDescriptorAllocFn = [](ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu_handle, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu_handle)
 			{
-				CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_xhandle;
-				CD3DX12_GPU_DESCRIPTOR_HANDLE gpu_xhandle;
+				::CD3DX12_CPU_DESCRIPTOR_HANDLE cpu_xhandle;
+				::CD3DX12_GPU_DESCRIPTOR_HANDLE gpu_xhandle;
 				DeviceUtils::AllocCSUDescriptor(cpu_xhandle, gpu_xhandle);
 				out_cpu_handle->ptr = cpu_xhandle.ptr;
 				out_gpu_handle->ptr = gpu_xhandle.ptr;

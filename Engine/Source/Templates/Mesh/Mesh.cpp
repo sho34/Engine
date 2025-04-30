@@ -64,21 +64,6 @@ namespace Templates {
 		);
 	}
 
-	void CreateMeshVerticesShaderResourceView(std::shared_ptr<MeshInstance>& mesh, CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
-	{
-		AllocCSUDescriptor(cpuHandle, gpuHandle);
-		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
-		srvDesc.Format = DXGI_FORMAT_UNKNOWN;
-		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
-		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		srvDesc.Buffer.FirstElement = 0;
-		srvDesc.Buffer.NumElements = mesh->vbvData.vertexBufferView.SizeInBytes / mesh->vbvData.vertexBufferView.StrideInBytes;
-		srvDesc.Buffer.StructureByteStride = mesh->vbvData.vertexBufferView.StrideInBytes;
-		srvDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
-
-		renderer->d3dDevice->CreateShaderResourceView(mesh->vbvData.vertexBuffer, &srvDesc, cpuHandle);
-	}
-
 	std::string GetMeshName(std::string uuid)
 	{
 		return std::get<0>(meshes.at(uuid));

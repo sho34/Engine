@@ -76,6 +76,5 @@ namespace Animation
 	void TraverseMultiplycationQueue(float time, std::string currentAnimation, std::shared_ptr<Animated>& animations, BonesTransformations& bonesTransformation);
 	void TraverseMultiplycationQueue(float time, MultiplyCmdQueue& cmds, BonesKeysMap& boneKeys, BonesTransformations& bonesTransformation, BonesTransformations& bonesOffsets, XMMATRIX& rootNodeInverseTransform, XMMATRIX parentTransformation);
 
-	void CreateBoundingBoxComputeResource(CComPtr<ID3D12Resource>& boundingBoxResource, CComPtr<ID3D12Resource>& readBackBoundingBoxResource, CD3DX12_CPU_DESCRIPTOR_HANDLE& animableBoundingBoxCpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& animableBoundingBoxGpuHandle);
 }
 

@@ -50,12 +50,12 @@ namespace DeviceUtils
 		return csuDescriptorHeap->descriptorHeap;
 	}
 
-	void AllocCSUDescriptor(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
+	void AllocCSUDescriptor(::CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, ::CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
 	{
 		csuDescriptorHeap->AllocDescriptor(cpuHandle, gpuHandle);
 	}
 
-	void FreeCSUDescriptor(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
+	void FreeCSUDescriptor(::CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, ::CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
 	{
 		csuDescriptorHeap->FreeDescriptor(cpuHandle, gpuHandle);
 	}

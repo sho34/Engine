@@ -287,6 +287,7 @@
     <ClInclude Include="pch\Debug.h" />
     <ClInclude Include="pch\ShaderMaterials.h" />
     <ClInclude Include="pch\UUID.h" />
+    <ClInclude Include="Scene\Renderable\RenderableBoundingBox.h" />
     <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />
     <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h" />
     <ClInclude Include="pch\DXTypes.h" />
@@ -503,6 +504,7 @@
       </ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Scene\Renderable\RenderableBoundingBox.cpp" />
     <ClCompile Include="Renderer\VertexFormats.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
     <ClCompile Include="Shaders\Compiler\CustomIncludeHandler.cpp" />

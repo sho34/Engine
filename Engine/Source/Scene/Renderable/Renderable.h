@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <DirectXCollision.h>
+#include "RenderableBoundingBox.h"
 #include "../../Templates/Model3D/Model3D.h"
 #include "../../Templates/Mesh/Mesh.h"
 #include "../../Templates/Material/Material.h"
@@ -121,17 +122,7 @@ namespace Scene
 		float animationTimeFactor = 1.0f;
 		bool playingAnimation = false;
 
-		BoundingBox boundingBox;
-		std::vector<CComPtr<ID3D12Resource>> animableBoundingBox;
-		std::vector<CComPtr<ID3D12Resource>> animableBoundingBoxReadBack;
-		std::vector<std::shared_ptr<ConstantsBuffer>> animableBoundingBoxMeshesConstantsBuffers; //CBV
-		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> animableBoundingBoxMeshesCpuHandles; //SRV
-		std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> animableBoundingBoxMeshesGpuHandles;	//SRV
-		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> animableBoundingBoxCpuHandle;	//UAV
-		std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> animableBoundingBoxGpuHandle; //UAV
-		std::shared_ptr<ShaderInstance> boundingBoxShader;
-		HashedRootSignature boundingBoxRootSignature;
-		HashedPipelineState boundingBoxPipelineState;
+		RenderableBoundingBox boundingBox;
 
 #if defined(_EDITOR)
 		static nlohmann::json creationJson;

@@ -29,7 +29,6 @@ namespace Templates {
 	void CreatePrimitiveMeshTemplate(const std::string uuid, const std::string name);
 	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string uuid);
 	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string uuid, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount);
-	void CreateMeshVerticesShaderResourceView(std::shared_ptr<MeshInstance>& mesh, CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle);
 
 	//READ&GET
 	std::string GetMeshName(std::string uuid);
