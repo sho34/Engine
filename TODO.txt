@@ -1,9 +1,9 @@
 TODO:
 -add Gizmos al editor https://github.com/meshula/tinygizmo o  https://github.com/CedricGuillemet/ImGuizmo
--Calcular el BoundingBox de los modelos animados
 -HDR with automatic exposure adjustment or eye adaptation 
 -IBL
 -Deferred Rendering
 
 DONE:
 -add object picking
+-Calcular el BoundingBox de los modelos animados
