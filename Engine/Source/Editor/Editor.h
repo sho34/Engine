@@ -20,9 +20,10 @@ namespace Editor {
 	bool WndProcHandlerEditor(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	void HandleApplicationDragTitleBar(RECT& dragRect);
 
-	void DrawEditor();
+	void DrawEditor(std::shared_ptr<Camera> camera = nullptr);
 	void DrawApplicationBar();
 	void DrawRightPanel();
+	void DrawSelectedObjectGuizmo(std::shared_ptr<Camera> camera);
 
 	void OpenLevelFile();
 

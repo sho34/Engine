@@ -49,6 +49,9 @@ namespace Editor {
 	bool leftButtonPressed = false;
 	bool doPicking = false;
 
+	ImGuizmo::OPERATION gizmoOperation(ImGuizmo::TRANSLATE);
+	ImGuizmo::MODE gizmoMode(ImGuizmo::WORLD);
+
 	void InitEditor()
 	{
 		initialized = true;
@@ -285,15 +288,17 @@ namespace Editor {
 		}
 	}
 
-	void DrawEditor() {
+	void DrawEditor(std::shared_ptr<Camera> camera) {
 
 		// Start the Dear ImGui frame
 		ImGui_ImplDX12_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
 
 		DrawApplicationBar();
 		DrawRightPanel();
+		DrawSelectedObjectGuizmo(camera);
 
 		// Rendering
 		ImGui::Render();
@@ -612,6 +617,95 @@ namespace Editor {
 		if (selTemp == "")
 		{
 			DrawTemplatesPopups.at(tempTab)();
+		}
+	}
+
+	void DrawSelectedObjectGuizmo(std::shared_ptr<Camera> camera)
+	{
+		ImGuizmo::SetOrthographic(false);
+		ImGuizmo::BeginFrame();
+
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+		if (soTab != _SceneObjects::SO_Renderables || selSO == "" || camera == nullptr)
+			return;
+
+		ImGuizmo::SetID(0);
+
+		std::shared_ptr<Renderable> renderable = GetRenderable(selSO);
+
+		XMFLOAT4X4 world;
+		XMFLOAT4X4 view;
+		XMFLOAT4X4 proj;
+		XMStoreFloat4x4(&world, renderable->world());
+		XMStoreFloat4x4(&view, camera->ViewMatrix());
+		XMStoreFloat4x4(&proj, camera->perspective.projectionMatrix);
+
+		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
+		{
+			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_R)) // r key
+		{
+			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_S)) // s Key
+		{
+			gizmoOperation = ImGuizmo::OPERATION::SCALE;
+			gizmoMode = ImGuizmo::MODE::LOCAL;
+		}
+
+		XMFLOAT4X4 delta;
+		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *world.m, *delta.m, NULL, NULL, NULL);
+
+		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
+		XMVECTOR XMtranslation;
+		XMVECTOR XMrotation;
+		XMVECTOR XMscale;
+		XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
+
+		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
+		{
+			XMFLOAT3 newPos = renderable->position();
+			newPos.x += XMtranslation.m128_f32[0];
+			newPos.y += XMtranslation.m128_f32[1];
+			newPos.z += XMtranslation.m128_f32[2];
+			renderable->position(newPos);
+		}
+		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
+		{
+			XMFLOAT3 newRot = renderable->rotation();
+
+			auto getYawPitchRoll = [](XMFLOAT4X4 transform)
+				{
+					float pitch = DirectX::XMScalarASin(-transform._32);
+
+					DirectX::XMVECTOR from(DirectX::XMVectorSet(transform._12, transform._31, 0.0f, 0.0f));
+					DirectX::XMVECTOR to(DirectX::XMVectorSet(transform._22, transform._33, 0.0f, 0.0f));
+					DirectX::XMVECTOR res(DirectX::XMVectorATan2(from, to));
+
+					float roll = DirectX::XMVectorGetX(res);
+					float yaw = DirectX::XMVectorGetY(res);
+
+					return DirectX::XMFLOAT3(roll, pitch, yaw);
+				};
+
+			XMFLOAT3 rotDelta = getYawPitchRoll(delta);
+			newRot.x += rotDelta.x;
+			newRot.y += rotDelta.y;
+			newRot.z += rotDelta.z;
+			renderable->rotation(newRot);
+		}
+		else if (gizmoOperation == ImGuizmo::OPERATION::SCALE)
+		{
+			XMFLOAT3 newScale = renderable->scale();
+			newScale.x *= XMscale.m128_f32[0];
+			newScale.y *= XMscale.m128_f32[1];
+			newScale.z *= XMscale.m128_f32[2];
+			renderable->scale(newScale);
 		}
 	}
 
@@ -1014,6 +1108,11 @@ namespace Editor {
 
 	void PickSceneObject(unsigned int pickedObjectId)
 	{
+		if (ImGuizmo::IsUsing())
+		{
+			return;
+		}
+
 		if (pickedObjectId == 0U)
 		{
 			SelectSceneObject(_SceneObjects::SO_Renderables, "");
@@ -1028,8 +1127,11 @@ namespace Editor {
 
 			if (pickedObjectId == objectId)
 			{
-				SelectSceneObject(_SceneObjects::SO_Renderables, uuid);
-				boundingBox->visible(true);
+				if (uuid != selSO)
+				{
+					SelectSceneObject(_SceneObjects::SO_Renderables, uuid);
+					boundingBox->visible(true);
+				}
 				break;
 			}
 			objectId++;

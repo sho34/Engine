@@ -514,7 +514,7 @@ void EditorModeRender()
 				toneMapQuad->visible(true);
 				toneMapQuad->Render(passHash);
 				toneMapQuad->visible(false);
-				DrawEditor();
+				DrawEditor(mainPassCamera);
 			}
 		);
 	}
