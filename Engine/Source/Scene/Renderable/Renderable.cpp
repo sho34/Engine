@@ -330,6 +330,17 @@ namespace Scene {
 		json.at("castShadows") = castShadows;
 	}
 
+	XMMATRIX Renderable::world()
+	{
+		XMFLOAT3 posV = position();
+		XMFLOAT3 rotV = rotation();
+		XMFLOAT3 scaleV = scale();
+		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
+		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
+		return XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
+	}
+
 	void Renderable::SetMeshMaterial(std::shared_ptr<MeshInstance> mesh, std::shared_ptr<MaterialInstance> material)
 	{
 		//if material is nullptr let's ensure this both meshMaterials and shadowMapMeshMaterials assign null
@@ -1021,15 +1032,8 @@ namespace Scene {
 
 	void Renderable::WriteConstantsBuffer(unsigned int backbufferIndex)
 	{
-		XMFLOAT3 posV = position();
-		XMFLOAT3 rotV = rotation();
-		XMFLOAT3 scaleV = scale();
-		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
-		XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
-		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
-		XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
-
-		WriteConstantsBuffer("world", world, backbufferIndex);
+		XMMATRIX w = world();
+		WriteConstantsBuffer("world", w, backbufferIndex);
 	}
 
 	void Renderable::WriteShadowMapConstantsBuffer(unsigned int backbufferIndex)

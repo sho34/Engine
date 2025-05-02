@@ -90,6 +90,8 @@ namespace Scene
 		bool castShadows();
 		void castShadows(bool castShadows);
 
+		XMMATRIX world();
+
 		//Model3D
 		std::shared_ptr<Model3DInstance> model3D = nullptr;
 
