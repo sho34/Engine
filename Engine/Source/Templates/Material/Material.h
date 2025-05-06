@@ -4,7 +4,7 @@
 #include "../../Renderer/VertexFormats.h"
 #include "Variables.h"
 #include "SamplerDesc.h"
-#include "Texture.h"
+#include "MaterialTexture.h"
 #include <tuple>
 #include <d3d12.h>
 #include <wrl/client.h>

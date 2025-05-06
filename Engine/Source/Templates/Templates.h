@@ -4,6 +4,7 @@
 #include "Mesh/Mesh.h"
 #include "Model3D/Model3D.h"
 #include "Sound/Sound.h"
+#include "Textures/Texture.h"
 
 using namespace Templates;
 
@@ -11,7 +12,8 @@ enum _Templates {
 	T_Shaders,
 	T_Materials,
 	T_Models3D,
-	T_Sounds
+	T_Sounds,
+	T_Textures
 };
 
 static const std::unordered_map<_Templates, std::string> TemplatesToStr = {
@@ -19,6 +21,7 @@ static const std::unordered_map<_Templates, std::string> TemplatesToStr = {
 	{ T_Materials, "Materials" },
 	{ T_Models3D, "Models3D" },
 	{ T_Sounds, "Sounds" },
+	{ T_Textures, "Textures" },
 };
 
 #if defined(_EDITOR)
@@ -50,7 +53,8 @@ static const std::map<_Templates, std::function<std::vector<UUIDName>()>> GetTem
 	{ T_Materials, SortUUIDNameByName(GetMaterialsUUIDsNames) },
 	{ T_Models3D, SortUUIDNameByName(GetModels3DUUIDsNames) },
 	{ T_Shaders, SortUUIDNameByName(GetShadersUUIDsNames) },
-	{ T_Sounds, SortUUIDNameByName(GetSoundsUUIDsNames) }
+	{ T_Sounds, SortUUIDNameByName(GetSoundsUUIDsNames) },
+	{ T_Textures, SortUUIDNameByName(GetTexturesUUIDsNames) }
 };
 
 inline auto selectTemplate(std::string from, std::string& to) { to = from; }
@@ -61,35 +65,40 @@ static const std::map<_Templates, std::function<void(std::string, std::string&)>
 	{ T_Materials, selectTemplate },
 	{ T_Models3D, selectTemplate },
 	{ T_Shaders, selectTemplate },
-	{ T_Sounds, selectTemplate }
+	{ T_Sounds, selectTemplate },
+	{ T_Textures, selectTemplate },
 };
 
 static const std::map<_Templates, std::function<void(std::string&)>> DeSelectTemplate = {
 	{ T_Materials, deSelectTemplate },
 	{ T_Models3D, deSelectTemplate },
 	{ T_Shaders, deSelectTemplate },
-	{ T_Sounds, deSelectTemplate }
+	{ T_Sounds, deSelectTemplate },
+	{ T_Textures, deSelectTemplate },
 };
 
 static const std::map<_Templates, std::function<void(std::string, ImVec2, ImVec2, bool)>> DrawTemplatePanel = {
 	{ T_Materials, DrawMaterialPanel },
 	{ T_Models3D, DrawModel3DPanel },
 	{ T_Shaders, DrawShaderPanel },
-	{ T_Sounds, DrawSoundPanel }
+	{ T_Sounds, DrawSoundPanel },
+	{ T_Textures, DrawTexturePanel },
 };
 
 static const std::map<_Templates, std::function<void()>> DrawTemplatesPopups = {
 	{ T_Materials, DrawMaterialsPopups },
 	{ T_Models3D, DrawModels3DsPopups },
 	{ T_Shaders, DrawShadersPopups },
-	{ T_Sounds, DrawSoundsPopups }
+	{ T_Sounds, DrawSoundsPopups },
+	{ T_Textures, DrawTexturesPopups },
 };
 
 static const std::map<_Templates, std::function<std::string(std::string)>> GetTemplateName = {
 	{ T_Materials, GetMaterialName },
 	{ T_Models3D, GetModel3DName },
 	{ T_Shaders, GetShaderName },
-	{ T_Sounds, GetSoundName }
+	{ T_Sounds, GetSoundName },
+	{ T_Textures, GetTextureName },
 };
 
 static const std::map<_Templates, std::function<void()>> CreateTemplate =
@@ -97,14 +106,16 @@ static const std::map<_Templates, std::function<void()>> CreateTemplate =
 	{ T_Materials, CreateNewMaterial },
 	{ T_Models3D, CreateNewModel3D },
 	{ T_Shaders, CreateNewShader },
-	{ T_Sounds, CreateNewSound }
+	{ T_Sounds, CreateNewSound },
+	{ T_Textures, CreateNewTexture },
 };
 
 static const std::map<_Templates, std::function<void(std::string)>> DeleteTemplate = {
 	{ T_Materials, DeleteMaterial },
 	{ T_Models3D, DeleteModel3D },
 	{ T_Shaders, DeleteShader },
-	{ T_Sounds, DeleteSound }
+	{ T_Sounds, DeleteSound },
+	{ T_Textures, DeleteTexture },
 };
 
 #endif
@@ -450,25 +461,51 @@ namespace Templates {
 	void FreeGPUIntermediateResources();
 
 	template<typename T>
-	void WriteTemplateJson(nlohmann::json& json, std::map<std::string, T> Ts)
+	inline void CreateJsonTemplate(nlohmann::json json, auto getTemplates)
 	{
-		std::map<std::string, T> filtered;
+		std::string uuid = json.at("uuid");
 
-		std::copy_if(Ts.begin(), Ts.end(), std::inserter(filtered, filtered.end()), [](auto pair)
-			{
-				nlohmann::json j = std::get<1>(pair.second);
-				return !(j.contains("systemCreated") && j.at("systemCreated") == true);
-			}
-		);
+		auto& templates = getTemplates();
 
-		std::transform(filtered.begin(), filtered.end(), std::inserter(json, json.end()), [](const auto& pair)
-			{
-				nlohmann::json j = std::get<1>(pair.second);
-				j["uuid"] = pair.first;
-				j["name"] = std::get<0>(pair.second);
-				return j;
-			}
-		);
+		if (templates.contains(uuid))
+		{
+			assert(!!!"creation collision");
+		}
+		T t;
+
+		std::string& name = std::get<0>(t);
+		name = json.at("name");
+
+		nlohmann::json& data = std::get<1>(t);
+		data = json;
+		data.erase("name");
+		data.erase("uuid");
+
+		templates.insert_or_assign(uuid, t);
+	}
+
+	inline std::string GetName(std::string uuid, auto getTemplates)
+	{
+		auto& templates = getTemplates();
+		return std::get<0>(templates.at(uuid));
+	}
+
+	inline nlohmann::json GetTemplate(std::string uuid, auto getTemplates)
+	{
+		auto& templates = getTemplates();
+		return std::get<1>(templates.at(uuid));
+	}
+
+	std::string FindUUIDByName(std::string name, auto getTemplates)
+	{
+		auto& templates = getTemplates();
+		for (auto& [uuid, T] : templates)
+		{
+			if (std::get<0>(T) == name) return uuid;
+		}
+
+		assert(!!!"not found");
+		return "";
 	}
 
 	inline std::vector<std::string> GetNames(auto& items)
@@ -492,4 +529,27 @@ namespace Templates {
 		);
 		return uuidsNames;
 	}
+
+	template<typename T>
+	void WriteTemplateJson(nlohmann::json& json, std::map<std::string, T> Ts)
+	{
+		std::map<std::string, T> filtered;
+
+		std::copy_if(Ts.begin(), Ts.end(), std::inserter(filtered, filtered.end()), [](auto pair)
+			{
+				nlohmann::json j = std::get<1>(pair.second);
+				return !(j.contains("systemCreated") && j.at("systemCreated") == true);
+			}
+		);
+
+		std::transform(filtered.begin(), filtered.end(), std::inserter(json, json.end()), [](const auto& pair)
+			{
+				nlohmann::json j = std::get<1>(pair.second);
+				j["uuid"] = pair.first;
+				j["name"] = std::get<0>(pair.second);
+				return j;
+			}
+		);
+	}
+
 }

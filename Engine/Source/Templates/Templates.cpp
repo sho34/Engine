@@ -41,6 +41,7 @@ namespace Templates
 		std::filesystem::path directory(folder);
 		const std::string finalFilename = folder + fileName;
 		std::filesystem::path path(finalFilename);
+		if (!std::filesystem::exists(path)) return;
 		std::string pathStr = path.generic_string();
 		std::ifstream file(pathStr);
 		nlohmann::json data = nlohmann::json::parse(file);
@@ -54,6 +55,7 @@ namespace Templates
 
 	void DestroyTemplates()
 	{
+		ReleaseTexturesTemplates();
 		ReleaseSoundTemplates();
 		ReleaseModel3DTemplates();
 		ReleaseMeshTemplates();

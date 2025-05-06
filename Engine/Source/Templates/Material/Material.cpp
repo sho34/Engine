@@ -66,6 +66,8 @@ namespace Templates {
 		AttachMaterialToShader(json.at("shader_vs"), uuid);
 		AttachMaterialToShader(json.at("shader_ps"), uuid);
 #endif
+
+		CreateTexturesTemplatesFromMaterial(json);
 	}
 
 	static std::mt19937 g;

@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Texture.h"
+#include "MaterialTexture.h"
 #include "../../Common/DirectXHelper.h"
 #include "../../Renderer/Renderer.h"
 #include "../../Renderer/DeviceUtils/Resources/Resources.h"

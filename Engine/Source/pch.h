@@ -91,6 +91,7 @@
 #include <iterator>
 #include <cctype>
 #include <locale>
+#include <regex>
 
 #if defined(_EDITOR)
 #include <ShlObj.h>

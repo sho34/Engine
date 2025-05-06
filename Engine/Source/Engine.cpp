@@ -246,6 +246,7 @@ void CreateTemplates() {
 	Templates::LoadTemplates(defaultTemplatesFolder, Material::templateName, Templates::CreateMaterial);
 	Templates::LoadTemplates(defaultTemplatesFolder, Model3D::templateName, Templates::CreateModel3D);
 	Templates::LoadTemplates(defaultTemplatesFolder, Sound::templateName, Templates::CreateSound);
+	Templates::LoadTemplates(defaultTemplatesFolder, Texture::templateName, Templates::CreateTexture);
 }
 
 void CreateLightingResourcesMapping() {

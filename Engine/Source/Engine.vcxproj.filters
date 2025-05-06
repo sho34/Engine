@@ -240,9 +240,6 @@
     <ClInclude Include="Templates\Material\SamplerDesc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Templates\Material\Texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Game.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -265,6 +262,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Renderable\RenderableBoundingBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material\MaterialTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Textures\Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\TemplateDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\TemplateDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -374,9 +383,6 @@
     <ClCompile Include="Game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Templates\Material\Texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Scene\Scene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -387,6 +393,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Renderable\RenderableBoundingBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Material\MaterialTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\Textures\Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

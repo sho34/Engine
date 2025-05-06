@@ -615,9 +615,9 @@ namespace Templates {
 
 	std::string FindShaderByName(std::string name)
 	{
-		for (auto& [shaderlUUID, shaderTemplate] : shaders)
+		for (auto& [shaderUUID, shaderTemplate] : shaders)
 		{
-			if (std::get<0>(shaderTemplate) == name) return shaderlUUID;
+			if (std::get<0>(shaderTemplate) == name) return shaderUUID;
 		}
 
 		assert(!!!"shader not found");

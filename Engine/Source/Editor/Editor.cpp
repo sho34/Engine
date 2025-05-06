@@ -421,7 +421,7 @@ namespace Editor {
 		HandleApplicationDragTitleBar(dragRect);
 	}
 
-	auto DrawTableRows(auto GetObjects, auto OnSelect, auto OnDelete)
+	void DrawTableRows(auto GetObjects, auto OnSelect, auto OnDelete)
 	{
 		ImGui::TableSetupColumn("Delete", ImGuiTableColumnFlags_WidthFixed);
 		ImGui::TableSetupColumn("Object", ImGuiTableColumnFlags_WidthStretch);
@@ -448,28 +448,89 @@ namespace Editor {
 		}
 	}
 
-	auto DrawListPanel(const char* tableName, auto GetObjects, auto OnSelect, auto OnCreate, auto OnDelete)
+	void BuildAssetsTree(std::map<std::string, std::any>& assets, std::vector<std::string>& parts)
+	{
+		std::string part = *parts.begin();
+		if (!assets.contains(part))
+		{
+			assets.insert_or_assign(part, std::map<std::string, std::any>());
+		}
+
+		if (parts.begin() != parts.end() - 1)
+		{
+			std::map<std::string, std::any>& child = std::any_cast<std::map<std::string, std::any>&>(assets.at(part));
+			std::vector<std::string> nextParts;
+			std::copy(parts.begin() + 1, parts.end(), std::back_inserter(nextParts));
+			BuildAssetsTree(child, nextParts);
+		}
+	}
+
+	void DrawAssetTreeNodes(std::map<std::string, std::any>& dump, std::string path, auto OnPick)
+	{
+		for (auto it = dump.begin(); it != dump.end(); it++)
+		{
+			std::map<std::string, std::any>& child = std::any_cast<std::map<std::string, std::any>&>(it->second);
+			std::string p = path + (path.empty() ? "" : "/") + it->first;
+
+			if (child.empty())
+			{
+				if (ImGui::TreeNodeEx(it->first.c_str(), ImGuiTreeNodeFlags_Leaf))
+				{
+					if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiPopupFlags_MouseButtonLeft))
+					{
+						OnPick(p);
+					}
+					ImGui::TreePop();
+				}
+			}
+			else
+			{
+				if (ImGui::TreeNodeEx(it->first.c_str()))
+				{
+					DrawAssetTreeNodes(child, p, OnPick);
+					ImGui::TreePop();
+				}
+			}
+		}
+	}
+
+	void DrawAssetsTree(auto GetObjects, auto OnPick, std::string ignorePrefix)
+	{
+		std::map<std::string, std::any> assets;
+
+		for (UUIDName uuidName : GetObjects())
+		{
+			std::string uuid = std::get<0>(uuidName);
+			std::string path = std::get<1>(uuidName);
+
+			if (!ignorePrefix.empty())
+			{
+				path = std::regex_replace(path, std::regex(ignorePrefix), "");
+			}
+
+			std::vector<std::string> parts = nostd::split(path, "/");
+			BuildAssetsTree(assets, parts);
+		}
+
+		DrawAssetTreeNodes(assets, "", OnPick);
+	}
+
+	void DrawListPanel(auto OnCreate, auto DrawObjects)
 	{
 		if (ImGui::SmallButton(ICON_FA_PLUS))
 		{
 			OnCreate();
 		}
 
-		if (ImGui::BeginTable(tableName, 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX))
-		{
-			DrawTableRows(GetObjects, OnSelect, OnDelete);
-			ImGui::EndTable();
-		}
+		DrawObjects();
 	}
 
 	template<typename T, typename V>
 	void DrawTabPanel(ImVec2 pos, ImVec2 size, const char* name, T& tab,
 		std::unordered_map<T, std::string> TabToStr,
-		std::map<T, std::function<std::vector<UUIDName>()>> GetTabList,
 		V& selected,
-		std::map<T, std::function<void(std::string, V&)>> OnSelect,
 		std::map<T, std::function<void()>> OnCreate,
-		std::function<void(std::string)> OnDelete
+		auto DrawObjects
 	)
 	{
 		ImGui::SetNextWindowPos(pos);
@@ -498,16 +559,9 @@ namespace Editor {
 					}
 
 				}
-				DrawListPanel((TabToStr.at(tab) + "-table").c_str(), GetTabList.at(tab),
-					[tab, &selected, OnSelect](std::string name)
-					{
-						OnSelect.at(tab)(name, selected);
-					},
+				DrawListPanel(
 					OnCreate.at(tab),
-					[OnDelete](std::string name)
-					{
-						OnDelete(name);
-					}
+					DrawObjects
 				);
 			}
 			ImGui::EndTabBar();
@@ -571,10 +625,21 @@ namespace Editor {
 					}
 				);
 
-				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, GetSceneObjects, selSO,
-					SetSelectedSceneObjectProxy,
+				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, selSO,
 					CreateSceneObject,
-					[](std::string uuid) { DeleteSceneObject.at(soTab)(uuid); }
+					[SetSelectedSceneObjectProxy]()
+					{
+						std::string tableName = (SceneObjectsToStr.at(soTab) + "-table");
+						if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX))
+						{
+							DrawTableRows(
+								GetSceneObjects.at(soTab),
+								[SetSelectedSceneObjectProxy](std::string uuid) { SetSelectedSceneObjectProxy.at(soTab)(uuid, selSO); },
+								[](std::string uuid) { DeleteSceneObject.at(soTab)(uuid); }
+							);
+							ImGui::EndTable();
+						}
+					}
 				);
 			}
 			else
@@ -597,10 +662,32 @@ namespace Editor {
 
 			if (selTemp.empty())
 			{
-				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, GetTemplates, selTemp,
-					SetSelectedTemplate,
+				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, selTemp,
 					CreateTemplate,
-					[](std::string uuid) { DeleteTemplate.at(tempTab)(uuid); }
+					[]()
+					{
+						if (std::set({ T_Materials,T_Models3D,T_Shaders,T_Sounds }).contains(tempTab))
+						{
+							std::string tableName = (TemplatesToStr.at(tempTab) + "-table");
+							if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX))
+							{
+								DrawTableRows(
+									GetTemplates.at(tempTab),
+									[](std::string uuid) { SetSelectedTemplate.at(tempTab)(uuid, selTemp); },
+									[](std::string uuid) { DeleteTemplate.at(tempTab)(uuid); }
+								);
+								ImGui::EndTable();
+							}
+						}
+						else if (std::set({ T_Textures }).contains(tempTab))
+						{
+							DrawAssetsTree(GetTemplates.at(tempTab), [](std::string texName)
+								{
+									selTemp = FindTextureUUIDByName(defaultAssetsFolder + texName);
+								}, defaultAssetsFolder
+							);
+						}
+					}
 				);
 			}
 			else

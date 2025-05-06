@@ -2,6 +2,7 @@
 
 typedef std::tuple<std::string, std::string> UUIDName;
 
+//Create a new UUID
 inline std::string getUUID()
 {
 	UUID uuid = { 0 };
