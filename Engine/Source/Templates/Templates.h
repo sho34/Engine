@@ -490,7 +490,7 @@ namespace Templates {
 		return std::get<0>(templates.at(uuid));
 	}
 
-	inline nlohmann::json GetTemplate(std::string uuid, auto getTemplates)
+	inline nlohmann::json& GetTemplate(std::string uuid, auto getTemplates)
 	{
 		auto& templates = getTemplates();
 		return std::get<1>(templates.at(uuid));
@@ -504,7 +504,6 @@ namespace Templates {
 			if (std::get<0>(T) == name) return uuid;
 		}
 
-		assert(!!!"not found");
 		return "";
 	}
 

@@ -33,7 +33,7 @@ struct std::hash<MaterialTexture>
 
 struct MaterialTextureInstance
 {
-	MaterialTexture materialTexture;
+	std::string materialTexture;
 
 	//D3D12
 	D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
@@ -44,14 +44,13 @@ struct MaterialTextureInstance
 	std::string textureName;
 
 	~MaterialTextureInstance() { Destroy(); }
-	void Load(MaterialTexture& texture);
-	void CreateTextureResource(MaterialTexture& tex);
-	void CreateTextureArrayResource(MaterialTexture& tex);
+	void Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
+	void CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
 	void Destroy();
 };
 
-void TransformJsonToMaterialTextures(std::map<TextureType, MaterialTexture>& textures, nlohmann::json object, const std::string& key);
+void TransformJsonToMaterialTextures(std::map<TextureType, std::string>& textures, nlohmann::json object, const std::string& key);
 
-std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> GetTextures(const std::map<TextureType, MaterialTexture>& textures);
-std::shared_ptr<MaterialTextureInstance> GetTextureFromGPUHandle(const MaterialTexture& texture);
+std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> GetTextures(const std::map<TextureType, std::string>& textures);
+std::shared_ptr<MaterialTextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
 void DestroyMaterialTextureInstance(std::shared_ptr<MaterialTextureInstance>& texture);

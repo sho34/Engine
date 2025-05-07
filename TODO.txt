@@ -1,5 +1,11 @@
 TODO:
-
+-Hacer de las texturas un template
+-Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
+	-Presets
+		-daylight
+		-night
+		…
+	-Modo Manual con slider de temperatura en kelvin con textura bajo el slider
 -HDR with automatic exposure adjustment or eye adaptation 
 -IBL
 -Deferred Rendering

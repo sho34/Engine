@@ -4,7 +4,7 @@
 	CreateJsonTemplate<TemplateName##Template>(json, Get##TemplateName##Templates);\
 }
 
-#define TEMPDEF_GET(TemplateName) nlohmann::json Get##TemplateName##Template(std::string uuid)\
+#define TEMPDEF_GET(TemplateName) nlohmann::json& Get##TemplateName##Template(std::string uuid)\
 {\
 	return GetTemplate(uuid, Get##TemplateName##Templates);\
 }
@@ -36,3 +36,8 @@
 	TEMPDEF_GETNAMES(TemplateName);\
 	TEMPDEF_GETNAME(TemplateName);\
 	TEMPDEF_FINDUUIDBYNAME(TemplateName)
+
+#define TEMPDEF_REFTRACKER(TemplateName) namespace TemplateName##s\
+{\
+	static nostd::RefTracker<std::string, std::shared_ptr<TemplateName##Instance>> refTracker;\
+}

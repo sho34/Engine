@@ -75,6 +75,9 @@ namespace Templates
 		for (unsigned int meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++)
 		{
 			auto aMesh = aiModel->mMeshes[meshIndex];
+			aiMaterial* aiMat = aiModel->mMaterials[aMesh->mMaterialIndex];
+			nlohmann::json texturesJson = GetAiMaterialTexturesJson(path.relative_path(), aiMat);
+
 			std::string materialUUID = GetModel3DMaterialInstanceUUID(uuid, meshIndex);
 			nlohmann::json materialTemplate = GetMaterialTemplate(materialUUID);
 
@@ -85,9 +88,9 @@ namespace Templates
 					GetModel3DMaterialInstanceName(std::get<0>(model3ds.at(uuid)), meshIndex),
 					mdl.at("shader_vs"),
 					mdl.at("shader_ps"),
-					path.relative_path(),
 					aiModel->mMaterials[aMesh->mMaterialIndex]
 				);
+				materialJson["textures"] = texturesJson;
 				CreateMaterial(materialJson);
 			}
 
@@ -164,77 +167,31 @@ namespace Templates
 	}
 
 #if defined(_DEVELOPMENT)
-	std::string GetUtilsPath()
-	{
-		char* utilsPath;
-		size_t utilsPathLen;
-		_dupenv_s(&utilsPath, &utilsPathLen, "CULPEO_UTILS");
 
-		return std::string(utilsPath);
-	}
-
-	void GetTextureAttributes(std::filesystem::path src, DXGI_FORMAT& format, int& numFrames)
-	{
-		using namespace raymii;
-
-		//get the format of the file
-		std::string cmdFormat = GetUtilsPath() + "texformat.bat " + src.string();
-		CommandResult resultFormat = Command::exec(cmdFormat);
-		resultFormat.output.pop_back();
-		format = stringToDxgiFormat.at(resultFormat.output);
-
-		//get the num of frames of the file
-		std::string cmdFrames = GetUtilsPath() + "texframes.bat " + src.string();
-		CommandResult result = Command::exec(cmdFrames);
-		result.output.pop_back();
-		numFrames = std::stoi(result.output) - 1;
-	}
-
-	void ConvertToDDS(std::filesystem::path src, std::filesystem::path dst, DXGI_FORMAT& format, int& numFrames)
-	{
-		GetTextureAttributes(src, format, numFrames);
-
-		using namespace raymii;
-
-		//get the format of the file
-		std::filesystem::path parentPath = src.parent_path();
-		std::string cmdConv = GetUtilsPath() + "texconv.exe " + src.string() + " -f " + dxgiFormatsToString.at(format) + " -l -y -o " + parentPath.string();
-		CommandResult result = Command::exec(cmdConv);
-	}
-
-	void PushAssimpTextureToJson(nlohmann::json& j, TextureType textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+	void PushAssimpTextureToJson(nlohmann::json& j, TextureType textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT fallbackFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
 	{
 		std::filesystem::path textureJsonPath = fallbackTexture;
-		DXGI_FORMAT textureJsonFormat = format;
-		int numFrames = 0;
+		DXGI_FORMAT textureJsonFormat = fallbackFormat;
 
 		if (aiTextureName.length > 0)
 		{
-			textureJsonPath = relativePath.parent_path().append(aiTextureName.C_Str()).replace_extension(".dds").string();
-			std::filesystem::path originalTexturePath = relativePath.parent_path().append(aiTextureName.C_Str()).make_preferred();
-
-			if (!std::filesystem::exists(textureJsonPath))
-			{
-				ConvertToDDS(originalTexturePath, textureJsonPath, textureJsonFormat, numFrames);
-			}
-			else
-			{
-				GetDDSTextureAttributes(textureJsonPath, textureJsonFormat, numFrames);
-			}
+			textureJsonPath = nostd::normalize_path(
+				relativePath.parent_path().append(aiTextureName.C_Str()).string()
+			);
 		}
 
 		if (textureJsonPath != "")
 		{
-			j["textures"][textureTypeToStr.at(textureType)] = {
-				{ "path", textureJsonPath.string() },
-				{ "format", dxgiFormatsToString.at(textureJsonFormat) },
-				{ "numFrames", numFrames }
-			};
+			std::string texUUID = FindTextureUUIDByName(textureJsonPath.string());
+			if (texUUID.empty())
+			{
+				texUUID = CreateTextureTemplate(textureJsonPath.string(), textureJsonFormat);
+			}
+			j[textureTypeToStr.at(textureType)] = texUUID;
 		}
-
 	};
 
-	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, std::filesystem::path relativePath, aiMaterial* material)
+	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, aiMaterial* material)
 	{
 		nlohmann::json matJson = nlohmann::json({});
 
@@ -276,22 +233,29 @@ namespace Templates
 
 		matJson["mappedValues"] = TransformMaterialValueMappingToJson(matInitialValue);
 
-		aiString diffuseName;
-		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
-		PushAssimpTextureToJson(matJson, TextureType_Base, relativePath, diffuseName, "Assets/textures/gridmap.dds");
-
-		aiString normalMapName;
-		material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
-		PushAssimpTextureToJson(matJson, TextureType_NormalMap, relativePath, normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
-
-		aiString metallicRoughnessName;
-		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
-		PushAssimpTextureToJson(matJson, TextureType_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
-
 		matJson["samplers"] = nlohmann::json::array();
 		matJson["samplers"].push_back(MaterialSamplerDesc().json());
 
 		return matJson;
+	}
+
+	nlohmann::json GetAiMaterialTexturesJson(std::filesystem::path relativePath, aiMaterial* material)
+	{
+		nlohmann::json json = nlohmann::json({});
+
+		aiString diffuseName;
+		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
+		PushAssimpTextureToJson(json, TextureType_Base, relativePath, diffuseName, "Assets/textures/gridmap.dds");
+
+		aiString normalMapName;
+		material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
+		PushAssimpTextureToJson(json, TextureType_NormalMap, relativePath, normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
+
+		aiString metallicRoughnessName;
+		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
+		PushAssimpTextureToJson(json, TextureType_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
+
+		return json;
 	}
 #endif
 
@@ -580,6 +544,6 @@ namespace Templates
 
 	std::shared_ptr<MaterialInstance> Model3DInstance::GetModel3DMaterialInstance(unsigned int meshIndex)
 	{
-		return GetMaterialInstance(materialUUIDs[meshIndex], std::map<TextureType, MaterialTexture>(), meshes[meshIndex], shaderAttributes);
+		return GetMaterialInstance(materialUUIDs[meshIndex], std::map<TextureType, std::string>(), meshes[meshIndex], shaderAttributes);
 	}
 }

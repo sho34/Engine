@@ -1,6 +1,6 @@
 
 #define TEMPDECL_CREATE(TemplateName) void Create##TemplateName(nlohmann::json json)
-#define TEMPDECL_GET(TemplateName) nlohmann::json Get##TemplateName##Template(std::string uuid)
+#define TEMPDECL_GET(TemplateName) nlohmann::json& Get##TemplateName##Template(std::string uuid)
 #define TEMPDECL_GETUUIDNAMES(TemplateName) std::vector<UUIDName> Get##TemplateName##sUUIDsNames()
 #define TEMPDECL_GETNAMES(TemplateName) std::vector<std::string> Get##TemplateName##sNames()
 #define TEMPDECL_GETNAME(TemplateName) std::string Get##TemplateName##Name(std::string uuid)

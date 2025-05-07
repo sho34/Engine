@@ -31,7 +31,7 @@ namespace Templates {
 	std::map<std::string, MaterialTemplate> materials;
 
 	//Material+Mesh = MaterialInstance
-	typedef std::pair<std::tuple<std::string, std::map<TextureType, MaterialTexture>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
+	typedef std::pair<std::tuple<std::string, std::map<TextureType, std::string>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
 
 	namespace Material
 	{
@@ -72,7 +72,7 @@ namespace Templates {
 
 	static std::mt19937 g;
 
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureType, MaterialTexture>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureType, std::string>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
 	{
 		if (!materials.contains(uuid))
 		{
@@ -98,7 +98,7 @@ namespace Templates {
 		);
 	}
 
-	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, MaterialTexture>& textures, bool castShadows)
+	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, std::string>& textures, bool castShadows)
 	{
 		material->vertexClass = mesh->vertexClass;
 		material->material = uuid;
@@ -116,12 +116,7 @@ namespace Templates {
 			for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
 			{
 				TextureType texType = strToTextureType.at(it.key());
-				DXGI_FORMAT texFormat = stringToDxgiFormat.at(it.value().at("format"));
 				material->defines.push_back(textureTypeToShaderDefine.at(texType));
-				if (texType == TextureType_Base && FormatsInGammaSpace.contains(texFormat))
-				{
-					material->defines.push_back(BaseTextureFromGammaSpaceDefine);
-				}
 			}
 		}
 
@@ -131,7 +126,7 @@ namespace Templates {
 		}
 
 		TransformJsonToMaterialSamplers(material->samplers, mat, "samplers");
-		std::map<TextureType, MaterialTexture> matTextures;
+		std::map<TextureType, std::string> matTextures;
 		if (textures.size() > 0)
 		{
 			matTextures = textures;

@@ -417,7 +417,11 @@ void EditorModeCreate()
 		{
 			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
-			LoadDefaultLevel();
+			//LoadDefaultLevel();
+			//LoadLevel("female");
+			//LoadLevel("knight");
+			//LoadLevel("spartan");
+			LoadLevel("family");
 
 			mainPass = CreateMainPass();
 			Editor::CreatePickingPass();
@@ -452,7 +456,7 @@ void EditorModeCreate()
 			);
 
 			std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
-			toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle(MaterialTexture({ .path = "toneMap", .gpuHandle = mainPass->renderToTexture[0]->gpuTextureHandle })));
+			toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
 
 			CreateRenderableBoundingBox();
 		}

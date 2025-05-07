@@ -217,6 +217,11 @@ namespace nostd {
 		(hash_combine(seed, rest), ...);
 	}
 
+	inline std::string normalize_path(std::string path)
+	{
+		return std::regex_replace(path, std::regex("\\\\"), "/");
+	}
+
 	template<typename K, typename V, typename C = std::less<K>>
 	struct RefTracker
 	{
