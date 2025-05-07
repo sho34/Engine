@@ -5,6 +5,7 @@
 #define TEMPDECL_GETNAMES(TemplateName) std::vector<std::string> Get##TemplateName##sNames()
 #define TEMPDECL_GETNAME(TemplateName) std::string Get##TemplateName##Name(std::string uuid)
 #define TEMPDECL_FINDUUIDBYNAME(TemplateName) std::string Find##TemplateName##UUIDByName(std::string name)
+#define TEMPDECL_WRITEJSON(TemplateName) void Write##TemplateName##sJson(nlohmann::json& json)
 
 #define TEMPDECL_FULL(TemplateName) \
 	TEMPDECL_CREATE(TemplateName);\
@@ -12,5 +13,6 @@
 	TEMPDECL_GETUUIDNAMES(TemplateName);\
 	TEMPDECL_GETNAMES(TemplateName);\
 	TEMPDECL_GETNAME(TemplateName);\
-	TEMPDECL_FINDUUIDBYNAME(TemplateName)
+	TEMPDECL_FINDUUIDBYNAME(TemplateName);\
+	TEMPDECL_WRITEJSON(TemplateName)
 

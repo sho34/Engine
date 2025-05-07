@@ -839,6 +839,7 @@ namespace Editor {
 
 		//then create the json level file
 		std::filesystem::path path(filename);
+		path.replace_extension(".json");
 		std::string pathStr = path.generic_string();
 		std::ofstream file;
 		file.open(pathStr);
@@ -957,6 +958,7 @@ namespace Editor {
 		Templates::SaveTemplates(defaultTemplatesFolder, Material::templateName, WriteMaterialsJson);
 		Templates::SaveTemplates(defaultTemplatesFolder, Model3D::templateName, WriteModel3DsJson);
 		Templates::SaveTemplates(defaultTemplatesFolder, Sound::templateName, WriteSoundsJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, Texture::templateName, WriteTexturesJson);
 	}
 
 	void SelectSceneObject(_SceneObjects objectType, std::string uuid)

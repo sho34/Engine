@@ -29,13 +29,19 @@
 	return FindUUIDByName(name, Get##TemplateName##Templates);\
 }
 
+#define TEMPDEF_WRITEJSON(TemplateName) void Write##TemplateName##sJson(nlohmann::json& json)\
+{\
+	WriteTemplateJson(json, Get##TemplateName##Templates());\
+}
+
 #define TEMPDEF_FULL(TemplateName) \
 	TEMPDEF_CREATE(TemplateName);\
 	TEMPDEF_GET(TemplateName);\
 	TEMPDEF_GETUUIDNAMES(TemplateName);\
 	TEMPDEF_GETNAMES(TemplateName);\
 	TEMPDEF_GETNAME(TemplateName);\
-	TEMPDEF_FINDUUIDBYNAME(TemplateName)
+	TEMPDEF_FINDUUIDBYNAME(TemplateName);\
+	TEMPDEF_WRITEJSON(TemplateName)
 
 #define TEMPDEF_REFTRACKER(TemplateName) namespace TemplateName##s\
 {\

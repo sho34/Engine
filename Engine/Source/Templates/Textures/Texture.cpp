@@ -225,10 +225,6 @@ namespace Templates
 	{
 	}
 
-	void WriteTexturesJson(nlohmann::json& json)
-	{
-	}
-
 #endif
 
 	TEMPDEF_REFTRACKER(Texture);

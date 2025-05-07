@@ -48,7 +48,6 @@ namespace Templates
 	void CreateDDSTexture(std::filesystem::path path);
 	void DeleteTexture(std::string uuid);
 	void DrawTexturesPopups();
-	void WriteTexturesJson(nlohmann::json& json);
 #endif
 
 	struct TextureInstance
