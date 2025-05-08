@@ -106,6 +106,8 @@ namespace Templates {
 	//EDITOR
 #if defined(_EDITOR)
 	void DrawMaterialPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
+	bool DrawTextureParameters(nlohmann::json& mat, std::set<TextureType> texturesInShader);
+	bool DrawSamplerParameters(nlohmann::json& mat, unsigned int totalSamplers, std::function<nlohmann::json()> getSamplerJson);
 	void CreateNewMaterial();
 	void DeleteMaterial(std::string uuid);
 	void DrawMaterialsPopups();

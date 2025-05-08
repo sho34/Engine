@@ -527,13 +527,13 @@ namespace Templates {
 			auto texParams = GetShaderTextureParameters(shader_vs);
 			auto texParamsPS = GetShaderTextureParameters(shader_ps);
 			texParams.insert(texParamsPS.begin(), texParamsPS.end());
-			rebuildMaterial |= ImDrawTextureParameters(mat, texParams);
+			rebuildMaterial |= DrawTextureParameters(mat, texParams);
 		}
 		ImGui::PopID();
 
 		ImGui::PushID("material-samplers");
 		{
-			rebuildMaterial |= ImDrawSamplerParameters(mat, GetShaderSamplerParameters(shader_ps), [] { return MaterialSamplerDesc().json(); });
+			rebuildMaterial |= DrawSamplerParameters(mat, GetShaderSamplerParameters(shader_ps), [] { return MaterialSamplerDesc().json(); });
 		}
 		ImGui::PopID();
 
@@ -555,6 +555,196 @@ namespace Templates {
 				}
 			}
 		}
+	}
+
+	bool DrawTextureParameters(nlohmann::json& mat, std::set<TextureType> texturesInShader)
+	{
+		ImGui::Separator();
+
+		std::vector<std::string> selectables = { " " };
+		for (TextureType type : materialTexturesTypes)
+		{
+			std::string texture = textureTypeToStr.at(type);
+			if (!mat.contains("textures") || !mat.at("textures").contains(texture))
+			{
+				selectables.push_back(texture);
+			}
+		}
+
+		bool ret = false;
+		ImGui::Text("Textures");
+		if (selectables.size() > 1)
+		{
+			ImGui::PushID("textures-values-add-combo");
+			DrawComboSelection(selectables[0], selectables, [&mat, &ret](std::string textureType)
+				{
+					//mat["textures"][textureType] = { {"numFrames", 0}, {"format", dxgiFormatsToString.at(DXGI_FORMAT_UNKNOWN)}, {"path", ""} };
+					mat["textures"][textureType] = "";
+					ret = true;
+				}, ""
+			);
+			ImGui::PopID();
+		}
+
+		if (mat.contains("textures"))
+		{
+			std::set<std::string> toDelete;
+			for (auto& [textureType, texture] : mat.at("textures").items())
+			{
+				ImGui::PushID(("material-delete-" + textureType).c_str());
+				{
+					if (ImGui::Button(ICON_FA_TIMES))
+					{
+						toDelete.insert(textureType);
+					}
+					ImGui::SameLine();
+					ImGui::Text(textureType.c_str());
+				}
+				ImGui::PopID();
+
+				ImGui::PushID(("material-goto-file" + textureType).c_str());
+				{
+					if (ImGui::Button(ICON_FA_TSHIRT))
+					{
+						Editor::tempTab = T_Textures;
+						Editor::selTemp = texture;
+					}
+				}
+				ImGui::PopID();
+				ImGui::SameLine();
+
+				ImGui::SetNextItemWidth(-1);
+
+				ImGui::PushID(("material-file-select-" + textureType).c_str());
+				{
+					UUIDName texUUIDName;
+					if (texture != "")
+					{
+						std::string name = GetTextureName(texture);
+						std::string& texUUID = std::get<0>(texUUIDName);
+						std::string& texName = std::get<1>(texUUIDName);
+						texName = name;
+					}
+					std::vector<UUIDName> texUUIDNames = GetTexturesUUIDsNames();
+					DrawComboSelection(texUUIDName, texUUIDNames, [&texture](UUIDName newTexture)
+						{
+							texture = std::get<0>(newTexture);
+						}
+					);
+				}
+				ImGui::PopID();
+
+				/*
+				ImGui::PushID(("material-file-select-" + textureType).c_str());
+				{
+					std::string parentFolder = defaultAssetsFolder;
+					std::string fileName = "";
+					if (texture.contains("path") && !texture.at("path").empty())
+					{
+						fileName = texture.at("path");
+						std::filesystem::path rootFolder = fileName;
+						parentFolder = rootFolder.parent_path().string();
+					}
+
+					ImDrawFileSelector("File", fileName, [&texture, &ret](std::filesystem::path path)
+						{
+							std::filesystem::path curPath = std::filesystem::current_path();
+							std::filesystem::path texturePath = std::filesystem::relative(path, curPath);
+							texture.at("path") = texturePath.string();
+							ret = true;
+						},
+						parentFolder, "Texture files. (*.dds)", "*.dds"
+					);
+				}
+				ImGui::PopID();
+
+				ImGui::PushID(("material-file-format-" + textureType).c_str());
+				{
+					std::string format = texture.at("format");
+					DrawComboSelection(format, textureFormats, [&texture, &ret](std::string newFormat)
+						{
+							texture.at("format") = newFormat;
+							ret = true;
+						}, "Format"
+					);
+				}
+				ImGui::PopID();
+
+				ImGui::PushID(("material-file-num-frames" + textureType).c_str());
+				{
+					if (drawFromUInt(texture, "numFrames", "Num Frames"))
+					{
+						ret = true;
+					}
+				}
+				ImGui::PopID();
+				*/
+			}
+
+			for (auto& texture : toDelete)
+			{
+				mat.at("textures").erase(texture);
+				ret = true;
+			}
+
+		}
+		return ret;
+	}
+
+	bool DrawSamplerParameters(
+		nlohmann::json& mat,
+		unsigned int totalSamplers,
+		std::function<nlohmann::json()> getSamplerJson
+	)
+	{
+		ImGui::Separator();
+
+		ImGui::Text("Samplers");
+
+		bool ret = false;
+
+		if (!mat.contains("samplers") || mat.at("samplers").size() == 0ULL)
+		{
+			if (ImGui::Button(ICON_FA_PLUS))
+			{
+				mat["samplers"] = nlohmann::json::array();
+				mat["samplers"].push_back(getSamplerJson());
+				ret = true;
+			}
+			ImGui::SameLine();
+			ImGui::Text("Add Sampler");
+		}
+		else
+		{
+			ImDrawDynamicArray("samplers", mat.at("samplers"),
+				[&ret, getSamplerJson](nlohmann::json& samplers, unsigned int index)
+				{
+					auto pos = samplers.begin() + index + 1;
+					samplers.insert(pos, getSamplerJson());
+					ret = true;
+				},
+				[&ret](nlohmann::json& sampler, unsigned int index)
+				{
+					ImGui::Text(("Sampler#" + std::to_string(index + 1)).c_str());
+					ImGui::NewLine();
+					ret |= drawFromCombo(sampler, "AddressU", stringToTextureAddressMode, "AddressU");
+					ret |= drawFromCombo(sampler, "AddressV", stringToTextureAddressMode, "AddressV");
+					ret |= drawFromCombo(sampler, "AddressW", stringToTextureAddressMode, "AddressW");
+					ret |= drawFromCombo(sampler, "BorderColor", stringToBorderColor, "BorderColor");
+					ret |= drawFromCombo(sampler, "ComparisonFunc", stringToComparisonFunc, "ComparisonFunc");
+					ret |= drawFromCombo(sampler, "Filter", stringToFilter, "Filter");
+					ret |= drawFromUInt(sampler, "MaxAnisotropy", "MaxAnisotropy");
+					ret |= drawFromFloat(sampler, "MaxLOD", "MaxLOD");
+					ret |= drawFromFloat(sampler, "MinLOD", "MinLOD");
+					ret |= drawFromFloat(sampler, "MipLODBias", "MipLODBias");
+					ret |= drawFromUInt(sampler, "RegisterSpace", "RegisterSpace");
+					ret |= drawFromUInt(sampler, "ShaderRegister", "ShaderRegister");
+					ret |= drawFromCombo(sampler, "ShaderVisibility", stringToShaderVisibility, "ShaderVisibility");
+				},
+				totalSamplers
+			);
+		}
+		return ret;
 	}
 
 	void CreateNewMaterial()

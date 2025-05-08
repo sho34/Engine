@@ -75,4 +75,9 @@ namespace Templates
 	{
 		FreeGPUTexturesUploadIntermediateResources();
 	}
+
+	void TemplatesInstancesStep()
+	{
+		ReloadTextureInstances();
+	}
 }

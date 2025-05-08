@@ -8,6 +8,7 @@
 #define TEMPDECL_GETNAME(TemplateName) std::string Get##TemplateName##Name(std::string uuid)
 #define TEMPDECL_FINDUUIDBYNAME(TemplateName) std::string Find##TemplateName##UUIDByName(std::string name)
 #define TEMPDECL_WRITEJSON(TemplateName) void Write##TemplateName##sJson(nlohmann::json& json)
+#define TEMPDECL_RELEASE(TemplateName) void ReleaseShaderTemplates()
 
 #define TEMPDECL_FULL(TemplateName) \
 	TEMPDECL_TUPLE(TemplateName);\
@@ -18,5 +19,7 @@
 	TEMPDECL_GETNAMES(TemplateName);\
 	TEMPDECL_GETNAME(TemplateName);\
 	TEMPDECL_FINDUUIDBYNAME(TemplateName);\
-	TEMPDECL_WRITEJSON(TemplateName)
+	TEMPDECL_WRITEJSON(TemplateName);\
+	TEMPDECL_RELEASE(TemplateName)
 
+#define TEMPDECL_REFTRACKER(TemplateName) std::shared_ptr<TemplateName##Instance> Get##TemplateName##Instance(std::string uuid)

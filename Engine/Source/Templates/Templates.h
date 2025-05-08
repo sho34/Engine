@@ -551,4 +551,5 @@ namespace Templates {
 		);
 	}
 
+	void TemplatesInstancesStep();
 }

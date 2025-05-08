@@ -4,10 +4,25 @@
 #include "Lights/ShadowMap.h"
 #include "../Renderer/Renderer.h"
 #include "../Effects/Effects.h"
+#include "../Common/StepTimer.h"
 
 extern std::shared_ptr<Renderer> renderer;
+void AnimableStep(double elapsedSeconds);
+void AudioStep();
+
 namespace Scene
 {
+	void SceneObjectsStep(DX::StepTimer& timer)
+	{
+		using namespace Effects;
+		EffectsStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
+		AnimableStep(timer.GetElapsedSeconds());
+		RenderablesStep();
+		LightsStep();
+		AudioStep();
+		CamerasStep();
+	}
+
 	void WriteConstantsBuffers()
 	{
 		using namespace Effects;

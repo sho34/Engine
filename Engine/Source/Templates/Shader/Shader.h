@@ -12,6 +12,7 @@
 #include <ShaderMaterials.h>
 #include "../Material/Variables.h"
 #include <UUID.h>
+#include "../TemplateDecl.h"
 
 namespace Templates {
 
@@ -34,6 +35,8 @@ namespace Templates {
 		std::vector<std::string> //materials uuid references
 #endif
 	> ShaderTemplate;
+
+	TEMPDECL_GETTEMPLATES(Shader);
 
 	namespace Shader
 	{
@@ -99,11 +102,12 @@ namespace Templates {
 	void CreateShader(nlohmann::json json);
 
 	//READ&GET
-	nlohmann::json GetShaderTemplate(std::string uuid);
-	std::vector<std::string> GetShadersNames();
-	std::string GetShaderName(std::string uuid);
-	std::string FindShaderByName(std::string name);
-	std::vector<UUIDName> GetShadersUUIDsNames();
+	TEMPDECL_GET(Shader);
+	TEMPDECL_GETNAMES(Shader);
+	TEMPDECL_GETNAME(Shader);
+	TEMPDECL_FINDUUIDBYNAME(Shader);
+	TEMPDECL_GETUUIDNAMES(Shader);
+	TEMPDECL_RELEASE(Shader);
 	std::vector<UUIDName> GetShadersUUIDsNamesByType(ShaderType type);
 	std::shared_ptr<ShaderInstance> GetShaderInstance(Source params);
 
@@ -165,7 +169,6 @@ namespace Templates {
 	void MonitorShaderChanges(std::string folder);
 
 	//DESTROY
-	void ReleaseShaderTemplates();
 	void DestroyShaderBinary(std::shared_ptr<ShaderInstance>& shaderBinary);
 
 	//EDITOR

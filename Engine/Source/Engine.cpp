@@ -420,12 +420,8 @@ void AppStep() {
 	}
 	timer.Tick([&]() {});
 	GameInputStep();
-	EffectsStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
-	AnimableStep(timer.GetElapsedSeconds());
-	RenderablesStep();
-	LightsStep();
-	AudioStep();
-	CamerasStep();
+	SceneObjectsStep(timer);
+	TemplatesInstancesStep();
 	GameStep();
 	Render();
 	FreeGPUIntermediateResources();

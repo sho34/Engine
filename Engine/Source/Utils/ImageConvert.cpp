@@ -29,13 +29,17 @@ namespace Utils
 		}
 	}
 
-	void ConvertToDDS(std::filesystem::path image, std::filesystem::path dds, DXGI_FORMAT desiredFormat)
+	void ConvertToDDS(std::filesystem::path image, std::filesystem::path dds, DXGI_FORMAT desiredFormat, unsigned int width, unsigned int height, unsigned int mipLevels)
 	{
 		using namespace raymii;
 
 		//get the format of the file
 		std::filesystem::path parentPath = image.parent_path();
 		std::string cmdConv = GetUtilsPath() + "texconv.exe " + image.string() + " -f " + dxgiFormatsToString.at(desiredFormat) + " -y";
+		if (width != 0) { cmdConv += " -w " + std::to_string(width); }
+		if (height != 0) { cmdConv += " -h " + std::to_string(height); }
+		if (mipLevels != 0) { cmdConv += " -m " + std::to_string(mipLevels); }
+
 		CommandResult result = Command::exec(cmdConv);
 
 		std::filesystem::path ddsUpperCase = dds;

@@ -35,7 +35,7 @@ namespace Scene
 		}
 
 		//Get an instance of the BoundingBox Compute shader
-		shader = GetShaderInstance({ .shaderType = COMPUTE_SHADER, .shaderUUID = FindShaderByName("BoundingBox_cs") });
+		shader = GetShaderInstance({ .shaderType = COMPUTE_SHADER, .shaderUUID = FindShaderUUIDByName("BoundingBox_cs") });
 
 		//Create the Constants Buffer for each mesh
 		std::transform(r->meshes.begin(), r->meshes.end(), std::back_inserter(constantsBuffers), [this](auto& mesh)

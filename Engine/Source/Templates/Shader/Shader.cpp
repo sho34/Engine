@@ -11,11 +11,12 @@
 #endif
 #include <Application.h>
 #include <Editor.h>
+#include "../TemplateDef.h"
 
 namespace Templates {
 
-	//uuid to ShaderTemplates
-	std::map<std::string, ShaderTemplate> shaders;
+	TEMPDEF_TUPLE(Shader);
+	TEMPDEF_GETTEMPLATES(Shader);
 
 	namespace Shader
 	{
@@ -93,7 +94,7 @@ namespace Templates {
 				TextureType textureType = strToTextureType.at(resourceName);
 				if (materialTexturesTypes.contains(textureType))
 				{
-					auto& textureTypes = std::get<3>(shaders.at(shaderSource.shaderUUID));
+					auto& textureTypes = std::get<3>(GetShaderTemplates().at(shaderSource.shaderUUID));
 					textureTypes.insert(textureType);
 				}
 #endif
@@ -102,7 +103,7 @@ namespace Templates {
 			{
 				samplersParameters.insert_or_assign(resourceName, ShaderSamplerParameter({ .registerId = bindDesc.BindPoint, .numSamplers = bindDesc.BindCount }));
 #if defined(_EDITOR)
-				auto& numSamplers = std::get<4>(shaders.at(shaderSource.shaderUUID));
+				auto& numSamplers = std::get<4>(GetShaderTemplates().at(shaderSource.shaderUUID));
 				numSamplers++;
 #endif
 			}
@@ -213,7 +214,7 @@ namespace Templates {
 	{
 		std::string uuid = json.at("uuid");
 
-		if (shaders.contains("uuid"))
+		if (GetShaderTemplates().contains("uuid"))
 		{
 			assert(!!!"shader creation collision");
 		}
@@ -227,29 +228,26 @@ namespace Templates {
 		data.erase("name");
 		data.erase("uuid");
 
-		shaders.insert_or_assign(uuid, t);
+		GetShaderTemplates().insert_or_assign(uuid, t);
 	}
 
 	//READ&GET
-	nlohmann::json GetShaderTemplate(std::string uuid)
-	{
-		return std::get<1>(shaders.at(uuid));
-	}
+	TEMPDEF_GET(Shader);
 
 #if defined(_EDITOR)
 	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string uuid)
 	{
-		return std::get<2>(shaders.at(uuid));
+		return std::get<2>(GetShaderTemplates().at(uuid));
 	}
 
 	std::set<TextureType> GetShaderTextureParameters(std::string uuid)
 	{
-		return std::get<3>(shaders.at(uuid));
+		return std::get<3>(GetShaderTemplates().at(uuid));
 	}
 
 	unsigned int GetShaderSamplerParameters(std::string uuid)
 	{
-		return std::get<4>(shaders.at(uuid));
+		return std::get<4>(GetShaderTemplates().at(uuid));
 	}
 #endif
 
@@ -603,36 +601,16 @@ namespace Templates {
 	}
 #endif
 
-	std::vector<std::string> GetShadersNames()
-	{
-		return GetNames(shaders);
-	}
-
-	std::string GetShaderName(std::string uuid)
-	{
-		return std::get<0>(shaders.at(uuid));
-	}
-
-	std::string FindShaderByName(std::string name)
-	{
-		for (auto& [shaderUUID, shaderTemplate] : shaders)
-		{
-			if (std::get<0>(shaderTemplate) == name) return shaderUUID;
-		}
-
-		assert(!!!"shader not found");
-		return "";
-	}
-
-	std::vector<UUIDName> GetShadersUUIDsNames()
-	{
-		return GetUUIDsNames(shaders);
-	}
+	TEMPDEF_GETNAMES(Shader);
+	TEMPDEF_GETNAME(Shader);
+	TEMPDEF_FINDUUIDBYNAME(Shader);
+	TEMPDEF_GETUUIDNAMES(Shader);
+	TEMPDEF_RELEASE(Shader);
 
 	std::vector<UUIDName> GetShadersUUIDsNamesByType(ShaderType type)
 	{
 		std::map<std::string, ShaderTemplate> shadersByType;
-		std::copy_if(shaders.begin(), shaders.end(), std::inserter(shadersByType, shadersByType.end()), [type](auto pair)
+		std::copy_if(GetShaderTemplates().begin(), GetShaderTemplates().end(), std::inserter(shadersByType, shadersByType.end()), [type](auto pair)
 			{
 				nlohmann::json& json = std::get<1>(pair.second);
 				return StrToShaderType.at(json.at("type")) == type;
@@ -646,7 +624,7 @@ namespace Templates {
 
 	void SetShaderMappedVariable(std::string uuid, std::string varName, MaterialVariablesTypes type)
 	{
-		auto& variables = std::get<2>(shaders.at(uuid));
+		auto& variables = std::get<2>(GetShaderTemplates().at(uuid));
 		variables.insert_or_assign(varName, type);
 	}
 #endif
@@ -795,11 +773,6 @@ namespace Templates {
 	}
 
 	//DELETE
-	void ReleaseShaderTemplates()
-	{
-		shaders.clear();
-	}
-
 	void DestroyShaderBinary(std::shared_ptr<ShaderInstance>& shaderBinary)
 	{
 		using namespace Shader;
@@ -827,7 +800,7 @@ namespace Templates {
 		ImGui::TableSetColumnIndex(0);
 		std::string tableName = "shader-information-atts";
 
-		ShaderTemplate& t = shaders.at(uuid);
+		ShaderTemplate& t = GetShaderTemplates().at(uuid);
 
 		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
 		{
@@ -843,7 +816,7 @@ namespace Templates {
 
 	void Shader::DrawEditorAssetAttributes(std::string uuid)
 	{
-		ShaderTemplate& t = shaders.at(uuid);
+		ShaderTemplate& t = GetShaderTemplates().at(uuid);
 
 		std::string name = std::get<0>(t);
 		nlohmann::json& json = std::get<1>(t);
@@ -878,13 +851,13 @@ namespace Templates {
 
 	void AttachMaterialToShader(std::string uuid, std::string materialUUID)
 	{
-		auto& matRef = std::get<5>(shaders.at(uuid));
+		auto& matRef = std::get<5>(GetShaderTemplates().at(uuid));
 		matRef.push_back(materialUUID);
 	}
 
 	void DetachMaterialsFromShader(std::string uuid)
 	{
-		for (auto& materialUUID : std::get<5>(shaders.at(uuid)))
+		for (auto& materialUUID : std::get<5>(GetShaderTemplates().at(uuid)))
 		{
 			DetachShader(materialUUID);
 		}
@@ -913,7 +886,7 @@ namespace Templates {
 		}
 
 		DetachMaterialsFromShader(uuid);
-		shaders.erase(uuid);
+		GetShaderTemplates().erase(uuid);
 	}
 
 	void DrawShadersPopups()
@@ -979,7 +952,7 @@ namespace Templates {
 
 	void WriteShadersJson(nlohmann::json& json)
 	{
-		WriteTemplateJson(json, shaders);
+		WriteTemplateJson(json, GetShaderTemplates());
 	}
 
 #endif

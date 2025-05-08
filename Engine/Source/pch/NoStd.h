@@ -294,5 +294,13 @@ namespace nostd {
 			instances[to] = instances[from];
 			instances.erase(from);
 		}
+
+		void ForEach(std::function<void(V&)> cb)
+		{
+			for (auto it = instances.begin(); it != instances.end(); it++)
+			{
+				cb(it->second);
+			}
+		}
 	};
 }

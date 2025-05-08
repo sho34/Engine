@@ -1,6 +1,6 @@
 #define TEMPDEF_TUPLE(TemplateName) std::map<std::string, TemplateName##Template> templates
 
-#define TEMPDEF_GETTEMPLATES(TemplateName) TemplatesContainer<TemplateName##Template>& GetTextureTemplates() { return templates ; }
+#define TEMPDEF_GETTEMPLATES(TemplateName) TemplatesContainer<TemplateName##Template>& Get##TemplateName##Templates() { return templates ; }
 
 #define TEMPDEF_CREATE(TemplateName) void Create##TemplateName(nlohmann::json json)\
 {\
@@ -37,6 +37,11 @@
 	WriteTemplateJson(json, Get##TemplateName##Templates());\
 }
 
+#define TEMPDEF_RELEASE(TemplateName) void Release##TemplateName##Templates()\
+{\
+	Get##TemplateName##Templates().clear();\
+}
+
 #define TEMPDEF_FULL(TemplateName) \
 	TEMPDEF_TUPLE(TemplateName);\
 	TEMPDEF_GETTEMPLATES(TemplateName);\
@@ -46,9 +51,13 @@
 	TEMPDEF_GETNAMES(TemplateName);\
 	TEMPDEF_GETNAME(TemplateName);\
 	TEMPDEF_FINDUUIDBYNAME(TemplateName);\
-	TEMPDEF_WRITEJSON(TemplateName)
+	TEMPDEF_WRITEJSON(TemplateName);\
+	TEMPDEF_RELEASE(TemplateName)
 
-#define TEMPDEF_REFTRACKER(TemplateName) namespace TemplateName##s\
+#define TEMPDEF_REFTRACKER(TemplateName) static nostd::RefTracker<std::string, std::shared_ptr<TemplateName##Instance>> refTracker; \
+std::shared_ptr<TemplateName##Instance> Get##TemplateName##Instance(std::string uuid)\
 {\
-	static nostd::RefTracker<std::string, std::shared_ptr<TemplateName##Instance>> refTracker;\
+	if(refTracker.Has(uuid))\
+		return refTracker.FindValue(uuid);\
+	return nullptr;\
 }

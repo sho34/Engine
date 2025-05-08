@@ -131,8 +131,11 @@ static const std::map<_SceneObjects, std::function<void(std::string)>> DeleteSce
 
 #endif
 
+namespace DX { class StepTimer; }
+
 namespace Scene
 {
+	void SceneObjectsStep(DX::StepTimer& timer);
 	void WriteConstantsBuffers();
 	void RenderSceneShadowMaps();
 	void RenderSceneObjects(size_t passHash, std::shared_ptr<Camera>& camera);

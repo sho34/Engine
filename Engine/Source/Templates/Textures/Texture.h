@@ -23,13 +23,14 @@ namespace Templates
 	{
 		inline static const std::string templateName = "textures.json";
 #if defined(_EDITOR)
-		void DrawEditorInformationAttributes(std::string uuid);
-		void DrawEditorAssetAttributes(std::string uuid);
+		bool DrawEditorInformationAttributes(std::string uuid);
+		bool DrawEditorAssetAttributes(std::string uuid);
 		void DrawEditorTexturePreview(std::string uuid);
 #endif
 	}
 
-	void CreateDDSFile(std::string uuid, std::filesystem::path path, DXGI_FORMAT format);
+	void CreateDDSFile(std::string uuid, std::filesystem::path path, bool overwrite, DXGI_FORMAT format, unsigned int width = 0, unsigned int height = 0, unsigned int mipLevels = 0);
+	void RebuildTexture(std::string uuid);
 	void CreateTexturesTemplatesFromMaterial(nlohmann::json json);
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format);
 
@@ -47,6 +48,7 @@ namespace Templates
 	struct TextureInstance
 	{
 		std::string materialTexture;
+		bool rebuildTexture = false;
 
 		//D3D12
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
@@ -58,10 +60,13 @@ namespace Templates
 
 		void Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
 		void CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
+		void ReleaseResources();
 	};
+	TEMPDECL_REFTRACKER(Texture);
 
 	std::map<TextureType, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureType, std::string>& textures);
 	std::shared_ptr<TextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
 	void DestroyTextureInstance(std::shared_ptr<TextureInstance>& texture);
+	void ReloadTextureInstances();
 };
 
