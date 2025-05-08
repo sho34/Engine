@@ -17,11 +17,7 @@ namespace Templates
 	};
 #endif
 
-	typedef std::tuple<
-		std::string, //name
-		nlohmann::json
-	> TextureTemplate;
-	TemplatesContainer<TextureTemplate>& GetTextureTemplates();
+	TEMPDECL_FULL(Texture);
 
 	namespace Texture
 	{
@@ -33,7 +29,6 @@ namespace Templates
 #endif
 	}
 
-	TEMPDECL_FULL(Texture);
 	void CreateDDSFile(std::string uuid, std::filesystem::path path, DXGI_FORMAT format);
 	void CreateTexturesTemplatesFromMaterial(nlohmann::json json);
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format);

@@ -14,13 +14,6 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace Templates
 {
-	//uuid to TextureTemplates
-	std::map<std::string, TextureTemplate> textures;
-	TemplatesContainer<TextureTemplate>& GetTextureTemplates()
-	{
-		return textures;
-	}
-
 	TEMPDEF_FULL(Texture);
 
 	void CreateDDSFile(std::string uuid, std::filesystem::path path, DXGI_FORMAT format)
@@ -121,7 +114,7 @@ namespace Templates
 		ImGui::TableSetColumnIndex(0);
 		std::string tableName = "shader-information-atts";
 
-		TextureTemplate& t = textures.at(uuid);
+		TextureTemplate& t = GetTextureTemplates().at(uuid);
 
 		std::string fileName = std::get<0>(t);
 		nlohmann::json& json = std::get<1>(t);

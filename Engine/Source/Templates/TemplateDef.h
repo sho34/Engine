@@ -1,3 +1,6 @@
+#define TEMPDEF_TUPLE(TemplateName) std::map<std::string, TemplateName##Template> templates
+
+#define TEMPDEF_GETTEMPLATES(TemplateName) TemplatesContainer<TemplateName##Template>& GetTextureTemplates() { return templates ; }
 
 #define TEMPDEF_CREATE(TemplateName) void Create##TemplateName(nlohmann::json json)\
 {\
@@ -35,6 +38,8 @@
 }
 
 #define TEMPDEF_FULL(TemplateName) \
+	TEMPDEF_TUPLE(TemplateName);\
+	TEMPDEF_GETTEMPLATES(TemplateName);\
 	TEMPDEF_CREATE(TemplateName);\
 	TEMPDEF_GET(TemplateName);\
 	TEMPDEF_GETUUIDNAMES(TemplateName);\
