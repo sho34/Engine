@@ -192,7 +192,7 @@ namespace Templates {
 		DestroyShaderBinary(pixelShader);
 		for (auto& [type, tex] : textures)
 		{
-			DestroyMaterialTextureInstance(tex);
+			DestroyTextureInstance(tex);
 		}
 		textures.clear();
 	}
@@ -482,6 +482,18 @@ namespace Templates {
 
 		assert(!!!"material not found");
 		return "";
+	}
+
+	void TransformJsonToMaterialTextures(std::map<TextureType, std::string>& textures, nlohmann::json object, const std::string& key) {
+
+		if (!object.contains(key)) return;
+
+		nlohmann::json jtextures = object[key];
+
+		for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
+		{
+			textures.insert_or_assign(strToTextureType.at(it.key()), it.value());
+		}
 	}
 
 	//EDITOR

@@ -282,6 +282,8 @@
     </ClInclude>
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameDecl.h" />
+    <ClInclude Include="Utils\Utils.h" />
+    <ClInclude Include="Utils\ImageConvert.h" />
     <ClInclude Include="pch\Command.h" />
     <ClInclude Include="pch\DDSTextures.h" />
     <ClInclude Include="pch\Debug.h" />
@@ -353,7 +355,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Templates\Material\MaterialTexture.h" />
     <ClInclude Include="pch\TemplateFlags.h" />
     <ClInclude Include="Templates\TemplateDecl.h" />
     <ClInclude Include="Templates\TemplateDef.h" />
@@ -507,6 +508,8 @@
       </ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="Utils\Utils.cpp" />
+    <ClCompile Include="Utils\ImageConvert.cpp" />
     <ClCompile Include="Scene\Renderable\RenderableBoundingBox.cpp" />
     <ClCompile Include="Renderer\VertexFormats.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
@@ -536,7 +539,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Templates\Material\MaterialTexture.cpp" />
     <ClCompile Include="Templates\Material\Variables.cpp" />
     <ClCompile Include="Templates\Templates.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">

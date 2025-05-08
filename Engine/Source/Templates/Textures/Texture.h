@@ -45,7 +45,6 @@ namespace Templates
 #if defined(_EDITOR)
 	void DrawTexturePanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	void CreateNewTexture();
-	void CreateDDSTexture(std::filesystem::path path);
 	void DeleteTexture(std::string uuid);
 	void DrawTexturesPopups();
 #endif
@@ -62,10 +61,12 @@ namespace Templates
 		CComPtr<ID3D12Resource> upload;
 		std::string textureName;
 
-		~TextureInstance() { Destroy(); }
-		void Load(std::string& texture);
-		void CreateTextureResource(std::filesystem::path path, DXGI_FORMAT format, unsigned int numFrames);
-		void Destroy();
+		void Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
+		void CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
 	};
+
+	std::map<TextureType, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureType, std::string>& textures);
+	std::shared_ptr<TextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
+	void DestroyTextureInstance(std::shared_ptr<TextureInstance>& texture);
 };
 

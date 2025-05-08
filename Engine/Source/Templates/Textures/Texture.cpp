@@ -8,6 +8,7 @@
 #include "../TemplateDef.h"
 #include "../../Renderer/Renderer.h"
 #include "../../Common/DirectXHelper.h"
+#include "../Utils/ImageConvert.h"
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -22,73 +23,6 @@ namespace Templates
 
 	TEMPDEF_FULL(Texture);
 
-	std::string GetUtilsPathX()
-	{
-		char* utilsPath;
-		size_t utilsPathLen;
-		_dupenv_s(&utilsPath, &utilsPathLen, "CULPEO_UTILS");
-
-		return std::string(utilsPath);
-	}
-
-	void GetImageAttributes(std::filesystem::path src, DXGI_FORMAT& format, unsigned int& width, unsigned int& height, unsigned int& mipLevels, unsigned int& numFrames)
-	{
-		using namespace raymii;
-
-		std::string cmdInfo = GetUtilsPathX() + "texdiag.exe info " + src.string();
-		CommandResult resultInfo = Command::exec(cmdInfo);
-
-		std::string text = resultInfo.output;
-		std::regex pattern("width = ([\\d]+)[\\w\\d\\n\\W]+height = ([\\d]+)[\\w\\d\\n\\W]+mipLevels = ([\\d]+)[\\w\\d\\n\\W]+arraySize = ([\\d]+)[\\w\\d\\n\\W]+format = ([\\w]+)");
-		std::smatch matches;
-
-		if (std::regex_search(text, matches, pattern))
-		{
-			width = std::stoi(matches[1]);
-			height = std::stoi(matches[2]);
-			mipLevels = std::stoi(matches[3]);
-			numFrames = std::stoi(matches[4]);
-			format = stringToDxgiFormat.at(matches[5]);
-		}
-		else
-		{
-			assert(!!!"no info found from image file");
-		}
-	}
-
-	void ConvertToDDS(std::filesystem::path image, std::filesystem::path dds, DXGI_FORMAT desiredFormat)
-	{
-		//DXGI_FORMAT format;
-		//unsigned int width;
-		//unsigned int height;
-		//unsigned int mipLevels;
-		//unsigned int numFrames;
-		//GetImageAttributes(image, format, width, height, mipLevels, numFrames);
-
-		/*
-		std::map<DXGI_FORMAT, DXGI_FORMAT> formatLUT = {
-			{ DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, DXGI_FORMAT_R8G8B8A8_UNORM }
-		};
-
-		if (formatLUT.contains(format))
-		{
-			format = formatLUT.at(format);
-		}
-		*/
-
-		using namespace raymii;
-
-		//get the format of the file
-		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdConv = GetUtilsPathX() + "texconv.exe " + image.string() + " -f " + dxgiFormatsToString.at(desiredFormat) + " -y";
-		CommandResult result = Command::exec(cmdConv);
-
-		std::filesystem::path ddsUpperCase = dds;
-		ddsUpperCase.replace_extension(".DDS");
-
-		std::filesystem::rename(ddsUpperCase, dds);
-	}
-
 	void CreateDDSFile(std::string uuid, std::filesystem::path path, DXGI_FORMAT format)
 	{
 		std::filesystem::path ddsPath = path;
@@ -98,6 +32,8 @@ namespace Templates
 		unsigned int height;
 		unsigned int mipLevels;
 		unsigned int numFrames;
+
+		using namespace Utils;
 
 		if (!std::filesystem::exists(ddsPath))
 		{
@@ -228,19 +164,18 @@ namespace Templates
 #endif
 
 	TEMPDEF_REFTRACKER(Texture);
-	void TextureInstance::Load(std::string& texture)
+
+	void TextureInstance::Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps)
 	{
+		using namespace Templates;
+		std::filesystem::path path = GetTextureName(texture);
+		path.replace_extension(".dds");
+		std::string pathS = path.string();
 		materialTexture = texture;
-
-		TextureTemplate& t = GetTextureTemplates().at(texture);
-		nlohmann::json& json = std::get<1>(t);
-
-		std::filesystem::path path = std::get<0>(t);
-		std::filesystem::path ddsPath = path; ddsPath.replace_extension(".dds");
-		CreateTextureResource(ddsPath, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"));
+		CreateTextureResource(pathS, format, numFrames, nMipMaps);
 	}
 
-	void TextureInstance::CreateTextureResource(std::filesystem::path path, DXGI_FORMAT format, unsigned int numFrames)
+	void TextureInstance::CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps)
 	{
 		using namespace DeviceUtils;
 
@@ -250,7 +185,7 @@ namespace Templates
 		//Load the dds file to a buffer using LoadDDSTextureFromFile
 		std::unique_ptr<uint8_t[]> ddsData;
 		std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-		DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, nostd::StringToWString(path.string()).c_str(), &texture, ddsData, subresources));
+		DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, nostd::StringToWString(path).c_str(), &texture, ddsData, subresources));
 
 		//get the ammount of memory required for the upload
 		auto uploadBufferSize = GetRequiredIntermediateSize(texture, 0, static_cast<unsigned int>(subresources.size()));
@@ -262,9 +197,6 @@ namespace Templates
 
 		//use to command list to copy the texture data from cpu to gpu space
 		UpdateSubresources(commandList, texture, upload, 0, 0, static_cast<unsigned int>(subresources.size()), subresources.data());
-
-		//calculate the mipmaps being aware of the array textures passed as numFrames
-		unsigned int nMipMaps = static_cast<unsigned int>(subresources.size()) / max(numFrames, 1U);
 
 		//put a barrier on the texture from a copy destination to a pixel shader resource
 		auto transition = CD3DX12_RESOURCE_BARRIER::Transition(texture, D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
@@ -298,8 +230,48 @@ namespace Templates
 		renderer->d3dDevice->CreateShaderResourceView(texture, &viewDesc, cpuHandle);
 	}
 
-	void TextureInstance::Destroy()
+	std::map<TextureType, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureType, std::string>& textures)
 	{
-		FreeCSUDescriptor(cpuHandle, gpuHandle);
+		std::map<TextureType, std::shared_ptr<TextureInstance>> texInstances;
+
+		std::transform(textures.begin(), textures.end(), std::inserter(texInstances, texInstances.end()), [](auto pair)
+			{
+				std::string& texture = pair.second;
+				using namespace Textures;
+				std::shared_ptr<TextureInstance> instance = refTracker.AddRef(texture, [&texture]()
+					{
+						using namespace Templates;
+						std::shared_ptr<TextureInstance> instance = std::make_shared<TextureInstance>();
+						nlohmann::json& json = GetTextureTemplate(texture);
+						instance->Load(texture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
+						return instance;
+					}
+				);
+				return std::pair<TextureType, std::shared_ptr<TextureInstance>>(pair.first, instance);
+			}
+		);
+
+		return texInstances;
 	}
+
+	std::shared_ptr<TextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+	{
+		using namespace Textures;
+		return refTracker.AddRef(texture, [texture, gpuHandle]()
+			{
+				std::shared_ptr<TextureInstance> instance = std::make_shared<TextureInstance>();
+				instance->textureName = texture;
+				instance->gpuHandle = gpuHandle;
+				return instance;
+			}
+		);
+	}
+
+	void DestroyTextureInstance(std::shared_ptr<TextureInstance>& texture)
+	{
+		using namespace Textures;
+		auto key = refTracker.FindKey(texture);
+		refTracker.RemoveRef(key, texture);
+	}
+
 }

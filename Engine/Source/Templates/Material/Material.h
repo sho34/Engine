@@ -4,7 +4,6 @@
 #include "../../Renderer/VertexFormats.h"
 #include "Variables.h"
 #include "SamplerDesc.h"
-#include "MaterialTexture.h"
 #include <tuple>
 #include <d3d12.h>
 #include <wrl/client.h>
@@ -13,7 +12,7 @@
 #include <imgui.h>
 #endif
 
-namespace Templates { struct MeshInstance; }
+namespace Templates { struct MeshInstance; struct TextureInstance; }
 namespace Scene { struct Renderable; }
 
 using namespace Scene;
@@ -60,7 +59,7 @@ namespace Templates {
 		std::shared_ptr<ShaderInstance> vertexShader;
 		std::shared_ptr<ShaderInstance> pixelShader;
 		std::vector<MaterialSamplerDesc> samplers;
-		std::map<TextureType, std::shared_ptr<MaterialTextureInstance>> textures;
+		std::map<TextureType, std::shared_ptr<TextureInstance>> textures;
 		unsigned int changesCounter = 0U;
 		std::vector<std::function<void()>> rebuildCallbacks;
 		std::vector<std::function<void()>> propagateMappedValueChanges;
@@ -96,6 +95,7 @@ namespace Templates {
 	std::string FindMaterialUUIDByName(std::string name);
 
 	//UPDATE
+	void TransformJsonToMaterialTextures(std::map<TextureType, std::string>& textures, nlohmann::json object, const std::string& key);
 
 	//DESTROY
 	void DestroyMaterial(std::string uuid);
