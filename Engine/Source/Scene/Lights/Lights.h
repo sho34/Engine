@@ -230,7 +230,6 @@ namespace Scene {
 		void ImDrawSpotShadowMap();
 		void ImDrawPointShadowMap();
 		void ImDrawShadowMapMinMaxChain();
-		//nlohmann::json json();
 #endif
 	};
 

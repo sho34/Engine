@@ -492,7 +492,7 @@ void EditorModeStep()
 	}
 	WriteRenderableBoundingBoxConstantsBuffer();
 
-	Editor::PickingStep(mouse);
+	Editor::GameAreaMouseProcessing(mouse, mainPassCamera);
 }
 
 void EditorModeRender()

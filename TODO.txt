@@ -1,9 +1,5 @@
 TODO:
--Hacer que el nivel cargado en el editor pueda ser navegado
-	-Eje fw de la cámara con el Wheel del mouse.
-	-rotar la cámara al hacer click izquierdo y mover el mouse
-	-Eje derecha de la cámara mover izq-derecha con click derecho y movimiento horizontal
-	-Eje arriba de la cámara mover arriba-abajo con click derecho y movimiento vertical 
+-Arreglar el crash de Windows resize/maximizar/minimizar
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
 	-Presets
 		-daylight
@@ -19,3 +15,9 @@ DONE:
 -add object picking
 -Calcular el BoundingBox de los modelos animados
 -add Gizmos https://github.com/CedricGuillemet/ImGuizmo
+-Hacer que el nivel cargado en el editor pueda ser navegado
+	-Eje fw de la cámara con el Wheel del mouse.
+	-rotar la cámara al hacer click izquierdo y mover el mouse
+	-Eje derecha de la cámara mover izq-derecha con click derecho y movimiento horizontal
+	-Eje arriba de la cámara mover arriba-abajo con click derecho y movimiento vertical 
+	-desabilitar movimiento/rotacion de camera si se esta interactuando con un gizmo

@@ -114,8 +114,11 @@ namespace Scene {
 		XMVECTOR CameraUp();
 
 		void ProcessKeyboardInput(DirectX::Keyboard::KeyboardStateTracker& tracker, DirectX::Keyboard::State& state);
+		void MoveAlongFwAxis(float dz);
+		void MovePerpendicularFwAxis(float dx, float dy);
+		void Rotate(float dx, float dy);
 		void ProcessGamepadInput(DirectX::GamePad::State& gamePadState, Vector2 gamePadCameraRotationSensitivity);
-		void ProcessMouseInput(DirectX::Mouse::State& mouseState, Vector2 mouseCameraRotationSensitivity);
+		void ProcessCameraMouseRotation(DirectX::Mouse::State& mouseState, Vector2 mouseCameraRotationSensitivity, bool firstStep);
 		void UpdateLightPosition();
 		void UdateLightRotation();
 		void MoveForward(float step);

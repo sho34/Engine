@@ -429,40 +429,6 @@ void AppStep() {
 
 void GameInputStep()
 {
-	/*
-#if defined(_EDITOR)
-	return;
-#endif
-	if (GetNumCameras() == 0) return;
-
-	//get the gamepad and keyboard states and update their trackers
-	auto keyboardState = keyboard->GetState();
-	keys.Update(keyboardState);
-	auto mouseState = mouse->GetState();
-	auto gamePadState = gamePad->GetState(0);
-	buttons.Update(gamePadState);
-
-	CameraPtr camera = GetCamera(currentCamera);
-
-	if (!gamePadState.IsConnected()) {
-
-		if (keys.pressed.PageDown) { currentCamera = (currentCamera + 1) % static_cast<UINT>(Scene::Camera::GetNumCameras()); }
-		if (keys.pressed.PageUp) { currentCamera = (currentCamera != 0) ? (currentCamera - 1) : (static_cast<UINT>(Scene::Camera::GetNumCameras()) - 1); }
-
-		//control the camera using the keyboard
-		camera->ProcessKeyboardInput(keys, keyboardState);
-		camera->ProcessMouseInput(mouseState, mouseCameraRotationSensitivity);
-
-	}
-	else
-	{
-		if (buttons.rightShoulder == GamePad::ButtonStateTracker::RELEASED) { currentCamera = (currentCamera + 1) % static_cast<UINT>(Scene::Camera::GetNumCameras()); }
-		if (buttons.leftShoulder == GamePad::ButtonStateTracker::RELEASED) { currentCamera = (currentCamera != 0) ? (currentCamera - 1) : (static_cast<UINT>(Scene::Camera::GetNumCameras()) - 1); }
-
-		camera->ProcessGamepadInput(gamePadState, gamePadCameraRotationSensitivity);
-
-	}
-	*/
 }
 
 void AnimableStep(double elapsedSeconds)

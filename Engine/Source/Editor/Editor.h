@@ -41,16 +41,23 @@ namespace Editor {
 	void DrawCreateWindow(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void(std::function<void()>)> drawContent);
 	void ImDrawMaterialShaderSelection(nlohmann::json& mat, std::string key, ShaderType type, std::function<void()> cb = [] {});
 
+	//MOUSE PROCESSING
+	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);
+	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera);
+
+	//OBJECT PICKING
 	void CreatePickingPass();
 	void DestroyPickingPass();
 	void MapPickingRenderables();
-	void PickingStep(std::unique_ptr<DirectX::Mouse>& mouse);
 	void RenderPickingPass(std::shared_ptr<Camera> camera);
 	void PickFromScene();
 	void PickSceneObject(unsigned int pickedObjectId);
-	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);
 	void ReleasePickingPassResources();
 	void ResizePickingPass(unsigned int width, unsigned int height);
+
+	//GIZMO INTERACTION
+
+	//CAMERA INTERACTION
 
 }
 #endif

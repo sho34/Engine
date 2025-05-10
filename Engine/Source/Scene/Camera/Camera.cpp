@@ -516,6 +516,29 @@ namespace Scene
 		}
 	}
 
+	void Camera::MoveAlongFwAxis(float dz)
+	{
+		XMVECTOR newPos = XMVectorAdd(positionV(), CameraFw() * dz);
+		position(*(XMFLOAT3*)newPos.m128_f32);
+		UpdateLightPosition();
+	}
+
+	void Camera::MovePerpendicularFwAxis(float dx, float dy)
+	{
+		XMVECTOR up = CameraUp();
+		XMVECTOR right = XMVector3Cross(CameraFw(), up);
+		XMVECTOR newPos = positionV();
+		newPos += up * dy;
+		newPos += right * dx;
+		position(*(XMFLOAT3*)newPos.m128_f32);
+	}
+
+	void Camera::Rotate(float dx, float dy)
+	{
+		rotation(rotation() - XMFLOAT3{ dx, dy, 0.0f });
+		UdateLightRotation();
+	}
+
 	void Camera::ProcessGamepadInput(DirectX::GamePad::State& gamePadState, Vector2 gamePadCameraRotationSensitivity)
 	{
 		if (light == nullptr || light->lightType() == LT_Spot || light->lightType() == LT_Point)
@@ -548,17 +571,22 @@ namespace Scene
 
 	int lastWheelValue = 0;
 	float wheelDiffFactor = 0.0001f;
-	void Camera::ProcessMouseInput(DirectX::Mouse::State& mouseState, Vector2 rotationSensitivity)
+	void Camera::ProcessCameraMouseRotation(DirectX::Mouse::State& mouseState, Vector2 rotationSensitivity, bool firstStep)
 	{
 		if (light == nullptr || light->lightType() == LT_Directional || light->lightType() == LT_Spot)
 		{
 			Vector2 mouseDiff = GetMouseDiff(mouseState);
+			mouseDiff = firstStep ? Vector2(0.0f, 0.0f) : mouseDiff;
 			rotation(rotation() - XMFLOAT3{ mouseDiff.x * rotationSensitivity.x, mouseDiff.y * rotationSensitivity.y, 0.0f });
 			UdateLightRotation();
 			if (light != nullptr && light->lightType() == LT_Directional)
 			{
 				float diff = static_cast<float>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
 				orthographic.expandView(diff);
+			}
+			else if (light == nullptr)
+			{
+				float diff = static_cast<float>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
 			}
 		}
 	}
