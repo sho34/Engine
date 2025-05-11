@@ -52,6 +52,7 @@ namespace Scene
 					l->shadowMapCameras[cameraIndex]->WriteConstantsBuffer(renderer->backBufferIndex);
 					for (auto& [name, r] : GetRenderables())
 					{
+						if (!r->castShadows()) continue;
 						r->RenderShadowMap(passHash, l, cameraIndex);
 					}
 				};
