@@ -435,6 +435,13 @@ namespace Scene {
 		lightsByUUID.clear();
 	}
 
+	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex)
+	{
+		size_t offset = lightsCbv->alignedConstantBufferSize * backbufferIndex;
+		LightPool* lpool = (LightPool*)(lightsCbv->mappedConstantBuffer + offset);
+		ZeroMemory(lpool, sizeof(LightPool));
+	}
+
 	//EDITOR
 
 #if defined(_EDITOR)

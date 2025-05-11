@@ -258,6 +258,8 @@ namespace Scene {
 	//DELETE
 	void DestroyLightsResources();
 	void DestroyLights();
+	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex);
+	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex);
 
 	//EDITOR
 #if defined(_EDITOR)

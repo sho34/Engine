@@ -31,7 +31,7 @@ namespace Scene {
 	//CREATE
 	void CreateShadowMapResources()
 	{
-		shadowMapsCbv = CreateConstantsBuffer(sizeof(LightAttributes) * MaxLights, "shadowMapsCbv");
+		shadowMapsCbv = CreateConstantsBuffer(sizeof(ShadowMapAttributes) * MaxLights, "shadowMapsCbv");
 
 		for (UINT i = 0; i < MaxLights; i++)
 		{
@@ -410,6 +410,14 @@ namespace Scene {
 		size_t offset = shadowMapsCbv->alignedConstantBufferSize * backbufferIndex;
 		offset += sizeof(ShadowMapAttributes) * shadowMapIndex;
 		memcpy(shadowMapsCbv->mappedConstantBuffer + offset, &atts, sizeof(atts));
+	}
+
+
+	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex)
+	{
+		size_t offset = shadowMapsCbv->alignedConstantBufferSize * backbufferIndex;
+		ShadowMapAttributes* atts = (ShadowMapAttributes*)(shadowMapsCbv->mappedConstantBuffer + offset);
+		ZeroMemory(atts, sizeof(ShadowMapAttributes) * MaxLights);
 	}
 
 	//DESTROY

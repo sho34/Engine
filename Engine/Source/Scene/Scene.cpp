@@ -84,6 +84,8 @@ namespace Scene
 			camera->WriteConstantsBuffer(backBufferIndex);
 
 			unsigned int lightIndex = 0U;
+			ResetConstantsBufferLightAttributes(backBufferIndex);
+			ResetConstantsBufferShadowMapAttributes(backBufferIndex);
 			for (auto l : GetLights())
 			{
 				UpdateConstantsBufferLightAttributes(l, backBufferIndex, lightIndex++, l->shadowMapIndex);
