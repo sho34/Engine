@@ -29,13 +29,17 @@ namespace DeviceUtils {
 
 		const CD3DX12_HEAP_PROPERTIES renderToTextureHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 		resourceDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, width, height, 1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET);
-
+		D3D12_CLEAR_VALUE clearValue =
+		{
+			.Format = format,
+			.Color = {0.0f, 0.0f, 0.0f, 1.0f }
+		};
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(
 			&renderToTextureHeapProperties,
 			D3D12_HEAP_FLAG_NONE,
 			&resourceDesc,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
-			nullptr,
+			&clearValue,
 			IID_PPV_ARGS(&renderToTexture)
 		));
 
