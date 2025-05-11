@@ -847,18 +847,15 @@ namespace Scene {
 				meshMaterials.at(mesh) = nullptr;
 
 				//destroy constants buffer
-				for (std::shared_ptr<ConstantsBuffer>& cbuffer : meshConstantsBuffer.at(mesh))
+				if (meshConstantsBuffer.contains(mesh))
 				{
-					DestroyConstantsBuffer(cbuffer);
+					for (std::shared_ptr<ConstantsBuffer>& cbuffer : meshConstantsBuffer.at(mesh))
+					{
+						DestroyConstantsBuffer(cbuffer);
+					}
+					meshConstantsBuffer.at(mesh).clear();
 				}
-				meshConstantsBuffer.at(mesh).clear();
 
-				//destroy root signature
-				//meshRootSignatures.at(mesh).Release();
-				//std::get<1>(meshHashedRootSignatures.at(mesh)).Release();
-
-				//destroy shader pipeline state
-				//std::get<1>(meshHashedPipelineStates.at(mesh)).Release();
 			}
 
 			if (meshShadowMapMaterials.contains(mesh))
@@ -869,17 +866,15 @@ namespace Scene {
 				meshShadowMapMaterials.at(mesh) = nullptr;
 
 				//destroy constants buffer
-				for (std::shared_ptr<ConstantsBuffer>& cbuffer : meshShadowMapConstantsBuffer.at(mesh))
+				if (meshShadowMapConstantsBuffer.contains(mesh))
 				{
-					DestroyConstantsBuffer(cbuffer);
+					for (std::shared_ptr<ConstantsBuffer>& cbuffer : meshShadowMapConstantsBuffer.at(mesh))
+					{
+						DestroyConstantsBuffer(cbuffer);
+					}
+					meshShadowMapConstantsBuffer.at(mesh).clear();
 				}
-				meshShadowMapConstantsBuffer.at(mesh).clear();
 
-				//destroy root signature
-				//std::get<1>(meshHashedShadowMapRootSignatures.at(mesh)).Release();
-
-				//destroy shader pipeline state
-				//std::get<1>(meshHashedShadowMapPipelineStates.at(mesh)).Release();
 			}
 		}
 	}
