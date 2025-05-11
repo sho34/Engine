@@ -48,6 +48,7 @@ namespace Templates {
 	struct MaterialInstance {
 		~MaterialInstance() { Destroy(); }
 		std::string material;
+		std::string instanceName;
 		std::map<TextureType, std::string> tupleTextures;
 		VertexClass vertexClass;
 		MaterialVariablesMapping variablesMapping;
@@ -85,7 +86,7 @@ namespace Templates {
 	//CREATE
 	void CreateMaterial(nlohmann::json json);
 	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureType, std::string>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
-	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, std::string>& textures, bool castShadows);
+	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, std::string>& textures, bool castShadows);
 
 	//READ&GET
 	nlohmann::json GetMaterialTemplate(std::string uuid);
