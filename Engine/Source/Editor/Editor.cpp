@@ -1034,7 +1034,7 @@ namespace Editor {
 		if (soTab != _SceneObjects::SO_Lights || selSO == "") return;
 
 		std::shared_ptr<Light> light = GetLight(selSO);
-		if (!light->hasShadowMaps()) return;
+		if (!light->hasShadowMaps() || light->shadowMapUpdateFlags) return;
 
 		light->RenderShadowMapMinMaxChain();
 	}
