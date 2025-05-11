@@ -151,6 +151,9 @@ namespace Scene {
 		void color(XMFLOAT3 f3);
 		void color(nlohmann::json f3);
 
+		float brightness();
+		void brightness(float brightness);
+
 		XMFLOAT3 attenuation();
 		void attenuation(XMFLOAT3 f3);
 		void attenuation(nlohmann::json f3);

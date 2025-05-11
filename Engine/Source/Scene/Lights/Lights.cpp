@@ -50,6 +50,7 @@ namespace Scene {
 		SetIfMissingJson(light->json, "position", XMFLOAT3(0.0f, 0.0f, 0.0f));
 		SetIfMissingJson(light->json, "attenuation", XMFLOAT3(0.0f, 0.01f, 0.02f));
 		SetIfMissingJson(light->json, "color", XMFLOAT3(1.0f, 1.0f, 1.0f));
+		SetIfMissingJson(light->json, "brightness", 1.0f);
 		SetIfMissingJson(light->json, "rotation", XMFLOAT3(0.0f, 0.0f, 0.0f));
 		SetIfMissingJson(light->json, "coneAngle", XM_PIDIV4);
 
@@ -165,6 +166,16 @@ namespace Scene {
 		json.at("color") = f3;
 	}
 
+	float Light::brightness()
+	{
+		return json.at("brightness");
+	}
+
+	void Light::brightness(float brightness)
+	{
+		json.at("brightness") = brightness;
+	}
+
 	XMFLOAT3 Light::attenuation()
 	{
 		return XMFLOAT3(json.at("attenuation").at(0), json.at("attenuation").at(1), json.at("attenuation").at(2));
@@ -249,6 +260,7 @@ namespace Scene {
 
 		if (lightsToDestroy.size() > 0ULL)
 		{
+			renderer->Flush();
 			renderer->RenderCriticalFrame([]
 				{
 					for (auto& l : lightsToDestroy)
@@ -271,48 +283,47 @@ namespace Scene {
 			);
 		}
 
+		bool criticalFrame = false;
 		for (auto& light : GetLights())
 		{
 			if (light->shadowMapUpdateFlags & ShadowMapUpdateFlags_DestroyShadowMap)
 			{
 				lightsToDestroyShadowMaps.push_back(light);
+				criticalFrame |= true;
 			}
 			if (light->shadowMapUpdateFlags & ShadowMapUpdateFlags_DestroyShadowMapMinMaxChain)
 			{
 				lightsToDestroyShadowMapsMinMaxChain.push_back(light);
+				criticalFrame |= true;
 			}
 			if (light->shadowMapUpdateFlags & ShadowMapUpdateFlags_CreateShadowMap)
 			{
 				lightsToCreateShadowMaps.push_back(light);
+				criticalFrame |= true;
 			}
 			if (light->shadowMapUpdateFlags & ShadowMapUpdateFlags_CreateShadowMapMinMaxChain)
 			{
 				lightsToCreateShadowMapsMinMaxChain.push_back(light);
+				criticalFrame |= true;
 			}
 		}
 
-		if (lightsToDestroyShadowMaps.size() > 0ULL || lightsToDestroyShadowMapsMinMaxChain.size() > 0ULL)
+		if (criticalFrame)
 		{
 			renderer->Flush();
-			{
-				for (auto& light : lightsToDestroyShadowMapsMinMaxChain)
+			renderer->RenderCriticalFrame([&lightsToDestroyShadowMapsMinMaxChain, &lightsToDestroyShadowMaps, &lightsToCreateShadowMaps, &lightsToCreateShadowMapsMinMaxChain]
 				{
-					light->DestroyShadowMapMinMaxChain();
-					light->shadowMapUpdateFlags &= ~ShadowMapUpdateFlags_DestroyShadowMapMinMaxChain;
-				}
+					for (auto& light : lightsToDestroyShadowMapsMinMaxChain)
+					{
+						light->DestroyShadowMapMinMaxChain();
+						light->shadowMapUpdateFlags &= ~ShadowMapUpdateFlags_DestroyShadowMapMinMaxChain;
+					}
 
-				for (auto& light : lightsToDestroyShadowMaps)
-				{
-					light->DestroyShadowMap();
-					light->shadowMapUpdateFlags &= ~ShadowMapUpdateFlags_DestroyShadowMap;
-				}
-			}
-		}
-
-		if (lightsToCreateShadowMaps.size() > 0ULL || lightsToCreateShadowMapsMinMaxChain.size() > 0ULL)
-		{
-			renderer->RenderCriticalFrame([&lightsToCreateShadowMaps, &lightsToCreateShadowMapsMinMaxChain]
-				{
+					for (auto& light : lightsToDestroyShadowMaps)
+					{
+						light->DestroyShadowMap();
+						light->shadowMapUpdateFlags &= ~ShadowMapUpdateFlags_DestroyShadowMap;
+					}
 					for (auto& light : lightsToCreateShadowMaps)
 					{
 						light->CreateShadowMap();
@@ -327,7 +338,6 @@ namespace Scene {
 				}
 			);
 		}
-
 #endif
 	}
 
@@ -348,13 +358,13 @@ namespace Scene {
 		{
 		case LT_Ambient:
 		{
-			atts.lightColor = light->color();
+			atts.lightColor = light->color() * light->brightness();
 		}
 		break;
 		case LT_Directional:
 		{
 			XMFLOAT3 rot = light->rotation();
-			atts.lightColor = light->color();
+			atts.lightColor = light->color() * light->brightness();
 			atts.atts1 = {
 				sinf(rot.x) * cosf(rot.y),
 				sinf(rot.y),
@@ -370,7 +380,7 @@ namespace Scene {
 			XMFLOAT3 pos = light->position();
 			XMFLOAT3 rot = light->rotation();
 			XMFLOAT3 atte = light->attenuation();
-			atts.lightColor = light->color();
+			atts.lightColor = light->color() * light->brightness();
 			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
 			atts.atts2 = {
 				sinf(rot.x) * cosf(rot.y),
@@ -387,7 +397,7 @@ namespace Scene {
 		{
 			XMFLOAT3 pos = light->position();
 			XMFLOAT3 atte = light->attenuation();
-			atts.lightColor = light->color();
+			atts.lightColor = light->color() * light->brightness();
 			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
 			atts.atts2 = { atte.x, atte.y, atte.z, 0.0f };
 			atts.hasShadowMap = light->hasShadowMaps();
@@ -457,6 +467,13 @@ namespace Scene {
 				color(col);
 			}
 		);
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		float bright = brightness();
+		if (ImGui::InputFloat("Brightness", &bright))
+		{
+			brightness(bright);
+		}
 	}
 
 	void Light::DrawDirectionalLightPanel()
@@ -470,6 +487,14 @@ namespace Scene {
 				color(col);
 			}
 		);
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		float bright = brightness();
+		if (ImGui::InputFloat("Brightness", &bright))
+		{
+			brightness(bright);
+		}
 
 		XMFLOAT3 rot3 = rotation();
 		XMFLOAT2 rot2 = { rot3.x, rot3.y };
@@ -499,6 +524,14 @@ namespace Scene {
 				color(col);
 			}
 		);
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		float bright = brightness();
+		if (ImGui::InputFloat("Brightness", &bright))
+		{
+			brightness(bright);
+		}
 
 		XMFLOAT3 pos = position();
 		ImDrawFloatValues<XMFLOAT3>("light-spot-position", { "x","y","z" }, pos, [this](XMFLOAT3 pos)
@@ -556,6 +589,14 @@ namespace Scene {
 				color(col);
 			}
 		);
+
+		ImGui::TableNextRow();
+		ImGui::TableSetColumnIndex(0);
+		float bright = brightness();
+		if (ImGui::InputFloat("Brightness", &bright))
+		{
+			brightness(bright);
+		}
 
 		XMFLOAT3 pos = position();
 		ImDrawFloatValues<XMFLOAT3>("light-point-position", { "x","y","z" }, pos, [this](XMFLOAT3 pos)
