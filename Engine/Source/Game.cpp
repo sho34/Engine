@@ -422,6 +422,7 @@ void EditorModeCreate()
 			//LoadLevel("knight");
 			//LoadLevel("spartan");
 			LoadLevel("family");
+			//LoadLevel("venom");
 
 			mainPass = CreateMainPass();
 			Editor::CreatePickingPass();
@@ -457,6 +458,12 @@ void EditorModeCreate()
 
 			std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
 			toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
+
+			toneMapQuad->onMaterialsRebuilt = []()
+				{
+					std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
+					toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
+				};
 
 			CreateRenderableBoundingBox();
 		}

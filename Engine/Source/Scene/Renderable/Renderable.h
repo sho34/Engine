@@ -135,6 +135,7 @@ namespace Scene
 		std::string meshSwap;
 		std::vector<unsigned int> materialToChangeMeshIndex;
 		std::vector<std::string> materialToRebuild;
+		std::function<void()> onMaterialsRebuilt = nullptr;
 
 		void CreatePickingComponents(size_t passHash, std::string pickingMaterialUUID);
 		MeshMaterialMap pickingMeshMaterials;

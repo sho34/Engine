@@ -381,6 +381,7 @@ namespace Scene {
 #if defined(_EDITOR)
 	void Renderable::BindChangesToMaterial(unsigned int meshIndex)
 	{
+		std::shared_ptr<MaterialInstance> matInstance = meshMaterials.at(meshes.at(meshIndex));
 		std::string materialName = meshMaterials.at(meshes.at(meshIndex))->material;
 
 		//rebuild material instance
@@ -909,6 +910,7 @@ namespace Scene {
 		materialToChangeMeshIndex.clear();
 
 		renderableUpdateFlags &= ~RenderableFlags_RebuildMaterials;
+		if (onMaterialsRebuilt) onMaterialsRebuilt();
 	}
 
 	void Renderable::CleanMeshes()
