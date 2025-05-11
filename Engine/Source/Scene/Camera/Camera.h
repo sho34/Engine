@@ -55,8 +55,9 @@ namespace Scene {
 
 	struct CameraAttributes {
 		XMMATRIX viewProjection;
-		XMFLOAT3 eyePosition;
-		XMFLOAT3 eyeForward;
+		XMFLOAT4 eyePosition;
+		XMFLOAT4 eyeForward;
+		float exposure;
 	};
 
 	struct Camera
@@ -97,6 +98,9 @@ namespace Scene {
 		XMFLOAT3 rotation();
 		void rotation(XMFLOAT3 f3);
 		void rotation(nlohmann::json f3);
+
+		float exposure();
+		void exposure(float f);
 
 		bool hidden() { return false; }
 

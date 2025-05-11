@@ -523,7 +523,7 @@ void EditorModeRender()
 		resolvePass->Pass([](size_t passHash)
 			{
 				toneMapQuad->visible(true);
-				toneMapQuad->Render(passHash);
+				toneMapQuad->Render(passHash, mainPassCamera);
 				toneMapQuad->visible(false);
 				DrawEditor(mainPassCamera);
 			}

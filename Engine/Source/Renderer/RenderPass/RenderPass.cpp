@@ -79,6 +79,10 @@ namespace RenderPass {
 		auto backBuffer = renderTargets[backBufferIndex];
 		auto commandList = renderer->commandList;
 
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(commandList.p, 0, name.c_str());
+#endif
+
 		//transition the back buffer from present to render target so it's allowed to draw
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 		commandList->ResourceBarrier(1, &barrier);
@@ -135,6 +139,10 @@ namespace RenderPass {
 		auto commandList = renderer->commandList;
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 		commandList->ResourceBarrier(1, &barrier);
+
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(commandList.p);
+#endif
 	}
 
 	void SwapChainPass::ReleaseResources()
@@ -236,6 +244,9 @@ namespace RenderPass {
 	void RenderToTexturePass::BeginRenderPass(XMVECTORF32 clearColor)
 	{
 		auto commandList = renderer->commandList;
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(commandList.p, 0, name.c_str());
+#endif
 
 		//transition the texture resources from pixel shader resource to render target
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
@@ -284,6 +295,9 @@ namespace RenderPass {
 		{
 			commandList->ResourceBarrier(static_cast<unsigned int>(barriers.size()), barriers.data());
 		}
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(commandList.p);
+#endif
 	}
 
 	void RenderToTexturePass::Destroy()

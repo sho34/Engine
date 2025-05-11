@@ -96,6 +96,7 @@ namespace Scene
 		SetIfMissingJson(camera->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 		SetIfMissingJson(camera->json, "rotation", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 		SetIfMissingJson(camera->json, "speed", 0.05f);
+		SetIfMissingJson(camera->json, "exposure", 1.0f);
 
 		if (cameraj.contains("light"))
 		{
@@ -420,6 +421,16 @@ namespace Scene
 		json.at("rotation") = f3;
 	}
 
+	float Camera::exposure()
+	{
+		return json.at("exposure");
+	}
+
+	void Camera::exposure(float f)
+	{
+		json.at("exposure") = f;
+	}
+
 	void Camera::Destroy()
 	{
 		DestroyConstantsBuffer(cameraCbv);
@@ -442,8 +453,12 @@ namespace Scene
 			atts.viewProjection = XMMatrixMultiply(ViewMatrix(), perspective.projectionMatrix);
 		}
 
-		atts.eyePosition = position();
-		atts.eyeForward = { *((XMFLOAT3*)CameraFw().m128_f32) };
+		XMFLOAT3 pos = position();
+		XMVECTOR fw = CameraFw();
+
+		atts.eyePosition = { pos.x, pos.y, pos.z, 0.0f };
+		atts.eyeForward = *(XMFLOAT4*)&fw.m128_f32;
+		atts.exposure = exposure();
 
 		memcpy(cameraCbv->mappedConstantBuffer + cameraCbv->alignedConstantBufferSize * backbufferIndex, &atts, sizeof(atts));
 	}
@@ -863,6 +878,12 @@ namespace Scene
 				ImGui::PopID();
 				ImGui::EndTable();
 			}
+		}
+
+		float expos = exposure();
+		if (ImGui::InputFloat("exposure", &expos))
+		{
+			exposure(expos);
 		}
 	}
 #endif
