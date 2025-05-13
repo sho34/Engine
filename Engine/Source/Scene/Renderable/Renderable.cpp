@@ -977,7 +977,6 @@ namespace Scene {
 		if (boundingBoxCompute != nullptr)
 		{
 			using namespace ComputeShader;
-			boundingBoxCompute->renderable = nullptr;
 			UnregisterComputation(boundingBoxCompute);
 			boundingBoxCompute = nullptr;
 		}
@@ -1897,7 +1896,6 @@ namespace Scene {
 		if (animables.contains(renderable->uuid())) animables.erase(renderable->uuid());
 		if (renderable->boundingBoxCompute)
 		{
-			renderable->boundingBoxCompute->renderable = nullptr;
 			UnregisterComputation(renderable->boundingBoxCompute);
 			renderable->boundingBoxCompute = nullptr;
 		}

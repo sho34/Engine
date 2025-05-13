@@ -10,7 +10,8 @@ namespace ComputeShader
 {
 	RenderableBoundingBox::RenderableBoundingBox(std::shared_ptr<Renderable> r) : ComputeInterface("BoundingBox_cs")
 	{
-		renderable = r;
+		using namespace Animation;
+		bonesCbv = GetAnimatedConstantsBuffer(r);
 
 		auto createComputeResource = [this](size_t numResources)
 			{
@@ -88,6 +89,7 @@ namespace ComputeShader
 
 	RenderableBoundingBox::~RenderableBoundingBox()
 	{
+		bonesCbv = nullptr;
 		resources.clear();
 		readBackResources.clear();
 		constantsBuffers.clear();
@@ -106,9 +108,6 @@ namespace ComputeShader
 		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
 
 		shader.SetComputeState();
-
-		using namespace Animation;
-		auto bonesCbv = GetAnimatedConstantsBuffer(renderable);
 
 		//0 : the number of vertices
 		//1 : UAV for the bones transformation <- as all the meshes shares the same matrices we can just set once

@@ -18,7 +18,7 @@ namespace ComputeShader
 
 	struct RenderableBoundingBox : public ComputeInterface
 	{
-		std::shared_ptr<Renderable> renderable;
+		std::shared_ptr<ConstantsBuffer> bonesCbv;
 		BoundingBox boundingBox;
 
 		//Animable/Compute Shader stuff
