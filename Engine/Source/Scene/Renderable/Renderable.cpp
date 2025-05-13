@@ -32,12 +32,18 @@
 
 extern std::mutex rendererMutex;
 extern std::shared_ptr<Renderer> renderer;
+
 #if defined(_EDITOR)
 namespace Editor {
 	extern _Templates tempTab;
 	extern std::string selTemp;
 }
 #endif
+
+namespace ComputeShader {
+	extern void RegisterComputation(std::shared_ptr<ComputeInterface>);
+	extern void UnregisterComputation(std::shared_ptr<ComputeInterface>);
+}
 
 namespace Scene {
 	//NAMESPACE VARIABLES
@@ -178,8 +184,6 @@ namespace Scene {
 			renderable->CreateFromModel3D(renderablej["model"]);
 		}
 
-		renderable->boundingBox.Init(renderable);
-
 		renderable->CreateMeshesComponents();
 
 		renderables.insert_or_assign(renderable->uuid(), renderable);
@@ -206,6 +210,9 @@ namespace Scene {
 			AttachAnimation(this_ptr, model->animations);
 			animables.insert_or_assign(uuid(), this_ptr);
 			StepAnimation(0.0f);
+			boundingBoxCompute = std::make_shared<RenderableBoundingBox>(this_ptr);
+			using namespace ComputeShader;
+			RegisterComputation(boundingBoxCompute);
 		}
 
 #if defined(_EDITOR)
@@ -698,7 +705,12 @@ namespace Scene {
 
 	void Renderable::CreateBoundingBox()
 	{
-		boundingBox.CreateDXBoundingBox();
+		bool extend = false;
+		for (auto& mesh : meshes)
+		{
+			mesh->ExtendBoundingBox(boundingBox, extend);
+			extend = true;
+		}
 	}
 
 	std::shared_ptr<Renderable> GetRenderable(std::string uuid)
@@ -732,7 +744,15 @@ namespace Scene {
 
 	void Renderable::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
-		boundingBox.FillRenderableBoundingBox(bbox);
+		BoundingBox bb = animable ? boundingBoxCompute->boundingBox : boundingBox;
+		XMVECTOR pv = { bb.Center.x, bb.Center.y, bb.Center.z };
+		XMFLOAT3 rotV = rotation();
+		XMVECTOR rot = XMQuaternionRotationRollPitchYaw(rotV.x, rotV.y, rotV.z);
+		pv = XMVector3Rotate(pv, rot);
+		XMFLOAT3 boxP = { pv.m128_f32[0],pv.m128_f32[1],pv.m128_f32[2] };
+		bbox->position(boxP * scale() + position());
+		bbox->scale(bb.Extents * scale());
+		bbox->rotation(rotV);
 	}
 
 	//UPDATE
@@ -954,9 +974,12 @@ namespace Scene {
 		{
 			animables.erase(name());
 		}
-		if (animable != nullptr)
+		if (boundingBoxCompute != nullptr)
 		{
-			boundingBox.Destroy();
+			using namespace ComputeShader;
+			boundingBoxCompute->renderable = nullptr;
+			UnregisterComputation(boundingBoxCompute);
+			boundingBoxCompute = nullptr;
 		}
 		animable = nullptr;
 		bonesTransformation.clear();
@@ -1079,15 +1102,6 @@ namespace Scene {
 		TraverseMultiplycationQueue(currentAnimationTime, currentAnimation, animable->animations, bonesTransformation);
 	}
 
-	void Renderable::ComputeBoundingBox()
-	{
-		boundingBox.ComputeBoundingBox();
-	}
-
-	void Renderable::BoundingBoxSolution()
-	{
-		boundingBox.SolveDXBoundingBox();
-	}
 
 	//DESTROY
 	void Renderable::Destroy()
@@ -1881,7 +1895,12 @@ namespace Scene {
 #endif
 		if (renderables.contains(renderable->uuid())) renderables.erase(renderable->uuid());
 		if (animables.contains(renderable->uuid())) animables.erase(renderable->uuid());
-		renderable->boundingBox.Destroy();
+		if (renderable->boundingBoxCompute)
+		{
+			renderable->boundingBoxCompute->renderable = nullptr;
+			UnregisterComputation(renderable->boundingBoxCompute);
+			renderable->boundingBoxCompute = nullptr;
+		}
 		renderable->this_ptr = nullptr;
 		renderable = nullptr;
 	}

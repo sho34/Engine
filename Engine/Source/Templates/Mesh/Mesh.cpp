@@ -107,4 +107,26 @@ namespace Templates {
 	{
 	}
 #endif
+
+	void MeshInstance::CreateVerticesShaderResourceView(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
+	{
+		AllocCSUDescriptor(cpuHandle, gpuHandle);
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{
+			.Format = DXGI_FORMAT_UNKNOWN, .ViewDimension = D3D12_SRV_DIMENSION_BUFFER,
+			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING, .Buffer = {
+				.FirstElement = 0, .NumElements = vbvData.vertexBufferView.SizeInBytes / vbvData.vertexBufferView.StrideInBytes,
+				.StructureByteStride = vbvData.vertexBufferView.StrideInBytes, .Flags = D3D12_BUFFER_SRV_FLAG_NONE
+			}
+		};
+
+		renderer->d3dDevice->CreateShaderResourceView(vbvData.vertexBuffer, &srvDesc, cpuHandle);
+	}
+
+	void MeshInstance::ExtendBoundingBox(BoundingBox& outBB, bool extend)
+	{
+		BoundingBox out;
+		BoundingBox::CreateMerged(out, extend ? outBB : boundingBox, boundingBox);
+		outBB = out;
+	}
 };

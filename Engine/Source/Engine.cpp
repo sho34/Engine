@@ -450,23 +450,34 @@ void AudioStep()
 	SoundEffectsStep();
 }
 
-void RunComputeShaders()
+namespace ComputeShader
 {
-	for (auto& [uuid, renderable] : GetRenderables())
-	{
-		if (!renderable->visible() || renderable->hidden() || !renderable->animable) continue;
+	std::set<std::shared_ptr<ComputeInterface>> computes;
 
-		renderable->ComputeBoundingBox();
+	void RegisterComputation(std::shared_ptr<ComputeInterface> compute)
+	{
+		computes.insert(compute);
 	}
-}
 
-void ComputeShaderResolution()
-{
-	for (auto& [uuid, renderable] : GetRenderables())
+	void UnregisterComputation(std::shared_ptr<ComputeInterface> compute)
 	{
-		if (!renderable->visible() || renderable->hidden() || !renderable->animable) continue;
+		computes.erase(compute);
+	}
 
-		renderable->BoundingBoxSolution();
+	void RunComputeShaders()
+	{
+		for (auto& compute : computes)
+		{
+			compute->Compute();
+		}
+	}
+
+	void ComputeShaderSolution()
+	{
+		for (auto& compute : computes)
+		{
+			compute->Solution();
+		}
 	}
 }
 
@@ -479,7 +490,7 @@ void Render()
 
 	RunComputeShaders();
 	RunRender();
-	ComputeShaderResolution();
+	ComputeShaderSolution();
 
 	renderer->ExecuteCommands();
 	renderer->Present();

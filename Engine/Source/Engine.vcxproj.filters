@@ -261,7 +261,7 @@
     <ClInclude Include="pch\UUID.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Renderable\RenderableBoundingBox.h">
+    <ClInclude Include="Shaders\Compute\RenderableBoundingBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Templates\Textures\Texture.h">
@@ -277,6 +277,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Utils\Utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compute\ComputeShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compute\AverageLuminance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compute\ComputeInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -395,7 +404,7 @@
     <ClCompile Include="Templates\Material\Variables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Renderable\RenderableBoundingBox.cpp">
+    <ClCompile Include="Shaders\Compute\RenderableBoundingBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Templates\Textures\Texture.cpp">
@@ -405,6 +414,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Compute\ComputeShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Compute\AverageLuminance.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

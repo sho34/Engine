@@ -268,6 +268,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Shaders\Compute\ComputeInterface.h" />
+    <ClInclude Include="Shaders\Compute\AverageLuminance.h" />
+    <ClInclude Include="Shaders\Compute\ComputeShader.h" />
     <ClInclude Include="Effects\Effects.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
@@ -289,7 +292,7 @@
     <ClInclude Include="pch\Debug.h" />
     <ClInclude Include="pch\ShaderMaterials.h" />
     <ClInclude Include="pch\UUID.h" />
-    <ClInclude Include="Scene\Renderable\RenderableBoundingBox.h" />
+    <ClInclude Include="Shaders\Compute\RenderableBoundingBox.h" />
     <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />
     <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h" />
     <ClInclude Include="pch\DXTypes.h" />
@@ -495,6 +498,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Shaders\Compute\AverageLuminance.cpp" />
+    <ClCompile Include="Shaders\Compute\ComputeShader.cpp" />
     <ClCompile Include="Effects\Effects.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
@@ -510,7 +515,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Utils\Utils.cpp" />
     <ClCompile Include="Utils\ImageConvert.cpp" />
-    <ClCompile Include="Scene\Renderable\RenderableBoundingBox.cpp" />
+    <ClCompile Include="Shaders\Compute\RenderableBoundingBox.cpp" />
     <ClCompile Include="Renderer\VertexFormats.cpp" />
     <ClCompile Include="Scene\Scene.cpp" />
     <ClCompile Include="Shaders\Compiler\CustomIncludeHandler.cpp" />

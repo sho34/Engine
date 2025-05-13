@@ -5,6 +5,7 @@
 #if defined(_DEVELOPMENT)
 #include "Shaders/Compiler/ShaderCompiler.h"
 #endif
+#include "Shaders/Compute/ComputeInterface.h"
 #include "Common/StepTimer.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/DeviceUtils/Resources/Resources.h"
@@ -45,8 +46,14 @@ void GameInputStep();
 void AnimableStep(double elapsedSeconds);
 void AudioStep();
 void CameraStep();
-void RunComputeShaders();
-void ComputeShaderResolution();
+
+namespace ComputeShader
+{
+	void RegisterComputation(std::shared_ptr<ComputeInterface> compute);
+	void UnregisterComputation(std::shared_ptr<ComputeInterface> compute);
+	void RunComputeShaders();
+	void ComputeShaderSolution();
+};
 
 //RENDER
 void Render();

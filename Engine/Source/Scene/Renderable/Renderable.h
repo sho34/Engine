@@ -3,7 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <DirectXCollision.h>
-#include "RenderableBoundingBox.h"
+#include "../Shaders/Compute/RenderableBoundingBox.h"
 #include "../../Templates/Model3D/Model3D.h"
 #include "../../Templates/Mesh/Mesh.h"
 #include "../../Templates/Material/Material.h"
@@ -11,10 +11,12 @@
 #include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
 
 namespace Scene { struct Camera; struct Light; };
+namespace ComputeShader { struct RenderableBoundingBox; };
 namespace Scene
 {
 	using namespace Templates;
 	using namespace DeviceUtils;
+	using namespace ComputeShader;
 
 #if defined(_EDITOR)
 	enum RenderableFlags
@@ -124,7 +126,8 @@ namespace Scene
 		float animationTimeFactor = 1.0f;
 		bool playingAnimation = false;
 
-		RenderableBoundingBox boundingBox;
+		BoundingBox boundingBox;
+		std::shared_ptr<RenderableBoundingBox> boundingBoxCompute; //used for animables
 
 #if defined(_EDITOR)
 		static nlohmann::json creationJson;
@@ -239,8 +242,6 @@ namespace Scene
 		void WriteShadowMapConstantsBuffer(unsigned int backbufferIndex);
 		void SetCurrentAnimation(std::string animation, float animationTime = 0.0f, float timeFactor = 1.0f, bool autoPlay = true);
 		void StepAnimation(double elapsedSeconds);
-		void ComputeBoundingBox();
-		void BoundingBoxSolution();
 
 		//DESTROY
 		void Destroy();
@@ -260,7 +261,6 @@ namespace Scene
 
 		//EDITOR
 #if defined(_EDITOR)
-		//nlohmann::json json();
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorAnimationAttributes();

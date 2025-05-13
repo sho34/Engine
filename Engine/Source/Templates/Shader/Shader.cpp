@@ -775,6 +775,7 @@ namespace Templates {
 	//DELETE
 	void DestroyShaderBinary(std::shared_ptr<ShaderInstance>& shaderBinary)
 	{
+		if (shaderBinary == nullptr) return;
 		using namespace Shader;
 		Source key = refTracker.FindKey(shaderBinary);
 		refTracker.RemoveRef(key, shaderBinary);
