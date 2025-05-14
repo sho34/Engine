@@ -50,6 +50,8 @@ namespace Scene {
 		SOUND_EFFECT_INSTANCE_FLAGS instanceFlags();
 		void instanceFlags(SOUND_EFFECT_INSTANCE_FLAGS instanceFlags);
 
+		XMMATRIX world();
+
 		std::unique_ptr<DirectX::SoundEffectInstance> soundEffectInstance;
 
 		void DetachSoundEffectTemplate();

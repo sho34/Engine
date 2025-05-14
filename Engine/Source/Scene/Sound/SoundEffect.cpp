@@ -144,6 +144,16 @@ namespace Scene {
 		json.at("instanceFlags") = static_cast<int>(instanceFlags);
 	}
 
+	XMMATRIX SoundEffect::world()
+	{
+		XMFLOAT3 posV = position();
+		//XMFLOAT3 rotV = rotation();
+		//XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
+		return positionM;
+		//return XMMatrixMultiply(rotationM, positionM);
+	}
+
 	void SoundEffect::DetachSoundEffectTemplate()
 	{
 		sound("");

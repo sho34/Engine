@@ -908,10 +908,106 @@ namespace Editor {
 
 	void DrawCameraGuizmo(std::shared_ptr<Camera> camera)
 	{
+		std::shared_ptr<Camera> cam = GetCamera(selSO);
+
+		XMFLOAT4X4 world;
+		XMFLOAT4X4 view;
+		XMFLOAT4X4 proj;
+		XMStoreFloat4x4(&world, cam->world());
+		XMStoreFloat4x4(&view, camera->ViewMatrix());
+		XMStoreFloat4x4(&proj, camera->perspective.projectionMatrix);
+
+		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
+		{
+			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_R)) // r key
+		{
+			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+		}
+
+		XMFLOAT4X4 delta;
+		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *world.m, *delta.m, NULL, NULL, NULL);
+
+		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
+		XMVECTOR XMtranslation;
+		XMVECTOR XMrotation;
+		XMVECTOR XMscale;
+		XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
+
+		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
+		{
+			XMFLOAT3 newPos = cam->position();
+			newPos.x += XMtranslation.m128_f32[0];
+			newPos.y += XMtranslation.m128_f32[1];
+			newPos.z += XMtranslation.m128_f32[2];
+			cam->position(newPos);
+		}
+		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
+		{
+			XMFLOAT3 newRot = cam->rotation();
+			XMFLOAT3 rotDelta = GetYawPitchRoll(delta);
+			newRot.x += rotDelta.x;
+			newRot.y += rotDelta.y;
+			newRot.z += rotDelta.z;
+			cam->rotation(newRot);
+		}
 	}
 
 	void DrawSoundGuizmo(std::shared_ptr<Camera> camera)
 	{
+		std::shared_ptr<Scene::SoundEffect> sound = GetSoundEffect(selSO);
+
+		XMFLOAT4X4 world;
+		XMFLOAT4X4 view;
+		XMFLOAT4X4 proj;
+		XMStoreFloat4x4(&world, sound->world());
+		XMStoreFloat4x4(&view, camera->ViewMatrix());
+		XMStoreFloat4x4(&proj, camera->perspective.projectionMatrix);
+
+		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
+		{
+			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+		}
+		/*
+		if (ImGui::IsKeyPressed(ImGuiKey_R)) // r key
+		{
+			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+		}
+		*/
+
+		XMFLOAT4X4 delta;
+		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *world.m, *delta.m, NULL, NULL, NULL);
+
+		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
+		XMVECTOR XMtranslation;
+		XMVECTOR XMrotation;
+		XMVECTOR XMscale;
+		XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
+
+		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
+		{
+			XMFLOAT3 newPos = sound->position();
+			newPos.x += XMtranslation.m128_f32[0];
+			newPos.y += XMtranslation.m128_f32[1];
+			newPos.z += XMtranslation.m128_f32[2];
+			sound->position(newPos);
+		}
+		/*
+		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
+		{
+			XMFLOAT3 newRot = sound->rotation();
+			XMFLOAT3 rotDelta = GetYawPitchRoll(delta);
+			newRot.x += rotDelta.x;
+			newRot.y += rotDelta.y;
+			newRot.z += rotDelta.z;
+			sound->rotation(newRot);
+		}
+		*/
 	}
 
 	void DrawSelectedObjectGuizmo(std::shared_ptr<Camera> camera)
@@ -929,14 +1025,26 @@ namespace Editor {
 		switch (soTab)
 		{
 		case SO_Renderables:
+		{
 			DrawRenderableGuizmo(camera);
-			break;
-		case SO_Lights:
-			DrawLightGuizmo(camera);
-			break;
 		}
-
-
+		break;
+		case SO_Lights:
+		{
+			DrawLightGuizmo(camera);
+		}
+		break;
+		case SO_Cameras:
+		{
+			DrawCameraGuizmo(camera);
+		}
+		break;
+		case SO_SoundEffects:
+		{
+			DrawSoundGuizmo(camera);
+		}
+		break;
+		}
 	}
 
 	void OpenLevelFile()

@@ -104,6 +104,8 @@ namespace Scene {
 
 		bool hidden() { return false; }
 
+		XMMATRIX world();
+
 		std::shared_ptr<Scene::Light> light = nullptr;
 		std::shared_ptr<ConstantsBuffer> cameraCbv;
 		BoundingFrustum boundingFrustum;
