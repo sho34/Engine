@@ -212,6 +212,15 @@ namespace Scene {
 		json.at("hasShadowMaps") = hasShadowMaps;
 	}
 
+	XMMATRIX Light::world()
+	{
+		XMFLOAT3 posV = position();
+		XMFLOAT3 rotV = rotation();
+		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
+		return XMMatrixMultiply(rotationM, positionM);
+	}
+
 	//READ&GET
 	std::vector<std::shared_ptr<Light>> GetLights() {
 		return lights;

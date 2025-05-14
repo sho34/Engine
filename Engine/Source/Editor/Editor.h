@@ -23,6 +23,10 @@ namespace Editor {
 	void DrawEditor(std::shared_ptr<Camera> camera = nullptr);
 	void DrawApplicationBar();
 	void DrawRightPanel();
+	void DrawRenderableGuizmo(std::shared_ptr<Camera> camera);
+	void DrawLightGuizmo(std::shared_ptr<Camera> camera);
+	void DrawCameraGuizmo(std::shared_ptr<Camera> camera);
+	void DrawSoundGuizmo(std::shared_ptr<Camera> camera);
 	void DrawSelectedObjectGuizmo(std::shared_ptr<Camera> camera);
 
 	void OpenLevelFile();

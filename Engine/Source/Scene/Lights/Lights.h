@@ -168,6 +168,8 @@ namespace Scene {
 
 		bool hidden() { return false; }
 
+		XMMATRIX world();
+
 		//the following ones are calculated, so no need to store in json
 		D3D12_RECT shadowMapClearScissorRect; //used in point lights
 		D3D12_VIEWPORT shadowMapClearViewport; //used in point lights

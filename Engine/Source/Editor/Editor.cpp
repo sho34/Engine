@@ -769,19 +769,22 @@ namespace Editor {
 		}
 	}
 
-	void DrawSelectedObjectGuizmo(std::shared_ptr<Camera> camera)
+	XMFLOAT3 GetYawPitchRoll(XMFLOAT4X4 transform)
 	{
-		ImGuizmo::SetOrthographic(false);
-		ImGuizmo::BeginFrame();
+		float pitch = XMScalarASin(-transform._32);
 
-		ImGuiIO& io = ImGui::GetIO();
-		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+		XMVECTOR from(XMVectorSet(transform._12, transform._31, 0.0f, 0.0f));
+		XMVECTOR to(XMVectorSet(transform._22, transform._33, 0.0f, 0.0f));
+		XMVECTOR res(XMVectorATan2(from, to));
 
-		if (soTab != _SceneObjects::SO_Renderables || selSO == "" || camera == nullptr)
-			return;
+		float roll = XMVectorGetX(res);
+		float yaw = XMVectorGetY(res);
 
-		ImGuizmo::SetID(0);
+		return XMFLOAT3(roll, pitch, yaw);
+	}
 
+	void DrawRenderableGuizmo(std::shared_ptr<Camera> camera)
+	{
 		std::shared_ptr<Renderable> renderable = GetRenderable(selSO);
 
 		XMFLOAT4X4 world;
@@ -827,22 +830,7 @@ namespace Editor {
 		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
 		{
 			XMFLOAT3 newRot = renderable->rotation();
-
-			auto getYawPitchRoll = [](XMFLOAT4X4 transform)
-				{
-					float pitch = DirectX::XMScalarASin(-transform._32);
-
-					DirectX::XMVECTOR from(DirectX::XMVectorSet(transform._12, transform._31, 0.0f, 0.0f));
-					DirectX::XMVECTOR to(DirectX::XMVectorSet(transform._22, transform._33, 0.0f, 0.0f));
-					DirectX::XMVECTOR res(DirectX::XMVectorATan2(from, to));
-
-					float roll = DirectX::XMVectorGetX(res);
-					float yaw = DirectX::XMVectorGetY(res);
-
-					return DirectX::XMFLOAT3(roll, pitch, yaw);
-				};
-
-			XMFLOAT3 rotDelta = getYawPitchRoll(delta);
+			XMFLOAT3 rotDelta = GetYawPitchRoll(delta);
 			newRot.x += rotDelta.x;
 			newRot.y += rotDelta.y;
 			newRot.z += rotDelta.z;
@@ -856,6 +844,99 @@ namespace Editor {
 			newScale.z *= XMscale.m128_f32[2];
 			renderable->scale(newScale);
 		}
+	}
+
+	void DrawLightGuizmo(std::shared_ptr<Camera> camera)
+	{
+		std::shared_ptr<Light> light = GetLight(selSO);
+
+		if (light->lightType() == LT_Ambient) return;
+
+		XMFLOAT4X4 world;
+		XMFLOAT4X4 view;
+		XMFLOAT4X4 proj;
+		XMStoreFloat4x4(&world, light->world());
+		XMStoreFloat4x4(&view, camera->ViewMatrix());
+		XMStoreFloat4x4(&proj, camera->perspective.projectionMatrix);
+
+		if ((ImGui::IsKeyPressed(ImGuiKey_T) && light->lightType() != LT_Directional) || light->lightType() == LT_Point) // t ky
+		{
+			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+		}
+		if ((ImGui::IsKeyPressed(ImGuiKey_R) && light->lightType() != LT_Point) || light->lightType() == LT_Directional) // r key
+		{
+			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+		}
+
+		XMFLOAT4X4 delta;
+		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *world.m, *delta.m, NULL, NULL, NULL);
+
+		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
+		XMVECTOR XMtranslation;
+		XMVECTOR XMrotation;
+		XMVECTOR XMscale;
+		XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
+
+		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
+		{
+			XMFLOAT3 newPos = light->position();
+			newPos.x += XMtranslation.m128_f32[0];
+			newPos.y += XMtranslation.m128_f32[1];
+			newPos.z += XMtranslation.m128_f32[2];
+			light->position(newPos);
+			if (light->hasShadowMaps())
+			{
+				light->shadowMapCameras[0]->position(newPos);
+			}
+		}
+		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
+		{
+			XMFLOAT3 newRot = light->rotation();
+			XMFLOAT3 rotDelta = GetYawPitchRoll(delta);
+			newRot.x += rotDelta.x;
+			newRot.y += rotDelta.y;
+			newRot.z += rotDelta.z;
+			light->rotation(newRot);
+			if (light->hasShadowMaps())
+			{
+				light->shadowMapCameras[0]->rotation(XMFLOAT3({ newRot.x, newRot.y, 0.0f }));
+			}
+		}
+	}
+
+	void DrawCameraGuizmo(std::shared_ptr<Camera> camera)
+	{
+	}
+
+	void DrawSoundGuizmo(std::shared_ptr<Camera> camera)
+	{
+	}
+
+	void DrawSelectedObjectGuizmo(std::shared_ptr<Camera> camera)
+	{
+		ImGuizmo::SetOrthographic(false);
+		ImGuizmo::BeginFrame();
+
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+		if (selSO == "" || camera == nullptr) return;
+
+		ImGuizmo::SetID(0);
+
+		switch (soTab)
+		{
+		case SO_Renderables:
+			DrawRenderableGuizmo(camera);
+			break;
+		case SO_Lights:
+			DrawLightGuizmo(camera);
+			break;
+		}
+
+
 	}
 
 	void OpenLevelFile()
@@ -1027,6 +1108,8 @@ namespace Editor {
 	{
 		soTab = objectType;
 		selSO = uuid;
+		gizmoOperation = ImGuizmo::TRANSLATE;
+		gizmoMode = ImGuizmo::WORLD;
 	}
 
 	void RenderSelectedLightShadowMapChain()

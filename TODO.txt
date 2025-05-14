@@ -1,4 +1,6 @@
 TODO:
+-Hacer Gizmos para las cámaras
+-Hacer Gizmos para los sonidos
 -Arreglar el crash de Windows resize/maximizar/minimizar
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
 	-Presets
@@ -11,6 +13,7 @@ TODO:
 -Deferred Rendering
 
 DONE:
+-Hacer Gizmos para las luces
 -Hacer de las texturas un template
 -add object picking
 -Calcular el BoundingBox de los modelos animados
