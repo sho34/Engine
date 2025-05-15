@@ -341,6 +341,13 @@ namespace RenderPass {
 		for (auto& rtt : renderToTexture)
 		{
 			rtt->Resize(width, height);
+			D3D12_SHADER_RESOURCE_VIEW_DESC rttSRVDesc = {
+				.Format = rtt->format,
+				.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+				.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+				.Texture2D = {.MostDetailedMip = 0, .MipLevels = 1U, .ResourceMinLODClamp = 0.0f },
+			};
+			d3dDevice->CreateShaderResourceView(rtt->renderToTexture, &rttSRVDesc, rtt->cpuTextureHandle);
 		}
 
 		if (depthStencilFormat != DXGI_FORMAT_UNKNOWN)
