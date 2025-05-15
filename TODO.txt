@@ -1,6 +1,5 @@
 TODO:
 -Hacer render preview de las camaras
--Arreglar el crash de Windows resize/maximizar/minimizar
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
 	-Presets
 		-daylight
@@ -12,6 +11,8 @@ TODO:
 -Deferred Rendering
 
 DONE:
+-Arreglar el crash de Windows minimizar
+-Arreglar el crash de Windows resize
 -Hacer Gizmos para las luces
 -Hacer Gizmos para las cámaras
 -Hacer Gizmos para los sonidos

@@ -20,6 +20,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 bool appDone = false;
 bool inSizeMove = false;
 bool resizeWindow = false;
+bool minimized = false;
 unsigned int resizeWidth = 0;
 unsigned int resizeHeight = 0;
 bool inFullScreen = false;
@@ -354,6 +355,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			resizeWindow = true;
 			resizeWidth = LOWORD(lParam);
 			resizeHeight = HIWORD(lParam);
+			if (resizeHeight == 0U && resizeWidth == 0U)
+			{
+				minimized = true;
+			}
+			else
+			{
+				minimized = false;
+			}
 		}
 	}
 	break;
@@ -410,6 +419,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 void AppStep() {
+	if (minimized) return;
+
 	if (!inFullScreen)
 	{
 		GetWindowRect(hWnd, &hWndRect);
