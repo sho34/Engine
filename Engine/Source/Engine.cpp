@@ -415,7 +415,7 @@ void AppStep() {
 		GetWindowRect(hWnd, &hWndRect);
 	}
 
-	if (resizeWindow) {
+	if (resizeWindow && !inSizeMove) {
 		return ResizeWindow();
 	}
 	timer.Tick([&]() {});

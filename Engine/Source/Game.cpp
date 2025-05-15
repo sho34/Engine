@@ -205,6 +205,9 @@ void WindowResize(unsigned int width, unsigned int height)
 #endif
 	if (mainPass) mainPass->Resize(width, height);
 	if (resolvePass) resolvePass->Resize(width, height);
+
+	std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
+	toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
 }
 
 //Booting
