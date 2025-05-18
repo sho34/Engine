@@ -6,8 +6,6 @@
 #include "ComputeInterface.h"
 #include "../../Common/d3dx12.h"
 #include "../../Common/DirectXHelper.h"
-#include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
-#include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
 #include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 
 namespace Scene { struct Renderable; };

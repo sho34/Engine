@@ -92,6 +92,10 @@ namespace ComputeShader
 		bonesCbv = nullptr;
 		resources.clear();
 		readBackResources.clear();
+		for (auto& constantBuffer : constantsBuffers)
+		{
+			DestroyConstantsBuffer(constantBuffer);
+		}
 		constantsBuffers.clear();
 		for (unsigned int i = 0; i < verticesCpuHandles.size(); i++)
 		{
@@ -107,12 +111,16 @@ namespace ComputeShader
 	{
 		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
 
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(commandList.p, 0, L"RenderableBoundingBox Compute");
+#endif
+
 		shader.SetComputeState();
 
 		//0 : the number of vertices
 		//1 : UAV for the bones transformation <- as all the meshes shares the same matrices we can just set once
-		//2 : bounding box center and extents
-		//3 : UAV for the vertices
+		//2 : bounding box center and extents <- this is the output UAV
+		//3 : UAV for the vertices of the mesh
 		unsigned int backBufferIndex = renderer->backBufferIndex;
 		commandList->SetComputeRootDescriptorTable(1, bonesCbv->gpu_xhandle[backBufferIndex]);
 
@@ -124,6 +132,10 @@ namespace ComputeShader
 			commandList->SetComputeRootDescriptorTable(3, verticesGpuHandles[i]);
 			commandList->Dispatch(1, 1, 1);
 		}
+
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(commandList.p);
+#endif
 	}
 
 	void RenderableBoundingBox::Solution()
@@ -134,6 +146,10 @@ namespace ComputeShader
 		range.End = sizeof(XMFLOAT4) * 2ULL;
 
 		auto& commandList = renderer->commandList;
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(commandList.p, 0, L"RenderableBoundingBox Solution");
+#endif
 
 		for (unsigned int i = 0; i < verticesCpuHandles.size(); i++)
 		{
@@ -165,5 +181,9 @@ namespace ComputeShader
 			DeviceUtils::TransitionResource(commandList, resources[i], D3D12_RESOURCE_STATE_COPY_SOURCE, D3D12_RESOURCE_STATE_COMMON);
 			DeviceUtils::TransitionResource(commandList, readBackResources[i], D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_COMMON);
 		}
+
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(commandList.p);
+#endif
 	}
 }
