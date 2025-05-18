@@ -461,37 +461,6 @@ void AudioStep()
 	SoundEffectsStep();
 }
 
-namespace ComputeShader
-{
-	std::set<std::shared_ptr<ComputeInterface>> computes;
-
-	void RegisterComputation(std::shared_ptr<ComputeInterface> compute)
-	{
-		computes.insert(compute);
-	}
-
-	void UnregisterComputation(std::shared_ptr<ComputeInterface> compute)
-	{
-		computes.erase(compute);
-	}
-
-	void RunComputeShaders()
-	{
-		for (auto& compute : computes)
-		{
-			compute->Compute();
-		}
-	}
-
-	void ComputeShaderSolution()
-	{
-		for (auto& compute : computes)
-		{
-			compute->Solution();
-		}
-	}
-}
-
 //RENDER
 void Render()
 {

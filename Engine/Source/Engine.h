@@ -47,14 +47,6 @@ void AnimableStep(double elapsedSeconds);
 void AudioStep();
 void CameraStep();
 
-namespace ComputeShader
-{
-	void RegisterComputation(std::shared_ptr<ComputeInterface> compute);
-	void UnregisterComputation(std::shared_ptr<ComputeInterface> compute);
-	void RunComputeShaders();
-	void ComputeShaderSolution();
-};
-
 //RENDER
 void Render();
 void ResizeWindow();

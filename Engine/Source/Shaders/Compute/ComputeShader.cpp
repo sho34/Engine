@@ -1,11 +1,45 @@
 #include "pch.h"
 #include "ComputeShader.h"
 #include "../../Renderer/Renderer.h"
+#include "ComputeInterface.h"
 
 extern std::shared_ptr<Renderer> renderer;
 
 namespace ComputeShader
 {
+	std::set<std::shared_ptr<ComputeInterface>> computes;
+
+	void RegisterComputation(std::shared_ptr<ComputeInterface> compute)
+	{
+		computes.insert(compute);
+	}
+
+	void UnregisterComputation(std::shared_ptr<ComputeInterface> compute)
+	{
+		computes.erase(compute);
+	}
+
+	std::set<std::shared_ptr<ComputeInterface>>& GetComputeUnits()
+	{
+		return computes;
+	}
+
+	void RunComputeShaders()
+	{
+		for (auto& compute : GetComputeUnits())
+		{
+			compute->Compute();
+		}
+	}
+
+	void ComputeShaderSolution()
+	{
+		for (auto& compute : GetComputeUnits())
+		{
+			compute->Solution();
+		}
+	}
+
 	void ComputeShader::Init(std::string shaderName)
 	{
 		using namespace DeviceUtils;
