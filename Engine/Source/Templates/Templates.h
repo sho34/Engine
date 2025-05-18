@@ -127,6 +127,13 @@ namespace Templates {
 	static const nlohmann::json systemShaders = R"(
 	[
 		{
+			"name":"HDRHistogram_cs",
+			"path":"CSHDRHistogram",
+			"systemCreated" : true,
+			"uuid":"43b52d31-7040-47e7-80e6-97490550cbae",
+			"type":"COMPUTE_SHADER"
+		},
+		{
 			"name":"BoundingBox_cs",
 			"path":"CSBoundingBox",
 			"systemCreated" : true,

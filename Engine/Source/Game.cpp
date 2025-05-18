@@ -11,10 +11,12 @@ using namespace Editor;
 #endif
 #include "Renderer/DeviceUtils/Resources/Resources.h"
 #include "Common/DirectXHelper.h"
+#include "Shaders/Compute/HDRHistogram.h"
 
 using namespace Scene;
 using namespace RenderPass;
 using namespace DeviceUtils;
+using namespace ComputeShader;
 
 extern RECT hWndRect;
 extern std::unique_ptr<DirectX::Mouse> mouse;
@@ -22,6 +24,7 @@ extern std::unique_ptr<DirectX::Mouse> mouse;
 std::shared_ptr<DeviceUtils::DescriptorHeap> mainPassHeap;
 std::shared_ptr<SwapChainPass> resolvePass;
 std::shared_ptr<RenderToTexturePass> mainPass;
+std::shared_ptr<HDRHistogram> hdrHistogram;
 
 GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
@@ -428,6 +431,12 @@ void EditorModeCreate()
 			//LoadLevel("venom");
 
 			mainPass = CreateMainPass();
+
+			hdrHistogram = std::make_shared<HDRHistogram>(mainPass->renderToTexture[0]);
+			hdrHistogram->UpdateLuminanceParams(mainPass->renderToTexture[0]->width, mainPass->renderToTexture[0]->height, -2.0f, 1.0f);
+			using namespace ComputeShader;
+			RegisterComputation(hdrHistogram);
+
 			Editor::CreatePickingPass();
 
 			toneMapQuad = CreateRenderable(
@@ -552,6 +561,8 @@ void EditorModeLeave()
 	renderer->RenderCriticalFrame([]
 		{
 			Editor::DestroyPickingPass();
+			UnregisterComputation(hdrHistogram);
+			hdrHistogram = nullptr;
 			mainPass = nullptr;
 			mainPassCamera = nullptr;
 		}

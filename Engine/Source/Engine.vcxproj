@@ -269,7 +269,7 @@
       </ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Shaders\Compute\ComputeInterface.h" />
-    <ClInclude Include="Shaders\Compute\AverageLuminance.h" />
+    <ClInclude Include="Shaders\Compute\HDRHistogram.h" />
     <ClInclude Include="Shaders\Compute\ComputeShader.h" />
     <ClInclude Include="Effects\Effects.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
@@ -498,7 +498,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Shaders\Compute\AverageLuminance.cpp" />
+    <ClCompile Include="Shaders\Compute\HDRHistogram.cpp" />
     <ClCompile Include="Shaders\Compute\ComputeShader.cpp" />
     <ClCompile Include="Effects\Effects.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">

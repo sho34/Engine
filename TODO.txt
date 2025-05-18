@@ -1,4 +1,5 @@
 TODO:
+-HDR with automatic exposure adjustment or eye adaptation 
 -Hacer render preview de las camaras
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
 	-Presets
@@ -6,7 +7,6 @@ TODO:
 		-night
 		…
 	-Modo Manual con slider de temperatura en kelvin con textura bajo el slider
--HDR with automatic exposure adjustment or eye adaptation 
 -IBL
 -Deferred Rendering
 
