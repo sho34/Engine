@@ -72,11 +72,13 @@ namespace Editor {
 		}
 		bool CanPick(DirectX::Mouse::State state) const
 		{
+			/*
 			std::string str = "button:" + std::string((!state.leftButton) ? "true" : "false") + " " +
 				"state.x:" + std::to_string(state.x) + " " + "pickingX:" + std::to_string(pickingX) + " " +
 				"state.y:" + std::to_string(state.y) + " " + "pickingY:" + std::to_string(pickingY) + " " +
 				"\n";
 			OutputDebugStringA(str.c_str());
+			*/
 			return (!state.leftButton && state.x == pickingX && state.y == pickingY);
 		}
 		void Pick()
