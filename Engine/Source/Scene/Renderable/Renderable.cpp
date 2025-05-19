@@ -40,11 +40,6 @@ namespace Editor {
 }
 #endif
 
-namespace ComputeShader {
-	extern void RegisterComputation(std::shared_ptr<ComputeInterface>);
-	extern void UnregisterComputation(std::shared_ptr<ComputeInterface>);
-}
-
 namespace Scene {
 	//NAMESPACE VARIABLES
 	std::map<std::string, std::shared_ptr<Renderable>> renderables;
@@ -212,7 +207,6 @@ namespace Scene {
 			StepAnimation(0.0f);
 			boundingBoxCompute = std::make_shared<RenderableBoundingBox>(this_ptr);
 			using namespace ComputeShader;
-			RegisterComputation(boundingBoxCompute);
 		}
 
 #if defined(_EDITOR)
@@ -847,6 +841,28 @@ namespace Scene {
 #endif
 	}
 
+	void RunBoundingBoxComputeShaders()
+	{
+		for (auto& [name, renderable] : renderables)
+		{
+			if (renderable->boundingBoxCompute)
+			{
+				renderable->boundingBoxCompute->Compute();
+			}
+		}
+	}
+
+	void RunBoundingBoxComputeShadersSolution()
+	{
+		for (auto& [name, renderable] : renderables)
+		{
+			if (renderable->boundingBoxCompute)
+			{
+				renderable->boundingBoxCompute->Solution();
+			}
+		}
+	}
+
 #if defined(_EDITOR)
 	void Renderable::DestroyMaterialsToRebuild()
 	{
@@ -977,7 +993,6 @@ namespace Scene {
 		if (boundingBoxCompute != nullptr)
 		{
 			using namespace ComputeShader;
-			UnregisterComputation(boundingBoxCompute);
 			boundingBoxCompute = nullptr;
 		}
 		animable = nullptr;
@@ -1896,7 +1911,6 @@ namespace Scene {
 		if (animables.contains(renderable->uuid())) animables.erase(renderable->uuid());
 		if (renderable->boundingBoxCompute)
 		{
-			UnregisterComputation(renderable->boundingBoxCompute);
 			renderable->boundingBoxCompute = nullptr;
 		}
 		renderable->this_ptr = nullptr;

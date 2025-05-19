@@ -7,6 +7,7 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace ComputeShader
 {
+	/*
 	std::set<std::shared_ptr<ComputeInterface>> computes;
 
 	void RegisterComputation(std::shared_ptr<ComputeInterface> compute)
@@ -39,7 +40,7 @@ namespace ComputeShader
 			compute->Solution();
 		}
 	}
-
+	*/
 	void ComputeShader::Init(std::string shaderName)
 	{
 		using namespace DeviceUtils;

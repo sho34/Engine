@@ -468,9 +468,9 @@ void Render()
 	renderer->ResetCommands();
 	renderer->SetCSUDescriptorHeap();
 
-	RunComputeShaders();
+	RunPreRenderComputeShaders();
 	RunRender();
-	ComputeShaderSolution();
+	RunPostRenderComputeShaders();
 
 	renderer->ExecuteCommands();
 	renderer->Present();

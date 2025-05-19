@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "HDRHistogram.h"
+#include "LuminanceHistogram.h"
 
 #include "../../Renderer/Renderer.h"
 #include "../../Renderer/DeviceUtils/Resources/Resources.h"
@@ -10,7 +10,7 @@ using namespace DeviceUtils;
 
 namespace ComputeShader
 {
-	HDRHistogram::HDRHistogram(std::shared_ptr<RenderToTexture> renderToTexture) : ComputeInterface("HDRHistogram_cs")
+	LuminanceHistogram::LuminanceHistogram(std::shared_ptr<RenderToTexture> renderToTexture) : ComputeInterface("LuminanceHistogram_cs")
 	{
 		//hold a copy to the render to texture used for HDR rendering (T0)
 		rtt = renderToTexture;
@@ -41,12 +41,11 @@ namespace ComputeShader
 		//create a gpu handle to be able to clear the uav result
 		resultClearHeap = std::make_shared<DeviceUtils::DescriptorHeap>();
 		resultClearHeap->CreateDescriptorHeap(renderer->d3dDevice, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
-		//resultClearHeap->AllocDescriptor(resultClearCpuHandle, resultClearGpuHandle);
 		resultClearHeap->AllocCPUDescriptor(resultClearCpuHandle);
 		renderer->d3dDevice->CreateUnorderedAccessView(resource, nullptr, &uavDesc, resultClearCpuHandle);
 	}
 
-	HDRHistogram::~HDRHistogram()
+	LuminanceHistogram::~LuminanceHistogram()
 	{
 		resultClearHeap->FreeCPUDescriptor(resultClearCpuHandle);
 		resultClearHeap->DestroyDescriptorHeap();
@@ -58,7 +57,7 @@ namespace ComputeShader
 	}
 
 	//minLogLuminance, I use -10.0, and a max of 2.0, making the luminance range 12.0, and oneOverLogLuminanceRange = 1.0 / 12.0.
-	void HDRHistogram::UpdateLuminanceParams(unsigned int width, unsigned int height, float minLogLuminance, float maxLogLuminance) const
+	void LuminanceHistogram::UpdateLuminanceHistogramParams(unsigned int width, unsigned int height, float minLogLuminance, float maxLogLuminance) const
 	{
 		LuminanceHistogramBuffer params
 		{
@@ -70,18 +69,19 @@ namespace ComputeShader
 		constantsBuffers->push(params, 0);
 	}
 
-	void HDRHistogram::Compute()
+	void LuminanceHistogram::Compute()
 	{
 		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
 
 #if defined(_DEVELOPMENT)
-		PIXBeginEvent(commandList.p, 0, L"HDRHistogram Compute");
+		PIXBeginEvent(commandList.p, 0, L"LuminanceHistogram Compute");
 #endif
 
 		//Clear UAV
 		unsigned int clearValue[] = { 0U,0U,0U,0U };
 		commandList->ClearUnorderedAccessViewUint(resultGpuHandle, resultClearCpuHandle, resource, clearValue, 0, nullptr);
 
+		//after clearing the uav we can compute
 		shader.SetComputeState();
 
 		commandList->SetComputeRootDescriptorTable(0, constantsBuffers->gpu_xhandle[0]);

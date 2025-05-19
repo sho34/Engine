@@ -11,7 +11,8 @@ using namespace Editor;
 #endif
 #include "Renderer/DeviceUtils/Resources/Resources.h"
 #include "Common/DirectXHelper.h"
-#include "Shaders/Compute/HDRHistogram.h"
+#include "Shaders/Compute/LuminanceHistogram.h"
+#include "Shaders/Compute/LuminanceHistogramAverage.h"
 
 using namespace Scene;
 using namespace RenderPass;
@@ -24,7 +25,8 @@ extern std::unique_ptr<DirectX::Mouse> mouse;
 std::shared_ptr<DeviceUtils::DescriptorHeap> mainPassHeap;
 std::shared_ptr<SwapChainPass> resolvePass;
 std::shared_ptr<RenderToTexturePass> mainPass;
-std::shared_ptr<HDRHistogram> hdrHistogram;
+std::shared_ptr<LuminanceHistogram> hdrHistogram;
+std::shared_ptr<LuminanceHistogramAverage> luminanceHistogramAverage;
 
 GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
@@ -211,6 +213,16 @@ void WindowResize(unsigned int width, unsigned int height)
 
 	std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
 	toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
+}
+
+void RunPreRenderComputeShaders()
+{
+	RunBoundingBoxComputeShaders();
+}
+
+void RunPostRenderComputeShaders()
+{
+	RunBoundingBoxComputeShadersSolution();
 }
 
 //Booting
@@ -432,10 +444,16 @@ void EditorModeCreate()
 
 			mainPass = CreateMainPass();
 
-			hdrHistogram = std::make_shared<HDRHistogram>(mainPass->renderToTexture[0]);
-			hdrHistogram->UpdateLuminanceParams(mainPass->renderToTexture[0]->width, mainPass->renderToTexture[0]->height, -2.0f, 1.0f);
-			using namespace ComputeShader;
-			RegisterComputation(hdrHistogram);
+			hdrHistogram = std::make_shared<LuminanceHistogram>(mainPass->renderToTexture[0]);
+			hdrHistogram->UpdateLuminanceHistogramParams(mainPass->renderToTexture[0]->width, mainPass->renderToTexture[0]->height, -2.0f, 10.0f);
+
+			luminanceHistogramAverage = std::make_shared<LuminanceHistogramAverage>(hdrHistogram->resultCpuHandle, hdrHistogram->resultGpuHandle);
+			luminanceHistogramAverage->UpdateLuminanceHistogramAverageParams(
+				mainPass->renderToTexture[0]->width * mainPass->renderToTexture[0]->height,
+				-2.0f, 10.0f,
+				0.016f,
+				1.1f
+			);
 
 			Editor::CreatePickingPass();
 
@@ -532,6 +550,9 @@ void EditorModeRender()
 			}
 		);
 
+		hdrHistogram->Compute();
+		luminanceHistogramAverage->Compute();
+
 		resolvePass->Pass([](size_t passHash)
 			{
 				toneMapQuad->visible(true);
@@ -561,7 +582,7 @@ void EditorModeLeave()
 	renderer->RenderCriticalFrame([]
 		{
 			Editor::DestroyPickingPass();
-			UnregisterComputation(hdrHistogram);
+			luminanceHistogramAverage = nullptr;
 			hdrHistogram = nullptr;
 			mainPass = nullptr;
 			mainPassCamera = nullptr;

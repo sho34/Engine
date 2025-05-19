@@ -282,10 +282,13 @@
     <ClInclude Include="Shaders\Compute\ComputeShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Compute\HDRHistogram.h">
+    <ClInclude Include="Shaders\Compute\LuminanceHistogram.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Shaders\Compute\ComputeInterface.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compute\LuminanceHistogramAverage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -419,7 +422,10 @@
     <ClCompile Include="Shaders\Compute\ComputeShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\Compute\HDRHistogram.cpp">
+    <ClCompile Include="Shaders\Compute\LuminanceHistogram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Compute\LuminanceHistogramAverage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -285,6 +285,8 @@ namespace Scene
 
 	//UPDATE
 	void RenderablesStep();
+	void RunBoundingBoxComputeShaders();
+	void RunBoundingBoxComputeShadersSolution();
 
 	//EDITOR
 #if defined(_EDITOR)

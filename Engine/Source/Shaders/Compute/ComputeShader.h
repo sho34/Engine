@@ -21,10 +21,10 @@ namespace ComputeShader
 		void SetComputeState();
 	};
 
-	void RegisterComputation(std::shared_ptr<ComputeInterface> compute);
-	void UnregisterComputation(std::shared_ptr<ComputeInterface> compute);
-	std::set<std::shared_ptr<ComputeInterface>>& GetComputeUnits();
-	void RunComputeShaders();
-	void ComputeShaderSolution();
+	//void RegisterComputation(std::shared_ptr<ComputeInterface> compute);
+	//void UnregisterComputation(std::shared_ptr<ComputeInterface> compute);
+	//std::set<std::shared_ptr<ComputeInterface>>& GetComputeUnits();
+	//void RunComputeShaders();
+	//void ComputeShaderSolution();
 }
 

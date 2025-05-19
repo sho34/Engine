@@ -16,9 +16,10 @@ namespace ComputeShader
 		float oneOverLogLuminanceRange;
 	};
 
-	struct HDRHistogram : public ComputeInterface
+	struct LuminanceHistogram : public ComputeInterface
 	{
-		std::shared_ptr<RenderToTexture> rtt; // BaseTexture, (T0)
+		//histogram
+		std::shared_ptr<RenderToTexture> rtt; // HDR BaseTexture, (T0)
 		CComPtr<ID3D12Resource> resource; //LuminanceHistogram (U0)
 		std::shared_ptr<ConstantsBuffer> constantsBuffers; //LuminanceHistogramBuffer CBV (C0)
 		::CD3DX12_CPU_DESCRIPTOR_HANDLE resultCpuHandle;	//UAV, (U0) 
@@ -28,10 +29,10 @@ namespace ComputeShader
 		std::shared_ptr<DeviceUtils::DescriptorHeap> resultClearHeap; //UAV (U0)
 		::CD3DX12_CPU_DESCRIPTOR_HANDLE resultClearCpuHandle; //UAV (U0)
 
-		HDRHistogram(std::shared_ptr<RenderToTexture> renderToTexture);
-		~HDRHistogram();
+		LuminanceHistogram(std::shared_ptr<RenderToTexture> renderToTexture);
+		~LuminanceHistogram();
 
-		void UpdateLuminanceParams(unsigned int width, unsigned int height, float minLogLuminance, float maxLogLuminance) const;
+		void UpdateLuminanceHistogramParams(unsigned int width, unsigned int height, float minLogLuminance, float maxLogLuminance) const;
 
 		virtual void Compute();
 		virtual void Solution() {};

@@ -95,6 +95,10 @@ namespace Templates {
 			{
 				uavParameters.insert_or_assign(resourceName, ShaderUAVParameter({ .registerId = bindDesc.BindPoint, .numUAV = bindDesc.BindCount }));
 			}
+			else if (bindDesc.Type == D3D_SIT_UAV_RWTYPED)
+			{
+				uavParameters.insert_or_assign(resourceName, ShaderUAVParameter({ .registerId = bindDesc.BindPoint, .numUAV = bindDesc.BindCount }));
+			}
 			else if (bindDesc.Type == D3D_SIT_TEXTURE)
 			{
 				srvTexParameters.insert_or_assign(strToTextureType.at(resourceName), ShaderSRVParameter({ .registerId = bindDesc.BindPoint, .numSRV = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1

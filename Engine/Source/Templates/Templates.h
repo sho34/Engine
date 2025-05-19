@@ -127,8 +127,15 @@ namespace Templates {
 	static const nlohmann::json systemShaders = R"(
 	[
 		{
-			"name":"HDRHistogram_cs",
-			"path":"CSHDRHistogram",
+			"name":"LuminanceHistogramAverage_cs",
+			"path":"CSLuminanceHistogramAverage",
+			"systemCreated" : true,
+			"uuid":"1d436897-e925-415f-9209-1364005792a0",
+			"type":"COMPUTE_SHADER"
+		},
+		{
+			"name":"LuminanceHistogram_cs",
+			"path":"CSLuminanceHistogram",
 			"systemCreated" : true,
 			"uuid":"43b52d31-7040-47e7-80e6-97490550cbae",
 			"type":"COMPUTE_SHADER"
