@@ -25,10 +25,11 @@ namespace ComputeShader
 		std::shared_ptr<ConstantsBuffer> constantsBuffers; //LuminanceHistogramAverageBuffer CBV (C0)
 
 		//luminance
-		//std::shared_ptr<RenderToTexture> rtt; //1x1 luminance float
 		CComPtr<ID3D12Resource> average;
 		::CD3DX12_CPU_DESCRIPTOR_HANDLE averageCpuHandle;
 		::CD3DX12_GPU_DESCRIPTOR_HANDLE averageGpuHandle;
+		::CD3DX12_CPU_DESCRIPTOR_HANDLE averageReadCpuHandle;
+		::CD3DX12_GPU_DESCRIPTOR_HANDLE averageReadGpuHandle;
 
 		LuminanceHistogramAverage(
 			::CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle,

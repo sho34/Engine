@@ -13,7 +13,7 @@ namespace ComputeShader
 		using namespace Animation;
 		bonesCbv = GetAnimatedConstantsBuffer(r);
 
-		auto createComputeResource = [this](size_t numResources)
+		auto createComputeResource = [this, &r](size_t numResources)
 			{
 				size_t dataSize = sizeof(XMFLOAT4) * 2ULL;
 				D3D12_HEAP_PROPERTIES defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
@@ -38,6 +38,8 @@ namespace ComputeShader
 					renderer->d3dDevice->CreateCommittedResource(
 						&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource)
 					);
+					CCNAME_D3D12_OBJECT_N(resource, std::string(r->name() + ":" + std::to_string(i)));
+					LogCComPtrAddress(std::string(r->name() + ":" + std::to_string(i)), resource);
 
 					resultCpuHandle.push_back(::CD3DX12_CPU_DESCRIPTOR_HANDLE());
 					resultGpuHandle.push_back(::CD3DX12_GPU_DESCRIPTOR_HANDLE());

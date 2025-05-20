@@ -25,6 +25,13 @@ namespace ShaderCompiler {
 		{	COMPUTE_SHADER, L"cs_6_1" },
 	};
 
+	std::map<ShaderType, std::wstring> shaderDefine =
+	{
+		{	VERTEX_SHADER, L"_VERTEX_SHADER"	},
+		{	PIXEL_SHADER, L"_PIXEL_SHADER" },
+		{	COMPUTE_SHADER, L"_COMPUTE_SHADER" },
+	};
+
 	static std::mutex compileMutex;
 	std::shared_ptr<ShaderInstance> ShaderCompiler::Compile(Source params, ShaderIncludesDependencies& dependencies)
 	{
@@ -63,6 +70,7 @@ namespace ShaderCompiler {
 
 		std::vector<std::wstring> wdefines;
 		std::transform(params.defines.begin(), params.defines.end(), std::back_inserter(wdefines), [](std::string def) { return nostd::StringToWString(def); });
+		wdefines.push_back(shaderDefine.at(params.shaderType));
 
 		for (const std::wstring& def : wdefines) {
 			arguments.push_back(L"-D");
@@ -70,6 +78,8 @@ namespace ShaderCompiler {
 		}
 
 		DxcBuffer sourceBuffer{ .Ptr = pSource->GetBufferPointer(), .Size = pSource->GetBufferSize(), .Encoding = 0 };
+
+		//OutputDebugStringA(std::string("Compiling :" + nostd::WStringToString(shaderDefine.at(params.shaderType)) + filename + "\n").c_str());
 
 		//compile the shader
 		ComPtr<IDxcResult> pCompileResult;

@@ -120,6 +120,7 @@ enum TextureType
 	TextureType_MinTexture,
 	TextureType_MaxTexture,
 	TextureType_DepthTexture,
+	TextureType_AverageLuminance,
 };
 
 inline static std::map<TextureType, std::string> textureTypeToStr = {
@@ -130,6 +131,7 @@ inline static std::map<TextureType, std::string> textureTypeToStr = {
 	{ TextureType_MinTexture, "MinTexture" },
 	{ TextureType_MaxTexture, "MaxTexture" },
 	{ TextureType_DepthTexture, "DepthTexture" },
+	{ TextureType_AverageLuminance, "AverageLuminance"},
 };
 
 inline static std::map<std::string, TextureType> strToTextureType = {
@@ -140,6 +142,7 @@ inline static std::map<std::string, TextureType> strToTextureType = {
 	{ "MinTexture", TextureType_MinTexture },
 	{ "MaxTexture", TextureType_MaxTexture },
 	{ "DepthTexture", TextureType_DepthTexture },
+	{ "AverageLuminance", TextureType_AverageLuminance},
 };
 
 inline static std::map<TextureType, std::string> textureTypeToShaderDefine = {
@@ -150,6 +153,7 @@ inline static std::map<TextureType, std::string> textureTypeToShaderDefine = {
 	{ TextureType_MinTexture, "_HAS_MIN_TEXTURE" },
 	{ TextureType_MaxTexture, "_HAS_MAX_TEXTURE" },
 	{ TextureType_DepthTexture, "_HAS_DEPTH_TEXTURE" },
+	{ TextureType_AverageLuminance, "_HAS_AVERAGE_LUMINANCE" },
 };
 
 inline static std::set<TextureType> materialTexturesTypes = {
@@ -316,6 +320,11 @@ static std::set<D3D_SHADER_VARIABLE_CLASS> HLSLVariableClassAllowedTypes =
 	D3D_SVC_VECTOR,
 	D3D_SVC_MATRIX_ROWS,
 	D3D_SVC_MATRIX_COLUMNS,
+};
+
+//ok this is ugly, for some reason dxil thinks that this StructuredBuffer<float> AverageLuminance : register(t1); it's a constant buffer
+static std::set<std::string> HLSLNonConstantsBuffers = {
+	"AverageLuminance"
 };
 
 static std::map<MaterialVariablesTypes, std::function<void(nlohmann::json&, std::string)>> MaterialVariablesMappedJsonInitializer = {

@@ -436,10 +436,10 @@ void EditorModeCreate()
 			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
 			//LoadDefaultLevel();
-			//LoadLevel("female");
+			LoadLevel("female");
 			//LoadLevel("knight");
 			//LoadLevel("spartan");
-			LoadLevel("family");
+			//LoadLevel("family");
 			//LoadLevel("venom");
 
 			mainPass = CreateMainPass();
@@ -472,6 +472,7 @@ void EditorModeCreate()
 					{ "name", "toneMapQuad" },
 					{ "uuid", getUUID() },
 					{ "hidden", true },
+					{ "castShadows", false },
 					{ "visible", false },
 					{ "position", { 0.0, 0.0, 0.0 } },
 					{ "rotation", { 0.0, 0.0, 0.0 } },
@@ -488,6 +489,7 @@ void EditorModeCreate()
 
 			std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
 			toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
+			toneMapMaterial->textures.insert_or_assign(TextureType_AverageLuminance, GetTextureFromGPUHandle("averageLuminance", luminanceHistogramAverage->averageReadGpuHandle));
 
 			toneMapQuad->onMaterialsRebuilt = []()
 				{
@@ -556,7 +558,14 @@ void EditorModeRender()
 		resolvePass->Pass([](size_t passHash)
 			{
 				toneMapQuad->visible(true);
+				DeviceUtils::UAVResource(renderer->commandList, luminanceHistogramAverage->average);
+				DeviceUtils::TransitionResource(renderer->commandList, luminanceHistogramAverage->average,
+					D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS
+				);
 				toneMapQuad->Render(passHash, mainPassCamera);
+				DeviceUtils::TransitionResource(renderer->commandList, luminanceHistogramAverage->average,
+					D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON
+				);
 				toneMapQuad->visible(false);
 				DrawEditor(mainPassCamera);
 			}

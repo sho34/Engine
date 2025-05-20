@@ -60,6 +60,12 @@ namespace DeviceUtils {
 		commandList->ResourceBarrier(1, &barrier);
 	}
 
+	void UAVResource(CComPtr<ID3D12GraphicsCommandList2> commandList, CComPtr<ID3D12Resource> pSource)
+	{
+		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::UAV(pSource);
+		commandList->ResourceBarrier(1, &barrier);
+	}
+
 	HRESULT CaptureTexture(CComPtr<ID3D12Device2> device,
 		CComPtr<ID3D12CommandQueue> pCommandQ,
 		CComPtr<ID3D12Resource> pSource,

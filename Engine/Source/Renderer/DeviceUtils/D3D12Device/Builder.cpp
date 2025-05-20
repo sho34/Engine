@@ -142,7 +142,6 @@ namespace DeviceUtils {
 		);
 
 		DX::ThrowIfFailed(swapChain1.QueryInterface(&dxgiSwapChain4));
-		//DX::ThrowIfFailed(swapChain1.QueryInterface(&dxgiSwapChain4));
 
 		return dxgiSwapChain4;
 	}

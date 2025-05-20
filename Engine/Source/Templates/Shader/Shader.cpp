@@ -75,6 +75,8 @@ namespace Templates {
 			lightsShadowMapCBVRegister = (resourceName == ShadowMapConstantBufferName) ? bindDesc.BindPoint : lightsShadowMapCBVRegister;
 			lightsShadowMapSRVRegister = (resourceName == ShadowMapLightsShaderResourveViewName) ? bindDesc.BindPoint : lightsShadowMapSRVRegister;
 
+			//OutputDebugStringA(std::string(std::to_string(paramIdx) + " " + resourceName + ":" + shaderInputTypeToString.at(bindDesc.Type) + ":" + std::to_string(bindDesc.BindPoint) + "\n").c_str());
+
 			if (bindDesc.Type == D3D_SIT_CBUFFER)
 			{
 				constantsBuffersParameters.insert_or_assign(resourceName, ShaderConstantsBufferParameter({ .registerId = bindDesc.BindPoint, .numConstantsBuffers = bindDesc.BindCount }));
@@ -83,7 +85,7 @@ namespace Templates {
 			{
 				uavParameters.insert_or_assign(resourceName, ShaderUAVParameter({ .registerId = bindDesc.BindPoint, .numUAV = bindDesc.BindCount }));
 			}
-			else if (bindDesc.Type == D3D_SIT_STRUCTURED)
+			else if (bindDesc.Type == D3D_SIT_STRUCTURED && shaderSource.shaderType == ShaderType::COMPUTE_SHADER)
 			{
 				srvCSParameters.insert_or_assign(resourceName, ShaderSRVParameter({ .registerId = bindDesc.BindPoint, .numSRV = bindDesc.BindCount }));
 			}
@@ -99,7 +101,7 @@ namespace Templates {
 			{
 				uavParameters.insert_or_assign(resourceName, ShaderUAVParameter({ .registerId = bindDesc.BindPoint, .numUAV = bindDesc.BindCount }));
 			}
-			else if (bindDesc.Type == D3D_SIT_TEXTURE)
+			else if (bindDesc.Type == D3D_SIT_TEXTURE || (bindDesc.Type == D3D_SIT_STRUCTURED && shaderSource.shaderType == ShaderType::PIXEL_SHADER))
 			{
 				srvTexParameters.insert_or_assign(strToTextureType.at(resourceName), ShaderSRVParameter({ .registerId = bindDesc.BindPoint, .numSRV = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
 #if defined(_EDITOR)
@@ -135,6 +137,7 @@ namespace Templates {
 			cbReflection->GetDesc(&paramDesc);
 
 			std::string cbufferName(paramDesc.Name);
+			if (HLSLNonConstantsBuffers.contains(cbufferName)) continue;
 			bool isCameraParam = cbufferName == CameraConstantBufferName;
 			bool isLightParam = cbufferName == LightConstantBufferName;
 			bool isAnimationParam = cbufferName == AnimationConstantBufferName;

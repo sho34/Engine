@@ -61,6 +61,7 @@ namespace Templates {
 		std::shared_ptr<ShaderInstance> pixelShader;
 		std::vector<MaterialSamplerDesc> samplers;
 		std::map<TextureType, std::shared_ptr<TextureInstance>> textures;
+		std::map<unsigned int, ::CD3DX12_GPU_DESCRIPTOR_HANDLE> uav;
 		unsigned int changesCounter = 0U;
 		std::vector<std::function<void()>> rebuildCallbacks;
 		std::vector<std::function<void()>> propagateMappedValueChanges;

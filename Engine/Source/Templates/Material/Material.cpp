@@ -358,6 +358,15 @@ namespace Templates {
 
 	void MaterialInstance::SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
 	{
+		for (auto& [name, uavParam] : pixelShader->uavParameters)
+		{
+			if (uav.contains(uavParam.registerId))
+			{
+				commandList->SetGraphicsRootDescriptorTable(cbvSlot, uav.at(uavParam.registerId));
+				cbvSlot++;
+			}
+		}
+
 		for (auto& [textureType, texParam] : pixelShader->srvTexParameters)
 		{
 			if (texParam.numSRV == 0xFFFFFFFF) continue;

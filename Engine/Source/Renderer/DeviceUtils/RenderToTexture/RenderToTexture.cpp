@@ -44,6 +44,7 @@ namespace DeviceUtils {
 		));
 
 		CCNAME_D3D12_OBJECT_N(renderToTexture, name);
+		LogCComPtrAddress(name, renderToTexture);
 
 		D3D12_RENDER_TARGET_VIEW_DESC rttdesc;
 		rttdesc.Format = format;

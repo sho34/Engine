@@ -315,6 +315,11 @@ namespace Templates
 		CD3DX12_RESOURCE_DESC uploadBufferResourceDesc = CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize);
 		DX::ThrowIfFailed(d3dDevice->CreateCommittedResource(&heapTypeUpload, D3D12_HEAP_FLAG_NONE, &uploadBufferResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&upload)));
 
+		CCNAME_D3D12_OBJECT_N(texture, std::string(path + ":texture"));
+		LogCComPtrAddress(std::string(path + ":texture"), texture);
+		CCNAME_D3D12_OBJECT_N(upload, std::string(path + ":upload"));
+		LogCComPtrAddress(std::string(path + ":upload"), upload);
+
 		//use to command list to copy the texture data from cpu to gpu space
 		UpdateSubresources(commandList, texture, upload, 0, 0, static_cast<unsigned int>(subresources.size()), subresources.data());
 

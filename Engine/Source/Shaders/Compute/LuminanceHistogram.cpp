@@ -3,6 +3,7 @@
 
 #include "../../Renderer/Renderer.h"
 #include "../../Renderer/DeviceUtils/Resources/Resources.h"
+#include "../../Common/DirectXHelper.h"
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -26,7 +27,8 @@ namespace ComputeShader
 		renderer->d3dDevice->CreateCommittedResource(
 			&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource)
 		);
-
+		CCNAME_D3D12_OBJECT_N(resource, std::string("LuminanceHistogram"));
+		LogCComPtrAddress("LuminanceHistogram", resource);
 		DeviceUtils::AllocCSUDescriptor(resultCpuHandle, resultGpuHandle);
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {
