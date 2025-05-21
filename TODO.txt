@@ -1,5 +1,6 @@
 TODO:
 -HDR with automatic exposure adjustment or eye adaptation 
+-texturas srgb que pasen define al shader
 -Hacer render preview de las camaras
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
 	-Presets

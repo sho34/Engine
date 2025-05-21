@@ -57,7 +57,7 @@ namespace Scene {
 		XMMATRIX viewProjection;
 		XMFLOAT4 eyePosition;
 		XMFLOAT4 eyeForward;
-		float exposure;
+		float white;
 	};
 
 	struct Camera
@@ -99,8 +99,8 @@ namespace Scene {
 		void rotation(XMFLOAT3 f3);
 		void rotation(nlohmann::json f3);
 
-		float exposure();
-		void exposure(float f);
+		float white();
+		void white(float f);
 
 		bool hidden() { return false; }
 

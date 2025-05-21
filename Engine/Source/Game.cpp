@@ -436,10 +436,10 @@ void EditorModeCreate()
 			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
 			//LoadDefaultLevel();
-			LoadLevel("female");
+			//LoadLevel("female");
 			//LoadLevel("knight");
 			//LoadLevel("spartan");
-			//LoadLevel("family");
+			LoadLevel("family");
 			//LoadLevel("venom");
 
 			mainPass = CreateMainPass();
@@ -495,6 +495,7 @@ void EditorModeCreate()
 				{
 					std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
 					toneMapMaterial->textures.insert_or_assign(TextureType_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
+					toneMapMaterial->textures.insert_or_assign(TextureType_AverageLuminance, GetTextureFromGPUHandle("averageLuminance", luminanceHistogramAverage->averageReadGpuHandle));
 				};
 
 			CreateRenderableBoundingBox();

@@ -96,7 +96,7 @@ namespace Scene
 		SetIfMissingJson(camera->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 		SetIfMissingJson(camera->json, "rotation", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 		SetIfMissingJson(camera->json, "speed", 0.05f);
-		SetIfMissingJson(camera->json, "exposure", 1.0f);
+		SetIfMissingJson(camera->json, "white", 1.1f);
 
 		if (cameraj.contains("light"))
 		{
@@ -421,14 +421,14 @@ namespace Scene
 		json.at("rotation") = f3;
 	}
 
-	float Camera::exposure()
+	float Camera::white()
 	{
-		return json.at("exposure");
+		return json.at("white");
 	}
 
-	void Camera::exposure(float f)
+	void Camera::white(float f)
 	{
-		json.at("exposure") = f;
+		json.at("white") = f;
 	}
 
 	XMMATRIX Camera::world()
@@ -467,7 +467,7 @@ namespace Scene
 
 		atts.eyePosition = { pos.x, pos.y, pos.z, 0.0f };
 		atts.eyeForward = *(XMFLOAT4*)&fw.m128_f32;
-		atts.exposure = exposure();
+		atts.white = white();
 
 		memcpy(cameraCbv->mappedConstantBuffer + cameraCbv->alignedConstantBufferSize * backbufferIndex, &atts, sizeof(atts));
 	}
@@ -889,10 +889,10 @@ namespace Scene
 			}
 		}
 
-		float expos = exposure();
-		if (ImGui::InputFloat("exposure", &expos))
+		float w = white();
+		if (ImGui::InputFloat("white", &w))
 		{
-			exposure(expos);
+			white(w);
 		}
 	}
 #endif
