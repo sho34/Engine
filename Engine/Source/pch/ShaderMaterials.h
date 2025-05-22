@@ -156,6 +156,12 @@ inline static std::map<TextureType, std::string> textureTypeToShaderDefine = {
 	{ TextureType_AverageLuminance, "_HAS_AVERAGE_LUMINANCE" },
 };
 
+inline static std::map<TextureType, std::string> textureTypesInGammaToShaderDefine = {
+	{ TextureType_Base, "_BASE_TEXTURE_IN_GAMMA_SPACE" },
+	{ TextureType_NormalMap, "_NORMALMAP_TEXTURE_IN_GAMMA_SPACE" },
+	{ TextureType_MetallicRoughness, "_METALLIC_ROUGHNESS_TEXTURE_IN_GAMMA_SPACE" },
+};
+
 inline static std::set<TextureType> materialTexturesTypes = {
 	TextureType_Base,
 	TextureType_NormalMap,
