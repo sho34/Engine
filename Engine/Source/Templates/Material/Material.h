@@ -51,6 +51,7 @@ namespace Templates {
 		std::string instanceName;
 		std::map<TextureType, std::string> tupleTextures;
 		VertexClass vertexClass;
+		bool castShadows;
 		MaterialVariablesMapping variablesMapping;
 		std::vector<size_t> variablesBufferSize;
 		std::vector<std::vector<byte>> variablesBuffer;
@@ -66,9 +67,12 @@ namespace Templates {
 		std::vector<std::function<void()>> rebuildCallbacks;
 		std::vector<std::function<void()>> propagateMappedValueChanges;
 
+		void BuildMaterialTextures();
+		void BuildMaterialShaderDefines();
 		void GetShaderInstances();
 		void BindRebuildChange(std::function<void()> changeListener);
 		void NotifyRebuild();
+		void NotifyTextureChange();
 		void BindMappedValueChange(std::function<void()> changeListener);
 		void NotifyMappedValueChange();
 		void Destroy();

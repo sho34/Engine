@@ -100,44 +100,73 @@ namespace Templates {
 
 	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, std::string>& textures, bool castShadows)
 	{
-		material->vertexClass = mesh->vertexClass;
-		material->material = uuid;
-		material->instanceName = instanceName;
-		material->tupleTextures = textures;
-
 		nlohmann::json mat = GetMaterialTemplate(uuid);
-
 		material->vertexShaderUUID = mat.at("shader_vs");
 		material->pixelShaderUUID = mat.at("shader_ps");
-		std::vector<std::string> vertexClassDefines = VertexClassDefines.at(mesh->vertexClass);
-		std::move(vertexClassDefines.begin(), vertexClassDefines.end(), std::back_inserter(material->defines));
+		material->material = uuid;
+		material->vertexClass = mesh->vertexClass;
+		material->instanceName = instanceName;
+		material->tupleTextures = textures;
+		material->castShadows = castShadows;
+		material->BuildMaterialShaderDefines();
+		material->BuildMaterialTextures();
+		material->GetShaderInstances();
+	}
+
+	void MaterialInstance::BuildMaterialTextures()
+	{
+		nlohmann::json mat = GetMaterialTemplate(material);
+		TransformJsonToMaterialSamplers(samplers, mat, "samplers");
+		std::map<TextureType, std::string> matTextures;
+		if (tupleTextures.size() > 0)
+		{
+			matTextures = tupleTextures;
+		}
+		else
+		{
+			TransformJsonToMaterialTextures(matTextures, mat, "textures");
+		}
+		textures = GetTextures(matTextures);
+		for (auto& [type, tex] : textures)
+		{
+			tex->BindChangeCallback(instanceName, [this] { NotifyTextureChange(); });
+		}
+	}
+
+	void MaterialInstance::BuildMaterialShaderDefines()
+	{
+		defines.clear();
+
+		OutputDebugStringA((instanceName + ": buildDefines:" + material + "\n").c_str());
+
+		nlohmann::json mat = GetMaterialTemplate(material);
+
+		std::vector<std::string> vertexClassDefines = VertexClassDefines.at(vertexClass);
+		std::move(vertexClassDefines.begin(), vertexClassDefines.end(), std::back_inserter(defines));
+
 		if (mat.contains("textures"))
 		{
 			nlohmann::json jtextures = mat.at("textures");
 			for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
 			{
 				TextureType texType = strToTextureType.at(it.key());
-				material->defines.push_back(textureTypeToShaderDefine.at(texType));
+				defines.push_back(textureTypeToShaderDefine.at(texType));
+
+				nlohmann::json& texTemplate = GetTextureTemplate(it.value());
+				std::string texFormatS = texTemplate.at("format");
+				DXGI_FORMAT texFormat = stringToDxgiFormat.at(texFormatS);
+				if (nonLinearDxgiFormats.contains(texFormat))
+				{
+					std::string srgbTexDefine = textureTypesInGammaToShaderDefine.at(texType);
+					defines.push_back(srgbTexDefine);
+				}
 			}
 		}
 
 		if (castShadows)
 		{
-			material->defines.push_back(textureTypeToShaderDefine.at(TextureType_ShadowMaps));
+			defines.push_back(textureTypeToShaderDefine.at(TextureType_ShadowMaps));
 		}
-
-		TransformJsonToMaterialSamplers(material->samplers, mat, "samplers");
-		std::map<TextureType, std::string> matTextures;
-		if (textures.size() > 0)
-		{
-			matTextures = textures;
-		}
-		else
-		{
-			TransformJsonToMaterialTextures(matTextures, mat, "textures");
-		}
-		material->textures = GetTextures(matTextures);
-		material->GetShaderInstances();
 	}
 
 	void MaterialInstance::GetShaderInstances()
@@ -170,6 +199,13 @@ namespace Templates {
 		}
 
 		changesCounter = 0U;
+	}
+
+	void MaterialInstance::NotifyTextureChange()
+	{
+		BuildMaterialShaderDefines();
+		BuildMaterialTextures();
+		GetShaderInstances();
 	}
 
 	void MaterialInstance::BindMappedValueChange(std::function<void()> changeListener)

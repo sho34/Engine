@@ -747,7 +747,8 @@ namespace Editor {
 						{
 							DrawAssetsTree(GetTemplates.at(tempTab), [](std::string texName)
 								{
-									selTemp = FindTextureUUIDByName(defaultAssetsFolder + texName);
+									std::string uuid = FindTextureUUIDByName(defaultAssetsFolder + texName);
+									SetSelectedTemplate.at(tempTab)(uuid, selTemp);
 								}, defaultAssetsFolder
 							);
 						}

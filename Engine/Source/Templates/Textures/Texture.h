@@ -15,6 +15,12 @@ namespace Templates
 		TexturePopupModal_CannotDelete = 1,
 		TexturePopupModal_CreateNew = 2
 	};
+
+	enum TextureUpdateFlags {
+		TextureUpdateFlags_Load = 0x1,
+		TextureUpdateFlags_Release = 0x2,
+		TextureUpdateFlags_Reload = TextureUpdateFlags_Load | TextureUpdateFlags_Release,
+	};
 #endif
 
 	TEMPDECL_FULL(Texture);
@@ -48,7 +54,7 @@ namespace Templates
 	struct TextureInstance
 	{
 		std::string materialTexture;
-		bool rebuildTexture = false;
+		unsigned int updateFlag = 0U;
 
 		//D3D12
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
@@ -57,10 +63,13 @@ namespace Templates
 		CComPtr<ID3D12Resource> texture;
 		CComPtr<ID3D12Resource> upload;
 		std::string textureName;
+		std::map<std::string, std::function<void()>> onChangeCallbacks;
 
+		~TextureInstance();
 		void Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
 		void CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
 		void ReleaseResources();
+		void BindChangeCallback(std::string uuid, std::function<void()> cb);
 	};
 	TEMPDECL_REFTRACKER(Texture);
 
@@ -68,5 +77,10 @@ namespace Templates
 	std::shared_ptr<TextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
 	void DestroyTextureInstance(std::shared_ptr<TextureInstance>& texture);
 	void ReloadTextureInstances();
+
+#if defined(_EDITOR)
+	void SetSelectedTexture(std::string uuid);
+	void DeSelectTexture();
+#endif
 };
 

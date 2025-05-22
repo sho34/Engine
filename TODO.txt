@@ -1,4 +1,5 @@
 TODO:
+
 -HDR with automatic exposure adjustment or eye adaptation 
 -texturas srgb que pasen define al shader
 -Hacer render preview de las camaras
@@ -12,6 +13,7 @@ TODO:
 -Deferred Rendering
 
 DONE:
+-arreglar el bug de la no recarga de las texturas cuando las cambio de formato. los basetexture de knight son un muy buen ejemplo ya que cargan mal como srgb y la swordfur carga bien por que BGRA
 -Arreglar el crash de Windows minimizar
 -Arreglar el crash de Windows resize
 -Hacer Gizmos para las luces

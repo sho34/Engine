@@ -1537,6 +1537,11 @@ namespace Scene {
 				auto& [uuid, renderable] = pair;
 				nlohmann::json ret = renderable->json;
 				ret["uuid"] = uuid;
+				ret["skipMeshes"] = nlohmann::json::array();
+				for (auto skip : renderable->skipMeshes)
+				{
+					ret["skipMeshes"].push_back(skip);
+				}
 				return ret;
 			}
 		);

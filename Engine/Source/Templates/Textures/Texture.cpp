@@ -15,6 +15,10 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace Templates
 {
+#if defined(_EDITOR)
+	std::shared_ptr<TextureInstance> texturePreview = nullptr;
+#endif
+
 	TEMPDEF_FULL(Texture);
 
 	void CreateDDSFile(std::string uuid, std::filesystem::path path, bool overwrite, DXGI_FORMAT format, unsigned int width, unsigned int height, unsigned int mipLevels)
@@ -195,7 +199,6 @@ namespace Templates
 			DrawComboSelection(format, textureFormats, [&json, uuid, &rebuildInstance](std::string newFormat)
 				{
 					json.at("format") = newFormat;
-					RebuildTexture(uuid);
 					rebuildInstance = true;
 				}, "Format"
 			);
@@ -210,7 +213,6 @@ namespace Templates
 				{
 					json.at("width") = std::stoi(newWidth);
 					RecalculateMipMaps(json);
-					RebuildTexture(uuid);
 					rebuildInstance = true;
 				}, "Width"
 			);
@@ -225,7 +227,6 @@ namespace Templates
 				{
 					json.at("height") = std::stoi(newHeight);
 					RecalculateMipMaps(json);
-					RebuildTexture(uuid);
 					rebuildInstance = true;
 				}, "Height"
 			);
@@ -240,7 +241,6 @@ namespace Templates
 				{
 					json.at("mipLevels") = std::stoi(newMipLevels);
 					RecalculateMipMaps(json);
-					RebuildTexture(uuid);
 					rebuildInstance = true;
 				}, "MipLevels"
 			);
@@ -249,11 +249,13 @@ namespace Templates
 
 		if (rebuildInstance)
 		{
+			RebuildTexture(uuid);
 			std::shared_ptr<TextureInstance> instance = Templates::GetTextureInstance(uuid);
 			if (instance)
 			{
-				instance->rebuildTexture = true;
+				instance->updateFlag |= TextureUpdateFlags_Reload;
 			}
+			texturePreview->updateFlag |= TextureUpdateFlags_Reload;
 		}
 
 		return false;
@@ -261,6 +263,11 @@ namespace Templates
 
 	void Texture::DrawEditorTexturePreview(std::string uuid)
 	{
+		nlohmann::json& json = GetTextureTemplate(uuid);
+		ImDrawTextureImage((ImTextureID)texturePreview->gpuHandle.ptr,
+			static_cast<unsigned int>(json.at("width")),
+			static_cast<unsigned int>(json.at("height"))
+		);
 	}
 
 	void CreateNewTexture()
@@ -278,6 +285,11 @@ namespace Templates
 #endif
 
 	TEMPDEF_REFTRACKER(Texture);
+
+	TextureInstance::~TextureInstance()
+	{
+		onChangeCallbacks.clear();
+	}
 
 	void TextureInstance::Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps)
 	{
@@ -305,7 +317,16 @@ namespace Templates
 		//Load the dds file to a buffer using LoadDDSTextureFromFile
 		std::unique_ptr<uint8_t[]> ddsData;
 		std::vector<D3D12_SUBRESOURCE_DATA> subresources;
-		DX::ThrowIfFailed(LoadDDSTextureFromFile(d3dDevice, nostd::StringToWString(path).c_str(), &texture, ddsData, subresources));
+
+		DX::ThrowIfFailed(LoadDDSTextureFromFileEx(
+			d3dDevice,
+			nostd::StringToWString(path).c_str(),
+			0,
+			D3D12_RESOURCE_FLAG_NONE,
+			nonLinearDxgiFormats.contains(format) ? DDS_LOADER_FORCE_SRGB : DDS_LOADER_IGNORE_SRGB,
+			&texture,
+			ddsData,
+			subresources));
 
 		//get the ammount of memory required for the upload
 		auto uploadBufferSize = GetRequiredIntermediateSize(texture, 0, static_cast<unsigned int>(subresources.size()));
@@ -362,6 +383,11 @@ namespace Templates
 		upload = nullptr;
 	}
 
+	void TextureInstance::BindChangeCallback(std::string uuid, std::function<void()> cb)
+	{
+		onChangeCallbacks.insert_or_assign(uuid, cb);
+	}
+
 	std::map<TextureType, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureType, std::string>& textures)
 	{
 		std::map<TextureType, std::shared_ptr<TextureInstance>> texInstances;
@@ -405,34 +431,59 @@ namespace Templates
 
 	void ReloadTextureInstances()
 	{
-		std::vector<std::shared_ptr<TextureInstance>> texturesToReload;
-		refTracker.ForEach([&texturesToReload](std::shared_ptr<TextureInstance> texture)
+		std::vector<std::shared_ptr<TextureInstance>> texturesToRelease;
+		std::vector<std::shared_ptr<TextureInstance>> texturesToLoad;
+		bool destroyPreview = false;
+		refTracker.ForEach([&texturesToRelease, &texturesToLoad](std::shared_ptr<TextureInstance> texture)
 			{
-				if (texture->rebuildTexture)
-				{
-					texturesToReload.push_back(texture);
-				}
+				if (texture->updateFlag & TextureUpdateFlags_Release) { texturesToRelease.push_back(texture); }
+				if (texture->updateFlag & TextureUpdateFlags_Load) { texturesToLoad.push_back(texture); }
 			}
 		);
+		if (texturePreview)
+		{
+			if (texturePreview->updateFlag & TextureUpdateFlags_Release) { texturesToRelease.push_back(texturePreview); destroyPreview = true; }
+			if (texturePreview->updateFlag & TextureUpdateFlags_Load) { texturesToLoad.push_back(texturePreview); destroyPreview = false; }
+		}
 
-		if (texturesToReload.size() == 0ULL) return;
+		if (texturesToRelease.size() == 0ULL && texturesToLoad.size() == 0ULL) return;
 
 		renderer->Flush();
-		renderer->RenderCriticalFrame([&texturesToReload]
+		renderer->RenderCriticalFrame([texturesToRelease, &texturesToLoad, destroyPreview]
 			{
-				std::for_each(texturesToReload.begin(), texturesToReload.end(), [](std::shared_ptr<TextureInstance>& texture)
+				std::for_each(texturesToRelease.begin(), texturesToRelease.end(), [](std::shared_ptr<TextureInstance> texture)
 					{
 						texture->ReleaseResources();
+						texture->updateFlag &= ~TextureUpdateFlags_Release;
 					}
 				);
-				std::for_each(texturesToReload.begin(), texturesToReload.end(), [](std::shared_ptr<TextureInstance>& texture)
+				if (destroyPreview) { texturePreview = nullptr; }
+				std::for_each(texturesToLoad.begin(), texturesToLoad.end(), [](std::shared_ptr<TextureInstance> texture)
 					{
 						nlohmann::json& json = GetTextureTemplate(texture->materialTexture);
 						texture->Load(texture->materialTexture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
+						texture->updateFlag &= ~TextureUpdateFlags_Load;
+						std::for_each(texture->onChangeCallbacks.begin(), texture->onChangeCallbacks.end(), [](auto& pair)
+							{
+								pair.second();
+							}
+						);
 					}
 				);
 			}
 		);
+	}
+
+	void SetSelectedTexture(std::string uuid)
+	{
+		texturePreview = std::make_shared<TextureInstance>();
+		nlohmann::json& json = GetTextureTemplate(uuid);
+		texturePreview->Load(uuid, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
+	}
+
+	void DeSelectTexture()
+	{
+		texturePreview->updateFlag |= TextureUpdateFlags_Release;
 	}
 
 }

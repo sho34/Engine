@@ -66,7 +66,7 @@ static const std::map<_Templates, std::function<void(std::string, std::string&)>
 	{ T_Models3D, selectTemplate },
 	{ T_Shaders, selectTemplate },
 	{ T_Sounds, selectTemplate },
-	{ T_Textures, selectTemplate },
+	{ T_Textures, [](std::string from, std::string& to) {selectTemplate(from,to); SetSelectedTexture(from); }},
 };
 
 static const std::map<_Templates, std::function<void(std::string&)>> DeSelectTemplate = {
@@ -74,7 +74,7 @@ static const std::map<_Templates, std::function<void(std::string&)>> DeSelectTem
 	{ T_Models3D, deSelectTemplate },
 	{ T_Shaders, deSelectTemplate },
 	{ T_Sounds, deSelectTemplate },
-	{ T_Textures, deSelectTemplate },
+	{ T_Textures, [](std::string& s) {deSelectTemplate(s); DeSelectTexture(); }},
 };
 
 static const std::map<_Templates, std::function<void(std::string, ImVec2, ImVec2, bool)>> DrawTemplatePanel = {
