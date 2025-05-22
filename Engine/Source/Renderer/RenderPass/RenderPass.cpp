@@ -50,6 +50,7 @@ namespace RenderPass {
 		{
 			std::string passName = name + "[" + std::to_string(i) + "]";
 			CCNAME_D3D12_OBJECT_N(swapChainPass->renderTargets[i], passName);
+			LogCComPtrAddress(passName, swapChainPass->renderTargets[i]);
 		}
 		swapChainPass->screenViewport = renderer->screenViewport;
 		swapChainPass->scissorRect = renderer->scissorRect;

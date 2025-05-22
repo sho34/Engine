@@ -11,6 +11,7 @@ using namespace Editor;
 #endif
 #include "Renderer/DeviceUtils/Resources/Resources.h"
 #include "Common/DirectXHelper.h"
+#include "Common/StepTimer.h"
 #include "Shaders/Compute/LuminanceHistogram.h"
 #include "Shaders/Compute/LuminanceHistogramAverage.h"
 
@@ -535,6 +536,7 @@ void EditorModeStep()
 	Editor::GameAreaMouseProcessing(mouse, mainPassCamera);
 }
 
+extern DX::StepTimer timer;
 void EditorModeRender()
 {
 	if (mainPassCamera != nullptr)
@@ -553,6 +555,13 @@ void EditorModeRender()
 			}
 		);
 
+		hdrHistogram->UpdateLuminanceHistogramParams(mainPass->renderToTexture[0]->width, mainPass->renderToTexture[0]->height, mainPassCamera->minLogLuminance(), mainPassCamera->maxLogLuminance());
+		luminanceHistogramAverage->UpdateLuminanceHistogramAverageParams(
+			mainPass->renderToTexture[0]->width * mainPass->renderToTexture[0]->height,
+			mainPassCamera->minLogLuminance(), mainPassCamera->maxLogLuminance(),
+			timer.GetElapsedSeconds(),
+			mainPassCamera->tau()
+		);
 		hdrHistogram->Compute();
 		luminanceHistogramAverage->Compute();
 

@@ -102,6 +102,15 @@ namespace Scene {
 		float white();
 		void white(float f);
 
+		float minLogLuminance();
+		void minLogLuminance(float f);
+
+		float maxLogLuminance();
+		void maxLogLuminance(float f);
+
+		float tau();
+		void tau(float f);
+
 		bool hidden() { return false; }
 
 		XMMATRIX world();

@@ -41,6 +41,9 @@ namespace Scene
 		SetIfMissingJson(camera->json, "uuid", defaultCamUUID);
 		SetIfMissingJson(camera->json, "fitWindow", false);
 		SetIfMissingJson(camera->json, "projectionType", ProjectionTypesToStr.at(PROJ_Perspective));
+		SetIfMissingJson(camera->json, "minLogLuminance", -2.0f);
+		SetIfMissingJson(camera->json, "maxLogLuminance", 10.0f);
+		SetIfMissingJson(camera->json, "tau", 1.1f);
 
 		bool fitToWindow = camera->json.at("fitWindow");
 
@@ -429,6 +432,36 @@ namespace Scene
 	void Camera::white(float f)
 	{
 		json.at("white") = f;
+	}
+
+	float Camera::minLogLuminance()
+	{
+		return json.at("minLogLuminance");
+	}
+
+	void Camera::minLogLuminance(float f)
+	{
+		json.at("minLogLuminance") = f;
+	}
+
+	float Camera::maxLogLuminance()
+	{
+		return json.at("maxLogLuminance");
+	}
+
+	void Camera::maxLogLuminance(float f)
+	{
+		json.at("maxLogLuminance") = f;
+	}
+
+	float Camera::tau()
+	{
+		return json.at("tau");
+	}
+
+	void Camera::tau(float f)
+	{
+		json.at("tau") = f;
 	}
 
 	XMMATRIX Camera::world()
@@ -893,6 +926,24 @@ namespace Scene
 		if (ImGui::InputFloat("white", &w))
 		{
 			white(w);
+		}
+
+		float minLogL = minLogLuminance();
+		if (ImGui::InputFloat("minLogLuminance", &minLogL))
+		{
+			minLogLuminance(minLogL);
+		}
+
+		float maxLogL = maxLogLuminance();
+		if (ImGui::InputFloat("maxLogLuminance", &maxLogL))
+		{
+			maxLogLuminance(maxLogL);
+		}
+
+		float tauf = tau();
+		if (ImGui::InputFloat("tau", &tauf))
+		{
+			tau(tauf);
 		}
 	}
 #endif
