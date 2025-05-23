@@ -10,14 +10,27 @@
 #include "../../Common/DirectXHelper.h"
 #include "../Utils/ImageConvert.h"
 #include <Editor.h>
+#include "../../Editor/Editor.h"
 
 extern std::shared_ptr<Renderer> renderer;
+
+namespace Editor {
+	extern std::string selTemp;
+};
 
 namespace Templates
 {
 #if defined(_EDITOR)
 	std::shared_ptr<TextureInstance> texturePreview = nullptr;
 #endif
+
+	namespace Texture
+	{
+#if defined(_EDITOR)
+		nlohmann::json creationJson;
+		unsigned int popupModalId = 0U;
+#endif
+	};
 
 	TEMPDEF_FULL(Texture);
 
@@ -27,6 +40,18 @@ namespace Templates
 		ddsPath.replace_extension(".dds");
 
 		using namespace Utils;
+
+		DXGI_FORMAT formatO;
+		unsigned int widthO;
+		unsigned int heightO;
+		unsigned int mipLevelsO;
+		unsigned int numFramesO;
+		GetImageAttributes(path, formatO, widthO, heightO, mipLevelsO, numFramesO);
+
+		auto isPowerOfTwo = [](unsigned int n) { return (n > 0) && ((n & (n - 1)) == 0); };
+		auto prevPowerOfTwo = [](unsigned int x) { x = x | (x >> 1); x = x | (x >> 2); x = x | (x >> 4); x = x | (x >> 8); x = x | (x >> 16); return x - (x >> 1); };
+		if (!isPowerOfTwo(widthO)) { width = prevPowerOfTwo(widthO); }
+		if (!isPowerOfTwo(heightO)) { height = prevPowerOfTwo(heightO); }
 
 		if (!std::filesystem::exists(ddsPath) || overwrite)
 		{
@@ -103,6 +128,7 @@ namespace Templates
 
 	void DestroyTexture(std::string uuid)
 	{
+
 	}
 
 	void ReleaseTexturesTemplates()
@@ -272,14 +298,93 @@ namespace Templates
 
 	void CreateNewTexture()
 	{
+		Texture::popupModalId = TexturePopupModal_CreateNew;
+		Texture::creationJson = nlohmann::json(
+			{
+				{ "format", dxgiFormatsToString.at(DXGI_FORMAT_R8G8B8A8_UNORM)},
+				{ "height", 128 },
+				{ "mipLevels", 1 },
+				{ "name", "" },
+				{ "numFrames", 1 },
+				{ "uuid", getUUID() },
+				{ "width", 128 }
+			}
+		);
 	}
 
 	void DeleteTexture(std::string uuid)
 	{
+		nlohmann::json json = GetTextureTemplate(uuid);
+		if (json.contains("systemCreated") && json.at("systemCreated") == true)
+		{
+			Texture::popupModalId = TexturePopupModal_CannotDelete;
+			return;
+		}
+
+		GetTextureTemplates().erase(uuid);
 	}
 
 	void DrawTexturesPopups()
 	{
+		Editor::DrawOkPopup(Texture::popupModalId, TexturePopupModal_CannotDelete, "Cannot delete texture", []
+			{
+				ImGui::Text("Cannot delete a system created texture");
+			}
+		);
+
+		Editor::DrawCreateWindow(Texture::popupModalId, TexturePopupModal_CreateNew, "Create new texture", [](auto OnCancel)
+			{
+				nlohmann::json& json = Texture::creationJson;
+
+				std::string parentFolder = defaultAssetsFolder;
+
+				ImGui::PushID("texture-name");
+				{
+					ImDrawJsonFilePicker(json, "name", parentFolder, "Image files", "*.png;*.jpg;*.jpeg;*.gif", [&json]
+						{
+							json.at("name") = nostd::normalize_path(json.at("name"));
+						}
+					);
+				}
+				ImGui::PopID();
+
+				ImGui::PushID("texture-format");
+				{
+					ImGui::Text("Format");
+					drawFromCombo(json, "format", stringToDxgiFormat);
+				}
+				ImGui::PopID();
+
+				if (ImGui::Button("Cancel")) { OnCancel(); }
+				ImGui::SameLine();
+
+				bool disabledCreate = json.at("name") == "";
+
+				if (disabledCreate)
+				{
+					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+				}
+
+				if (ImGui::Button("Create"))
+				{
+					if (!json.at("name").empty())
+					{
+						using namespace Utils;
+
+						Texture::popupModalId = 0;
+						CreateTexture(json);
+						CreateDDSFile(json.at("uuid"), json.at("name"), true, stringToDxgiFormat.at(json.at("format")));
+					}
+				}
+
+				if (disabledCreate)
+				{
+					ImGui::PopItemFlag();
+					ImGui::PopStyleVar();
+				}
+			}
+		);
 	}
 
 #endif

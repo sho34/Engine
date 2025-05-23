@@ -1,8 +1,9 @@
-TODO:
+BUGS:
+-visualizar el point light, después el spot y se ve el point achatado
 
--HDR with automatic exposure adjustment or eye adaptation 
--texturas srgb que pasen define al shader
--Hacer render preview de las camaras
+TODO:
+-hacer que la instanciación de los materiales sea dinamico de acuerdo a los parámetros IBL de la camara
+-Arreglar el tema del defined(_HAS_METALLIC_B...) en PBR.hlsl que hace fallback a blinnphong
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
 	-Presets
 		-daylight
@@ -13,6 +14,9 @@ TODO:
 -Deferred Rendering
 
 DONE:
+-texturas con preview, creacion y destruccion desde el editor
+-HDR with automatic exposure adjustment or eye adaptation 
+-texturas srgb que pasen define al shader
 -arreglar el bug de la no recarga de las texturas cuando las cambio de formato. los basetexture de knight son un muy buen ejemplo ya que cargan mal como srgb y la swordfur carga bien por que BGRA
 -Arreglar el crash de Windows minimizar
 -Arreglar el crash de Windows resize
@@ -29,3 +33,6 @@ DONE:
 	-Eje derecha de la cámara mover izq-derecha con click derecho y movimiento horizontal
 	-Eje arriba de la cámara mover arriba-abajo con click derecho y movimiento vertical 
 	-desabilitar movimiento/rotacion de camera si se esta interactuando con un gizmo
+
+NICETOHAVE
+-Hacer render preview de las camaras

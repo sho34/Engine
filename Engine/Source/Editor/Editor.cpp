@@ -529,7 +529,7 @@ namespace Editor {
 		}
 	}
 
-	void DrawAssetTreeNodes(std::map<std::string, std::any>& dump, std::string path, auto OnPick)
+	void DrawAssetTreeNodes(std::map<std::string, std::any>& dump, std::string path, auto OnPick, auto OnDelete)
 	{
 		for (auto it = dump.begin(); it != dump.end(); it++)
 		{
@@ -538,6 +538,17 @@ namespace Editor {
 
 			if (child.empty())
 			{
+				ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.15f));
+				{
+					if (ImGui::Button(ICON_FA_TIMES, ImVec2(16.0f, 16.0f)))
+					{
+						OnDelete(p);
+					}
+				}
+				ImGui::PopStyleVar();
+
+				ImGui::SameLine();
+
 				if (ImGui::TreeNodeEx(it->first.c_str(), ImGuiTreeNodeFlags_Leaf))
 				{
 					if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiPopupFlags_MouseButtonLeft))
@@ -551,14 +562,14 @@ namespace Editor {
 			{
 				if (ImGui::TreeNodeEx(it->first.c_str()))
 				{
-					DrawAssetTreeNodes(child, p, OnPick);
+					DrawAssetTreeNodes(child, p, OnPick, OnDelete);
 					ImGui::TreePop();
 				}
 			}
 		}
 	}
 
-	void DrawAssetsTree(auto GetObjects, auto OnPick, std::string ignorePrefix)
+	void DrawAssetsTree(auto GetObjects, auto OnPick, auto OnDelete, std::string ignorePrefix)
 	{
 		std::map<std::string, std::any> assets;
 
@@ -576,7 +587,7 @@ namespace Editor {
 			BuildAssetsTree(assets, parts);
 		}
 
-		DrawAssetTreeNodes(assets, "", OnPick);
+		DrawAssetTreeNodes(assets, "", OnPick, OnDelete);
 	}
 
 	void DrawListPanel(auto OnCreate, auto DrawObjects)
@@ -749,7 +760,13 @@ namespace Editor {
 								{
 									std::string uuid = FindTextureUUIDByName(defaultAssetsFolder + texName);
 									SetSelectedTemplate.at(tempTab)(uuid, selTemp);
-								}, defaultAssetsFolder
+								},
+								[](std::string texName)
+								{
+									std::string uuid = FindTextureUUIDByName(defaultAssetsFolder + texName);
+									DeleteTemplate.at(tempTab)(uuid);
+								}
+								, defaultAssetsFolder
 							);
 						}
 					}
