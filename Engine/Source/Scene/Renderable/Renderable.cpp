@@ -50,11 +50,11 @@ namespace Scene {
 	unsigned int Renderable::popupModalId = 0U;
 #endif
 
-	void Renderable::TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes, std::map<TextureType, std::string> baseTextures)
+	void Renderable::TransformJsonToMeshMaterialMap(MeshMaterialMap& map, nlohmann::json j, nlohmann::json shaderAttributes, std::map<TextureShaderUsage, std::string> baseTextures)
 	{
 		std::transform(j.begin(), j.end(), std::inserter(map, map.end()), [shaderAttributes, baseTextures](const nlohmann::json& value)
 			{
-				std::map<TextureType, std::string> textures;
+				std::map<TextureShaderUsage, std::string> textures;
 				TransformJsonToMaterialTextures(textures, GetMaterialTemplate(value["material"]), "textures");
 
 				if (value.contains("textures"))
@@ -161,7 +161,7 @@ namespace Scene {
 			renderable->TransformJsonToMeshMaterialMap(renderable->meshMaterials, renderablej["meshMaterials"], renderable->json);
 			renderable->meshes.push_back(renderable->meshMaterials.begin()->first);
 
-			std::map<TextureType, std::string> baseTextures;
+			std::map<TextureShaderUsage, std::string> baseTextures;
 			std::shared_ptr<MaterialInstance> matInstance = renderable->meshMaterials.begin()->second;
 			for (auto it = matInstance->textures.begin(); it != matInstance->textures.end(); it++)
 			{
@@ -356,7 +356,7 @@ namespace Scene {
 		meshMaterials.insert_or_assign(mesh, material);
 
 		//pick tuple textures if available
-		std::map<TextureType, std::string> textures;
+		std::map<TextureShaderUsage, std::string> textures;
 		if (material->tupleTextures.size() > 0U)
 		{
 			textures = material->tupleTextures;
@@ -369,10 +369,10 @@ namespace Scene {
 		}
 
 		//truncate to first texture
-		std::map<TextureType, std::string> shadowMapBaseTexture;
-		if (textures.contains(TextureType_Base))
+		std::map<TextureShaderUsage, std::string> shadowMapBaseTexture;
+		if (textures.contains(TextureShaderUsage_Base))
 		{
-			shadowMapBaseTexture.insert_or_assign(TextureType_Base, textures.at(TextureType_Base));
+			shadowMapBaseTexture.insert_or_assign(TextureShaderUsage_Base, textures.at(TextureShaderUsage_Base));
 		}
 
 		std::shared_ptr<MaterialInstance> shadowMapMaterial = GetMaterialInstance(FindMaterialUUIDByName("ShadowMap"), shadowMapBaseTexture, mesh, defaultShadowMapShaderAttributes);
@@ -687,7 +687,7 @@ namespace Scene {
 
 		for (auto& mesh : meshes)
 		{
-			std::map<TextureType, std::string> textures;
+			std::map<TextureShaderUsage, std::string> textures;
 			std::shared_ptr<MaterialInstance> pickingMaterial = GetMaterialInstance(pickingMaterialUUID, textures, mesh, defaultPickingShaderAttributes);
 			pickingMeshMaterials.insert_or_assign(mesh, pickingMaterial);
 			MapConstantsBuffers(mesh, pickingMaterial, "picking", pickingMeshConstantsBuffer);
@@ -925,7 +925,7 @@ namespace Scene {
 
 			if (!model3D)
 			{
-				materialInstance = GetMaterialInstance(materialToRebuild.at(meshIndex), std::map<TextureType, std::string>(), mesh, json);
+				materialInstance = GetMaterialInstance(materialToRebuild.at(meshIndex), std::map<TextureShaderUsage, std::string>(), mesh, json);
 			}
 			else
 			{
@@ -1009,7 +1009,7 @@ namespace Scene {
 	{
 		for (auto& [mesh, materialUUID] : materialSwaps)
 		{
-			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialUUID, std::map<TextureType, std::string>(), mesh, json);
+			std::shared_ptr<MaterialInstance> materialInstance = GetMaterialInstance(materialUUID, std::map<TextureShaderUsage, std::string>(), mesh, json);
 			SetMeshMaterial(mesh, materialInstance);
 			CreateMeshConstantsBuffers(mesh);
 			CreateMeshRootSignatures(mesh);

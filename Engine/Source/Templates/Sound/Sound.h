@@ -26,7 +26,7 @@ namespace Templates {
 	{
 		SoundPopupModal_CannotDelete = 1,
 		SoundPopupModal_CreateNew = 2
-};
+	};
 #endif
 
 	namespace Sound
@@ -61,6 +61,7 @@ namespace Templates {
 	void CreateNewSound();
 	void DeleteSound(std::string uuid);
 	void DrawSoundsPopups();
+	bool SoundsPopupIsOpen();
 	void WriteSoundsJson(nlohmann::json& json);
 #endif
 

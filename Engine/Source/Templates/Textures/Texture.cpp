@@ -22,6 +22,17 @@ namespace Templates
 {
 #if defined(_EDITOR)
 	std::shared_ptr<TextureInstance> texturePreview = nullptr;
+	std::vector<std::string> cubeTextureAxesNames = { "X+" , "X-" , "Y+" , "Y-" , "Z+" , "Z-" , };
+	std::map<TextureType, std::string> textureTypeFilesTitle = {
+		{ TextureType_2D, "Texture files. (*.jpg, *.jpeg, *.png, *.bmp)"},
+		{ TextureType_Array, "Texture files. (*.gif)"},
+		{ TextureType_Cube, "Texture files. (*.jpg, *.jpeg, *.png, *.bmp)"},
+	};
+	std::map<TextureType, std::string> textureTypeFilesFilter = {
+		{ TextureType_2D, "*.jpg;*.jpeg;*.png;*.bmp" },
+		{ TextureType_Array,"*.gif" },
+		{ TextureType_Cube,"*.jpg;*.jpeg;*.png;*.bmp" },
+	};
 #endif
 
 	namespace Texture
@@ -29,45 +40,181 @@ namespace Templates
 #if defined(_EDITOR)
 		nlohmann::json creationJson;
 		unsigned int popupModalId = 0U;
+		std::filesystem::path filePickingDirectory = defaultAssetsFolder;
+		int imageFrame = 1U;
+		bool creationFromSkybox = false;
 #endif
 	};
 
 	TEMPDEF_FULL(Texture);
 
-	void CreateDDSFile(std::string uuid, std::filesystem::path path, bool overwrite, DXGI_FORMAT format, unsigned int width, unsigned int height, unsigned int mipLevels)
+	void Create2DDDSFile(nlohmann::json json, bool overwrite)
 	{
-		std::filesystem::path ddsPath = path;
-		ddsPath.replace_extension(".dds");
-
 		using namespace Utils;
 
-		DXGI_FORMAT formatO;
-		unsigned int widthO;
-		unsigned int heightO;
-		unsigned int mipLevelsO;
-		unsigned int numFramesO;
-		GetImageAttributes(path, formatO, widthO, heightO, mipLevelsO, numFramesO);
+		std::filesystem::path ddsPath = json.at("name");
+		ddsPath.replace_extension(".dds");
 
-		auto isPowerOfTwo = [](unsigned int n) { return (n > 0) && ((n & (n - 1)) == 0); };
-		auto prevPowerOfTwo = [](unsigned int x) { x = x | (x >> 1); x = x | (x >> 2); x = x | (x >> 4); x = x | (x >> 8); x = x | (x >> 16); return x - (x >> 1); };
-		if (!isPowerOfTwo(widthO)) { width = prevPowerOfTwo(widthO); }
-		if (!isPowerOfTwo(heightO)) { height = prevPowerOfTwo(heightO); }
+		unsigned int width, height, mipLevels, numFrames;
+		DXGI_FORMAT format;
 
-		if (!std::filesystem::exists(ddsPath) || overwrite)
+		if (!std::filesystem::exists(ddsPath))
+			overwrite = true;
+
+		if (!overwrite)
 		{
-			ConvertToDDS(path, ddsPath, format, width, height, mipLevels);
+			GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
 		}
-		unsigned int numFrames = 0;
-		GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+		else
+		{
+			std::filesystem::path image = json.at("images").at(0);
+			GetImageAttributes(image, format, width, height, mipLevels, numFrames);
+			if (!IsPowerOfTwo(width)) { width = PrevPowerOfTwo(width); }
+			if (!IsPowerOfTwo(height)) { height = PrevPowerOfTwo(height); }
+			ConvertToDDS(image, ddsPath, format, width, height, mipLevels);
+		}
 
-		TextureTemplate& t = GetTextureTemplates().at(uuid);
+		TextureTemplate& t = GetTextureTemplates().at(json.at("uuid"));
 
-		nlohmann::json& json = std::get<1>(t);
-		json.at("numFrames") = numFrames;
-		json.at("format") = dxgiFormatsToString.at(format);
-		json.at("width") = width;
-		json.at("height") = height;
-		json.at("mipLevels") = mipLevels;
+		nlohmann::json& tj = std::get<1>(t);
+		tj.at("numFrames") = numFrames;
+		tj.at("format") = dxgiFormatsToString.at(format);
+		tj.at("width") = width;
+		tj.at("height") = height;
+		tj.at("mipLevels") = mipLevels;
+	}
+
+	void CreateArrayDDSFile(nlohmann::json json, bool overwrite)
+	{
+		using namespace Utils;
+
+		std::filesystem::path ddsPath = json.at("name");
+		ddsPath.replace_extension(".dds");
+
+		unsigned int width, height, mipLevels, numFrames;
+		DXGI_FORMAT format;
+
+		if (!std::filesystem::exists(ddsPath))
+			overwrite = true;
+
+		if (!overwrite)
+		{
+			GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+		}
+		else
+		{
+			std::filesystem::path image = json.at("images").at(0);
+			AssembleArrayDDSFromGif(ddsPath, image);
+			GetImageAttributes(image, format, width, height, mipLevels, numFrames);
+			if (!IsPowerOfTwo(width)) { width = PrevPowerOfTwo(width); }
+			if (!IsPowerOfTwo(height)) { height = PrevPowerOfTwo(height); }
+			ConvertToDDS(image, ddsPath, stringToDxgiFormat.at(json.at("format")), width, height, mipLevels);
+			GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+		}
+
+		TextureTemplate& t = GetTextureTemplates().at(json.at("uuid"));
+
+		nlohmann::json& tj = std::get<1>(t);
+		tj.at("numFrames") = numFrames;
+		tj.at("format") = dxgiFormatsToString.at(format);
+		tj.at("width") = width;
+		tj.at("height") = height;
+		tj.at("mipLevels") = mipLevels;
+	}
+
+	void CreateCubeDDSFile(nlohmann::json json, bool overwrite)
+	{
+		using namespace Utils;
+
+		std::filesystem::path ddsPath = json.at("name");
+		ddsPath.replace_extension(".dds");
+
+		unsigned int width, height, mipLevels, numFrames;
+		DXGI_FORMAT format;
+
+		if (!std::filesystem::exists(ddsPath))
+			overwrite = true;
+
+		if (!overwrite)
+		{
+			GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+		}
+		else
+		{
+			if (!Texture::creationFromSkybox)
+			{
+				unsigned int widthO, widthN;
+				unsigned int heightO, heightN;
+				unsigned int mipLevelsO, mipLevelsN;
+				unsigned int numFramesO, numFramesN;
+				DXGI_FORMAT formatO;
+
+				for (unsigned int i = 0U; i < json.at("images").size(); i++)
+				{
+					std::filesystem::path imagePath = json.at("images").at(i);
+					GetImageAttributes(imagePath, formatO, widthO, heightO, mipLevelsO, numFramesO);
+					widthN = std::min(i == 0 ? widthO : widthN, widthO);
+					heightN = std::min(i == 0 ? heightO : heightN, heightO);
+					mipLevelsN = std::min(i == 0 ? mipLevelsO : mipLevelsN, mipLevelsO);
+					numFramesN = std::min(i == 0 ? numFramesO : numFramesN, numFramesO);
+				}
+
+				width = widthN;
+				height = heightN;
+				format = stringToDxgiFormat.at(json.at("format"));
+
+				if (!IsPowerOfTwo(width)) { width = PrevPowerOfTwo(width); }
+				if (!IsPowerOfTwo(height)) { height = PrevPowerOfTwo(height); }
+
+				AssembleCubeDDS(ddsPath, json.at("images"), width, height);
+				ConvertToDDS(ddsPath, ddsPath, format, 0U, 0U, 0U);
+				GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+			}
+			else
+			{
+				AssembleCubeDDSFromSkybox(ddsPath, json.at("images").at(0));
+				GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+				if (!IsPowerOfTwo(width)) { width = PrevPowerOfTwo(width); }
+				if (!IsPowerOfTwo(height)) { height = PrevPowerOfTwo(height); }
+				ConvertToDDS(ddsPath, ddsPath, stringToDxgiFormat.at(json.at("format")), width, height, 0U);
+				GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+			}
+		}
+
+		TextureTemplate& t = GetTextureTemplates().at(json.at("uuid"));
+
+		nlohmann::json& tj = std::get<1>(t);
+		tj.at("numFrames") = numFrames;
+		tj.at("format") = dxgiFormatsToString.at(format);
+		tj.at("width") = width;
+		tj.at("height") = height;
+		tj.at("mipLevels") = mipLevels;
+	}
+
+	void CreateDDSFile(nlohmann::json& json, bool overwrite)
+	{
+		std::filesystem::path dir = json.at("name");
+		dir.remove_filename();
+		std::filesystem::create_directory(dir);
+
+		switch (stringToTextureType.at(json.at("type")))
+		{
+		case TextureType_2D:
+		{
+			Create2DDDSFile(json, overwrite);
+		}
+		break;
+		case TextureType_Array:
+		{
+			CreateArrayDDSFile(json, overwrite);
+		}
+		break;
+		case TextureType_Cube:
+		{
+			CreateCubeDDSFile(json, overwrite);
+		}
+		break;
+		}
 	}
 
 	void RebuildTexture(std::string uuid)
@@ -75,12 +222,27 @@ namespace Templates
 		TextureTemplate& t = GetTextureTemplates().at(uuid);
 		std::string& path = std::get<0>(t);
 		nlohmann::json& json = std::get<1>(t);
+		nlohmann::json buildJson = json;
+		buildJson["name"] = path;
+		buildJson["uuid"] = uuid;
+		CreateDDSFile(buildJson, true);
+	}
 
-		DXGI_FORMAT format = stringToDxgiFormat.at(json.at("format"));
-		unsigned int width = json.at("width");
-		unsigned int height = json.at("height");
-		unsigned int mipLevels = json.at("mipLevels");
-		CreateDDSFile(uuid, path, true, format, width, height, mipLevels);
+	nlohmann::json CreateBaseTextureJson(std::string name, unsigned int numFrames, DXGI_FORMAT format)
+	{
+		return nlohmann::json(
+			{
+				{ "uuid", getUUID() },
+				{ "name", name },
+				{ "images", { name } },
+				{ "numFrames", numFrames },
+				{ "format", dxgiFormatsToString.at(format) },
+				{ "type", textureTypeToString.at(TextureType_2D) },
+				{ "width", 128 },
+				{ "height", 128 },
+				{ "mipLevels", 1 }
+			}
+		);
 	}
 
 	void CreateTexturesTemplatesFromMaterial(nlohmann::json json)
@@ -91,44 +253,18 @@ namespace Templates
 			if (texture.type() != nlohmann::json::value_t::object) continue;
 
 			std::string name = nostd::normalize_path(texture.at("path"));
-			nlohmann::json texj = nlohmann::json(
-				{
-					{ "uuid", getUUID() },
-					{ "name", name },
-					{ "numFrames", texture.at("numFrames") },
-					{ "format", texture.at("format") },
-					{ "width", 128 },
-					{ "height", 128 },
-					{ "mipLevels", 1 }
-				}
-			);
-
+			nlohmann::json texj = CreateBaseTextureJson(name, texture.at("numFrames"), stringToDxgiFormat.at(texture.at("format")));
 			CreateTexture(texj);
-			CreateDDSFile(texj.at("uuid"), name, false, stringToDxgiFormat.at(texture.at("format")));
+			CreateDDSFile(texj, false);
 		}
 	}
 
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format)
 	{
-		nlohmann::json texj = nlohmann::json(
-			{
-				{ "uuid", getUUID() },
-				{ "name", name},
-				{ "numFrames", 0 },
-				{ "format", dxgiFormatsToString.at(format) },
-				{ "width", 128 },
-				{ "height", 128 },
-				{ "mipLevels", 1 }
-			}
-		);
+		nlohmann::json texj = CreateBaseTextureJson(name, 0, format);
 		CreateTexture(texj);
-		CreateDDSFile(texj.at("uuid"), name, false, format);
+		CreateDDSFile(texj, false);
 		return texj.at("uuid");
-	}
-
-	void DestroyTexture(std::string uuid)
-	{
-
 	}
 
 	void ReleaseTexturesTemplates()
@@ -158,20 +294,42 @@ namespace Templates
 
 		std::string fileName = std::get<0>(t);
 		nlohmann::json& json = std::get<1>(t);
-		ImDrawFileSelector(
-			"##",
-			fileName,
-			[&json](std::filesystem::path texPath)
+		std::string parentFolder = Texture::filePickingDirectory.relative_path().string();
+
+		bool rebuildInstance = false;
+
+		for (unsigned int i = 0; i < json.at("images").size(); i++)
+		{
+			nlohmann::json jsonF = { {"file",json.at("images").at(i)} };
+			ImGui::PushID((std::string("image-") + std::to_string(i + 1)).c_str());
 			{
-				//std::filesystem::path hlslFilePath = shaderPath;
-				//hlslFilePath.replace_extension(".hlsl");
-				//json.at("path") = hlslFilePath.stem().string();
-			},
-			defaultAssetsFolder,
-			"Texture files. (*.jpg, *.jpeg, *.png, *.gif)",
-			"*.jpg;*.jpeg;*.png;*.gif",
-			true
-			);
+				ImDrawJsonFilePicker(jsonF,
+					"file",
+					parentFolder,
+					textureTypeFilesTitle.at(stringToTextureType.at(json.at("type"))),
+					textureTypeFilesFilter.at(stringToTextureType.at(json.at("type"))),
+					[&jsonF, &json, i, &t, &rebuildInstance]
+					{
+						std::filesystem::path filePath = nostd::normalize_path(jsonF.at("file"));
+						Texture::filePickingDirectory = filePath.relative_path().remove_filename();
+						json.at("images")[i] = filePath.string();
+						if (stringToTextureType.at(json.at("type")) != TextureType_Cube)
+						{
+							std::string& name = std::get<0>(t);
+							name = filePath.string();
+						}
+						rebuildInstance = true;
+					}
+				, "##");
+			}
+			ImGui::PopID();
+		}
+
+		if (rebuildInstance)
+		{
+			RebuildInstance(uuid);
+		}
+
 		return false;
 	}
 
@@ -210,6 +368,12 @@ namespace Templates
 			};
 
 		bool rebuildInstance = false;
+
+		ImGui::PushID("texture-file-type");
+		{
+			ImGui::InputText("Type", json.at("type").get_ptr<std::string*>(), ImGuiInputTextFlags_ReadOnly);
+		}
+		ImGui::PopID();
 
 		ImGui::PushID("texture-file-numFrames");
 		{
@@ -275,21 +439,36 @@ namespace Templates
 
 		if (rebuildInstance)
 		{
-			RebuildTexture(uuid);
-			std::shared_ptr<TextureInstance> instance = Templates::GetTextureInstance(uuid);
-			if (instance)
-			{
-				instance->updateFlag |= TextureUpdateFlags_Reload;
-			}
-			texturePreview->updateFlag |= TextureUpdateFlags_Reload;
+			RebuildInstance(uuid);
 		}
 
 		return false;
 	}
 
+	void Texture::RebuildInstance(std::string& uuid)
+	{
+		RebuildTexture(uuid);
+		std::shared_ptr<TextureInstance> instance = Templates::GetTextureInstance(uuid);
+		if (instance)
+		{
+			instance->updateFlag |= TextureUpdateFlags_Reload;
+		}
+		texturePreview->updateFlag |= TextureUpdateFlags_Reload;
+	}
+
 	void Texture::DrawEditorTexturePreview(std::string uuid)
 	{
 		nlohmann::json& json = GetTextureTemplate(uuid);
+
+		unsigned int numFrames = json.at("numFrames");
+		if (numFrames > 1U)
+		{
+			if (ImGui::SliderInt("Frame", &Texture::imageFrame, 1, numFrames))
+			{
+				texturePreview->updateFlag |= TextureUpdateFlags_Reload;
+			}
+		}
+
 		ImDrawTextureImage((ImTextureID)texturePreview->gpuHandle.ptr,
 			static_cast<unsigned int>(json.at("width")),
 			static_cast<unsigned int>(json.at("height"))
@@ -298,18 +477,17 @@ namespace Templates
 
 	void CreateNewTexture()
 	{
+		ResetTexturePanelParameters();
 		Texture::popupModalId = TexturePopupModal_CreateNew;
-		Texture::creationJson = nlohmann::json(
-			{
-				{ "format", dxgiFormatsToString.at(DXGI_FORMAT_R8G8B8A8_UNORM)},
-				{ "height", 128 },
-				{ "mipLevels", 1 },
-				{ "name", "" },
-				{ "numFrames", 1 },
-				{ "uuid", getUUID() },
-				{ "width", 128 }
-			}
-		);
+		Texture::creationJson = CreateBaseTextureJson("", 1U, DXGI_FORMAT_R8G8B8A8_UNORM);
+	}
+
+	void ResetTexturePanelParameters()
+	{
+		Texture::popupModalId = 0;
+		Texture::creationFromSkybox = false;
+		Texture::imageFrame = 1U;
+		Texture::filePickingDirectory = defaultAssetsFolder;
 	}
 
 	void DeleteTexture(std::string uuid)
@@ -336,17 +514,115 @@ namespace Templates
 			{
 				nlohmann::json& json = Texture::creationJson;
 
-				std::string parentFolder = defaultAssetsFolder;
+				std::string parentFolder = Texture::filePickingDirectory.relative_path().string();
 
-				ImGui::PushID("texture-name");
+				TextureType textureType = stringToTextureType.at(json.at("type"));
+
+				ImGui::PushID("texture-type");
 				{
-					ImDrawJsonFilePicker(json, "name", parentFolder, "Image files", "*.png;*.jpg;*.jpeg;*.gif", [&json]
+					DrawComboSelection(json.at("type").get<std::string>(), nostd::GetKeysFromMap(stringToTextureType), [&json](std::string type)
 						{
-							json.at("name") = nostd::normalize_path(json.at("name"));
-						}
+							json.at("name") = "";
+							json.at("type") = type;
+							if (stringToTextureType.at(json.at("type")) != TextureType_Cube)
+							{
+								json["images"] = nlohmann::json::array({ "" });
+							}
+							else
+							{
+								json["images"] = nlohmann::json::array({ "","","","","","" });
+							}
+						}, "Type"
 					);
 				}
 				ImGui::PopID();
+
+				switch (stringToTextureType.at(json.at("type")))
+				{
+				case TextureType_2D:
+				case TextureType_Array:
+				{
+					ImGui::PushID("texture-name");
+					{
+						ImDrawJsonFilePicker(json, "name", parentFolder,
+							textureTypeFilesTitle.at(stringToTextureType.at(json.at("type"))),
+							textureTypeFilesFilter.at(stringToTextureType.at(json.at("type"))),
+							[&json]
+							{
+								json.at("images")[0] = json.at("name") = nostd::normalize_path(json.at("name"));
+							}
+						);
+					}
+					ImGui::PopID();
+				}
+				break;
+				case TextureType_Cube:
+				{
+					ImGui::PushID("texture-name");
+					{
+						ImGui::InputText("name", json.at("name").get_ptr<std::string*>());
+					}
+					ImGui::PopID();
+
+					ImGui::PushID("texture-is-skybox");
+					{
+						ImGui::Checkbox("Skybox", &Texture::creationFromSkybox);
+					}
+					ImGui::PopID();
+
+					if (!Texture::creationFromSkybox)
+					{
+						for (unsigned int i = 0; i < cubeTextureAxesNames.size(); i++)
+						{
+							std::string ID = std::string("texture-image-") + cubeTextureAxesNames.at(i);
+							ImGui::PushID(ID.c_str());
+							{
+								nlohmann::json jsonF = { {"file",json.at("images").at(i)} };
+								ImDrawJsonFilePicker(jsonF,
+									"file",
+									parentFolder,
+									textureTypeFilesTitle.at(stringToTextureType.at(json.at("type"))),
+									textureTypeFilesFilter.at(stringToTextureType.at(json.at("type"))),
+									[&jsonF, &json, i]
+									{
+										std::filesystem::path filePath = nostd::normalize_path(jsonF.at("file"));
+										Texture::filePickingDirectory = filePath.relative_path().remove_filename();
+										json.at("images")[i] = filePath.string();
+									}
+								, cubeTextureAxesNames.at(i));
+							}
+							ImGui::PopID();
+						}
+					}
+					else
+					{
+						std::string ID = std::string("texture-image-skybox");
+						ImGui::PushID(ID.c_str());
+						{
+							nlohmann::json jsonF = { {"file",json.at("images").at(0)} };
+							ImDrawJsonFilePicker(jsonF,
+								"file",
+								parentFolder,
+								textureTypeFilesTitle.at(stringToTextureType.at(json.at("type"))),
+								textureTypeFilesFilter.at(stringToTextureType.at(json.at("type"))),
+								[&jsonF, &json]
+								{
+									std::filesystem::path filePath = nostd::normalize_path(jsonF.at("file"));
+									Texture::filePickingDirectory = filePath.relative_path().remove_filename();
+									json.at("images")[0] = filePath.string();
+									json.at("images")[1] = filePath.string();
+									json.at("images")[2] = filePath.string();
+									json.at("images")[3] = filePath.string();
+									json.at("images")[4] = filePath.string();
+									json.at("images")[5] = filePath.string();
+								}
+							, "Skybox");
+						}
+						ImGui::PopID();
+					}
+				}
+				break;
+				}
 
 				ImGui::PushID("texture-format");
 				{
@@ -358,7 +634,19 @@ namespace Templates
 				if (ImGui::Button("Cancel")) { OnCancel(); }
 				ImGui::SameLine();
 
-				bool disabledCreate = json.at("name") == "";
+				bool disabledCreate = false;
+				if (json.at("name") == "") disabledCreate = true;
+				if (textureType == TextureType_Cube)
+				{
+					for (unsigned int i = 0; i < 6U; i++)
+					{
+						if (json.at("images")[i] == "")
+						{
+							disabledCreate = true;
+							break;
+						}
+					}
+				}
 
 				if (disabledCreate)
 				{
@@ -372,9 +660,15 @@ namespace Templates
 					{
 						using namespace Utils;
 
-						Texture::popupModalId = 0;
+						if (textureType == TextureType_Cube)
+						{
+							std::filesystem::path newPath = defaultAssetsFolder + "cubes/" + std::string(json.at("name"));
+							json.at("name") = nostd::normalize_path(newPath.string());
+						}
+
 						CreateTexture(json);
-						CreateDDSFile(json.at("uuid"), json.at("name"), true, stringToDxgiFormat.at(json.at("format")));
+						CreateDDSFile(json, true);
+						ResetTexturePanelParameters();
 					}
 				}
 
@@ -387,6 +681,11 @@ namespace Templates
 		);
 	}
 
+	bool TexturesPopupIsOpen()
+	{
+		return !!Texture::popupModalId;
+	}
+
 #endif
 
 	TEMPDEF_REFTRACKER(Texture);
@@ -396,7 +695,7 @@ namespace Templates
 		onChangeCallbacks.clear();
 	}
 
-	void TextureInstance::Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps)
+	void TextureInstance::Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps, unsigned int firstArraySlice)
 	{
 		using namespace Templates;
 		std::filesystem::path path = GetTextureName(texture);
@@ -409,10 +708,10 @@ namespace Templates
 #endif
 		std::string pathS = path.string();
 		materialTexture = texture;
-		CreateTextureResource(pathS, format, numFrames, nMipMaps);
+		CreateTextureResource(pathS, format, numFrames, nMipMaps, firstArraySlice);
 	}
 
-	void TextureInstance::CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps)
+	void TextureInstance::CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps, unsigned int firstArraySlice)
 	{
 		using namespace DeviceUtils;
 
@@ -473,7 +772,9 @@ namespace Templates
 			viewDesc.Texture2DArray.MipLevels = nMipMaps;
 			viewDesc.Texture2DArray.MostDetailedMip = 0;
 			viewDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
-			viewDesc.Texture2DArray.ArraySize = numFrames;
+			//viewDesc.Texture2DArray.ArraySize = numFrames;
+			viewDesc.Texture2DArray.ArraySize = -1;
+			viewDesc.Texture2DArray.FirstArraySlice = firstArraySlice;
 		}
 
 		//allocate descriptors handles for the SRV and kick the resource creation
@@ -493,9 +794,9 @@ namespace Templates
 		onChangeCallbacks.insert_or_assign(uuid, cb);
 	}
 
-	std::map<TextureType, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureType, std::string>& textures)
+	std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureShaderUsage, std::string>& textures)
 	{
-		std::map<TextureType, std::shared_ptr<TextureInstance>> texInstances;
+		std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> texInstances;
 
 		std::transform(textures.begin(), textures.end(), std::inserter(texInstances, texInstances.end()), [](auto pair)
 			{
@@ -509,7 +810,7 @@ namespace Templates
 						return instance;
 					}
 				);
-				return std::pair<TextureType, std::shared_ptr<TextureInstance>>(pair.first, instance);
+				return std::pair<TextureShaderUsage, std::shared_ptr<TextureInstance>>(pair.first, instance);
 			}
 		);
 
@@ -566,7 +867,14 @@ namespace Templates
 				std::for_each(texturesToLoad.begin(), texturesToLoad.end(), [](std::shared_ptr<TextureInstance> texture)
 					{
 						nlohmann::json& json = GetTextureTemplate(texture->materialTexture);
-						texture->Load(texture->materialTexture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
+						if (texture != texturePreview)
+						{
+							texture->Load(texture->materialTexture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
+						}
+						else
+						{
+							texture->Load(texture->materialTexture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"), Texture::imageFrame - 1);
+						}
 						texture->updateFlag &= ~TextureUpdateFlags_Load;
 						std::for_each(texture->onChangeCallbacks.begin(), texture->onChangeCallbacks.end(), [](auto& pair)
 							{
@@ -589,6 +897,7 @@ namespace Templates
 	void DeSelectTexture()
 	{
 		texturePreview->updateFlag |= TextureUpdateFlags_Release;
+		Texture::filePickingDirectory = defaultAssetsFolder;
 	}
 
 }

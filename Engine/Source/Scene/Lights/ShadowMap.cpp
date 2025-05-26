@@ -254,8 +254,8 @@ namespace Scene {
 
 			std::string ShadowMapMinMaxChainMat1 = "ShadowMapMinMaxChainMat1[" + std::to_string(max(2U, width)) + "," + std::to_string(max(2U, height)) + "]";
 			std::string ShadowMapMinMaxChainMat2 = "ShadowMapMinMaxChainMat2[" + std::to_string(max(2U, width)) + "," + std::to_string(max(2U, height)) + "]";
-			shadowMapMinMaxChainMaterial->textures.insert_or_assign(TextureType_MinTexture, GetTextureFromGPUHandle(ShadowMapMinMaxChainMat1, shadowMapChainGpuHandle1));
-			shadowMapMinMaxChainMaterial->textures.insert_or_assign(TextureType_MaxTexture, GetTextureFromGPUHandle(ShadowMapMinMaxChainMat2, shadowMapChainGpuHandle1));
+			shadowMapMinMaxChainMaterial->textures.insert_or_assign(TextureShaderUsage_MinTexture, GetTextureFromGPUHandle(ShadowMapMinMaxChainMat1, shadowMapChainGpuHandle1));
+			shadowMapMinMaxChainMaterial->textures.insert_or_assign(TextureShaderUsage_MaxTexture, GetTextureFromGPUHandle(ShadowMapMinMaxChainMat2, shadowMapChainGpuHandle1));
 
 			//get the new gpu handles 1&2 for the next chain
 			std::shared_ptr<RenderToTexturePass>& pass = shadowMapMinMaxChainRenderPass.back();
@@ -315,9 +315,9 @@ namespace Scene {
 		std::string ShadowMapResultChainMat1 = "ShadowMapMinMaxResult1";
 		std::string ShadowMapResultChainMat2 = "ShadowMapMinMaxResult2";
 		std::string ShadowMapResultChainMat3 = "ShadowMapMinMaxResult3";
-		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureType_DepthTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat1, shadowMapChainGpuHandle));
-		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureType_MinTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat2, lastMinMaxPass->renderToTexture[0]->gpuTextureHandle));
-		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureType_MaxTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat3, lastMinMaxPass->renderToTexture[1]->gpuTextureHandle));
+		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_DepthTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat1, shadowMapChainGpuHandle));
+		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_MinTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat2, lastMinMaxPass->renderToTexture[0]->gpuTextureHandle));
+		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_MaxTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat3, lastMinMaxPass->renderToTexture[1]->gpuTextureHandle));
 	}
 #endif
 

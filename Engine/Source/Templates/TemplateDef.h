@@ -54,7 +54,7 @@
 	TEMPDEF_WRITEJSON(TemplateName);\
 	TEMPDEF_RELEASE(TemplateName)
 
-#define TEMPDEF_REFTRACKER(TemplateName) static nostd::RefTracker<std::string, std::shared_ptr<TemplateName##Instance>> refTracker; \
+#define TEMPDEF_REFTRACKER(TemplateName) static RefTracker<std::string, std::shared_ptr<TemplateName##Instance>> refTracker; \
 std::shared_ptr<TemplateName##Instance> Get##TemplateName##Instance(std::string uuid)\
 {\
 	if(refTracker.Has(uuid))\

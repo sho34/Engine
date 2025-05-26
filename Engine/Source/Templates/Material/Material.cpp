@@ -31,7 +31,7 @@ namespace Templates {
 	std::map<std::string, MaterialTemplate> materials;
 
 	//Material+Mesh = MaterialInstance
-	typedef std::pair<std::tuple<std::string, std::map<TextureType, std::string>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
+	typedef std::pair<std::tuple<std::string, std::map<TextureShaderUsage, std::string>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
 
 	namespace Material
 	{
@@ -39,7 +39,7 @@ namespace Templates {
 		nlohmann::json creationJson;
 		unsigned int popupModalId = 0U;
 #endif
-		static nostd::RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
+		static RefTracker<MaterialMeshInstancePair, std::shared_ptr<MaterialInstance>> refTracker;
 	};
 
 	//CREATE
@@ -72,7 +72,7 @@ namespace Templates {
 
 	static std::mt19937 g;
 
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureType, std::string>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureShaderUsage, std::string>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
 	{
 		if (!materials.contains(uuid))
 		{
@@ -98,7 +98,7 @@ namespace Templates {
 		);
 	}
 
-	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, std::string>& textures, bool castShadows)
+	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureShaderUsage, std::string>& textures, bool castShadows)
 	{
 		nlohmann::json mat = GetMaterialTemplate(uuid);
 		material->vertexShaderUUID = mat.at("shader_vs");
@@ -117,7 +117,7 @@ namespace Templates {
 	{
 		nlohmann::json mat = GetMaterialTemplate(material);
 		TransformJsonToMaterialSamplers(samplers, mat, "samplers");
-		std::map<TextureType, std::string> matTextures;
+		std::map<TextureShaderUsage, std::string> matTextures;
 		if (tupleTextures.size() > 0)
 		{
 			matTextures = tupleTextures;
@@ -149,15 +149,15 @@ namespace Templates {
 			nlohmann::json jtextures = mat.at("textures");
 			for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
 			{
-				TextureType texType = strToTextureType.at(it.key());
-				defines.push_back(textureTypeToShaderDefine.at(texType));
+				TextureShaderUsage texType = strToTextureShaderUsage.at(it.key());
+				defines.push_back(textureShaderUsageToShaderDefine.at(texType));
 
 				nlohmann::json& texTemplate = GetTextureTemplate(it.value());
 				std::string texFormatS = texTemplate.at("format");
 				DXGI_FORMAT texFormat = stringToDxgiFormat.at(texFormatS);
 				if (nonLinearDxgiFormats.contains(texFormat))
 				{
-					std::string srgbTexDefine = textureTypesInGammaToShaderDefine.at(texType);
+					std::string srgbTexDefine = textureShaderUsageInGammaSpaceToShaderDefine.at(texType);
 					defines.push_back(srgbTexDefine);
 				}
 			}
@@ -165,7 +165,7 @@ namespace Templates {
 
 		if (castShadows)
 		{
-			defines.push_back(textureTypeToShaderDefine.at(TextureType_ShadowMaps));
+			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_ShadowMaps));
 		}
 	}
 
@@ -530,7 +530,7 @@ namespace Templates {
 		return "";
 	}
 
-	void TransformJsonToMaterialTextures(std::map<TextureType, std::string>& textures, nlohmann::json object, const std::string& key) {
+	void TransformJsonToMaterialTextures(std::map<TextureShaderUsage, std::string>& textures, nlohmann::json object, const std::string& key) {
 
 		if (!object.contains(key)) return;
 
@@ -538,7 +538,7 @@ namespace Templates {
 
 		for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
 		{
-			textures.insert_or_assign(strToTextureType.at(it.key()), it.value());
+			textures.insert_or_assign(strToTextureShaderUsage.at(it.key()), it.value());
 		}
 	}
 
@@ -603,14 +603,14 @@ namespace Templates {
 		}
 	}
 
-	bool DrawTextureParameters(nlohmann::json& mat, std::set<TextureType> texturesInShader)
+	bool DrawTextureParameters(nlohmann::json& mat, std::set<TextureShaderUsage> texturesInShader)
 	{
 		ImGui::Separator();
 
 		std::vector<std::string> selectables = { " " };
-		for (TextureType type : materialTexturesTypes)
+		for (TextureShaderUsage type : materialTexturesShaderUsage)
 		{
-			std::string texture = textureTypeToStr.at(type);
+			std::string texture = textureShaderUsageToStr.at(type);
 			if (!mat.contains("textures") || !mat.at("textures").contains(texture))
 			{
 				selectables.push_back(texture);
@@ -862,6 +862,11 @@ namespace Templates {
 				}
 			}
 		);
+	}
+
+	bool MaterialsPopupIsOpen()
+	{
+		return !!Material::popupModalId;
 	}
 
 	void DetachShader(std::string uuid)

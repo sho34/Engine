@@ -49,7 +49,7 @@ namespace Templates {
 		~MaterialInstance() { Destroy(); }
 		std::string material;
 		std::string instanceName;
-		std::map<TextureType, std::string> tupleTextures;
+		std::map<TextureShaderUsage, std::string> tupleTextures;
 		VertexClass vertexClass;
 		bool castShadows;
 		MaterialVariablesMapping variablesMapping;
@@ -61,7 +61,7 @@ namespace Templates {
 		std::shared_ptr<ShaderInstance> vertexShader;
 		std::shared_ptr<ShaderInstance> pixelShader;
 		std::vector<MaterialSamplerDesc> samplers;
-		std::map<TextureType, std::shared_ptr<TextureInstance>> textures;
+		std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> textures;
 		std::map<unsigned int, ::CD3DX12_GPU_DESCRIPTOR_HANDLE> uav;
 		unsigned int changesCounter = 0U;
 		std::vector<std::function<void()>> rebuildCallbacks;
@@ -90,8 +90,8 @@ namespace Templates {
 
 	//CREATE
 	void CreateMaterial(nlohmann::json json);
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureType, std::string>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
-	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureType, std::string>& textures, bool castShadows);
+	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureShaderUsage, std::string>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
+	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureShaderUsage, std::string>& textures, bool castShadows);
 
 	//READ&GET
 	nlohmann::json GetMaterialTemplate(std::string uuid);
@@ -101,7 +101,7 @@ namespace Templates {
 	std::string FindMaterialUUIDByName(std::string name);
 
 	//UPDATE
-	void TransformJsonToMaterialTextures(std::map<TextureType, std::string>& textures, nlohmann::json object, const std::string& key);
+	void TransformJsonToMaterialTextures(std::map<TextureShaderUsage, std::string>& textures, nlohmann::json object, const std::string& key);
 
 	//DESTROY
 	void DestroyMaterial(std::string uuid);
@@ -112,11 +112,12 @@ namespace Templates {
 	//EDITOR
 #if defined(_EDITOR)
 	void DrawMaterialPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
-	bool DrawTextureParameters(nlohmann::json& mat, std::set<TextureType> texturesInShader);
+	bool DrawTextureParameters(nlohmann::json& mat, std::set<TextureShaderUsage> texturesInShader);
 	bool DrawSamplerParameters(nlohmann::json& mat, unsigned int totalSamplers, std::function<nlohmann::json()> getSamplerJson);
 	void CreateNewMaterial();
 	void DeleteMaterial(std::string uuid);
 	void DrawMaterialsPopups();
+	bool MaterialsPopupIsOpen();
 	void DetachShader(std::string uuid);
 	void WriteMaterialsJson(nlohmann::json& json);
 #endif

@@ -15,7 +15,7 @@ namespace Templates {
 
 	namespace Mesh
 	{
-		static nostd::RefTracker<std::string, std::shared_ptr<MeshInstance>> refTracker;
+		static RefTracker<std::string, std::shared_ptr<MeshInstance>> refTracker;
 	}
 
 	//CREATE

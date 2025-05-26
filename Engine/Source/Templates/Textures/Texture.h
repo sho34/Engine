@@ -31,24 +31,30 @@ namespace Templates
 #if defined(_EDITOR)
 		bool DrawEditorInformationAttributes(std::string uuid);
 		bool DrawEditorAssetAttributes(std::string uuid);
+		void RebuildInstance(std::string& uuid);
 		void DrawEditorTexturePreview(std::string uuid);
 #endif
 	}
 
-	void CreateDDSFile(std::string uuid, std::filesystem::path path, bool overwrite, DXGI_FORMAT format, unsigned int width = 0, unsigned int height = 0, unsigned int mipLevels = 0);
+	void Create2DDDSFile(nlohmann::json json, bool overwrite);
+	void CreateArrayDDSFile(nlohmann::json json, bool overwrite);
+	void CreateCubeDDSFile(nlohmann::json json, bool overwrite);
+	void CreateDDSFile(nlohmann::json& json, bool overwrite);
 	void RebuildTexture(std::string uuid);
 	void CreateTexturesTemplatesFromMaterial(nlohmann::json json);
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format);
 
 	//DESTROY
-	void DestroyTexture(std::string uuid);
+	//void DestroyTexture(std::string uuid);
 	void ReleaseTexturesTemplates();
 
 #if defined(_EDITOR)
 	void DrawTexturePanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	void CreateNewTexture();
+	void ResetTexturePanelParameters();
 	void DeleteTexture(std::string uuid);
 	void DrawTexturesPopups();
+	bool TexturesPopupIsOpen();
 #endif
 
 	struct TextureInstance
@@ -66,14 +72,14 @@ namespace Templates
 		std::map<std::string, std::function<void()>> onChangeCallbacks;
 
 		~TextureInstance();
-		void Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
-		void CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps);
+		void Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps, unsigned int startFrame = 0U);
+		void CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps, unsigned int startFrame = 0U);
 		void ReleaseResources();
 		void BindChangeCallback(std::string uuid, std::function<void()> cb);
 	};
 	TEMPDECL_REFTRACKER(Texture);
 
-	std::map<TextureType, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureType, std::string>& textures);
+	std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureShaderUsage, std::string>& textures);
 	std::shared_ptr<TextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
 	void DestroyTextureInstance(std::shared_ptr<TextureInstance>& texture);
 	void ReloadTextureInstances();

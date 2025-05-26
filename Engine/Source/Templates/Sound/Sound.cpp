@@ -100,7 +100,7 @@ namespace Templates
 			auto& instances = std::get<3>(t);
 			instances.clear();
 		}
-}
+	}
 #endif
 
 	void ReleaseSoundTemplates()
@@ -298,6 +298,11 @@ namespace Templates
 				}
 			}
 		);
+	}
+
+	bool SoundsPopupIsOpen()
+	{
+		return !!Sound::popupModalId;
 	}
 
 	void WriteSoundsJson(nlohmann::json& json)

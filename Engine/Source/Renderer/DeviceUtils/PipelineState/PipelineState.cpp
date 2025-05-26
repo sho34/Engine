@@ -57,7 +57,7 @@ struct std::hash<ComputePipelineStateDesc>
 
 namespace DeviceUtils
 {
-	static nostd::RefTracker<size_t, HashedPipelineState> refTracker;
+	static RefTracker<size_t, HashedPipelineState> refTracker;
 
 	HashedPipelineState CreateGraphicsPipelineState(GraphicsPipelineStateDesc& p)
 	{

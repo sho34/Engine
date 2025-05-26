@@ -630,7 +630,7 @@ inline void ImDrawJsonInputText(nlohmann::json& json, std::string att)
 	}
 }
 
-inline void ImDrawJsonFilePicker(nlohmann::json& json, std::string att, std::string defaultDirectory, std::string filterName, std::string filterPattern, std::function<void()> onSelectFile = []{})
+inline void ImDrawJsonFilePicker(nlohmann::json& json, std::string att, std::string defaultDirectory, std::string filterName, std::string filterPattern, std::function<void()> onSelectFile = [] {}, std::string label = "##")
 {
 	std::string fileName = "";
 	if (json.contains(att) && json.at(att) != "")
@@ -640,7 +640,7 @@ inline void ImDrawJsonFilePicker(nlohmann::json& json, std::string att, std::str
 		defaultDirectory = rootFolder.parent_path().string();
 	}
 
-	ImDrawFileSelector("##", fileName, [&json, att, onSelectFile](std::filesystem::path path)
+	ImDrawFileSelector(label, fileName, [&json, att, onSelectFile](std::filesystem::path path)
 		{
 			std::filesystem::path curPath = std::filesystem::current_path();
 			std::filesystem::path relPath = std::filesystem::relative(path, curPath);

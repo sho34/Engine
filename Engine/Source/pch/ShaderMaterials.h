@@ -111,61 +111,82 @@ struct std::hash<ShaderUAVParametersMap>
 };
 
 //Texture Type
+enum TextureShaderUsage
+{
+	TextureShaderUsage_Base,
+	TextureShaderUsage_NormalMap,
+	TextureShaderUsage_MetallicRoughness,
+	TextureShaderUsage_ShadowMaps,
+	TextureShaderUsage_MinTexture,
+	TextureShaderUsage_MaxTexture,
+	TextureShaderUsage_DepthTexture,
+	TextureShaderUsage_AverageLuminance,
+};
+
+inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToStr = {
+	{ TextureShaderUsage_Base, "BaseTexture" },
+	{ TextureShaderUsage_NormalMap, "NormalMapTexture" },
+	{ TextureShaderUsage_MetallicRoughness, "MetallicRoughnessTexture" },
+	{ TextureShaderUsage_ShadowMaps, "ShadowMapsTextures" },
+	{ TextureShaderUsage_MinTexture, "MinTexture" },
+	{ TextureShaderUsage_MaxTexture, "MaxTexture" },
+	{ TextureShaderUsage_DepthTexture, "DepthTexture" },
+	{ TextureShaderUsage_AverageLuminance, "AverageLuminance"},
+};
+
+inline static std::map<std::string, TextureShaderUsage> strToTextureShaderUsage = {
+	{ "BaseTexture", TextureShaderUsage_Base },
+	{ "NormalMapTexture", TextureShaderUsage_NormalMap },
+	{ "MetallicRoughnessTexture", TextureShaderUsage_MetallicRoughness },
+	{ "ShadowMapsTextures", TextureShaderUsage_ShadowMaps },
+	{ "MinTexture", TextureShaderUsage_MinTexture },
+	{ "MaxTexture", TextureShaderUsage_MaxTexture },
+	{ "DepthTexture", TextureShaderUsage_DepthTexture },
+	{ "AverageLuminance", TextureShaderUsage_AverageLuminance},
+};
+
+inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToShaderDefine = {
+	{ TextureShaderUsage_Base, "_HAS_BASE_TEXTURE" },
+	{ TextureShaderUsage_NormalMap, "_HAS_NORMALMAP_TEXTURE" },
+	{ TextureShaderUsage_MetallicRoughness, "_HAS_METALLIC_ROUGHNESS_TEXTURE" },
+	{ TextureShaderUsage_ShadowMaps, "_HAS_SHADOWMAPS_TEXTURES" },
+	{ TextureShaderUsage_MinTexture, "_HAS_MIN_TEXTURE" },
+	{ TextureShaderUsage_MaxTexture, "_HAS_MAX_TEXTURE" },
+	{ TextureShaderUsage_DepthTexture, "_HAS_DEPTH_TEXTURE" },
+	{ TextureShaderUsage_AverageLuminance, "_HAS_AVERAGE_LUMINANCE" },
+};
+
+inline static std::map<TextureShaderUsage, std::string> textureShaderUsageInGammaSpaceToShaderDefine = {
+	{ TextureShaderUsage_Base, "_BASE_TEXTURE_IN_GAMMA_SPACE" },
+	{ TextureShaderUsage_NormalMap, "_NORMALMAP_TEXTURE_IN_GAMMA_SPACE" },
+	{ TextureShaderUsage_MetallicRoughness, "_METALLIC_ROUGHNESS_TEXTURE_IN_GAMMA_SPACE" },
+};
+
+inline static std::set<TextureShaderUsage> materialTexturesShaderUsage = {
+	TextureShaderUsage_Base,
+	TextureShaderUsage_NormalMap,
+	TextureShaderUsage_MetallicRoughness
+};
+
 enum TextureType
 {
-	TextureType_Base,
-	TextureType_NormalMap,
-	TextureType_MetallicRoughness,
-	TextureType_ShadowMaps,
-	TextureType_MinTexture,
-	TextureType_MaxTexture,
-	TextureType_DepthTexture,
-	TextureType_AverageLuminance,
+	TextureType_2D,
+	TextureType_Array,
+	TextureType_Cube,
 };
 
-inline static std::map<TextureType, std::string> textureTypeToStr = {
-	{ TextureType_Base, "BaseTexture" },
-	{ TextureType_NormalMap, "NormalMapTexture" },
-	{ TextureType_MetallicRoughness, "MetallicRoughnessTexture" },
-	{ TextureType_ShadowMaps, "ShadowMapsTextures" },
-	{ TextureType_MinTexture, "MinTexture" },
-	{ TextureType_MaxTexture, "MaxTexture" },
-	{ TextureType_DepthTexture, "DepthTexture" },
-	{ TextureType_AverageLuminance, "AverageLuminance"},
+inline static std::map<TextureType, std::string> textureTypeToString =
+{
+	{ TextureType_2D, "2D" },
+	{ TextureType_Array, "Array" },
+	{ TextureType_Cube, "Cube" },
 };
 
-inline static std::map<std::string, TextureType> strToTextureType = {
-	{ "BaseTexture", TextureType_Base },
-	{ "NormalMapTexture", TextureType_NormalMap },
-	{ "MetallicRoughnessTexture", TextureType_MetallicRoughness },
-	{ "ShadowMapsTextures", TextureType_ShadowMaps },
-	{ "MinTexture", TextureType_MinTexture },
-	{ "MaxTexture", TextureType_MaxTexture },
-	{ "DepthTexture", TextureType_DepthTexture },
-	{ "AverageLuminance", TextureType_AverageLuminance},
-};
-
-inline static std::map<TextureType, std::string> textureTypeToShaderDefine = {
-	{ TextureType_Base, "_HAS_BASE_TEXTURE" },
-	{ TextureType_NormalMap, "_HAS_NORMALMAP_TEXTURE" },
-	{ TextureType_MetallicRoughness, "_HAS_METALLIC_ROUGHNESS_TEXTURE" },
-	{ TextureType_ShadowMaps, "_HAS_SHADOWMAPS_TEXTURES" },
-	{ TextureType_MinTexture, "_HAS_MIN_TEXTURE" },
-	{ TextureType_MaxTexture, "_HAS_MAX_TEXTURE" },
-	{ TextureType_DepthTexture, "_HAS_DEPTH_TEXTURE" },
-	{ TextureType_AverageLuminance, "_HAS_AVERAGE_LUMINANCE" },
-};
-
-inline static std::map<TextureType, std::string> textureTypesInGammaToShaderDefine = {
-	{ TextureType_Base, "_BASE_TEXTURE_IN_GAMMA_SPACE" },
-	{ TextureType_NormalMap, "_NORMALMAP_TEXTURE_IN_GAMMA_SPACE" },
-	{ TextureType_MetallicRoughness, "_METALLIC_ROUGHNESS_TEXTURE_IN_GAMMA_SPACE" },
-};
-
-inline static std::set<TextureType> materialTexturesTypes = {
-	TextureType_Base,
-	TextureType_NormalMap,
-	TextureType_MetallicRoughness
+inline static std::map<std::string, TextureType> stringToTextureType =
+{
+	{ "2D", TextureType_2D },
+	{ "Array", TextureType_Array },
+	{ "Cube", TextureType_Cube },
 };
 
 //define the Textures binding
@@ -173,8 +194,8 @@ struct ShaderSRVParameter {
 	unsigned int registerId;
 	unsigned int numSRV;
 };
-typedef std::map<TextureType, ShaderSRVParameter> ShaderSRVTexParametersMap;
-typedef std::pair<TextureType, ShaderSRVParameter> ShaderSRVTexParametersPair;
+typedef std::map<TextureShaderUsage, ShaderSRVParameter> ShaderSRVTexParametersMap;
+typedef std::pair<TextureShaderUsage, ShaderSRVParameter> ShaderSRVTexParametersPair;
 typedef std::map<std::string, ShaderSRVParameter> ShaderSRVCSParametersMap;
 typedef std::pair<std::string, ShaderSRVParameter> ShaderSRVCSParametersPair;
 

@@ -24,7 +24,7 @@ namespace Templates {
 		nlohmann::json creationJson;
 		unsigned int popupModalId = 0U;
 #endif
-		static nostd::RefTracker<Source, std::shared_ptr<ShaderInstance>> refTracker;
+		static RefTracker<Source, std::shared_ptr<ShaderInstance>> refTracker;
 		ShaderIncludesDependencies dependencies;
 	};
 
@@ -103,10 +103,10 @@ namespace Templates {
 			}
 			else if (bindDesc.Type == D3D_SIT_TEXTURE || (bindDesc.Type == D3D_SIT_STRUCTURED && shaderSource.shaderType == ShaderType::PIXEL_SHADER))
 			{
-				srvTexParameters.insert_or_assign(strToTextureType.at(resourceName), ShaderSRVParameter({ .registerId = bindDesc.BindPoint, .numSRV = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
+				srvTexParameters.insert_or_assign(strToTextureShaderUsage.at(resourceName), ShaderSRVParameter({ .registerId = bindDesc.BindPoint, .numSRV = bindDesc.BindCount > 0 ? bindDesc.BindCount : bindDesc.NumSamples })); //if N > 0 -> N else -1
 #if defined(_EDITOR)
-				TextureType textureType = strToTextureType.at(resourceName);
-				if (materialTexturesTypes.contains(textureType))
+				TextureShaderUsage textureType = strToTextureShaderUsage.at(resourceName);
+				if (materialTexturesShaderUsage.contains(textureType))
 				{
 					auto& textureTypes = std::get<3>(GetShaderTemplates().at(shaderSource.shaderUUID));
 					textureTypes.insert(textureType);
@@ -255,7 +255,7 @@ namespace Templates {
 		return std::get<2>(GetShaderTemplates().at(uuid));
 	}
 
-	std::set<TextureType> GetShaderTextureParameters(std::string uuid)
+	std::set<TextureShaderUsage> GetShaderTextureParameters(std::string uuid)
 	{
 		return std::get<3>(GetShaderTemplates().at(uuid));
 	}
@@ -517,7 +517,7 @@ namespace Templates {
 	{
 		nostd::writeMapToOfstream(file, srvParameters, [](std::ofstream& file, auto& pair)
 			{
-				TextureType type = pair.first;
+				TextureShaderUsage type = pair.first;
 				file.write(reinterpret_cast<char*>(&type), sizeof(type));
 				file.write(reinterpret_cast<char*>(&pair.second.registerId), sizeof(pair.second.registerId));
 				file.write(reinterpret_cast<char*>(&pair.second.numSRV), sizeof(pair.second.numSRV));
@@ -964,6 +964,11 @@ namespace Templates {
 				}
 			}
 		);
+	}
+
+	bool ShadersPopupIsOpen()
+	{
+		return !!Shader::popupModalId;
 	}
 
 	void WriteShadersJson(nlohmann::json& json)

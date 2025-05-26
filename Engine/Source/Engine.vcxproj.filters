@@ -291,6 +291,12 @@
     <ClInclude Include="Shaders\Compute\LuminanceHistogramAverage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pch\RefTracker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\NoMath.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">

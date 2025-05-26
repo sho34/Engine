@@ -35,7 +35,7 @@ struct std::hash<RootSignatureDesc>
 
 namespace DeviceUtils
 {
-	static nostd::RefTracker<size_t, HashedRootSignature> refTracker;
+	static RefTracker<size_t, HashedRootSignature> refTracker;
 
 	using namespace Templates;
 

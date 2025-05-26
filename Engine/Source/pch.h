@@ -125,6 +125,8 @@ using namespace Concurrency;
 #include "pch/DXTypes.h"
 #include "pch/Debug.h"
 #include "pch/ShaderMaterials.h"
+#include "pch/RefTracker.h"
+#include "pch/NoMath.h"
 #if defined(_EDITOR)
 #include "pch/Editor.h"
 #include "pch/DDSTextures.h"

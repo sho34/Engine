@@ -93,6 +93,14 @@ static const std::map<_Templates, std::function<void()>> DrawTemplatesPopups = {
 	{ T_Textures, DrawTexturesPopups },
 };
 
+static const std::map<_Templates, std::function<bool()>> TemplatesPopupIsOpen = {
+	{ T_Materials, MaterialsPopupIsOpen },
+	{ T_Models3D, Models3DsPopupIsOpen },
+	{ T_Shaders, ShadersPopupIsOpen },
+	{ T_Sounds, SoundsPopupIsOpen },
+	{ T_Textures, TexturesPopupIsOpen },
+};
+
 static const std::map<_Templates, std::function<std::string(std::string)>> GetTemplateName = {
 	{ T_Materials, GetMaterialName },
 	{ T_Models3D, GetModel3DName },
@@ -566,4 +574,5 @@ namespace Templates {
 	}
 
 	void TemplatesInstancesStep();
+	bool AnyTemplatePopupOpen();
 }

@@ -30,7 +30,7 @@ namespace Templates {
 #if defined(_EDITOR)
 		,
 		std::map<std::string, MaterialVariablesTypes>, // constant variables types
-		std::set<TextureType>, // textures types
+		std::set<TextureShaderUsage>, // textures types
 		unsigned int, // num samplers
 		std::vector<std::string> //materials uuid references
 #endif
@@ -158,7 +158,7 @@ namespace Templates {
 
 #if defined(_EDITOR)
 	std::map<std::string, MaterialVariablesTypes> GetShaderMappeableVariables(std::string uuid);
-	std::set<TextureType> GetShaderTextureParameters(std::string uuid);
+	std::set<TextureShaderUsage> GetShaderTextureParameters(std::string uuid);
 	unsigned int GetShaderSamplerParameters(std::string uuid);
 #endif
 
@@ -179,6 +179,7 @@ namespace Templates {
 	void CreateNewShader();
 	void DeleteShader(std::string uuid);
 	void DrawShadersPopups();
+	bool ShadersPopupIsOpen();
 	void WriteShadersJson(nlohmann::json& json);
 #endif
 }

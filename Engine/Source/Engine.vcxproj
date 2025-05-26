@@ -268,6 +268,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="pch\NoMath.h" />
+    <ClInclude Include="pch\RefTracker.h" />
     <ClInclude Include="Shaders\Compute\LuminanceHistogramAverage.h" />
     <ClInclude Include="Shaders\Compute\ComputeInterface.h" />
     <ClInclude Include="Shaders\Compute\LuminanceHistogram.h" />

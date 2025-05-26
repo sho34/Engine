@@ -89,6 +89,7 @@ namespace Templates {
 	void CreateNewModel3D();
 	void DeleteModel3D(std::string uuid);
 	void DrawModels3DsPopups();
+	bool Models3DsPopupIsOpen();
 	void WriteModel3DsJson(nlohmann::json& json);
 #endif
 }

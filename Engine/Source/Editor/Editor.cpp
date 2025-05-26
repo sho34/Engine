@@ -540,10 +540,14 @@ namespace Editor {
 			{
 				ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.15f));
 				{
-					if (ImGui::Button(ICON_FA_TIMES, ImVec2(16.0f, 16.0f)))
+					ImGui::PushID((std::string("delete-") + p).c_str());
 					{
-						OnDelete(p);
+						if (ImGui::Button(ICON_FA_TIMES, ImVec2(16.0f, 16.0f)))
+						{
+							OnDelete(p);
+						}
 					}
+					ImGui::PopID();
 				}
 				ImGui::PopStyleVar();
 
@@ -1360,6 +1364,9 @@ namespace Editor {
 
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera)
 	{
+		if (AnyTemplatePopupOpen())
+			return;
+
 		auto resetMouseProcessing = []()
 			{
 				currentMouseMode = MOUSE_GAMEAREA_MODE_NONE;

@@ -80,4 +80,13 @@ namespace Templates
 	{
 		ReloadTextureInstances();
 	}
+
+	bool AnyTemplatePopupOpen()
+	{
+		for (auto& [type, cb] : TemplatesPopupIsOpen)
+		{
+			if (cb()) return true;
+		}
+		return false;
+	}
 }
