@@ -8,7 +8,7 @@ namespace Utils
 	{
 		using namespace raymii;
 
-		std::string cmdInfo = GetUtilsPath() + "texdiag.exe info " + src.string();
+		std::string cmdInfo = GetUtilsPath() + "texdiag.exe info \"" + src.string() + "\"";
 		CommandResult resultInfo = Command::exec(cmdInfo);
 		//OutputDebugStringA((cmdInfo + "\n").c_str());
 		std::string text = resultInfo.output;
@@ -35,7 +35,7 @@ namespace Utils
 		using namespace raymii;
 
 		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdConv = GetUtilsPath() + "texconv.exe " + image.string() + " -f " + dxgiFormatsToString.at(desiredFormat) + " -y";
+		std::string cmdConv = GetUtilsPath() + "texconv.exe \"" + image.string() + "\" -f " + dxgiFormatsToString.at(desiredFormat) + " -y";
 		if (width != 0U) { cmdConv += " -w " + std::to_string(width); }
 		if (height != 0U) { cmdConv += " -h " + std::to_string(height); }
 		if (mipLevels != 0U) { cmdConv += " -m " + std::to_string(mipLevels); }
@@ -53,10 +53,10 @@ namespace Utils
 		using namespace raymii;
 
 		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe cube -o " + image.string() + " -l -y -w " + std::to_string(width) + " -h " + std::to_string(height) + " ";
+		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe cube -o \"" + image.string() + "\" -l -y -w " + std::to_string(width) + " -h " + std::to_string(height) + " ";
 		for (auto& facePath : facesPath)
 		{
-			cmdAssemble += facePath + " ";
+			cmdAssemble += std::string("\"") + facePath + "\" ";
 		}
 		OutputDebugStringA((cmdAssemble + "\n").c_str());
 		CommandResult result = Command::exec(cmdAssemble);
@@ -73,7 +73,7 @@ namespace Utils
 		using namespace raymii;
 
 		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe cube-from-hc -o " + image.string() + " -l -y " + skybox.string();
+		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe cube-from-hc -o \"" + image.string() + "\" -l -y \"" + skybox.string() + "\"";
 
 		OutputDebugStringA((cmdAssemble + "\n").c_str());
 		CommandResult result = Command::exec(cmdAssemble);
@@ -90,7 +90,7 @@ namespace Utils
 		using namespace raymii;
 
 		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe gif -o " + image.string() + " -l -y " + gif.string();
+		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe gif -o \"" + image.string() + "\" -l -y " + gif.string();
 
 		OutputDebugStringA((cmdAssemble + "\n").c_str());
 		CommandResult result = Command::exec(cmdAssemble);
