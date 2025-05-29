@@ -41,7 +41,7 @@ namespace ComputeShader
 		}
 	}
 	*/
-	void ComputeShader::Init(std::string shaderName)
+	void ComputeShader::Init(std::string shaderName, std::vector<MaterialSamplerDesc> samplers)
 	{
 		using namespace DeviceUtils;
 
@@ -55,7 +55,6 @@ namespace ComputeShader
 		auto& psSRVCSparams = shader->srvCSParameters;
 		auto& psSRVTexparams = shader->srvTexParameters;
 		auto& psSamplersParams = shader->samplersParameters;
-		std::vector<MaterialSamplerDesc> samplers;
 
 		RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
 		rootSignature = CreateRootSignature(rootSignatureDesc);

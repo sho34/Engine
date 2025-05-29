@@ -17,14 +17,8 @@ namespace ComputeShader
 		HashedPipelineState pipelineState;
 
 		~ComputeShader() { DestroyShaderBinary(shader); }
-		void Init(std::string shaderName);
+		void Init(std::string shaderName, std::vector<MaterialSamplerDesc> samplers = {});
 		void SetComputeState();
 	};
-
-	//void RegisterComputation(std::shared_ptr<ComputeInterface> compute);
-	//void UnregisterComputation(std::shared_ptr<ComputeInterface> compute);
-	//std::set<std::shared_ptr<ComputeInterface>>& GetComputeUnits();
-	//void RunComputeShaders();
-	//void ComputeShaderSolution();
 }
 

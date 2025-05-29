@@ -559,7 +559,7 @@ void EditorModeRender()
 		luminanceHistogramAverage->UpdateLuminanceHistogramAverageParams(
 			mainPass->renderToTexture[0]->width * mainPass->renderToTexture[0]->height,
 			mainPassCamera->minLogLuminance(), mainPassCamera->maxLogLuminance(),
-			timer.GetElapsedSeconds(),
+			static_cast<float>(timer.GetElapsedSeconds()),
 			mainPassCamera->tau()
 		);
 		hdrHistogram->Compute();

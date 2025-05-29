@@ -11,6 +11,7 @@
 #include "../Utils/ImageConvert.h"
 #include <Editor.h>
 #include "../../Editor/Editor.h"
+#include "../../Shaders/Compute/IBLDiffuseIrradianceMap.h"
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -42,11 +43,15 @@ namespace Templates
 		unsigned int popupModalId = 0U;
 		std::filesystem::path filePickingDirectory = defaultAssetsFolder;
 		int imageFrame = 1U;
-		bool creationFromSkybox = false;
+		bool createCubeFromSkybox = false;
+		bool createDiffuseCubeIBL = false;
+		bool createSpecularCubeIBL = false;
+		std::string createCubeUUID = "";
 #endif
 	};
 
 	TEMPDEF_FULL(Texture);
+	TEMPDEF_REFTRACKER(Texture);
 
 	void Create2DDDSFile(nlohmann::json json, bool overwrite)
 	{
@@ -141,7 +146,7 @@ namespace Templates
 		}
 		else
 		{
-			if (!Texture::creationFromSkybox)
+			if (!Texture::createCubeFromSkybox)
 			{
 				unsigned int widthO, widthN;
 				unsigned int heightO, heightN;
@@ -477,17 +482,24 @@ namespace Templates
 
 	void CreateNewTexture()
 	{
-		ResetTexturePanelParameters();
+		ResetTexturePopupParameters();
 		Texture::popupModalId = TexturePopupModal_CreateNew;
 		Texture::creationJson = CreateBaseTextureJson("", 1U, DXGI_FORMAT_R8G8B8A8_UNORM);
 	}
 
-	void ResetTexturePanelParameters()
+	void ResetTexturePopupParameters()
 	{
 		Texture::popupModalId = 0;
-		Texture::creationFromSkybox = false;
+		Texture::createCubeFromSkybox = false;
 		Texture::imageFrame = 1U;
 		Texture::filePickingDirectory = defaultAssetsFolder;
+	}
+
+	void ResetTexturePopupIBLParameters()
+	{
+		Texture::createDiffuseCubeIBL = false;
+		Texture::createSpecularCubeIBL = false;
+		Texture::createCubeUUID = "";
 	}
 
 	void DeleteTexture(std::string uuid)
@@ -566,11 +578,13 @@ namespace Templates
 
 					ImGui::PushID("texture-is-skybox");
 					{
-						ImGui::Checkbox("Skybox", &Texture::creationFromSkybox);
+						ImGui::Checkbox("Skybox", &Texture::createCubeFromSkybox);
+						ImGui::Checkbox("Diffuse IBL", &Texture::createDiffuseCubeIBL);
+						ImGui::Checkbox("Specular IBL", &Texture::createSpecularCubeIBL);
 					}
 					ImGui::PopID();
 
-					if (!Texture::creationFromSkybox)
+					if (!Texture::createCubeFromSkybox)
 					{
 						for (unsigned int i = 0; i < cubeTextureAxesNames.size(); i++)
 						{
@@ -631,7 +645,13 @@ namespace Templates
 				}
 				ImGui::PopID();
 
-				if (ImGui::Button("Cancel")) { OnCancel(); }
+				if (ImGui::Button("Cancel"))
+				{
+					ResetTexturePopupParameters();
+					ResetTexturePopupIBLParameters();
+					OnCancel();
+				}
+
 				ImGui::SameLine();
 
 				bool disabledCreate = false;
@@ -664,11 +684,12 @@ namespace Templates
 						{
 							std::filesystem::path newPath = defaultAssetsFolder + "cubes/" + std::string(json.at("name"));
 							json.at("name") = nostd::normalize_path(newPath.string());
+							Texture::createCubeUUID = json.at("uuid");
 						}
 
 						CreateTexture(json);
 						CreateDDSFile(json, true);
-						ResetTexturePanelParameters();
+						ResetTexturePopupParameters();
 					}
 				}
 
@@ -688,7 +709,151 @@ namespace Templates
 
 #endif
 
-	TEMPDEF_REFTRACKER(Texture);
+	std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureShaderUsage, std::string>& textures)
+	{
+		std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> texInstances;
+
+		std::transform(textures.begin(), textures.end(), std::inserter(texInstances, texInstances.end()), [](auto pair)
+			{
+				std::string& texture = pair.second;
+				std::shared_ptr<TextureInstance> instance = refTracker.AddRef(texture, [&texture]()
+					{
+						using namespace Templates;
+						std::shared_ptr<TextureInstance> instance = std::make_shared<TextureInstance>();
+						nlohmann::json& json = GetTextureTemplate(texture);
+						instance->Load(texture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
+						return instance;
+					}
+				);
+				return std::pair<TextureShaderUsage, std::shared_ptr<TextureInstance>>(pair.first, instance);
+			}
+		);
+
+		return texInstances;
+	}
+
+	std::shared_ptr<TextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle)
+	{
+		return refTracker.AddRef(texture, [texture, gpuHandle]()
+			{
+				std::shared_ptr<TextureInstance> instance = std::make_shared<TextureInstance>();
+				instance->textureName = texture;
+				instance->gpuHandle = gpuHandle;
+				return instance;
+			}
+		);
+	}
+
+	void DestroyTextureInstance(std::shared_ptr<TextureInstance>& texture)
+	{
+		auto key = refTracker.FindKey(texture);
+		refTracker.RemoveRef(key, texture);
+	}
+
+	void ReloadTextureInstances()
+	{
+		if (Texture::popupModalId) return;
+
+		std::vector<std::shared_ptr<TextureInstance>> texturesToRelease;
+		std::vector<std::shared_ptr<TextureInstance>> texturesToLoad;
+		bool destroyPreview = false;
+		refTracker.ForEach([&texturesToRelease, &texturesToLoad](std::shared_ptr<TextureInstance> texture)
+			{
+				if (texture->updateFlag & TextureUpdateFlags_Release) { texturesToRelease.push_back(texture); }
+				if (texture->updateFlag & TextureUpdateFlags_Load) { texturesToLoad.push_back(texture); }
+			}
+		);
+		if (texturePreview)
+		{
+			if (texturePreview->updateFlag & TextureUpdateFlags_Release) { texturesToRelease.push_back(texturePreview); destroyPreview = true; }
+			if (texturePreview->updateFlag & TextureUpdateFlags_Load) { texturesToLoad.push_back(texturePreview); destroyPreview = false; }
+		}
+
+		if (texturesToRelease.size() == 0ULL && texturesToLoad.size() == 0ULL && !Texture::createDiffuseCubeIBL && !Texture::createSpecularCubeIBL) return;
+
+		std::shared_ptr<IBLDiffuseIrradianceMap> iblDiffuseIrradianceMap = nullptr;
+
+		renderer->Flush();
+		renderer->RenderCriticalFrame([texturesToRelease, &texturesToLoad, destroyPreview, &iblDiffuseIrradianceMap]
+			{
+				if (Texture::createDiffuseCubeIBL)
+				{
+					TextureTemplate& envMap = GetTextureTemplates().at(Texture::createCubeUUID);
+					std::string iblDiffuseMap = std::get<0>(envMap) + "_ibl_diffuse.dds";
+					std::filesystem::path iblDiffuseMapPath = iblDiffuseMap;
+
+					iblDiffuseIrradianceMap = std::make_shared<IBLDiffuseIrradianceMap>(Texture::createCubeUUID, iblDiffuseMapPath);
+					iblDiffuseIrradianceMap->Compute();
+				}
+
+				std::for_each(texturesToRelease.begin(), texturesToRelease.end(), [](std::shared_ptr<TextureInstance> texture)
+					{
+						texture->ReleaseResources();
+						texture->updateFlag &= ~TextureUpdateFlags_Release;
+					}
+				);
+				if (destroyPreview) { texturePreview = nullptr; }
+				std::for_each(texturesToLoad.begin(), texturesToLoad.end(), [](std::shared_ptr<TextureInstance> texture)
+					{
+						nlohmann::json& json = GetTextureTemplate(texture->materialTexture);
+						if (texture != texturePreview)
+						{
+							texture->Load(texture->materialTexture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
+						}
+						else
+						{
+							texture->Load(texture->materialTexture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"), Texture::imageFrame - 1);
+						}
+						texture->updateFlag &= ~TextureUpdateFlags_Load;
+						std::for_each(texture->onChangeCallbacks.begin(), texture->onChangeCallbacks.end(), [](auto& pair)
+							{
+								pair.second();
+							}
+						);
+					}
+				);
+			}
+		);
+
+		if (iblDiffuseIrradianceMap)
+		{
+			iblDiffuseIrradianceMap->Solution();
+
+			nlohmann::json iblDiffuseJson = CreateBaseTextureJson(
+				iblDiffuseIrradianceMap->outputFile.string(),
+				iblDiffuseIrradianceMap->numFaces,
+				iblDiffuseIrradianceMap->dataFormat);
+			iblDiffuseJson.at("height") = iblDiffuseIrradianceMap->faceHeight;
+			iblDiffuseJson.at("width") = iblDiffuseIrradianceMap->faceWidth;
+			iblDiffuseJson.at("images").push_back(iblDiffuseIrradianceMap->envMap->textureName);
+			iblDiffuseJson.at("images").push_back(iblDiffuseIrradianceMap->envMap->textureName);
+			iblDiffuseJson.at("images").push_back(iblDiffuseIrradianceMap->envMap->textureName);
+			iblDiffuseJson.at("images").push_back(iblDiffuseIrradianceMap->envMap->textureName);
+			iblDiffuseJson.at("images").push_back(iblDiffuseIrradianceMap->envMap->textureName);
+			iblDiffuseJson.at("images").push_back(iblDiffuseIrradianceMap->envMap->textureName);
+			iblDiffuseJson.at("mipLevels") = 1;
+			iblDiffuseJson.at("type") = textureTypeToString.at(TextureType_Cube);
+
+			CreateTexture(iblDiffuseJson);
+
+			iblDiffuseIrradianceMap = nullptr;
+			ResetTexturePopupParameters();
+			ResetTexturePopupIBLParameters();
+		}
+	}
+
+	void SetSelectedTexture(std::string uuid)
+	{
+		texturePreview = std::make_shared<TextureInstance>();
+		nlohmann::json& json = GetTextureTemplate(uuid);
+		texturePreview->Load(uuid, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
+	}
+
+	void DeSelectTexture()
+	{
+		texturePreview->updateFlag |= TextureUpdateFlags_Release;
+		Texture::filePickingDirectory = defaultAssetsFolder;
+	}
 
 	TextureInstance::~TextureInstance()
 	{
@@ -792,112 +957,6 @@ namespace Templates
 	void TextureInstance::BindChangeCallback(std::string uuid, std::function<void()> cb)
 	{
 		onChangeCallbacks.insert_or_assign(uuid, cb);
-	}
-
-	std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureShaderUsage, std::string>& textures)
-	{
-		std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> texInstances;
-
-		std::transform(textures.begin(), textures.end(), std::inserter(texInstances, texInstances.end()), [](auto pair)
-			{
-				std::string& texture = pair.second;
-				std::shared_ptr<TextureInstance> instance = refTracker.AddRef(texture, [&texture]()
-					{
-						using namespace Templates;
-						std::shared_ptr<TextureInstance> instance = std::make_shared<TextureInstance>();
-						nlohmann::json& json = GetTextureTemplate(texture);
-						instance->Load(texture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
-						return instance;
-					}
-				);
-				return std::pair<TextureShaderUsage, std::shared_ptr<TextureInstance>>(pair.first, instance);
-			}
-		);
-
-		return texInstances;
-	}
-
-	std::shared_ptr<TextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle)
-	{
-		return refTracker.AddRef(texture, [texture, gpuHandle]()
-			{
-				std::shared_ptr<TextureInstance> instance = std::make_shared<TextureInstance>();
-				instance->textureName = texture;
-				instance->gpuHandle = gpuHandle;
-				return instance;
-			}
-		);
-	}
-
-	void DestroyTextureInstance(std::shared_ptr<TextureInstance>& texture)
-	{
-		auto key = refTracker.FindKey(texture);
-		refTracker.RemoveRef(key, texture);
-	}
-
-	void ReloadTextureInstances()
-	{
-		std::vector<std::shared_ptr<TextureInstance>> texturesToRelease;
-		std::vector<std::shared_ptr<TextureInstance>> texturesToLoad;
-		bool destroyPreview = false;
-		refTracker.ForEach([&texturesToRelease, &texturesToLoad](std::shared_ptr<TextureInstance> texture)
-			{
-				if (texture->updateFlag & TextureUpdateFlags_Release) { texturesToRelease.push_back(texture); }
-				if (texture->updateFlag & TextureUpdateFlags_Load) { texturesToLoad.push_back(texture); }
-			}
-		);
-		if (texturePreview)
-		{
-			if (texturePreview->updateFlag & TextureUpdateFlags_Release) { texturesToRelease.push_back(texturePreview); destroyPreview = true; }
-			if (texturePreview->updateFlag & TextureUpdateFlags_Load) { texturesToLoad.push_back(texturePreview); destroyPreview = false; }
-		}
-
-		if (texturesToRelease.size() == 0ULL && texturesToLoad.size() == 0ULL) return;
-
-		renderer->Flush();
-		renderer->RenderCriticalFrame([texturesToRelease, &texturesToLoad, destroyPreview]
-			{
-				std::for_each(texturesToRelease.begin(), texturesToRelease.end(), [](std::shared_ptr<TextureInstance> texture)
-					{
-						texture->ReleaseResources();
-						texture->updateFlag &= ~TextureUpdateFlags_Release;
-					}
-				);
-				if (destroyPreview) { texturePreview = nullptr; }
-				std::for_each(texturesToLoad.begin(), texturesToLoad.end(), [](std::shared_ptr<TextureInstance> texture)
-					{
-						nlohmann::json& json = GetTextureTemplate(texture->materialTexture);
-						if (texture != texturePreview)
-						{
-							texture->Load(texture->materialTexture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
-						}
-						else
-						{
-							texture->Load(texture->materialTexture, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"), Texture::imageFrame - 1);
-						}
-						texture->updateFlag &= ~TextureUpdateFlags_Load;
-						std::for_each(texture->onChangeCallbacks.begin(), texture->onChangeCallbacks.end(), [](auto& pair)
-							{
-								pair.second();
-							}
-						);
-					}
-				);
-			}
-		);
-	}
-
-	void SetSelectedTexture(std::string uuid)
-	{
-		texturePreview = std::make_shared<TextureInstance>();
-		nlohmann::json& json = GetTextureTemplate(uuid);
-		texturePreview->Load(uuid, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
-	}
-
-	void DeSelectTexture()
-	{
-		texturePreview->updateFlag |= TextureUpdateFlags_Release;
-		Texture::filePickingDirectory = defaultAssetsFolder;
 	}
 
 }

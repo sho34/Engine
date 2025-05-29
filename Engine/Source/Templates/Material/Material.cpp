@@ -137,7 +137,7 @@ namespace Templates {
 	{
 		defines.clear();
 
-		OutputDebugStringA((instanceName + ": buildDefines:" + material + "\n").c_str());
+		//OutputDebugStringA((instanceName + ": buildDefines:" + material + "\n").c_str());
 
 		nlohmann::json mat = GetMaterialTemplate(material);
 

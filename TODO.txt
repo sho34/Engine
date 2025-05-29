@@ -1,7 +1,10 @@
 BUGS:
 -visualizar el point light, después el spot y se ve el point achatado
+-muevo el sliderbar de una imagen con frames y si la paso por el area de juego se mueve la camara
 
 TODO:
+-Agregar a generacion de cube environment la generacion de specular IBL
+-IBL
 -hacer que la instanciación de los materiales sea dinamico de acuerdo a los parámetros IBL de la camara
 -Arreglar el tema del defined(_HAS_METALLIC_B...) en PBR.hlsl que hace fallback a blinnphong
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
@@ -10,10 +13,11 @@ TODO:
 		-night
 		…
 	-Modo Manual con slider de temperatura en kelvin con textura bajo el slider
--IBL
 -Deferred Rendering
 
 DONE:
+-Agregar a generacion de cube environment la generacion de diffuse IBL
+-Generacion de cube maps de environment desde 6 texturas o un skybox horizontal
 -texturas con preview, creacion y destruccion desde el editor
 -HDR with automatic exposure adjustment or eye adaptation 
 -texturas srgb que pasen define al shader

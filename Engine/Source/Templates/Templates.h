@@ -135,6 +135,13 @@ namespace Templates {
 	static const nlohmann::json systemShaders = R"(
 	[
 		{
+			"name":"IBLDiffuseIrradianceMap_cs",
+			"path":"CSDiffuseIrradianceMap",
+			"systemCreated" : true,
+			"uuid":"5ebcccb5-477a-49c9-9878-9ff6453266a0",
+			"type":"COMPUTE_SHADER"
+		},
+		{
 			"name":"LuminanceHistogramAverage_cs",
 			"path":"CSLuminanceHistogramAverage",
 			"systemCreated" : true,

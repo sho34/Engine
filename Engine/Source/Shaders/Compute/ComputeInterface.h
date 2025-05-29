@@ -11,9 +11,9 @@ namespace ComputeShader
 	{
 		ComputeShader shader;
 
-		ComputeInterface(std::string shaderName)
+		ComputeInterface(std::string shaderName, std::vector<MaterialSamplerDesc> samplers = {})
 		{
-			shader.Init(shaderName);
+			shader.Init(shaderName, samplers);
 		}
 
 		virtual void Compute() = 0;

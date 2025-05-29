@@ -121,6 +121,7 @@ enum TextureShaderUsage
 	TextureShaderUsage_MaxTexture,
 	TextureShaderUsage_DepthTexture,
 	TextureShaderUsage_AverageLuminance,
+	TextureShaderUsage_IBLDiffuseMap,
 };
 
 inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToStr = {
@@ -132,6 +133,7 @@ inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToStr 
 	{ TextureShaderUsage_MaxTexture, "MaxTexture" },
 	{ TextureShaderUsage_DepthTexture, "DepthTexture" },
 	{ TextureShaderUsage_AverageLuminance, "AverageLuminance"},
+	{ TextureShaderUsage_IBLDiffuseMap, "IBLDiffuseMap" }
 };
 
 inline static std::map<std::string, TextureShaderUsage> strToTextureShaderUsage = {
@@ -143,6 +145,7 @@ inline static std::map<std::string, TextureShaderUsage> strToTextureShaderUsage 
 	{ "MaxTexture", TextureShaderUsage_MaxTexture },
 	{ "DepthTexture", TextureShaderUsage_DepthTexture },
 	{ "AverageLuminance", TextureShaderUsage_AverageLuminance},
+	{ "IBLDiffuseMap", TextureShaderUsage_IBLDiffuseMap }
 };
 
 inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToShaderDefine = {
@@ -154,6 +157,7 @@ inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToShad
 	{ TextureShaderUsage_MaxTexture, "_HAS_MAX_TEXTURE" },
 	{ TextureShaderUsage_DepthTexture, "_HAS_DEPTH_TEXTURE" },
 	{ TextureShaderUsage_AverageLuminance, "_HAS_AVERAGE_LUMINANCE" },
+	{ TextureShaderUsage_IBLDiffuseMap, "_HAS_IBL_DIFFUSE_MAP" }
 };
 
 inline static std::map<TextureShaderUsage, std::string> textureShaderUsageInGammaSpaceToShaderDefine = {

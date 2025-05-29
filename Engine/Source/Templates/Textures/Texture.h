@@ -51,7 +51,8 @@ namespace Templates
 #if defined(_EDITOR)
 	void DrawTexturePanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	void CreateNewTexture();
-	void ResetTexturePanelParameters();
+	void ResetTexturePopupParameters();
+	void ResetTexturePopupIBLParameters();
 	void DeleteTexture(std::string uuid);
 	void DrawTexturesPopups();
 	bool TexturesPopupIsOpen();

@@ -26,6 +26,9 @@
 #include <ppltasks.h>	// Para create_task
 //#include <agile.h>
 
+#if defined(_EDITOR)
+#include <DirectXTex.h>
+#endif
 #include <DirectXMath.h>
 #include <DirectXColors.h>
 

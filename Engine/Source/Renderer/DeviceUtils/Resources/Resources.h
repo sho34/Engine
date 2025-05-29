@@ -18,5 +18,14 @@ namespace DeviceUtils
 		CComPtr<ID3D12Resource>& pStaging,
 		D3D12_RESOURCE_STATES beforeState,
 		D3D12_RESOURCE_STATES afterState) noexcept;
+
+	HRESULT CaptureTexture3D(CComPtr<ID3D12Device2> device,
+		CComPtr<ID3D12CommandQueue> pCommandQ,
+		CComPtr<ID3D12Resource> pSource,
+		UINT64 srcPitch,
+		const D3D12_RESOURCE_DESC& desc,
+		CComPtr<ID3D12Resource>& pStaging,
+		D3D12_RESOURCE_STATES beforeState,
+		D3D12_RESOURCE_STATES afterState) noexcept;
 };
 

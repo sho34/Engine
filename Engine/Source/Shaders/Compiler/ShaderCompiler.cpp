@@ -20,9 +20,9 @@ namespace ShaderCompiler {
 
 	std::map<ShaderType, std::wstring> shaderTarget =
 	{
-		{	VERTEX_SHADER, L"vs_6_1"	},
-		{	PIXEL_SHADER, L"ps_6_1" },
-		{	COMPUTE_SHADER, L"cs_6_1" },
+		{	VERTEX_SHADER, L"vs_6_6"	},
+		{	PIXEL_SHADER, L"ps_6_6" },
+		{	COMPUTE_SHADER, L"cs_6_6" },
 	};
 
 	std::map<ShaderType, std::wstring> shaderDefine =

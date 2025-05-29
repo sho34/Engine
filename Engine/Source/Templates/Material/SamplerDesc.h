@@ -1,4 +1,5 @@
 #pragma once
+#include <d3d12.h>
 
 struct MaterialSamplerDesc : D3D12_STATIC_SAMPLER_DESC {
 	MaterialSamplerDesc() {
@@ -18,6 +19,22 @@ struct MaterialSamplerDesc : D3D12_STATIC_SAMPLER_DESC {
 	}
 
 	MaterialSamplerDesc(const MaterialSamplerDesc& other) {
+		Filter = other.Filter;
+		AddressU = other.AddressU;
+		AddressV = other.AddressV;
+		AddressW = other.AddressW;
+		MipLODBias = other.MipLODBias;
+		MaxAnisotropy = other.MaxAnisotropy;
+		ComparisonFunc = other.ComparisonFunc;
+		BorderColor = other.BorderColor;
+		MinLOD = other.MinLOD;
+		MaxLOD = other.MaxLOD;
+		ShaderRegister = other.ShaderRegister;
+		RegisterSpace = other.RegisterSpace;
+		ShaderVisibility = other.ShaderVisibility;
+	}
+
+	MaterialSamplerDesc(const D3D12_STATIC_SAMPLER_DESC& other) {
 		Filter = other.Filter;
 		AddressU = other.AddressU;
 		AddressV = other.AddressV;

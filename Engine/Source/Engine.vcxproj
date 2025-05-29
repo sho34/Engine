@@ -153,7 +153,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -163,8 +163,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mtd.lib;zlibstaticd.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Debug;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Debug;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Debug;../../SDKs/imgui/x64/Debug;../../SDKs/imguizmo/x64/Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mtd.lib;zlibstaticd.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Debug;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Debug;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Debug;../../SDKs/imgui/x64/Debug;../../SDKs/imguizmo/x64/Debug;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
@@ -198,7 +198,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -209,8 +209,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -245,7 +245,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
@@ -259,8 +259,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -268,6 +268,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Shaders\Compute\IBLDiffuseIrradianceMap.h" />
     <ClInclude Include="pch\NoMath.h" />
     <ClInclude Include="pch\RefTracker.h" />
     <ClInclude Include="Shaders\Compute\LuminanceHistogramAverage.h" />
@@ -501,6 +502,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Shaders\Compute\IBLDiffuseIrradianceMap.cpp" />
     <ClCompile Include="Shaders\Compute\LuminanceHistogramAverage.cpp" />
     <ClCompile Include="Shaders\Compute\LuminanceHistogram.cpp" />
     <ClCompile Include="Shaders\Compute\ComputeShader.cpp" />
