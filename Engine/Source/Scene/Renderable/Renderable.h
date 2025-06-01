@@ -3,7 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <set>
 #include <DirectXCollision.h>
-#include "../Shaders/Compute/RenderableBoundingBox.h"
+#include "../Shaders/Compute/Renderable/RenderableBoundingBox.h"
 #include "../../Templates/Model3D/Model3D.h"
 #include "../../Templates/Mesh/Mesh.h"
 #include "../../Templates/Material/Material.h"

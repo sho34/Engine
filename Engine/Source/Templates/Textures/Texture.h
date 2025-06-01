@@ -69,11 +69,12 @@ namespace Templates
 		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle;
 		CComPtr<ID3D12Resource> texture;
 		CComPtr<ID3D12Resource> upload;
+		size_t bufferSize;
 		std::string textureName;
 		std::map<std::string, std::function<void()>> onChangeCallbacks;
 
 		~TextureInstance();
-		void Load(std::string& texture, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps, unsigned int startFrame = 0U);
+		void Load(std::string uuid, unsigned int startFrame = 0);
 		void CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps, unsigned int startFrame = 0U);
 		void ReleaseResources();
 		void BindChangeCallback(std::string uuid, std::function<void()> cb);

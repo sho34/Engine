@@ -1,7 +1,7 @@
 #pragma once
-#include "ComputeShader.h"
-#include "ComputeInterface.h"
-#include "../Renderer/DeviceUtils/RenderToTexture/RenderToTexture.h"
+#include "../ComputeShader.h"
+#include "../ComputeInterface.h"
+#include "../../../Renderer/DeviceUtils/RenderToTexture/RenderToTexture.h"
 
 namespace ComputeShader
 {

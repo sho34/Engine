@@ -1,6 +1,9 @@
 #pragma once
 
 #include <d3d12.h>
+#include "../Common/DirectXHelper.h"
+#include <atlbase.h>
+#include "../../../d3dx12.h"
 
 using namespace Microsoft::WRL;
 using namespace DirectX;

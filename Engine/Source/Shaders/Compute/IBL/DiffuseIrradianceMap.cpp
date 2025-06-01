@@ -1,10 +1,10 @@
 #include "pch.h"
-#include "IBLDiffuseIrradianceMap.h"
+#include "DiffuseIrradianceMap.h"
 
-#include "../../Renderer/Renderer.h"
-#include "../../Renderer/DeviceUtils/Resources/Resources.h"
-#include "../../Common/DirectXHelper.h"
-#include "../../Templates/Textures/Texture.h"
+#include "../../../Renderer/Renderer.h"
+#include "../../../Renderer/DeviceUtils/Resources/Resources.h"
+#include "../../../Common/DirectXHelper.h"
+#include "../../../Templates/Textures/Texture.h"
 #include <DirectXTex.h>
 
 extern std::shared_ptr<Renderer> renderer;
@@ -29,41 +29,36 @@ D3D12_STATIC_SAMPLER_DESC IBLDiffuseSampler = {
 
 namespace ComputeShader
 {
-	IBLDiffuseIrradianceMap::IBLDiffuseIrradianceMap(std::string envMapUUID, std::filesystem::path iblDiffuseFile) :
+	DiffuseIrradianceMap::DiffuseIrradianceMap(std::string envMapUUID, std::filesystem::path iblDiffuseFile) :
 		ComputeInterface("IBLDiffuseIrradianceMap_cs", { IBLDiffuseSampler })
 	{
 		using namespace Templates;
 
 		outputFile = iblDiffuseFile;
 
-		envMap = std::make_shared<TextureInstance>();
-		nlohmann::json& json = GetTextureTemplate(envMapUUID);
-		envMap->Load(envMapUUID, stringToDxgiFormat.at(json.at("format")), json.at("numFrames"), json.at("mipLevels"));
-
-		//create the uav resource for the calculation results, this is table of 256 unsigned ints (U0)
+		//create the uav resource for the calculation results (U0)
 		D3D12_HEAP_PROPERTIES defaultHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT);
 		resourceDesc = CD3DX12_RESOURCE_DESC::Tex3D(dataFormat, faceWidth, faceHeight, numFaces, 0, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS);
 
 		renderer->d3dDevice->CreateCommittedResource(
 			&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource)
 		);
-		CCNAME_D3D12_OBJECT_N(resource, std::string("IBLDiffuseIrradianceMap"));
-		LogCComPtrAddress("IBLDiffuseIrradianceMap", resource);
+		CCNAME_D3D12_OBJECT_N(resource, std::string("DiffuseIrradianceMap"));
+		LogCComPtrAddress("DiffuseIrradianceMap", resource);
 		DeviceUtils::AllocCSUDescriptor(resultCpuHandle, resultGpuHandle);
 
 		//create a uav desc/view for writing the diffuse ibl cube texture
 		D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc =
 		{
 			.Format = dataFormat, .ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D,
-			.Texture3D = {
-				.MipSlice = 0,
-				.FirstWSlice = 0,
-				.WSize = numFaces
-			}
+			.Texture3D = {.MipSlice = 0, .FirstWSlice = 0, .WSize = numFaces }
 		};
 		renderer->d3dDevice->CreateUnorderedAccessView(resource, nullptr, &uavDesc, resultCpuHandle);
 
 		//create a srv desc/view for reading the envmap but as a cube texture
+		envMap = std::make_shared<TextureInstance>();
+		envMap->Load(envMapUUID);
+
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDescRead = {
 			.Format = envMap->viewDesc.Format, .ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE,
 			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
@@ -75,19 +70,9 @@ namespace ComputeShader
 		};
 		DeviceUtils::AllocCSUDescriptor(envMapCubeCpuHandle, envMapCubeGpuHandle);
 		renderer->d3dDevice->CreateShaderResourceView(envMap->texture, &srvDescRead, envMapCubeCpuHandle);
-
-		//Create a ReadBack
-		D3D12_HEAP_PROPERTIES readBackHeapProperties = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
-		D3D12_RESOURCE_DESC bufferDescReadBack = CD3DX12_RESOURCE_DESC::Buffer(dataSize);
-		renderer->d3dDevice->CreateCommittedResource(
-			&readBackHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDescReadBack,
-			D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&readBackResource)
-		);
-		CCNAME_D3D12_OBJECT_N(readBackResource, std::string("IBLDiffuseIrradianceMap:ReadBack"));
-		LogCComPtrAddress("IBLDiffuseIrradianceMap:ReadBack", readBackResource);
 	}
 
-	IBLDiffuseIrradianceMap::~IBLDiffuseIrradianceMap()
+	DiffuseIrradianceMap::~DiffuseIrradianceMap()
 	{
 		DeviceUtils::FreeCSUDescriptor(envMapCubeCpuHandle, envMapCubeGpuHandle);
 		DeviceUtils::FreeCSUDescriptor(resultCpuHandle, resultGpuHandle);
@@ -95,12 +80,12 @@ namespace ComputeShader
 		readBackResource = nullptr;
 	}
 
-	void IBLDiffuseIrradianceMap::Compute()
+	void DiffuseIrradianceMap::Compute()
 	{
 		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
 
 #if defined(_DEVELOPMENT)
-		PIXBeginEvent(commandList.p, 0, L"IBLDiffuseIrradianceMap Compute");
+		PIXBeginEvent(commandList.p, 0, L"DiffuseIrradianceMap Compute");
 #endif
 
 		shader.SetComputeState();
@@ -114,7 +99,7 @@ namespace ComputeShader
 #endif
 	}
 
-	void IBLDiffuseIrradianceMap::Solution()
+	void DiffuseIrradianceMap::Solution()
 	{
 		DeviceUtils::CaptureTexture3D(
 			renderer->d3dDevice,
@@ -132,8 +117,6 @@ namespace ComputeShader
 		range.Begin = 0;
 		range.End = dataSize;
 
-		auto& commandList = renderer->commandList;
-
 		readBackResource->Map(0, &range, reinterpret_cast<void**>(&mem));
 
 		WriteFile(mem);
@@ -143,16 +126,9 @@ namespace ComputeShader
 		readBackResource = nullptr;
 	}
 
-	void IBLDiffuseIrradianceMap::WriteFile(XMFLOAT4* data)
+	void DiffuseIrradianceMap::WriteFile(XMFLOAT4* data) const
 	{
 		using namespace DirectX;
-		Image img;
-		img.width = faceWidth;
-		img.height = faceHeight;
-		img.format = dataFormat;
-		img.rowPitch = static_cast<size_t>(faceWidth * pixelSize);
-		img.slicePitch = static_cast<size_t>(faceWidth * faceHeight * pixelSize);
-		img.pixels = reinterpret_cast<uint8_t*>(data);
 
 		std::vector<Image> imgs;
 		for (unsigned int i = 0; i < numFaces; i++)
@@ -182,6 +158,6 @@ namespace ComputeShader
 			.dimension = TEX_DIMENSION_TEXTURE2D
 		};
 
-		DX::ThrowIfFailed(SaveToDDSFile(imgs.data(), numFaces, meta, DDS_FLAGS_NONE, outputFile.wstring().c_str()));
+		DX::ThrowIfFailed(SaveToDDSFile(imgs.data(), imgs.size(), meta, DDS_FLAGS_NONE, outputFile.wstring().c_str()));
 	}
 };

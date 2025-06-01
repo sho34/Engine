@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "LuminanceHistogramAverage.h"
 
-#include "../../Renderer/Renderer.h"
-#include "../../Renderer/DeviceUtils/Resources/Resources.h"
-#include "../../Common/DirectXHelper.h"
+#include "../../../Renderer/Renderer.h"
+#include "../../../Renderer/DeviceUtils/Resources/Resources.h"
+#include "../../../Common/DirectXHelper.h"
 
 extern std::shared_ptr<Renderer> renderer;
 

@@ -3,10 +3,10 @@
 #include <vector>
 #include <atlbase.h>
 #include <wrl/client.h>
-#include "ComputeInterface.h"
-#include "../../Common/d3dx12.h"
-#include "../../Common/DirectXHelper.h"
-#include "../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
+#include "../ComputeInterface.h"
+#include "../../../Common/d3dx12.h"
+#include "../../../Common/DirectXHelper.h"
+#include "../../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 
 namespace Scene { struct Renderable; };
 

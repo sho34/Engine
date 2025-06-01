@@ -12,8 +12,12 @@ using namespace Editor;
 #include "Renderer/DeviceUtils/Resources/Resources.h"
 #include "Common/DirectXHelper.h"
 #include "Common/StepTimer.h"
-#include "Shaders/Compute/LuminanceHistogram.h"
-#include "Shaders/Compute/LuminanceHistogramAverage.h"
+#include "Shaders/Compute/HDR/LuminanceHistogram.h"
+#include "Shaders/Compute/HDR/LuminanceHistogramAverage.h"
+/*
+#include "Shaders/Compute/IBL/DiffuseIrradianceMap.h"
+#include "Shaders/Compute/IBL/PreFilteredEnvironmentMap.h"
+*/
 
 using namespace Scene;
 using namespace RenderPass;
@@ -28,6 +32,10 @@ std::shared_ptr<SwapChainPass> resolvePass;
 std::shared_ptr<RenderToTexturePass> mainPass;
 std::shared_ptr<LuminanceHistogram> hdrHistogram;
 std::shared_ptr<LuminanceHistogramAverage> luminanceHistogramAverage;
+/*
+std::shared_ptr<DiffuseIrradianceMap> diffuseIrradianceMap;
+std::shared_ptr<PreFilteredEnvironmentMap> preFilteredEnvironmentMap;
+*/
 
 GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
@@ -456,6 +464,11 @@ void EditorModeCreate()
 				1.1f
 			);
 
+			/*
+			diffuseIrradianceMap = std::make_shared<DiffuseIrradianceMap>("1a6d3b7f-670e-4bff-ab61-43abbe2ace60", "Assets/ibl/family/skybox_irradiance.dds");
+			preFilteredEnvironmentMap = std::make_shared<PreFilteredEnvironmentMap>("1a6d3b7f-670e-4bff-ab61-43abbe2ace60", "Assets/ibl/family/skybox_prefiltered_env.dds");
+			*/
+
 			Editor::CreatePickingPass();
 
 			toneMapQuad = CreateRenderable(
@@ -564,6 +577,10 @@ void EditorModeRender()
 		);
 		hdrHistogram->Compute();
 		luminanceHistogramAverage->Compute();
+		/*
+		preFilteredEnvironmentMap->Compute();
+		diffuseIrradianceMap->Compute();
+		*/
 
 		resolvePass->Pass([](size_t passHash)
 			{
@@ -593,6 +610,10 @@ void EditorModeRender()
 
 void EditorModePostRender()
 {
+	/*
+	diffuseIrradianceMap->Solution();
+	preFilteredEnvironmentMap->Solution();
+	*/
 	Editor::PickFromScene();
 }
 
@@ -601,6 +622,10 @@ void EditorModeLeave()
 	renderer->RenderCriticalFrame([]
 		{
 			Editor::DestroyPickingPass();
+			/*
+			diffuseIrradianceMap = nullptr;
+			preFilteredEnvironmentMap = nullptr;
+			*/
 			luminanceHistogramAverage = nullptr;
 			hdrHistogram = nullptr;
 			mainPass = nullptr;

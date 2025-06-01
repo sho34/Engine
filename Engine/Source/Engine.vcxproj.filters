@@ -261,7 +261,7 @@
     <ClInclude Include="pch\UUID.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Compute\RenderableBoundingBox.h">
+    <ClInclude Include="Shaders\Compute\Renderable\RenderableBoundingBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Templates\Textures\Texture.h">
@@ -282,13 +282,13 @@
     <ClInclude Include="Shaders\Compute\ComputeShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Compute\LuminanceHistogram.h">
+    <ClInclude Include="Shaders\Compute\HDR\LuminanceHistogram.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Shaders\Compute\ComputeInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Compute\LuminanceHistogramAverage.h">
+    <ClInclude Include="Shaders\Compute\HDR\LuminanceHistogramAverage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch\RefTracker.h">
@@ -297,7 +297,10 @@
     <ClInclude Include="pch\NoMath.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shaders\Compute\IBLDiffuseIrradianceMap.h">
+    <ClInclude Include="Shaders\Compute\IBL\DiffuseIrradianceMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -416,7 +419,7 @@
     <ClCompile Include="Templates\Material\Variables.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\Compute\RenderableBoundingBox.cpp">
+    <ClCompile Include="Shaders\Compute\Renderable\RenderableBoundingBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Templates\Textures\Texture.cpp">
@@ -431,13 +434,16 @@
     <ClCompile Include="Shaders\Compute\ComputeShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\Compute\LuminanceHistogram.cpp">
+    <ClCompile Include="Shaders\Compute\HDR\LuminanceHistogram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\Compute\LuminanceHistogramAverage.cpp">
+    <ClCompile Include="Shaders\Compute\HDR\LuminanceHistogramAverage.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shaders\Compute\IBLDiffuseIrradianceMap.cpp">
+    <ClCompile Include="Shaders\Compute\IBL\DiffuseIrradianceMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
