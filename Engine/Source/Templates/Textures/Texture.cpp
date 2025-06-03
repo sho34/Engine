@@ -13,6 +13,7 @@
 #include "../../Editor/Editor.h"
 #include "../../Shaders/Compute/IBL/DiffuseIrradianceMap.h"
 #include "../../Shaders/Compute/IBL/PrefilteredEnvironmentMap.h"
+#include "../../Shaders/Compute/IBL/BRDFLUT.h"
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -47,6 +48,7 @@ namespace Templates
 		bool createCubeFromSkybox = false;
 		bool createDiffuseCubeIBL = false;
 		bool createSpecularCubeIBL = false;
+		bool createBRDFCubeIBL = false;
 		std::string createCubeUUID = "";
 #endif
 	};
@@ -499,6 +501,7 @@ namespace Templates
 		Texture::createCubeFromSkybox = true;
 		Texture::createDiffuseCubeIBL = true;
 		Texture::createSpecularCubeIBL = true;
+		Texture::createBRDFCubeIBL = true;
 		*/
 	}
 
@@ -514,6 +517,7 @@ namespace Templates
 	{
 		Texture::createDiffuseCubeIBL = false;
 		Texture::createSpecularCubeIBL = false;
+		Texture::createBRDFCubeIBL = false;
 		Texture::createCubeUUID = "";
 	}
 
@@ -594,8 +598,25 @@ namespace Templates
 					ImGui::PushID("texture-is-skybox");
 					{
 						ImGui::Checkbox("Skybox", &Texture::createCubeFromSkybox);
+					}
+					ImGui::PopID();
+
+					ImGui::PushID("texture-ibl-diffuse");
+					{
 						ImGui::Checkbox("Diffuse IBL", &Texture::createDiffuseCubeIBL);
 						ImGui::Checkbox("Specular IBL", &Texture::createSpecularCubeIBL);
+					}
+					ImGui::PopID();
+
+					ImGui::PushID("texture-ibl-specular");
+					{
+						ImGui::Checkbox("Specular IBL", &Texture::createSpecularCubeIBL);
+					}
+					ImGui::PopID();
+
+					ImGui::PushID("texture-brdf-lut");
+					{
+						ImGui::Checkbox("BRDF LUT IBL", &Texture::createBRDFCubeIBL);
 					}
 					ImGui::PopID();
 
@@ -784,13 +805,14 @@ namespace Templates
 			if (texturePreview->updateFlag & TextureUpdateFlags_Load) { texturesToLoad.push_back(texturePreview); destroyPreview = false; }
 		}
 
-		if (texturesToRelease.size() == 0ULL && texturesToLoad.size() == 0ULL && !Texture::createDiffuseCubeIBL && !Texture::createSpecularCubeIBL) return;
+		if (texturesToRelease.size() == 0ULL && texturesToLoad.size() == 0ULL && !Texture::createDiffuseCubeIBL && !Texture::createSpecularCubeIBL && !Texture::createBRDFCubeIBL) return;
 
 		std::shared_ptr<DiffuseIrradianceMap> iblDiffuseIrradianceMap = nullptr;
 		std::shared_ptr<PreFilteredEnvironmentMap> iblPreFilteredEnvironmentMap = nullptr;
+		std::shared_ptr<BRDFLUT> iblBRDFLUT = nullptr;
 
 		renderer->Flush();
-		renderer->RenderCriticalFrame([texturesToRelease, &texturesToLoad, destroyPreview, &iblDiffuseIrradianceMap, &iblPreFilteredEnvironmentMap]
+		renderer->RenderCriticalFrame([texturesToRelease, &texturesToLoad, destroyPreview, &iblDiffuseIrradianceMap, &iblPreFilteredEnvironmentMap, &iblBRDFLUT]
 			{
 				if (Texture::createDiffuseCubeIBL)
 				{
@@ -810,6 +832,16 @@ namespace Templates
 
 					iblPreFilteredEnvironmentMap = std::make_shared<PreFilteredEnvironmentMap>(Texture::createCubeUUID, iblPrefilteredEnvMapPath);
 					iblPreFilteredEnvironmentMap->Compute();
+				}
+
+				if (Texture::createBRDFCubeIBL)
+				{
+					TextureTemplate& envMap = GetTextureTemplates().at(Texture::createCubeUUID);
+					std::string iblLUT = std::get<0>(envMap) + "_brdf_lut.dds";
+					std::filesystem::path iblLUTPath = iblLUT;
+
+					iblBRDFLUT = std::make_shared<BRDFLUT>(iblLUTPath);
+					iblBRDFLUT->Compute();
 				}
 
 				std::for_each(texturesToRelease.begin(), texturesToRelease.end(), [](std::shared_ptr<TextureInstance> texture)
@@ -890,6 +922,19 @@ namespace Templates
 			CreateTexture(iblPreFilteredJson);
 
 			iblPreFilteredEnvironmentMap = nullptr;
+		}
+
+		if (iblBRDFLUT)
+		{
+			resetIBL = true;
+			iblBRDFLUT->Solution();
+
+			nlohmann::json iblBRDFLUTJson = CreateBaseTextureJson(iblBRDFLUT->outputFile.string(), 1U, iblBRDFLUT->dataFormat);
+			iblBRDFLUTJson["images"] = nlohmann::json::array({ "" });
+
+			CreateTexture(iblBRDFLUTJson);
+
+			iblBRDFLUT = nullptr;
 		}
 
 		if (resetIBL)

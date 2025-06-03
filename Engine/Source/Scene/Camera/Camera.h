@@ -9,6 +9,11 @@
 #include <GamePad.h>
 #include <map>
 
+namespace Templates
+{
+	struct TextureInstance;
+};
+
 namespace Scene {
 
 	struct Light;
@@ -25,9 +30,17 @@ namespace Scene {
 		CameraPopupModal_CannotDelete = 1,
 		CameraPopupModal_CreateNew = 2
 	};
+
+	enum CameraIBLTextureFlags
+	{
+		CameraIBLTextureFlags_Create = 0x1,
+		CameraIBLTextureFlags_Destroy = 0x2,
+		CameraIBLTextureFlags_Reload = CameraIBLTextureFlags_Create | CameraIBLTextureFlags_Destroy
+	};
 #endif
 
 	using namespace DeviceUtils;
+	using namespace Templates;
 
 	inline static const std::string CameraConstantBufferName = "camera";
 	inline static XMVECTOR	up = { 0.0f, 1.0f, 0.0f, 0.0f };
@@ -117,10 +130,14 @@ namespace Scene {
 
 		std::shared_ptr<Scene::Light> light = nullptr;
 		std::shared_ptr<ConstantsBuffer> cameraCbv;
+		std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> iblTextures;
+		std::map<TextureShaderUsage, unsigned int> iblTexturesFlags;
+
 		BoundingFrustum boundingFrustum;
 
 		void Destroy();
 
+		void CreateIBLTexturesInstances();
 		void CreateConstantsBuffer();
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
 
@@ -145,6 +162,7 @@ namespace Scene {
 		void DrawEditorInformationAttributes();
 		void DrawEditorWorldAttributes();
 		void DrawEditorCameraAttributes();
+		void DrawEditorIBLAttributes();
 		void BindDestruction(std::function<void()>);
 #endif
 
@@ -173,5 +191,4 @@ namespace Scene {
 	std::shared_ptr<Camera> GetCamera(unsigned int index);
 	std::shared_ptr<Camera> GetCamera(std::string uuid);
 	std::shared_ptr<Camera> GetCameraByName(std::string name);
-
 };

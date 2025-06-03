@@ -14,10 +14,14 @@ using namespace Editor;
 #include "Common/StepTimer.h"
 #include "Shaders/Compute/HDR/LuminanceHistogram.h"
 #include "Shaders/Compute/HDR/LuminanceHistogramAverage.h"
-/*
+
+//#define RUN_TEST
+
+#if defined(RUN_TEST)
 #include "Shaders/Compute/IBL/DiffuseIrradianceMap.h"
 #include "Shaders/Compute/IBL/PreFilteredEnvironmentMap.h"
-*/
+#include "Shaders/Compute/IBL/BRDFLUT.h"
+#endif
 
 using namespace Scene;
 using namespace RenderPass;
@@ -32,10 +36,11 @@ std::shared_ptr<SwapChainPass> resolvePass;
 std::shared_ptr<RenderToTexturePass> mainPass;
 std::shared_ptr<LuminanceHistogram> hdrHistogram;
 std::shared_ptr<LuminanceHistogramAverage> luminanceHistogramAverage;
-/*
+#if defined(RUN_TEST)
 std::shared_ptr<DiffuseIrradianceMap> diffuseIrradianceMap;
 std::shared_ptr<PreFilteredEnvironmentMap> preFilteredEnvironmentMap;
-*/
+std::shared_ptr<BRDFLUT> brdflut;
+#endif
 
 GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
@@ -464,10 +469,11 @@ void EditorModeCreate()
 				1.1f
 			);
 
-			/*
-			diffuseIrradianceMap = std::make_shared<DiffuseIrradianceMap>("1a6d3b7f-670e-4bff-ab61-43abbe2ace60", "Assets/ibl/family/skybox_irradiance.dds");
-			preFilteredEnvironmentMap = std::make_shared<PreFilteredEnvironmentMap>("1a6d3b7f-670e-4bff-ab61-43abbe2ace60", "Assets/ibl/family/skybox_prefiltered_env.dds");
-			*/
+#if defined(RUN_TEST)
+			diffuseIrradianceMap = std::make_shared<DiffuseIrradianceMap>("3a6c21c2-362b-4048-b03e-7b36dcf56f43", "Assets/ibl/family/skybox_irradiance.dds");
+			preFilteredEnvironmentMap = std::make_shared<PreFilteredEnvironmentMap>("3a6c21c2-362b-4048-b03e-7b36dcf56f43", "Assets/ibl/family/skybox_prefiltered_env.dds");
+			brdflut = std::make_shared<BRDFLUT>("Assets/ibl/family/skybox_brdf_lut.dds");
+#endif
 
 			Editor::CreatePickingPass();
 
@@ -577,10 +583,11 @@ void EditorModeRender()
 		);
 		hdrHistogram->Compute();
 		luminanceHistogramAverage->Compute();
-		/*
+#if defined(RUN_TEST)
 		preFilteredEnvironmentMap->Compute();
 		diffuseIrradianceMap->Compute();
-		*/
+		brdflut->Compute();
+#endif
 
 		resolvePass->Pass([](size_t passHash)
 			{
@@ -610,10 +617,11 @@ void EditorModeRender()
 
 void EditorModePostRender()
 {
-	/*
+#if defined(RUN_TEST)
 	diffuseIrradianceMap->Solution();
 	preFilteredEnvironmentMap->Solution();
-	*/
+	brdflut->Solution();
+#endif
 	Editor::PickFromScene();
 }
 
@@ -622,10 +630,11 @@ void EditorModeLeave()
 	renderer->RenderCriticalFrame([]
 		{
 			Editor::DestroyPickingPass();
-			/*
+#if defined(RUN_TEST)
 			diffuseIrradianceMap = nullptr;
 			preFilteredEnvironmentMap = nullptr;
-			*/
+			brdflut = nullptr;
+#endif
 			luminanceHistogramAverage = nullptr;
 			hdrHistogram = nullptr;
 			mainPass = nullptr;

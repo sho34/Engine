@@ -5,7 +5,6 @@ BUGS:
 TODO:
 -Agregar mesh de esfera
 -IBL
-	-Agregar generacion de textura LUT 
 	-Agregar codigo ibl a los shaders
 -Agregar a generacion de cube environment la generacion de specular IBL
 -hacer que la instanciación de los materiales sea dinamico de acuerdo a los parámetros IBL de la camara
@@ -20,6 +19,7 @@ TODO:
 
 DONE
 -IBL:
+	-Agregar generacion de textura LUT 
 	-Agregar generacion de prefiltered environment map
 	-Agregar a generacion de cube environment la generacion de diffuse IBL
 	-Generacion de cube maps de environment desde 6 texturas o un skybox horizontal

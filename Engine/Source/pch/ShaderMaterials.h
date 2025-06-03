@@ -121,7 +121,9 @@ enum TextureShaderUsage
 	TextureShaderUsage_MaxTexture,
 	TextureShaderUsage_DepthTexture,
 	TextureShaderUsage_AverageLuminance,
-	TextureShaderUsage_IBLDiffuseMap,
+	TextureShaderUsage_IBLIrradiance,
+	TextureShaderUsage_IBLPreFilteredEnvironment,
+	TextureShaderUsage_IBLBRDFLUT,
 };
 
 inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToStr = {
@@ -133,7 +135,9 @@ inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToStr 
 	{ TextureShaderUsage_MaxTexture, "MaxTexture" },
 	{ TextureShaderUsage_DepthTexture, "DepthTexture" },
 	{ TextureShaderUsage_AverageLuminance, "AverageLuminance"},
-	{ TextureShaderUsage_IBLDiffuseMap, "IBLDiffuseMap" }
+	{ TextureShaderUsage_IBLIrradiance, "IBLIrradiance" },
+	{ TextureShaderUsage_IBLPreFilteredEnvironment, "IBLPreFilteredEnvironment" },
+	{ TextureShaderUsage_IBLBRDFLUT, "IBLBRDFLUT" },
 };
 
 inline static std::map<std::string, TextureShaderUsage> strToTextureShaderUsage = {
@@ -145,7 +149,9 @@ inline static std::map<std::string, TextureShaderUsage> strToTextureShaderUsage 
 	{ "MaxTexture", TextureShaderUsage_MaxTexture },
 	{ "DepthTexture", TextureShaderUsage_DepthTexture },
 	{ "AverageLuminance", TextureShaderUsage_AverageLuminance},
-	{ "IBLDiffuseMap", TextureShaderUsage_IBLDiffuseMap }
+	{ "IBLIrradiance", TextureShaderUsage_IBLIrradiance },
+	{ "IBLPreFilteredEnvironment", TextureShaderUsage_IBLPreFilteredEnvironment },
+	{ "IBLBRDFLUT", TextureShaderUsage_IBLBRDFLUT },
 };
 
 inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToShaderDefine = {
@@ -157,7 +163,27 @@ inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToShad
 	{ TextureShaderUsage_MaxTexture, "_HAS_MAX_TEXTURE" },
 	{ TextureShaderUsage_DepthTexture, "_HAS_DEPTH_TEXTURE" },
 	{ TextureShaderUsage_AverageLuminance, "_HAS_AVERAGE_LUMINANCE" },
-	{ TextureShaderUsage_IBLDiffuseMap, "_HAS_IBL_DIFFUSE_MAP" }
+	{ TextureShaderUsage_IBLIrradiance, "_HAS_IBL_IRRADIANCE" },
+	{ TextureShaderUsage_IBLPreFilteredEnvironment, "_HAS_IBL_PREFILTERED_ENVIRONMENT" },
+	{ TextureShaderUsage_IBLBRDFLUT, "_HAS_IBL_BRDF_LUT" },
+};
+
+inline static std::vector<std::tuple<std::string, TextureShaderUsage>> iblJsonTextures = {
+	{ "IBLIrradiance", TextureShaderUsage_IBLIrradiance },
+	{ "IBLPreFilteredEnvironment", TextureShaderUsage_IBLPreFilteredEnvironment},
+	{ "IBLBRDFLUT", TextureShaderUsage_IBLBRDFLUT},
+};
+
+inline static std::map<TextureShaderUsage, std::string> iblUsageTexture = {
+	{ TextureShaderUsage_IBLIrradiance, "IBLIrradiance" },
+	{ TextureShaderUsage_IBLPreFilteredEnvironment, "IBLPreFilteredEnvironment"},
+	{ TextureShaderUsage_IBLBRDFLUT, "IBLBRDFLUT"},
+};
+
+inline static std::map<std::string, TextureShaderUsage> iblTextureUsage = {
+	{ "IBLIrradiance", TextureShaderUsage_IBLIrradiance },
+	{ "IBLPreFilteredEnvironment", TextureShaderUsage_IBLPreFilteredEnvironment},
+	{ "IBLBRDFLUT", TextureShaderUsage_IBLBRDFLUT},
 };
 
 inline static std::map<TextureShaderUsage, std::string> textureShaderUsageInGammaSpaceToShaderDefine = {

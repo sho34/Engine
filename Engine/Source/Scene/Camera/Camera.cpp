@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
+#include <Editor.h>
 #include "imgui.h"
 #endif
 #include <Keyboard.h>
@@ -44,6 +45,9 @@ namespace Scene
 		SetIfMissingJson(camera->json, "minLogLuminance", -2.0f);
 		SetIfMissingJson(camera->json, "maxLogLuminance", 10.0f);
 		SetIfMissingJson(camera->json, "tau", 1.1f);
+		SetIfMissingJson(camera->json, "IBLIrradiance", "");
+		SetIfMissingJson(camera->json, "IBLPreFilteredEnvironment", "");
+		SetIfMissingJson(camera->json, "IBLBRDFLUT", "");
 
 		bool fitToWindow = camera->json.at("fitWindow");
 
@@ -106,6 +110,7 @@ namespace Scene
 			camera->light = GetLight(cameraj["light"]);
 		}
 
+		camera->CreateIBLTexturesInstances();
 		camera->CreateConstantsBuffer();
 
 		cameraByIndex.push_back(camera);
@@ -180,6 +185,7 @@ namespace Scene
 			camera->DrawEditorInformationAttributes();
 			camera->DrawEditorWorldAttributes();
 			camera->DrawEditorCameraAttributes();
+			camera->DrawEditorIBLAttributes();
 			ImGui::EndTable();
 		}
 	}
@@ -319,11 +325,61 @@ namespace Scene
 			}
 		);
 
-		if (camerasToDestroy.size() > 0ULL)
+		std::map<std::shared_ptr<Camera>, std::set<TextureShaderUsage>> camerasToDestroyIBL;
+		std::map<std::shared_ptr<Camera>, std::set<TextureShaderUsage>> camerasToCreateIBL;
+		std::set<std::shared_ptr<Camera>> camerasToResetFlag;
+		for (auto& cam : cameraByIndex)
+		{
+			for (auto& [usage, flag] : cam->iblTexturesFlags)
+			{
+				if (flag & CameraIBLTextureFlags_Destroy) camerasToDestroyIBL[cam].insert(usage);
+				if (flag & CameraIBLTextureFlags_Create) camerasToCreateIBL[cam].insert(usage);
+			}
+			if (cam->iblTexturesFlags.size() > 0ULL) camerasToResetFlag.insert(cam);
+		}
+
+		bool goCritical = (camerasToDestroy.size() > 0ULL || camerasToDestroyIBL.size() > 0ULL || camerasToCreateIBL.size() > 0ULL);
+
+		if (goCritical)
 		{
 			renderer->Flush();
-			renderer->RenderCriticalFrame([&camerasToDestroy]
+			renderer->RenderCriticalFrame([&camerasToDestroy, &camerasToDestroyIBL, &camerasToCreateIBL, &camerasToResetFlag]
 				{
+					for (auto& [cam, usages] : camerasToDestroyIBL)
+					{
+						for (auto& usage : usages)
+						{
+							DestroyTextureInstance(cam->iblTextures.at(usage));
+							cam->iblTextures.erase(usage);
+						}
+					}
+					camerasToDestroyIBL.clear();
+
+					for (auto& [cam, usages] : camerasToCreateIBL)
+					{
+						std::map<TextureShaderUsage, std::string> textures;
+						for (auto& usage : usages)
+						{
+							if (cam->json.at(iblUsageTexture.at(usage)) != "")
+							{
+								textures.insert_or_assign(usage, cam->json.at(iblUsageTexture.at(usage)));
+							}
+						}
+						std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> newInstances = GetTextures(textures);
+						for (auto& [usage, texInstance] : newInstances)
+						{
+							cam->iblTextures.insert_or_assign(usage, texInstance);
+						}
+					}
+					camerasToCreateIBL.clear();
+
+					for (auto& cam : camerasToResetFlag)
+					{
+						cam->iblTexturesFlags.clear();
+					}
+
+					camerasToCreateIBL.clear();
+
 					for (auto& cam : camerasToDestroy)
 					{
 						if (cameraDestructionCallbacks.contains(cam))
@@ -475,7 +531,34 @@ namespace Scene
 
 	void Camera::Destroy()
 	{
+		for (auto& [_, tex] : iblTextures)
+		{
+			DestroyTextureInstance(tex);
+		}
+		iblTextures.clear();
 		DestroyConstantsBuffer(cameraCbv);
+	}
+
+	void Camera::CreateIBLTexturesInstances()
+	{
+		if (std::any_of(iblJsonTextures.begin(), iblJsonTextures.end(), [this](auto& tup)
+			{
+				std::string& attName = std::get<0>(tup);
+				return json.at(attName) == "";
+			}
+		))
+			return;
+
+		std::map<TextureShaderUsage, std::string> textures;
+		std::transform(iblJsonTextures.begin(), iblJsonTextures.end(), std::inserter(textures, textures.end()), [this](auto& tup)
+			{
+				std::string& attName = std::get<0>(tup);
+				TextureShaderUsage& usage = std::get<1>(tup);
+				return std::pair<TextureShaderUsage, std::string>(usage, json.at(attName));
+			}
+		);
+
+		iblTextures = GetTextures(textures);
 	}
 
 	void Camera::CreateConstantsBuffer()
@@ -944,6 +1027,48 @@ namespace Scene
 		if (ImGui::InputFloat("tau", &tauf))
 		{
 			tau(tauf);
+		}
+	}
+
+	void Camera::DrawEditorIBLAttributes()
+	{
+		std::vector<UUIDName> selectables = GetTexturesUUIDsNames();
+		SortUUIDByName(selectables);
+
+		for (auto& ibl : iblJsonTextures)
+		{
+			std::string name = std::get<0>(ibl);
+			TextureShaderUsage usage = std::get<1>(ibl);
+
+			ImGui::PushID(name.c_str());
+			{
+				UUIDName selected = std::make_tuple("", "");
+				if (json.at(name) != "")
+					selected = std::make_tuple(std::string(json.at(name)), GetTextureName(std::string(json.at(name))));
+
+				DrawComboSelection(selected, selectables, [this, name, usage](UUIDName selection)
+					{
+						std::string texUUID = std::get<0>(selection);
+						json.at(name) = texUUID;
+						if (texUUID == "")
+						{
+							iblTexturesFlags.insert_or_assign(usage, CameraIBLTextureFlags_Destroy);
+						}
+						else
+						{
+							iblTexturesFlags.insert_or_assign(usage, CameraIBLTextureFlags_Create);
+						}
+					}, name
+				);
+
+				if (iblTextures.contains(usage))
+				{
+					std::shared_ptr<TextureInstance> texInstance = iblTextures.at(usage);
+					nlohmann::json& texJson = GetTextureTemplate(texInstance->materialTexture);
+					ImDrawTextureImage(texInstance->gpuHandle.ptr, static_cast<unsigned int>(texJson.at("width")), static_cast<unsigned int>(texJson.at("height")));
+				}
+			}
+			ImGui::PopID();
 		}
 	}
 #endif

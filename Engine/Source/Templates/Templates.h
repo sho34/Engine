@@ -135,6 +135,13 @@ namespace Templates {
 	static const nlohmann::json systemShaders = R"(
 	[
 		{
+			"name":"IBLBRDFLUT_cs",
+			"path":"CSBRDFLUT",
+			"systemCreated" : true,
+			"uuid":"bb76e846-4015-48a0-ab94-5286dd843052",
+			"type":"COMPUTE_SHADER"
+		},
+		{
 			"name":"IBLPrefilteredEnvironmentMap_cs",
 			"path":"CSPreFilteredEnvironmentMap",
 			"systemCreated" : true,
