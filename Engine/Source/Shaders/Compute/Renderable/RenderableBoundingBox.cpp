@@ -55,6 +55,8 @@ namespace ComputeShader
 						&readBackHeapProperties, D3D12_HEAP_FLAG_NONE, &bufferDescReadBack,
 						D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&readBackResource)
 					);
+					CCNAME_D3D12_OBJECT_N(readBackResource, std::string(r->name() + "readback:" + std::to_string(i)));
+					LogCComPtrAddress(std::string(r->name() + ":" + std::to_string(i)), readBackResource);
 				}
 			};
 

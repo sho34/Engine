@@ -128,8 +128,8 @@ namespace DeviceUtils
 
 		CComPtr<ID3D12PipelineState> pipelineState;
 		DX::ThrowIfFailed(renderer->d3dDevice->CreateGraphicsPipelineState(&state, IID_PPV_ARGS(&pipelineState)));
-		CCNAME_D3D12_OBJECT(pipelineState);
 
+		CCNAME_D3D12_OBJECT(pipelineState);
 		LogCComPtrAddress(name, pipelineState);
 
 		return pipelineState;
@@ -166,8 +166,8 @@ namespace DeviceUtils
 		D3D12_PIPELINE_STATE_STREAM_DESC pssDescription = { sizeof(PSS), &PSS };
 		CComPtr<ID3D12PipelineState> pipelineState;
 		DX::ThrowIfFailed(renderer->d3dDevice->CreatePipelineState(&pssDescription, IID_PPV_ARGS(&pipelineState)));
-		CCNAME_D3D12_OBJECT(pipelineState);
 
+		CCNAME_D3D12_OBJECT(pipelineState);
 		LogCComPtrAddress(name, pipelineState);
 
 		return pipelineState;

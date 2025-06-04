@@ -26,7 +26,8 @@ namespace DeviceUtils {
 			nullptr,
 			IID_PPV_ARGS(&pDestinationResource)));
 
-		//NAME_D3D12_OBJECT(pDestinationResource);
+		CCNAME_D3D12_OBJECT(pDestinationResource);
+		LogCComPtrAddress("pDestinationResource", pDestinationResource);
 
 		// Create a committed resource for the upload.
 		if (bufferData)
@@ -41,6 +42,8 @@ namespace DeviceUtils {
 				nullptr,
 				IID_PPV_ARGS(&pIntermediateResource)
 			));
+			CCNAME_D3D12_OBJECT(pIntermediateResource);
+			LogCComPtrAddress("pIntermediateResource", pIntermediateResource);
 
 			D3D12_SUBRESOURCE_DATA subresourceData = {};
 			subresourceData.pData = bufferData;
@@ -124,7 +127,8 @@ namespace DeviceUtils {
 		if (FAILED(hr))
 			return hr;
 
-		commandList->SetName(L"ScreenGrab");
+		CCNAME_D3D12_OBJECT_N(commandList, std::string("ScreenGrab"));
+		LogCComPtrAddress("ScreenGrab", commandList);
 
 		// Create a fence
 		CComPtr<ID3D12Fence> fence;
@@ -132,7 +136,8 @@ namespace DeviceUtils {
 		if (FAILED(hr))
 			return hr;
 
-		fence->SetName(L"ScreenGrab");
+		CCNAME_D3D12_OBJECT_N(fence, std::string("ScreenGrab"));
+		LogCComPtrAddress("ScreenGrab", fence);
 		//
 		//unsigned int bitMask = srcPitch & 0xFF;
 		//bool ass = (bitMask) == 0;
@@ -179,7 +184,8 @@ namespace DeviceUtils {
 
 			assert(pTemp);
 
-			pTemp->SetName(L"ScreenGrab temporary");
+			CCNAME_D3D12_OBJECT_N(pTemp, std::string("ScreenGrab temporary"));
+			LogCComPtrAddress("ScreenGrab temporary", pTemp);
 
 			//const DXGI_FORMAT fmt = EnsureNotTypeless(desc.Format);
 			const DXGI_FORMAT fmt = desc.Format;
@@ -226,7 +232,8 @@ namespace DeviceUtils {
 			return hr;
 		}
 
-		pStaging->SetName(L"ScreenGrab staging");
+		CCNAME_D3D12_OBJECT_N(pStaging, std::string("ScreenGrab staging"));
+		LogCComPtrAddress("ScreenGrab staging", pStaging);
 
 		assert(pStaging);
 
@@ -320,10 +327,12 @@ namespace DeviceUtils {
 		// Create a fence
 		CComPtr<ID3D12Fence> fence;
 		hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+
 		if (FAILED(hr))
 			return hr;
 
-		fence->SetName(L"Tex3DGrab");
+		CCNAME_D3D12_OBJECT_N(fence, std::string("Tex3DGrab"));
+		LogCComPtrAddress("Tex3DGrab", fence);
 
 		const CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 		const CD3DX12_HEAP_PROPERTIES readBackHeapProperties(D3D12_HEAP_TYPE_READBACK);
@@ -366,7 +375,8 @@ namespace DeviceUtils {
 			return hr;
 		}
 
-		pStaging->SetName(L"Texture3D staging");
+		CCNAME_D3D12_OBJECT_N(pStaging, std::string("Texture3D staging"));
+		LogCComPtrAddress("Texture3D staging", pStaging);
 
 		assert(pStaging);
 

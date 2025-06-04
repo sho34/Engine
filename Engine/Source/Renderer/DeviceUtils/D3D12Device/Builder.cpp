@@ -174,6 +174,7 @@ namespace DeviceUtils {
 		CComPtr<ID3D12Fence> fence;
 		DX::ThrowIfFailed(device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence)));
 		CCNAME_D3D12_OBJECT_N(fence, name);
+		LogCComPtrAddress(name, fence);
 		return fence;
 	}
 

@@ -38,6 +38,7 @@ namespace DeviceUtils {
 			IID_PPV_ARGS(&depthStencil)
 		));
 		CCNAME_D3D12_OBJECT(depthStencil);
+		LogCComPtrAddress("depthStencil", depthStencil);
 
 		D3D12_DEPTH_STENCIL_VIEW_DESC dsv = {};
 		dsv.Format = format;
