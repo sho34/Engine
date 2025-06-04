@@ -978,10 +978,11 @@ namespace Templates
 		DXGI_FORMAT format = stringToDxgiFormat.at(json.at("format"));
 		unsigned int numFrames = json.at("numFrames");
 		unsigned int nMipMaps = json.at("mipLevels");
-		CreateTextureResource(pathS, format, numFrames, nMipMaps, startFrame);
+		TextureType type = stringToTextureType.at(json.at("type"));
+		CreateTextureResource(pathS, format, type, numFrames, nMipMaps, startFrame);
 	}
 
-	void TextureInstance::CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps, unsigned int firstArraySlice)
+	void TextureInstance::CreateTextureResource(std::string& path, DXGI_FORMAT format, TextureType type, unsigned int numFrames, unsigned int nMipMaps, unsigned int firstArraySlice)
 	{
 		using namespace DeviceUtils;
 
@@ -1026,7 +1027,9 @@ namespace Templates
 		viewDesc.Format = format;
 		viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
-		if (numFrames <= 1U)
+		switch (type)
+		{
+		case TextureType_2D:
 		{
 			//simple static textures
 			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
@@ -1034,7 +1037,8 @@ namespace Templates
 			viewDesc.Texture2D.MostDetailedMip = 0;
 			viewDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 		}
-		else
+		break;
+		case TextureType_Array:
 		{
 			//array textures(animated gifs)
 			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DARRAY;
@@ -1042,9 +1046,22 @@ namespace Templates
 			viewDesc.Texture2DArray.MipLevels = nMipMaps;
 			viewDesc.Texture2DArray.MostDetailedMip = 0;
 			viewDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
-			//viewDesc.Texture2DArray.ArraySize = numFrames;
-			viewDesc.Texture2DArray.ArraySize = -1;
+			viewDesc.Texture2DArray.ArraySize = numFrames;
+			//viewDesc.Texture2DArray.ArraySize = -1;
 			viewDesc.Texture2DArray.FirstArraySlice = firstArraySlice;
+		}
+		break;
+		case TextureType_Cube:
+		{
+			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+			viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			viewDesc.TextureCube = {
+				.MostDetailedMip = 0,
+				.MipLevels = nMipMaps,
+				.ResourceMinLODClamp = 0.0f
+			};
+		}
+		break;
 		}
 
 		//allocate descriptors handles for the SRV and kick the resource creation

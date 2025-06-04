@@ -43,6 +43,9 @@ namespace Templates {
 		animationCBVRegister = src->animationCBVRegister;
 		lightsShadowMapCBVRegister = src->lightsShadowMapCBVRegister;
 		lightsShadowMapSRVRegister = src->lightsShadowMapSRVRegister;
+		iblIrradianceSRVRegister = src->iblIrradianceSRVRegister;
+		iblPrefiteredEnvSRVRegister = src->iblPrefiteredEnvSRVRegister;
+		iblBRDFLUTSRVRegister = src->iblBRDFLUTSRVRegister;
 		byteCode = src->byteCode;
 	}
 
@@ -62,20 +65,24 @@ namespace Templates {
 		using namespace Animation;
 		using namespace Scene;
 
+		//OutputDebugStringA(std::string("Binding: " + GetShaderName(shaderSource.shaderUUID) + ":" + ShaderTypeToStr.at(shaderSource.shaderType) + "\n").c_str());
+
 		for (unsigned int paramIdx = 0; paramIdx < desc.BoundResources; paramIdx++)
 		{
 			D3D12_SHADER_INPUT_BIND_DESC bindDesc{};
 			reflection->GetResourceBindingDesc(paramIdx, &bindDesc);
 
 			std::string resourceName(bindDesc.Name);
+			//OutputDebugStringA(std::string(std::to_string(paramIdx) + " " + resourceName + ":" + shaderInputTypeToString.at(bindDesc.Type) + ":" + std::to_string(bindDesc.BindPoint) + "\n").c_str());
 
 			cameraCBVRegister = (resourceName == CameraConstantBufferName) ? bindDesc.BindPoint : cameraCBVRegister;
 			lightCBVRegister = (resourceName == LightConstantBufferName) ? bindDesc.BindPoint : lightCBVRegister;
 			animationCBVRegister = (resourceName == AnimationConstantBufferName) ? bindDesc.BindPoint : animationCBVRegister;
 			lightsShadowMapCBVRegister = (resourceName == ShadowMapConstantBufferName) ? bindDesc.BindPoint : lightsShadowMapCBVRegister;
-			lightsShadowMapSRVRegister = (resourceName == ShadowMapLightsShaderResourveViewName) ? bindDesc.BindPoint : lightsShadowMapSRVRegister;
-
-			//OutputDebugStringA(std::string(std::to_string(paramIdx) + " " + resourceName + ":" + shaderInputTypeToString.at(bindDesc.Type) + ":" + std::to_string(bindDesc.BindPoint) + "\n").c_str());
+			lightsShadowMapSRVRegister = (resourceName == ShadowMapLightsShaderResourceViewName) ? bindDesc.BindPoint : lightsShadowMapSRVRegister;
+			iblIrradianceSRVRegister = (resourceName == textureShaderUsageToStr.at(TextureShaderUsage_IBLIrradiance)) ? bindDesc.BindPoint : iblIrradianceSRVRegister;
+			iblPrefiteredEnvSRVRegister = (resourceName == textureShaderUsageToStr.at(TextureShaderUsage_IBLPreFilteredEnvironment)) ? bindDesc.BindPoint : iblPrefiteredEnvSRVRegister;
+			iblBRDFLUTSRVRegister = (resourceName == textureShaderUsageToStr.at(TextureShaderUsage_IBLBRDFLUT)) ? bindDesc.BindPoint : iblBRDFLUTSRVRegister;
 
 			if (bindDesc.Type == D3D_SIT_CBUFFER)
 			{
@@ -275,7 +282,7 @@ namespace Templates {
 
 				std::shared_ptr<ShaderInstance> newInstance;
 				size_t hash = std::hash<Source>()(params);
-				newInstance = LoadShaderInstanceFromBinary(hash);
+				//newInstance = LoadShaderInstanceFromBinary(hash);
 
 #if defined(_DEVELOPMENT)
 				bool saveBinary = false;
@@ -332,11 +339,14 @@ namespace Templates {
 		LoadShaderTextureParameters(file, instance->srvTexParameters);
 		LoadShaderSamplerParameters(file, instance->samplersParameters);
 		LoadShaderBufferSizes(file, instance->cbufferSize);
-		LoadShaderCBVRegister(file, instance->cameraCBVRegister);
-		LoadShaderCBVRegister(file, instance->lightCBVRegister);
-		LoadShaderCBVRegister(file, instance->animationCBVRegister);
-		LoadShaderCBVRegister(file, instance->lightsShadowMapCBVRegister);
-		LoadShaderCBVRegister(file, instance->lightsShadowMapSRVRegister);
+		LoadShaderRegister(file, instance->cameraCBVRegister);
+		LoadShaderRegister(file, instance->lightCBVRegister);
+		LoadShaderRegister(file, instance->animationCBVRegister);
+		LoadShaderRegister(file, instance->lightsShadowMapCBVRegister);
+		LoadShaderRegister(file, instance->lightsShadowMapSRVRegister);
+		LoadShaderRegister(file, instance->iblIrradianceSRVRegister);
+		LoadShaderRegister(file, instance->iblPrefiteredEnvSRVRegister);
+		LoadShaderRegister(file, instance->iblBRDFLUTSRVRegister);
 		LoadShaderByteCode(file, instance->byteCode);
 		file.close();
 		return instance;
@@ -362,11 +372,14 @@ namespace Templates {
 		WriteShaderTextureParameters(file, instance->srvTexParameters);
 		WriteShaderSamplerParameters(file, instance->samplersParameters);
 		WriteShaderBufferSizes(file, instance->cbufferSize);
-		WriteShaderCBVRegister(file, instance->cameraCBVRegister);
-		WriteShaderCBVRegister(file, instance->lightCBVRegister);
-		WriteShaderCBVRegister(file, instance->animationCBVRegister);
-		WriteShaderCBVRegister(file, instance->lightsShadowMapCBVRegister);
-		WriteShaderCBVRegister(file, instance->lightsShadowMapSRVRegister);
+		WriteShaderRegister(file, instance->cameraCBVRegister);
+		WriteShaderRegister(file, instance->lightCBVRegister);
+		WriteShaderRegister(file, instance->animationCBVRegister);
+		WriteShaderRegister(file, instance->lightsShadowMapCBVRegister);
+		WriteShaderRegister(file, instance->lightsShadowMapSRVRegister);
+		WriteShaderRegister(file, instance->iblIrradianceSRVRegister);
+		WriteShaderRegister(file, instance->iblPrefiteredEnvSRVRegister);
+		WriteShaderRegister(file, instance->iblBRDFLUTSRVRegister);
 		WriteShaderByteCode(file, instance->byteCode);
 		file.close();
 	}
@@ -581,13 +594,13 @@ namespace Templates {
 	}
 #endif
 
-	void LoadShaderCBVRegister(std::ifstream& file, int& reg)
+	void LoadShaderRegister(std::ifstream& file, int& reg)
 	{
 		file.read(reinterpret_cast<char*>(&reg), sizeof(reg));
 	}
 
 #if defined(_DEVELOPMENT)
-	void WriteShaderCBVRegister(std::ofstream& file, int& reg)
+	void WriteShaderRegister(std::ofstream& file, int& reg)
 	{
 		file.write(reinterpret_cast<char*>(&reg), sizeof(reg));
 	}

@@ -71,6 +71,7 @@ namespace Scene {
 		XMFLOAT4 eyePosition;
 		XMFLOAT4 eyeForward;
 		float white;
+		float IBLNumEnvLevels;
 	};
 
 	struct Camera
@@ -167,6 +168,7 @@ namespace Scene {
 #endif
 
 		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
+		void SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
 	};
 
 	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraj);

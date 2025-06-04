@@ -77,6 +77,9 @@ namespace Templates {
 		int animationCBVRegister = -1;
 		int lightsShadowMapCBVRegister = -1;
 		int lightsShadowMapSRVRegister = -1;
+		int iblIrradianceSRVRegister = -1;
+		int iblPrefiteredEnvSRVRegister = -1;
+		int iblBRDFLUTSRVRegister = -1;
 
 		//the bytecode(vector of bytes)
 		ShaderByteCode byteCode;
@@ -147,9 +150,9 @@ namespace Templates {
 #if defined(_DEVELOPMENT)
 	void WriteShaderBufferSizes(std::ofstream& file, std::vector<size_t>& cbufferSize);
 #endif
-	void LoadShaderCBVRegister(std::ifstream& file, int& reg);
+	void LoadShaderRegister(std::ifstream& file, int& reg);
 #if defined(_DEVELOPMENT)
-	void WriteShaderCBVRegister(std::ofstream& file, int& reg);
+	void WriteShaderRegister(std::ofstream& file, int& reg);
 #endif	
 	void LoadShaderByteCode(std::ifstream& file, ShaderByteCode& byteCode);
 #if defined(_DEVELOPMENT)

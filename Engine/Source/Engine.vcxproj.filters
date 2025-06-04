@@ -452,6 +452,9 @@
     <ClCompile Include="Shaders\Compute\IBL\BRDFLUT.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="WindowsProject2.rc">

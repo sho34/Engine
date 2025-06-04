@@ -504,6 +504,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.cpp" />
     <ClCompile Include="Shaders\Compute\IBL\BRDFLUT.cpp" />
     <ClCompile Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.cpp" />
     <ClCompile Include="Shaders\Compute\IBL\DiffuseIrradianceMap.cpp" />

@@ -113,6 +113,9 @@ struct std::hash<ShaderUAVParametersMap>
 //Texture Type
 enum TextureShaderUsage
 {
+	TextureShaderUsage_IBLIrradiance,
+	TextureShaderUsage_IBLPreFilteredEnvironment,
+	TextureShaderUsage_IBLBRDFLUT,
 	TextureShaderUsage_Base,
 	TextureShaderUsage_NormalMap,
 	TextureShaderUsage_MetallicRoughness,
@@ -121,9 +124,7 @@ enum TextureShaderUsage
 	TextureShaderUsage_MaxTexture,
 	TextureShaderUsage_DepthTexture,
 	TextureShaderUsage_AverageLuminance,
-	TextureShaderUsage_IBLIrradiance,
-	TextureShaderUsage_IBLPreFilteredEnvironment,
-	TextureShaderUsage_IBLBRDFLUT,
+
 };
 
 inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToStr = {

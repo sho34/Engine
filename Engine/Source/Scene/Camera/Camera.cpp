@@ -585,6 +585,16 @@ namespace Scene
 		atts.eyeForward = *(XMFLOAT4*)&fw.m128_f32;
 		atts.white = white();
 
+		if (iblTextures.contains(TextureShaderUsage_IBLPreFilteredEnvironment))
+		{
+			nlohmann::json& tex = GetTextureTemplate(iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->materialTexture);
+			atts.IBLNumEnvLevels = static_cast<float>(tex.at("mipLevels"));
+		}
+		else
+		{
+			atts.IBLNumEnvLevels = 0.0f;
+		}
+
 		memcpy(cameraCbv->mappedConstantBuffer + cameraCbv->alignedConstantBufferSize * backbufferIndex, &atts, sizeof(atts));
 	}
 
@@ -1078,5 +1088,12 @@ namespace Scene
 		bbox->position(json.at("position"));
 		bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
+	}
+
+	void Camera::SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
+	{
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLIrradiance)->gpuHandle);
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->gpuHandle);
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLBRDFLUT)->gpuHandle);
 	}
 }

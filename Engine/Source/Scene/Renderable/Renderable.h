@@ -38,9 +38,9 @@ namespace Scene
 	};
 #endif
 
-	static nlohmann::json defaultShadowMapShaderAttributes = { { "uniqueMaterialInstance", false }, { "castShadows",false } };
+	static nlohmann::json defaultShadowMapShaderAttributes = { { "uniqueMaterialInstance", false }, { "castShadows",false }, { "ibl", false} };
 #if defined(_EDITOR)
-	static nlohmann::json defaultPickingShaderAttributes = R"({ "uniqueMaterialInstance": true, "castShadows": false })"_json;
+	static nlohmann::json defaultPickingShaderAttributes = R"({ "uniqueMaterialInstance": true, "castShadows": false, "ibl": false })"_json;
 #endif
 
 	//Mesh Instance to Material Instance
@@ -91,6 +91,9 @@ namespace Scene
 
 		bool castShadows();
 		void castShadows(bool castShadows);
+
+		bool ibl();
+		void ibl(bool ibl);
 
 		XMMATRIX world();
 

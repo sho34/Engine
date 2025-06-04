@@ -31,7 +31,7 @@ namespace Templates {
 	std::map<std::string, MaterialTemplate> materials;
 
 	//Material+Mesh = MaterialInstance
-	typedef std::pair<std::tuple<std::string, std::map<TextureShaderUsage, std::string>, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
+	typedef std::pair<std::tuple<std::string, std::map<TextureShaderUsage, std::string>, bool, bool>, std::shared_ptr<MeshInstance>> MaterialMeshInstancePair;
 
 	namespace Material
 	{
@@ -86,19 +86,19 @@ namespace Templates {
 			instanceName += nostd::gen_string(8, g);
 		}
 
-		auto key = MaterialMeshInstancePair(std::make_tuple(instanceName, textures, shaderAttributes.at("castShadows")), mesh);
+		auto key = MaterialMeshInstancePair(std::make_tuple(instanceName, textures, shaderAttributes.at("castShadows"), shaderAttributes.at("ibl")), mesh);
 
 		using namespace Material;
 		return refTracker.AddRef(key, [instanceName, uuid, mesh, textures, shaderAttributes]()
 			{
 				std::shared_ptr<MaterialInstance> instance = std::make_shared<MaterialInstance>();
-				LoadMaterialInstance(uuid, mesh, instanceName, instance, textures, shaderAttributes.at("castShadows"));
+				LoadMaterialInstance(uuid, mesh, instanceName, instance, textures, shaderAttributes.at("castShadows"), shaderAttributes.at("ibl"));
 				return instance;
 			}
 		);
 	}
 
-	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureShaderUsage, std::string>& textures, bool castShadows)
+	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureShaderUsage, std::string>& textures, bool castShadows, bool ibl)
 	{
 		nlohmann::json mat = GetMaterialTemplate(uuid);
 		material->vertexShaderUUID = mat.at("shader_vs");
@@ -108,6 +108,7 @@ namespace Templates {
 		material->instanceName = instanceName;
 		material->tupleTextures = textures;
 		material->castShadows = castShadows;
+		material->ibl = ibl;
 		material->BuildMaterialShaderDefines();
 		material->BuildMaterialTextures();
 		material->GetShaderInstances();
@@ -166,6 +167,12 @@ namespace Templates {
 		if (castShadows)
 		{
 			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_ShadowMaps));
+		}
+		if (ibl)
+		{
+			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_IBLIrradiance));
+			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_IBLPreFilteredEnvironment));
+			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_IBLBRDFLUT));
 		}
 	}
 
@@ -392,7 +399,7 @@ namespace Templates {
 		}
 	}
 
-	void MaterialInstance::SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
+	void MaterialInstance::SetUAVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
 	{
 		for (auto& [name, uavParam] : pixelShader->uavParameters)
 		{
@@ -402,10 +409,13 @@ namespace Templates {
 				cbvSlot++;
 			}
 		}
+	}
 
+	void MaterialInstance::SetSRVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
+	{
 		for (auto& [textureType, texParam] : pixelShader->srvTexParameters)
 		{
-			if (texParam.numSRV == 0xFFFFFFFF) continue;
+			if (texParam.numSRV == 0xFFFFFFFF || iblUsageTexture.contains(textureType)) continue;
 			commandList->SetGraphicsRootDescriptorTable(cbvSlot, textures.at(textureType)->gpuHandle);
 			cbvSlot++;
 		}
@@ -465,7 +475,7 @@ namespace Templates {
 
 	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes)
 	{
-		auto key = MaterialMeshInstancePair(std::make_tuple(material->instanceName, material->tupleTextures, shaderAttributes.at("castShadows")), mesh);
+		auto key = MaterialMeshInstancePair(std::make_tuple(material->instanceName, material->tupleTextures, shaderAttributes.at("castShadows"), shaderAttributes.at("ibl")), mesh);
 		using namespace Material;
 		refTracker.RemoveRef(key, material);
 	}

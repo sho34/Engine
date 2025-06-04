@@ -52,6 +52,7 @@ namespace Templates {
 		std::map<TextureShaderUsage, std::string> tupleTextures;
 		VertexClass vertexClass;
 		bool castShadows;
+		bool ibl;
 		MaterialVariablesMapping variablesMapping;
 		std::vector<size_t> variablesBufferSize;
 		std::vector<std::vector<byte>> variablesBuffer;
@@ -80,7 +81,8 @@ namespace Templates {
 		bool ConstantsBufferContains(std::string varName);
 		ShaderConstantsBufferVariable& GetConstantsBufferVariable(std::string varName);
 		void LoadVariablesMapping(nlohmann::json material);
-		void SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
+		void SetUAVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
+		void SetSRVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
 		void UpdateMappedValues(nlohmann::json mappedValues);
 		void CallRebuildCallbacks() { for (auto& cb : rebuildCallbacks) { cb(); } }
 		void CallMappedValueChangesPropagation() { for (auto& cb : propagateMappedValueChanges) { cb(); } }
@@ -91,7 +93,7 @@ namespace Templates {
 	//CREATE
 	void CreateMaterial(nlohmann::json json);
 	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureShaderUsage, std::string>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
-	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureShaderUsage, std::string>& textures, bool castShadows);
+	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureShaderUsage, std::string>& textures, bool castShadows, bool ibl);
 
 	//READ&GET
 	nlohmann::json GetMaterialTemplate(std::string uuid);

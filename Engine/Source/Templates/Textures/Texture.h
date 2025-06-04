@@ -75,7 +75,7 @@ namespace Templates
 
 		~TextureInstance();
 		void Load(std::string uuid, unsigned int startFrame = 0);
-		void CreateTextureResource(std::string& path, DXGI_FORMAT format, unsigned int numFrames, unsigned int nMipMaps, unsigned int startFrame = 0U);
+		void CreateTextureResource(std::string& path, DXGI_FORMAT format, TextureType type, unsigned int numFrames, unsigned int nMipMaps, unsigned int startFrame = 0U);
 		void ReleaseResources();
 		void BindChangeCallback(std::string uuid, std::function<void()> cb);
 	};

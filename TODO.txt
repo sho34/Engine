@@ -4,10 +4,6 @@ BUGS:
 
 TODO:
 -Agregar mesh de esfera
--IBL
-	-Agregar codigo ibl a los shaders
--Agregar a generacion de cube environment la generacion de specular IBL
--hacer que la instanciación de los materiales sea dinamico de acuerdo a los parámetros IBL de la camara
 -Arreglar el tema del defined(_HAS_METALLIC_B...) en PBR.hlsl que hace fallback a blinnphong
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
 	-Presets
@@ -19,6 +15,7 @@ TODO:
 
 DONE
 -IBL:
+	-Agregar codigo ibl a los shaders
 	-Agregar generacion de textura LUT 
 	-Agregar generacion de prefiltered environment map
 	-Agregar a generacion de cube environment la generacion de diffuse IBL

@@ -149,6 +149,7 @@ namespace Scene {
 		SetIfMissingJson(renderable->json, "hidden", false);
 		SetIfMissingJson(renderable->json, "uniqueMaterialInstance", false);
 		SetIfMissingJson(renderable->json, "castShadows", true);
+		SetIfMissingJson(renderable->json, "ibl", false);
 		SetIfMissingJson(renderable->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 		SetIfMissingJson(renderable->json, "rotation", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 		SetIfMissingJson(renderable->json, "scale", XMFLOAT3({ 1.0f,1.0f,1.0f }));
@@ -330,6 +331,16 @@ namespace Scene {
 	void Renderable::castShadows(bool castShadows)
 	{
 		json.at("castShadows") = castShadows;
+	}
+
+	bool Renderable::ibl()
+	{
+		return json.at("ibl");
+	}
+
+	void Renderable::ibl(bool ibl)
+	{
+		json.at("ibl") = ibl;
 	}
 
 	XMMATRIX Renderable::world()
@@ -1205,7 +1216,17 @@ namespace Scene {
 				GetAnimatedConstantsBuffer(this_ptr)->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 			}
 
-			material->SetRootDescriptorTable(commandList, cbvSlot);
+			material->SetUAVRootDescriptorTable(commandList, cbvSlot);
+
+			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->iblIrradianceSRVRegister; })
+				&& material->ShaderInstanceHasRegister([](auto& binary) { return binary->iblPrefiteredEnvSRVRegister; })
+				&& material->ShaderInstanceHasRegister([](auto& binary) { return binary->iblBRDFLUTSRVRegister; })
+				)
+			{
+				camera->SetIBLRootDescriptorTables(commandList, cbvSlot);
+			}
+
+			material->SetSRVRootDescriptorTable(commandList, cbvSlot);
 
 			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightsShadowMapSRVRegister; })) {
 				if (SceneHasShadowMaps()) {
@@ -1275,7 +1296,8 @@ namespace Scene {
 				GetAnimatedConstantsBuffer(this_ptr)->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 			}
 
-			material->SetRootDescriptorTable(commandList, cbvSlot);
+			material->SetUAVRootDescriptorTable(commandList, cbvSlot);
+			material->SetSRVRootDescriptorTable(commandList, cbvSlot);
 
 			commandList->IASetVertexBuffers(0, 1, &mesh->vbvData.vertexBufferView);
 			commandList->IASetIndexBuffer(&mesh->ibvData.indexBufferView);
@@ -1351,7 +1373,8 @@ namespace Scene {
 				GetAnimatedConstantsBuffer(this_ptr)->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
 			}
 
-			material->SetRootDescriptorTable(commandList, cbvSlot);
+			material->SetUAVRootDescriptorTable(commandList, cbvSlot);
+			material->SetSRVRootDescriptorTable(commandList, cbvSlot);
 
 			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightsShadowMapSRVRegister; })) {
 				if (SceneHasShadowMaps()) {
@@ -1702,6 +1725,7 @@ namespace Scene {
 
 		if (ImGui::Checkbox("Unique Materials instances", json.at("uniqueMaterialInstance").get_ptr<bool*>())) { rebuildMaterials(); }
 		if (ImGui::Checkbox("Cast Shadows", json.at("castShadows").get_ptr<bool*>())) { rebuildMaterials(); }
+		if (ImGui::Checkbox("IBL", json.at("ibl").get_ptr<bool*>())) { rebuildMaterials(); }
 	}
 
 	void Renderable::DrawEditorModelSelectionAttributes()
