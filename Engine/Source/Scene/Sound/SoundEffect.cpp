@@ -312,6 +312,11 @@ namespace Scene {
 		);
 	}
 
+	bool GetSoundEffectPopupIsOpen()
+	{
+		return !!SoundEffect::popupModalId;
+	}
+
 	void WriteSoundEffectsJson(nlohmann::json& json)
 	{
 		std::map<std::string, std::shared_ptr<SoundEffect>> filtered;

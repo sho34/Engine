@@ -300,6 +300,7 @@ namespace Scene
 	void CreateNewRenderable();
 	void DeleteRenderable(std::string uuid);
 	void DrawRenderablesPopups();
+	bool GetRenderablePopupIsOpen();
 	void WriteRenderablesJson(nlohmann::json& json);
 #endif
 

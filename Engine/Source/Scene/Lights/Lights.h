@@ -271,6 +271,7 @@ namespace Scene {
 	void CreateNewLight();
 	void DeleteLight(std::string uuid);
 	void DrawLightsPopups();
+	bool GetLightPopupIsOpen();
 	void WriteLightsJson(nlohmann::json& json);
 #endif
 };

@@ -7,6 +7,11 @@
 
 static const std::string defaultLevelName = "";
 
+namespace Editor
+{
+	extern bool NonGameMode;
+};
+
 inline bool DrawComboSelection(UUIDName selected, std::vector<UUIDName> selectables, std::function<void(UUIDName)> onSelect, std::string label = "")
 {
 	bool ret = false;
@@ -14,6 +19,7 @@ inline bool DrawComboSelection(UUIDName selected, std::vector<UUIDName> selectab
 	std::string& preview = std::get<1>(selected);
 	if (ImGui::BeginCombo(label.c_str(), preview.c_str()))
 	{
+		Editor::NonGameMode = true;
 		for (int i = 0; i < selectables.size(); i++)
 		{
 			std::string selectableId = "combo#selectable#" + label + "#" + std::to_string(i);
@@ -42,6 +48,7 @@ inline bool DrawComboSelection(std::string selected, std::vector<std::string> se
 	int current_item = static_cast<int>(std::find(selectables.begin(), selectables.end(), selected) - selectables.begin());
 	if (ImGui::BeginCombo(label.c_str(), selectables[current_item].c_str()))
 	{
+		Editor::NonGameMode = true;
 		for (int i = 0; i < selectables.size(); i++)
 		{
 			std::string selectableId = "combo#selectable#" + label + "#" + std::to_string(i);

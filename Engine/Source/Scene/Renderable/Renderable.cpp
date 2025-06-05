@@ -1546,6 +1546,11 @@ namespace Scene {
 		);
 	}
 
+	bool GetRenderablePopupIsOpen()
+	{
+		return !!Renderable::popupModalId;
+	}
+
 	void WriteRenderablesJson(nlohmann::json& json)
 	{
 		std::map<std::string, std::shared_ptr<Renderable>> filtered;

@@ -295,6 +295,11 @@ namespace Scene
 		);
 	}
 
+	bool GetCameraPopupIsOpen()
+	{
+		return !!Camera::popupModalId;
+	}
+
 	void WriteCamerasJson(nlohmann::json& json)
 	{
 		std::map<std::string, std::shared_ptr<Camera>> filtered;

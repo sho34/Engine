@@ -841,6 +841,11 @@ namespace Scene {
 		);
 	}
 
+	bool GetLightPopupIsOpen()
+	{
+		return !!Light::popupModalId;
+	}
+
 	void WriteLightsJson(nlohmann::json& json)
 	{
 		std::map<std::string, std::shared_ptr<Light>> filtered;

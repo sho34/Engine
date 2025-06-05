@@ -113,6 +113,13 @@ static const std::map<_SceneObjects, std::function<std::string(std::string)>> Ge
 	{ SO_SoundEffects, GetSoundEffectName }
 };
 
+static const std::map<_SceneObjects, std::function<bool()>> SceneObjectPopupIsOpen = {
+	{ SO_Renderables, GetRenderablePopupIsOpen },
+	{ SO_Lights, GetLightPopupIsOpen },
+	{ SO_Cameras, GetCameraPopupIsOpen },
+	{ SO_SoundEffects, GetSoundEffectPopupIsOpen }
+};
+
 static const std::map<_SceneObjects, std::function<void()>> CreateSceneObject =
 {
 	{ SO_Renderables, CreateNewRenderable },
@@ -139,4 +146,5 @@ namespace Scene
 	void WriteConstantsBuffers();
 	void RenderSceneShadowMaps();
 	void RenderSceneObjects(size_t passHash, std::shared_ptr<Camera>& camera);
+	bool AnySceneObjectPopupOpen();
 }

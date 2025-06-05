@@ -39,6 +39,7 @@ namespace Editor {
 	float panW = static_cast<float>(RightPanelWidth);
 	ImGuiWindowFlags panFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+	bool NonGameMode = false;
 
 	ImGui_ImplDX12_InitInfo init_info = {};
 
@@ -359,6 +360,8 @@ namespace Editor {
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
 		ImGuizmo::BeginFrame();
+
+		Editor::NonGameMode = false;
 
 		DrawApplicationBar();
 		DrawRightPanel();
@@ -1364,7 +1367,7 @@ namespace Editor {
 
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera)
 	{
-		if (AnyTemplatePopupOpen())
+		if (AnyTemplatePopupOpen() || AnySceneObjectPopupOpen() || NonGameMode)
 			return;
 
 		auto resetMouseProcessing = []()

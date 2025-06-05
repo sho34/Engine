@@ -183,6 +183,7 @@ namespace Scene {
 	void CreateNewCamera();
 	void DeleteCamera(std::string uuid);
 	void DrawCamerasPopups();
+	bool GetCameraPopupIsOpen();
 	void WriteCamerasJson(nlohmann::json& json);
 #endif
 	void CamerasStep();

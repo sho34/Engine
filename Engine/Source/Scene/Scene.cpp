@@ -107,4 +107,12 @@ namespace Scene
 #endif
 	}
 
+	bool AnySceneObjectPopupOpen()
+	{
+		for (auto& [type, cb] : SceneObjectPopupIsOpen)
+		{
+			if (cb()) return true;
+		}
+		return false;
+	}
 }

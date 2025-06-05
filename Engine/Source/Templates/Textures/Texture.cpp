@@ -1046,7 +1046,7 @@ namespace Templates
 			viewDesc.Texture2DArray.MipLevels = nMipMaps;
 			viewDesc.Texture2DArray.MostDetailedMip = 0;
 			viewDesc.Texture2DArray.ResourceMinLODClamp = 0.0f;
-			viewDesc.Texture2DArray.ArraySize = numFrames;
+			viewDesc.Texture2DArray.ArraySize = numFrames - firstArraySlice;
 			//viewDesc.Texture2DArray.ArraySize = -1;
 			viewDesc.Texture2DArray.FirstArraySlice = firstArraySlice;
 		}
