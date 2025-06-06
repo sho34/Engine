@@ -81,6 +81,34 @@ namespace DX
 		OutputDebugStringA("Matrix\n");
 		OutputDebugStringA(matrixDump.c_str());
 	}
+
+	inline void MatrixDump(DirectX::XMFLOAT4X4& wvp)
+	{
+		std::string row1 = "[" +
+			std::to_string(wvp._11) + "," +
+			std::to_string(wvp._12) + "," +
+			std::to_string(wvp._13) + "," +
+			std::to_string(wvp._14) + "]";
+		std::string row2 = "[" +
+			std::to_string(wvp._21) + "," +
+			std::to_string(wvp._22) + "," +
+			std::to_string(wvp._23) + "," +
+			std::to_string(wvp._24) + "]";
+		std::string row3 = "[" +
+			std::to_string(wvp._31) + "," +
+			std::to_string(wvp._32) + "," +
+			std::to_string(wvp._33) + "," +
+			std::to_string(wvp._34) + "]";
+		std::string row4 = "[" +
+			std::to_string(wvp._41) + "," +
+			std::to_string(wvp._42) + "," +
+			std::to_string(wvp._43) + "," +
+			std::to_string(wvp._44) + "]";
+		std::string matrixDump = row1 + "\n" + row2 + "\n" + row3 + "\n" + row4 + "\n";
+
+		OutputDebugStringA("Matrix\n");
+		OutputDebugStringA(matrixDump.c_str());
+	}
 }
 
 // Nombrar función del asistente para ComPtr<T>.
