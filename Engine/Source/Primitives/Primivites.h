@@ -17,13 +17,19 @@ namespace Primitives {
 	void LoadPrimitiveIntoMesh(const std::shared_ptr<MeshInstance>& mesh) {
 		mesh->vertexClass = T::VertexClass;
 
-		BoundingBox::CreateFromPoints(mesh->boundingBox, _countof(T::vertices), &T::vertices[0].Position, sizeof(T::VertexType));
+		std::vector<uint32_t> indices = T::GetIndices();
+		std::vector<Vertex<T::VertexClass>> vertices = T::GetVertices();
+
+		//BoundingBox::CreateFromPoints(mesh->boundingBox, _countof(T::vertices), &T::vertices[0].Position, sizeof(T::VertexType));
+		BoundingBox::CreateFromPoints(mesh->boundingBox, vertices.size(), &vertices.at(0).Position, sizeof(T::VertexType));
 
 		//upload the vertex buffer to the GPU and create the vertex buffer view
-		InitializeVertexBufferView(renderer->d3dDevice, renderer->commandList, T::vertices, sizeof(T::VertexType), _countof(T::vertices), mesh->vbvData);
+		//InitializeVertexBufferView(renderer->d3dDevice, renderer->commandList, T::vertices, sizeof(T::VertexType), _countof(T::vertices), mesh->vbvData);
+		InitializeVertexBufferView(renderer->d3dDevice, renderer->commandList, vertices.data(), sizeof(T::VertexType), static_cast<unsigned int>(vertices.size()), mesh->vbvData);
 
 		//upload the index buffer to the GPU and create the index buffer view
-		InitializeIndexBufferView(renderer->d3dDevice, renderer->commandList, T::indices, _countof(T::indices), mesh->ibvData);
+		//InitializeIndexBufferView(renderer->d3dDevice, renderer->commandList, T::indices, _countof(T::indices), mesh->ibvData);
+		InitializeIndexBufferView(renderer->d3dDevice, renderer->commandList, indices.data(), static_cast<unsigned int>(indices.size()), mesh->ibvData);
 	}
 }
 

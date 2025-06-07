@@ -3,17 +3,10 @@
 
 struct Decal
 {
-	static constexpr uint32_t indices[] = {
-		 2, 1, 0, 1, 2, 3 //+Y
-	};
-
 	static constexpr VertexClass VertexClass = VertexClass::POS_TEXCOORD0;
 	typedef Vertex<VertexClass> VertexType;
-	static constexpr VertexType vertices[] = {
-		{ XMFLOAT3(1.0f,  1.0f,  0.0f), XMFLOAT2(1.0f, 0.0f) },
-		{ XMFLOAT3(-1.0f,  1.0f,  0.0f), XMFLOAT2(0.0f, 0.0f) },
-		{ XMFLOAT3(1.0f, -1.0f,  0.0f), XMFLOAT2(1.0f, 1.0f) },
-		{ XMFLOAT3(-1.0f, -1.0f,  0.0f), XMFLOAT2(0.0f, 1.0f) },
-	};
+
+	static std::vector<uint32_t> GetIndices();
+	static std::vector<VertexType> GetVertices();
 };
 

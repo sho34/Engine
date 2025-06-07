@@ -753,15 +753,12 @@ namespace Scene {
 	void Renderable::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
 		BoundingBox bb = animable ? boundingBoxCompute->boundingBox : boundingBox;
-		XMFLOAT3 renscale = scale();
-		XMVECTOR pv = { bb.Center.x, bb.Center.y, bb.Center.z };
-		XMFLOAT3 rotV = rotation();
-		XMVECTOR rot = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotV.x), XMConvertToRadians(rotV.y), XMConvertToRadians(rotV.z));
-		pv = XMVector3Rotate(pv, rot);
-		XMFLOAT3 boxP = { pv.m128_f32[0],pv.m128_f32[1],pv.m128_f32[2] };
-		bbox->position(boxP * renscale + position());
-		bbox->scale(bb.Extents * renscale);
-		bbox->rotation(rotV);
+		XMVECTOR center = { bb.Center.x, bb.Center.y, bb.Center.z, 1.0f };
+		XMVECTOR bbpos = XMVector3Transform(center, world());
+
+		bbox->scale(bb.Extents * scale());
+		bbox->rotation(rotation());
+		bbox->position(*((XMFLOAT3*)bbpos.m128_f32));
 	}
 
 	//UPDATE

@@ -505,6 +505,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Primitives\BoxLines.cpp" />
+    <ClCompile Include="Primitives\Cube.cpp" />
+    <ClCompile Include="Primitives\Decal.cpp" />
+    <ClCompile Include="Primitives\Floor.cpp" />
+    <ClCompile Include="Primitives\Pentahedron.cpp" />
+    <ClCompile Include="Primitives\UtahTeapot.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.cpp" />
     <ClCompile Include="Shaders\Compute\IBL\BRDFLUT.cpp" />
     <ClCompile Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.cpp" />

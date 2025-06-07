@@ -40,6 +40,7 @@ namespace Editor {
 	ImGuiWindowFlags panFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
 	bool NonGameMode = false;
+	bool lockedGameAreaInput = false;
 
 	ImGui_ImplDX12_InitInfo init_info = {};
 
@@ -1368,7 +1369,18 @@ namespace Editor {
 
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera)
 	{
-		if (AnyTemplatePopupOpen() || AnySceneObjectPopupOpen() || NonGameMode)
+		DirectX::Mouse::State state = mouse->GetState();
+
+		if (!MouseIsInGameArea(mouse) && state.leftButton)
+		{
+			lockedGameAreaInput = true;
+		}
+		else if (lockedGameAreaInput && !state.leftButton)
+		{
+			lockedGameAreaInput = false;
+		}
+
+		if (AnyTemplatePopupOpen() || AnySceneObjectPopupOpen() || NonGameMode || lockedGameAreaInput)
 			return;
 
 		auto resetMouseProcessing = []()
@@ -1384,7 +1396,7 @@ namespace Editor {
 			return;
 		}
 
-		DirectX::Mouse::State state = mouse->GetState();
+
 
 		if (ImGuizmo::IsOver())
 		{
@@ -1549,14 +1561,7 @@ namespace Editor {
 
 		auto WritePickingConstantsBuffer = [](std::shared_ptr<Renderable> r, unsigned int objectId, unsigned int backbufferIndex)
 			{
-				XMFLOAT3 posV = r->position();
-				XMFLOAT3 rotV = r->rotation();
-				XMFLOAT3 scaleV = r->scale();
-				XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
-				XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
-				XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
-				XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
-
+				XMMATRIX world = r->world();
 				r->WriteConstantsBuffer(r->pickingMeshMaterials, r->pickingMeshConstantsBuffer, "world", world, backbufferIndex);
 				r->WriteConstantsBuffer(r->pickingMeshMaterials, r->pickingMeshConstantsBuffer, "objectId", objectId, backbufferIndex);
 			};
