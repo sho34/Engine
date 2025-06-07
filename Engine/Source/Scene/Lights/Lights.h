@@ -35,14 +35,14 @@ namespace Scene {
 
 	static const nlohmann::json editorDefaultDirectional = {
 		{ "color", { 1.0f, 1.0f, 1.0f } },
-		{ "rotation", { 0.0f, 3.141592654f } }
+		{ "rotation", { -90.0f, 0.0f } }
 	};
 
 	static const nlohmann::json editorDefaultSpot = {
 		{ "color", { 1.0f, 1.0f, 1.0f } },
 		{ "position", { 0.0f, 10.0f, 0.0f } },
-		{ "rotation", { 0.0f, 3.141592654f } },
-		{ "coneAngle", 0.523599 },
+		{ "rotation", { -90.0f, 0 } },
+		{ "coneAngle", 45.0f },
 		{ "attenuation" , { 0.0f, 0.001f, 0.0001f } }
 	};
 
@@ -169,6 +169,28 @@ namespace Scene {
 		bool hidden() { return false; }
 
 		XMMATRIX world();
+		XMVECTOR fw();
+
+		unsigned int shadowMapWidth();
+		void shadowMapWidth(unsigned int shadowMapWidth);
+
+		unsigned int shadowMapHeight();
+		void shadowMapHeight(unsigned int shadowMapHeight);
+
+		float viewWidth();
+		void viewWidth(float viewWidth);
+
+		float viewHeight();
+		void viewHeight(float viewHeight);
+
+		float nearZ();
+		void nearZ(float nearZ);
+
+		float farZ();
+		void farZ(float farZ);
+
+		float zBias();
+		void zBias(float zBias);
 
 		//the following ones are calculated, so no need to store in json
 		D3D12_RECT shadowMapClearScissorRect; //used in point lights
@@ -197,6 +219,7 @@ namespace Scene {
 		void CreateShadowMap();
 		void CreateDirectionalLightShadowMap();
 		void CreateSpotLightShadowMap();
+		void UpdateShadowMapCameraProperties();
 		void CreatePointLightShadowMap();
 		void CreateShadowMapDepthStencilResource();
 		void CreateShadowMapShaderResourceView();

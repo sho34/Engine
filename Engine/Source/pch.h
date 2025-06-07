@@ -131,7 +131,7 @@ using namespace Concurrency;
 #include "pch/RefTracker.h"
 #include "pch/NoMath.h"
 #if defined(_EDITOR)
-#include "pch/Editor.h"
+#include "pch/ImEditor.h"
 #include "pch/DDSTextures.h"
 #include "pch/Command.h"
 #endif

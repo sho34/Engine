@@ -9,7 +9,7 @@
 #include <Application.h>
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
-#include <Editor.h>
+#include <ImEditor.h>
 #endif
 
 using namespace AudioSystem;

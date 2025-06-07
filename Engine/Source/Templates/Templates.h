@@ -272,6 +272,20 @@ namespace Templates {
 			"type":"PIXEL_SHADER"
 		},
 		{
+			"name":"DepthMinMaxToRGBASpot_vs",
+			"path":"DepthMinMaxToRGBASpot",
+			"systemCreated" : true,
+			"uuid":"173a942d-83e2-4d51-83cd-59016cb5be4e",
+			"type":"VERTEX_SHADER"
+		},
+		{
+			"name":"DepthMinMaxToRGBASpot_ps",
+			"path":"DepthMinMaxToRGBASpot",
+			"systemCreated" : true,
+			"uuid":"438f86fd-9ef3-433f-ad7b-c1e60643cd3e",
+			"type":"PIXEL_SHADER"
+		},
+		{
 			"name":"FullScreenQuad_vs",
 			"path":"FullScreenQuad",
 			"systemCreated" : true,
@@ -459,6 +473,31 @@ namespace Templates {
 				}
 			],
 			"uuid" : "84f0cabb-9b0c-4508-ac6e-d7a84dee696f"
+		},
+		{
+			"name":"DepthMinMaxToRGBASpot",
+			"shader_vs":"173a942d-83e2-4d51-83cd-59016cb5be4e",
+			"shader_ps":"438f86fd-9ef3-433f-ad7b-c1e60643cd3e",
+			"systemCreated":true,
+			"twoSided": true,
+			"samplers":[
+				{
+					"Filter":"MIN_MAG_MIP_POINT",
+					"AddressU":"ADDRESS_MODE_BORDER",
+					"AddressV":"ADDRESS_MODE_BORDER",
+					"AddressW":"ADDRESS_MODE_BORDER",
+					"MipLODBias":0,
+					"MaxAnisotropy":0,
+					"ComparisonFunc":"NEVER",
+					"BorderColor":"OPAQUE_WHITE",
+					"MinLOD":0.0,
+					"MaxLOD":3.4028234663852886e+38,
+					"ShaderRegister":0,
+					"RegisterSpace":0,
+					"ShaderVisibility":"PIXEL"
+				}
+			],
+			"uuid" : "908332fb-48b2-42ee-b678-e57fb3ad352e"
 		},
 		{
 			"name":"FullScreenQuad", 

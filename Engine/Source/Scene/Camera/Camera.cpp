@@ -6,7 +6,7 @@
 #include <nlohmann/json.hpp>
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
-#include <Editor.h>
+#include <ImEditor.h>
 #include "imgui.h"
 #endif
 #include <Keyboard.h>
@@ -529,7 +529,10 @@ namespace Scene
 	{
 		XMFLOAT3 posV = position();
 		XMFLOAT3 rotV = rotation();
-		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		XMMATRIX rotationM = XMMatrixRotationQuaternion(rotQ);
 		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
 		return XMMatrixMultiply(rotationM, positionM);
 	}
@@ -605,19 +608,7 @@ namespace Scene
 
 	XMMATRIX Camera::ViewMatrix()
 	{
-		XMVECTOR viewUp = up;
-		if (light != nullptr && light->lightType() == LT_Point)
-		{
-			unsigned int i = 0U;
-			for (; i < 6U; i++)
-			{
-				if (light->shadowMapCameras[i].get() == this)
-				{
-					viewUp = Scene::PointLightUp[i]; break;
-				}
-			}
-		}
-		return XMMatrixLookToRH(positionV(), CameraFw(), viewUp);
+		return XMMatrixLookToLH(positionV(), CameraFw(), CameraUp());
 	}
 
 	XMVECTOR Camera::CameraFw()
@@ -633,13 +624,13 @@ namespace Scene
 			}
 		}
 
-		XMFLOAT3 rot = rotation();
-
-		return {
-			sinf(rot.x) * cosf(rot.y),
-			sinf(rot.y),
-			cosf(rot.x) * cosf(rot.y)
-		};
+		XMFLOAT3 rotV = rotation();
+		FXMVECTOR dir = { 0.0f, 0.0f, 1.0f,0.0f };
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		XMVECTOR fw = XMVector3Normalize(XMVector3Rotate(dir, rotQ));
+		return fw;
 	}
 
 	XMVECTOR Camera::CameraUp()
@@ -656,7 +647,12 @@ namespace Scene
 			}
 		}
 
-		return up;
+		XMFLOAT3 rotV = rotation();
+		FXMVECTOR up = { 0.0f, 1.0f, 0.0f,0.0f };
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		return XMVector3Normalize(XMVector3Rotate(up, rotQ));
 	}
 
 	void Camera::ProcessKeyboardInput(DirectX::Keyboard::KeyboardStateTracker& tracker, DirectX::Keyboard::State& state)
@@ -690,7 +686,7 @@ namespace Scene
 
 	void Camera::Rotate(float dx, float dy)
 	{
-		rotation(rotation() - XMFLOAT3{ dx, dy, 0.0f });
+		rotation(rotation() + XMFLOAT3{ dy, dx, 0.0f });
 		UdateLightRotation();
 	}
 
@@ -779,14 +775,14 @@ namespace Scene
 		{
 		case LT_Directional:
 		{
-			light->rotation({ rot.x, rot.y });
-			XMVECTOR camPos = XMVectorScale(XMVector3Normalize(CameraFw()), -light->directionalDistance());
+			light->rotation(rot);
+			XMVECTOR camPos = XMVectorScale(XMVector3Normalize(CameraFw()), light->directionalDistance());
 			position(*(XMFLOAT3*)camPos.m128_f32);
 		}
 		break;
 		case LT_Spot:
 		{
-			light->rotation({ rot.x, rot.y });
+			light->rotation(rot);
 		}
 		break;
 		}
@@ -854,47 +850,10 @@ namespace Scene
 
 	void Camera::DrawEditorWorldAttributes()
 	{
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		std::string tableName = "camera-world-atts";
-		if (ImGui::BeginTable(tableName.c_str(), 4, ImGuiTableFlags_NoSavedSettings))
-		{
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::PushID("position");
-			ImGui::Text("position");
-
-			ImGui::TableSetColumnIndex(1);
-			float pos0 = json.at("position").at(0);
-			if (ImGui::InputFloat("x", &pos0)) { json.at("position")[0] = pos0; }
-
-			ImGui::TableSetColumnIndex(2);
-			float pos1 = json.at("position").at(1);
-			if (ImGui::InputFloat("y", &pos1)) { json.at("position")[1] = pos1; }
-
-			ImGui::TableSetColumnIndex(3);
-			float pos2 = json.at("position").at(2);
-			if (ImGui::InputFloat("z", &pos2)) { json.at("position")[2] = pos2; }
-
-			ImGui::PopID();
-
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			ImGui::PushID("rotation");
-			ImGui::Text("rotation");
-
-			ImGui::TableSetColumnIndex(1);
-			float rot0 = json.at("rotation").at(0);
-			if (ImGui::SliderAngle("azimuthal", &rot0)) { json.at("rotation")[0] = rot0; }
-
-			ImGui::TableSetColumnIndex(2);
-			float rot1 = json.at("rotation").at(1);
-			if (ImGui::SliderAngle("polar", &rot1)) { json.at("rotation")[1] = rot1; }
-
-			ImGui::PopID();
-
-			ImGui::EndTable();
-		}
+		XMFLOAT3 posV = position();
+		XMFLOAT3 rotV = rotation();
+		ImDrawFloatValues<XMFLOAT3>("camera-world-position", { "x","y","z" }, posV, [this](XMFLOAT3 pos) {position(pos); });
+		ImDrawDegreesValues<XMFLOAT3>("camera-world-rotation", { "pitch","yaw","roll" }, rotV, [this](XMFLOAT3 rot) {rotation(rot); });
 	}
 
 	void Camera::DrawEditorCameraAttributes()
@@ -904,7 +863,7 @@ namespace Scene
 
 		DrawComboSelection(selected, selectables, [this](std::string projection)
 			{
-				json["projectionType"] = StrToProjectionTypes[projection];
+				json["projectionType"] = projection;
 				switch (StrToProjectionTypes.at(json.at("projectionType"))) {
 				case PROJ_Orthographic:
 				{

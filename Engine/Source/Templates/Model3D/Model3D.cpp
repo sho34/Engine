@@ -10,7 +10,7 @@
 #include <NoStd.h>
 #if defined(_EDITOR)
 #include "../../Editor/Editor.h"
-#include <Editor.h>
+#include <ImEditor.h>
 namespace Editor {
 	extern _Templates tempTab;
 	extern std::string selTemp;
@@ -112,7 +112,7 @@ namespace Templates
 		Assimp::Importer importer;
 		const aiScene* aiModel = importer.ReadFile(path.string(),
 			aiProcess_JoinIdenticalVertices | aiProcess_GenNormals | aiProcess_CalcTangentSpace |
-			aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenBoundingBoxes
+			aiProcess_Triangulate | aiProcess_GenBoundingBoxes | aiProcess_ConvertToLeftHanded
 		);
 
 		if (!aiModel)

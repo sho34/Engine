@@ -303,7 +303,7 @@
     <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />
     <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h" />
     <ClInclude Include="pch\DXTypes.h" />
-    <ClInclude Include="pch\Editor.h" />
+    <ClInclude Include="pch\ImEditor.h" />
     <ClInclude Include="pch\Json.h" />
     <ClInclude Include="pch\NoStd.h" />
     <ClInclude Include="Primitives\BoxLines.h" />

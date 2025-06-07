@@ -213,7 +213,7 @@
     <ClInclude Include="Primitives\BoxLines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pch\Editor.h">
+    <ClInclude Include="pch\ImEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch\Json.h">

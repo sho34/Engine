@@ -76,28 +76,30 @@ namespace Scene {
 		shadowMapScissorRect.clear();
 		shadowMapViewport.clear();
 
-		shadowMapProjectionMatrix = XMMatrixOrthographicRH(json.at("viewWidth"), json.at("viewHeight"), json.at("nearZ"), json.at("farZ"));
-		shadowMapScissorRect.push_back({ 0, 0, static_cast<long>(json.at("shadowMapWidth")), static_cast<long>(json.at("shadowMapHeight")) });
-		shadowMapViewport.push_back({ 0.0f , 0.0f, static_cast<float>(json.at("shadowMapWidth")), static_cast<float>(json.at("shadowMapHeight")), 0.0f, 1.0f });
-		shadowMapTexelInvSize = { 1.0f / static_cast<float>(json.at("shadowMapWidth")), 1.0f / static_cast<float>(json.at("shadowMapHeight")) };
+		shadowMapProjectionMatrix = XMMatrixOrthographicLH(viewWidth(), viewHeight(), nearZ(), farZ());
+		shadowMapScissorRect.push_back({ 0, 0, static_cast<long>(shadowMapWidth()), static_cast<long>(shadowMapHeight()) });
+		shadowMapViewport.push_back({ 0.0f , 0.0f, static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()), 0.0f, 1.0f });
+		shadowMapTexelInvSize = { 1.0f / static_cast<float>(shadowMapWidth()), 1.0f / static_cast<float>(shadowMapHeight()) };
+
+		XMFLOAT3 rot = rotation();
 
 		auto camera = CreateCamera({
 			{ "uuid", uuid() + "-cam"},
 			{ "name", name() + ".cam"},
 			{ "projectionType", "Orthographic" },
 			{ "orthographic", {
-				{ "nearZ", json.at("nearZ") },
-				{ "farZ", json.at("farZ") },
-				{ "width", json.at("viewWidth") },
-				{ "height", json.at("viewHeight") },
+				{ "nearZ", nearZ() },
+				{ "farZ", farZ() },
+				{ "width", viewWidth() },
+				{ "height", viewHeight() },
 			}},
-			{ "rotation", { rotation().x, rotation().y, 0.0f}},
+			{ "rotation", { rot.x, rot.y, rot.z}},
 			{ "light", uuid()}
 			}
 		);
 		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(camera->CameraFw()), -directionalDistance());
 		camera->position(*(XMFLOAT3*)camPos.m128_f32);
-		camera->orthographic.updateProjectionMatrix(json.at("viewWidth"), json.at("viewHeight"));
+		camera->orthographic.updateProjectionMatrix(viewWidth(), viewHeight());
 		shadowMapCameras.push_back(camera);
 	}
 
@@ -106,26 +108,40 @@ namespace Scene {
 		shadowMapScissorRect.clear();
 		shadowMapViewport.clear();
 
-		shadowMapProjectionMatrix = XMMatrixPerspectiveFovRH(coneAngle() * 2.0f, 1.0f, json.at("nearZ"), json.at("farZ"));
-		shadowMapScissorRect.push_back({ 0, 0, static_cast<long>(json.at("shadowMapWidth")), static_cast<long>(json.at("shadowMapHeight")) });
-		shadowMapViewport.push_back({ 0.0f , 0.0f, static_cast<float>(json.at("shadowMapWidth")), static_cast<float>(json.at("shadowMapHeight")), 0.0f, 1.0f });
-		shadowMapTexelInvSize = { 1.0f / static_cast<float>(json.at("shadowMapWidth")), 1.0f / static_cast<float>(json.at("shadowMapHeight")) };
+		float spotDim = 2.0f * sinf(XMConvertToRadians(coneAngle())) * farZ();
 
-		auto camera = CreateCamera({
+		auto camera = CreateCamera(
+			{
 			{ "uuid", uuid() + "-cam"},
 			{ "name", name() + ".cam"},
 			{ "projectionType", "Perspective" },
 			{ "perspective", {
 				{ "fovAngleY", coneAngle() * 2.0f },
-				{ "width", json.at("viewWidth") },
-				{ "height", json.at("viewHeight") },
+				{ "width", spotDim },
+				{ "height", spotDim },
+				//{ "width", viewWidth() },
+				//{ "height", viewHeight() },
 			}},
 			{ "position", { position().x, position().y, position().z}},
 			{ "rotation", { rotation().x, rotation().y, 0.0f }},
 			{ "light", uuid()}
-			});
-		camera->perspective.updateProjectionMatrix(json.at("viewWidth"), json.at("viewHeight"));
+			}
+		);
 		shadowMapCameras.push_back(camera);
+
+		UpdateShadowMapCameraProperties();
+	}
+
+	void Light::UpdateShadowMapCameraProperties()
+	{
+		float spotDim = 2.0f * sinf(XMConvertToRadians(coneAngle())) * farZ();
+
+		shadowMapProjectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(coneAngle()) * 2.0f, 1.0f, nearZ(), farZ());
+		shadowMapScissorRect.push_back({ 0, 0, static_cast<long>(shadowMapWidth()), static_cast<long>(shadowMapHeight()) });
+		shadowMapViewport.push_back({ 0.0f , 0.0f, static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()), 0.0f, 1.0f });
+		shadowMapTexelInvSize = { 1.0f / static_cast<float>(shadowMapWidth()), 1.0f / static_cast<float>(shadowMapHeight()) };
+		shadowMapCameras.at(0)->perspective.fovAngleY = coneAngle() * 2.0f;
+		shadowMapCameras.at(0)->perspective.updateProjectionMatrix(spotDim, spotDim);
 	}
 
 	void Light::CreatePointLightShadowMap()
@@ -134,12 +150,12 @@ namespace Scene {
 		shadowMapViewport.clear();
 		for (unsigned int i = 0U; i < 6U; i++)
 		{
-			shadowMapScissorRect.push_back({ 0, static_cast<long>(i) * static_cast<long>(json.at("shadowMapHeight")), static_cast<long>(json.at("shadowMapWidth")), static_cast<long>(i + 1U) * static_cast<long>(json.at("shadowMapHeight")) });
-			shadowMapViewport.push_back({ 0.0f, static_cast<float>(i) * static_cast<float>(json.at("shadowMapHeight")), static_cast<float>(json.at("shadowMapWidth")), static_cast<float>(json.at("shadowMapHeight")), 0.0f, 1.0f });
+			shadowMapScissorRect.push_back({ 0, static_cast<long>(i) * static_cast<long>(shadowMapHeight()), static_cast<long>(shadowMapWidth()), static_cast<long>(i + 1U) * static_cast<long>(shadowMapHeight()) });
+			shadowMapViewport.push_back({ 0.0f, static_cast<float>(i) * static_cast<float>(shadowMapHeight()), static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()), 0.0f, 1.0f });
 		}
-		shadowMapClearScissorRect = { 0, 0, static_cast<long>(json.at("shadowMapWidth")), 6L * static_cast<long>(json.at("shadowMapHeight")) };
-		shadowMapClearViewport = { 0.0f, 0.0f , static_cast<float>(json.at("shadowMapWidth")), 6L * static_cast<float>(json.at("shadowMapHeight")), 0.0f, 1.0f };
-		shadowMapProjectionMatrix = XMMatrixPerspectiveFovRH(DirectX::XM_PIDIV2, 1.0f, json.at("nearZ"), json.at("farZ"));
+		shadowMapClearScissorRect = { 0, 0, static_cast<long>(shadowMapWidth()), 6L * static_cast<long>(shadowMapHeight()) };
+		shadowMapClearViewport = { 0.0f, 0.0f , static_cast<float>(shadowMapWidth()), 6L * static_cast<float>(shadowMapHeight()), 0.0f, 1.0f };
+		shadowMapProjectionMatrix = XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV2, 1.0f, nearZ(), farZ());
 
 		for (unsigned int i = 0U; i < 6U; i++)
 		{
@@ -150,16 +166,16 @@ namespace Scene {
 					{ "projectionType", "Perspective" },
 					{ "perspective",
 					{
-						{ "fovAngleY", DirectX::XM_PIDIV2 },
-						{ "width", static_cast<float>(json.at("shadowMapWidth")) },
-						{ "height", static_cast<float>(json.at("shadowMapHeight")) },
+						{ "fovAngleY", 90.0f },
+						{ "width", static_cast<float>(shadowMapWidth()) },
+						{ "height", static_cast<float>(shadowMapHeight()) },
 					}
 					},
 					{ "position", { position().x, position().y, position().z}},
 					{ "light", uuid()}
 				}
 			);
-			camera->perspective.updateProjectionMatrix(static_cast<float>(json.at("shadowMapWidth")), static_cast<float>(json.at("shadowMapHeight")));
+			camera->perspective.updateProjectionMatrix(static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()));
 
 			shadowMapCameras.push_back(camera);
 		}
@@ -167,8 +183,8 @@ namespace Scene {
 
 	void Light::CreateShadowMapDepthStencilResource()
 	{
-		unsigned int w = static_cast<unsigned int>(json.at("shadowMapWidth"));
-		unsigned int h = static_cast<unsigned int>(json.at("shadowMapHeight")) * ((lightType() == LT_Point) ? 6U : 1U);
+		unsigned int w = shadowMapWidth();
+		unsigned int h = shadowMapHeight() * ((lightType() == LT_Point) ? 6U : 1U);
 		shadowMapRenderPass = CreateRenderPass(name() + "->shadowMap", {}, DXGI_FORMAT_D32_FLOAT, w, h);
 
 		shadowMapIndex = GetNextAvailableShadowMapSlot();
@@ -189,8 +205,8 @@ namespace Scene {
 		CD3DX12_GPU_DESCRIPTOR_HANDLE shadowMapChainGpuHandle1 = shadowMapChainGpuHandle;
 		CD3DX12_GPU_DESCRIPTOR_HANDLE shadowMapChainGpuHandle2 = shadowMapChainGpuHandle;
 
-		float texWidth = static_cast<float>(json.at("shadowMapWidth"));
-		float texHeight = static_cast<float>(json.at("shadowMapHeight")) * ((lightType() == LT_Point) ? 6.0f : 1.0f);
+		float texWidth = static_cast<float>(shadowMapWidth());
+		float texHeight = static_cast<float>(shadowMapHeight()) * ((lightType() == LT_Point) ? 6.0f : 1.0f);
 
 		//calculate the width/height of the texture and the TexelInvSize of the shadow map texture for the current pass
 		unsigned int width = static_cast<unsigned int>(texWidth) >> 1;
@@ -285,7 +301,7 @@ namespace Scene {
 				{ "meshMaterials" ,
 					{
 						{
-							{ "material", FindMaterialUUIDByName("DepthMinMaxToRGBA") },
+							{ "material", (lightType() != LT_Spot) ? FindMaterialUUIDByName("DepthMinMaxToRGBA") : FindMaterialUUIDByName("DepthMinMaxToRGBASpot") },
 							{ "mesh", FindMeshUUIDByName("decal") }
 						}
 					}
@@ -377,7 +393,7 @@ namespace Scene {
 			XMMATRIX view = light->shadowMapCameras[0]->ViewMatrix();
 			XMMATRIX projection = light->shadowMapCameras[0]->orthographic.projectionMatrix;
 			atts.atts0 = XMMatrixMultiply(view, projection);
-			atts.atts6 = { 0.0002f, light->shadowMapTexelInvSize.x, light->shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
+			atts.atts6 = { light->zBias(), light->shadowMapTexelInvSize.x, light->shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
 		}
 		break;
 		case LT_Spot:
@@ -385,7 +401,7 @@ namespace Scene {
 			XMMATRIX view = light->shadowMapCameras[0]->ViewMatrix();
 			XMMATRIX projection = light->shadowMapCameras[0]->perspective.projectionMatrix;
 			atts.atts0 = XMMatrixMultiply(view, projection);
-			atts.atts6 = { 0.0001f, light->shadowMapTexelInvSize.x, light->shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
+			atts.atts6 = { light->zBias(), light->shadowMapTexelInvSize.x, light->shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
 		}
 		break;
 		case LT_Point:
@@ -397,7 +413,7 @@ namespace Scene {
 				*attsN = XMMatrixMultiply(view, projection);
 				attsN++;
 			}
-			atts.atts6 = { 0.0001f, 3.0f, 0.0f, 0.0f }; //ZBias, PartialDerivativeScale
+			atts.atts6 = { light->zBias(), 3.0f, 0.0f, 0.0f }; //ZBias, PartialDerivativeScale
 		}
 		break;
 		default:
@@ -411,7 +427,6 @@ namespace Scene {
 		offset += sizeof(ShadowMapAttributes) * shadowMapIndex;
 		memcpy(shadowMapsCbv->mappedConstantBuffer + offset, &atts, sizeof(atts));
 	}
-
 
 	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex)
 	{
@@ -576,61 +591,69 @@ namespace Scene {
 
 		if (shadowMap && !shadowMapUpdateFlags)
 		{
-			unsigned int shadowMapWidth = static_cast<unsigned int>(json.at("shadowMapWidth"));
-			unsigned int shadowMapHeight = static_cast<unsigned int>(json.at("shadowMapHeight"));
-			float viewWidth = static_cast<float>(json.at("viewWidth"));
-			float viewHeight = static_cast<float>(json.at("viewHeight"));
-			float nearZ = static_cast<float>(json.at("nearZ"));
-			float farZ = static_cast<float>(json.at("farZ"));
+			unsigned int smShadowMapWidth = shadowMapWidth();
+			unsigned int smShadowMapHeight = shadowMapHeight();
+			float smViewWidth = viewWidth();
+			float smViewHeight = viewHeight();
+			float smNearZ = nearZ();
+			float smFarZ = farZ();
+			float smZBias = zBias();
 
-			static std::vector<std::string> shadowMapSizes = { "64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
+			static std::vector<std::string> shadowMapSizes = { "32","64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
 
 			if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_NoSavedSettings))
 			{
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				std::string selectecShadowMapWidth = std::to_string(shadowMapWidth);
+				std::string selectecShadowMapWidth = std::to_string(smShadowMapWidth);
 				DrawComboSelection(selectecShadowMapWidth, shadowMapSizes, [this](std::string value)
 					{
-						json.at("shadowMapWidth") = std::stof(value);
+						shadowMapWidth(std::stof(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
-					}, "TexWidth"
+					}, "shadowMapWidth"
 				);
 				ImGui::TableSetColumnIndex(1);
-				std::string selectecShadowMapHeight = std::to_string(shadowMapHeight);
+				std::string selectecShadowMapHeight = std::to_string(smShadowMapHeight);
 				DrawComboSelection(selectecShadowMapHeight, shadowMapSizes, [this](std::string value)
 					{
-						json.at("shadowMapHeight") = std::stof(value);
+						shadowMapHeight(std::stof(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
-					}, "TexHeight"
+					}, "shadowMapHeight"
 				);
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("ViewWidth", &viewWidth))
+				if (ImGui::InputFloat("ViewWidth", &smViewWidth))
 				{
-					json.at("viewWidth") = viewWidth;
+					viewWidth(smViewWidth);
 					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 				}
 				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("ViewHeight", &viewHeight))
+				if (ImGui::InputFloat("ViewHeight", &smViewHeight))
 				{
-					json.at("viewHeight") = viewHeight;
+					viewHeight(smViewHeight);
 					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 				}
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("NearZ", &nearZ))
+				if (ImGui::InputFloat("NearZ", &smNearZ))
 				{
-					json.at("nearZ") = nearZ;
+					nearZ(smNearZ);
 					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 				}
 				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("FarZ", &farZ))
+				if (ImGui::InputFloat("FarZ", &smFarZ))
 				{
-					json.at("farZ") = farZ;
+					farZ(smFarZ);
 					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				if (ImGui::InputFloat("zBias", &smZBias, 0.0f, 0.0f, "%.7f"))
+				{
+					zBias(smZBias);
 				}
 
 				ImGui::EndTable();
@@ -662,61 +685,71 @@ namespace Scene {
 
 		if (shadowMap && !shadowMapUpdateFlags)
 		{
-			unsigned int shadowMapWidth = static_cast<unsigned int>(json.at("shadowMapWidth"));
-			unsigned int shadowMapHeight = static_cast<unsigned int>(json.at("shadowMapHeight"));
-			float viewWidth = static_cast<float>(json.at("viewWidth"));
-			float viewHeight = static_cast<float>(json.at("viewHeight"));
-			float nearZ = static_cast<float>(json.at("nearZ"));
-			float farZ = static_cast<float>(json.at("farZ"));
+			unsigned int smShadowMapWidth = shadowMapWidth();
+			unsigned int smShadowMapHeight = shadowMapHeight();
+			//float smViewWidth = viewWidth();
+			//float smViewHeight = viewHeight();
+			float smNearZ = nearZ();
+			float smFarZ = farZ();
+			float smZBias = zBias();
 
-			static std::vector<std::string> shadowMapSizes = { "64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
+			static std::vector<std::string> shadowMapSizes = { "32","64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" };
 
 			if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_NoSavedSettings))
 			{
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				std::string selectecShadowMapWidth = std::to_string(shadowMapWidth);
+				std::string selectecShadowMapWidth = std::to_string(smShadowMapWidth);
 				DrawComboSelection(selectecShadowMapWidth, shadowMapSizes, [this](std::string value)
 					{
-						json.at("shadowMapWidth") = std::stof(value);
+						shadowMapWidth(std::stof(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 					}, "TexWidth"
 				);
 				ImGui::TableSetColumnIndex(1);
-				std::string selectecShadowMapHeight = std::to_string(shadowMapHeight);
+				std::string selectecShadowMapHeight = std::to_string(smShadowMapHeight);
 				DrawComboSelection(selectecShadowMapHeight, shadowMapSizes, [this](std::string value)
 					{
-						json.at("shadowMapHeight") = std::stof(value);
+						shadowMapHeight(std::stof(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 					}, "TexHeight"
 				);
 
+				/*
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("ViewWidth", &viewWidth))
+				if (ImGui::InputFloat("ViewWidth", &smViewWidth))
 				{
-					json.at("viewWidth") = viewWidth;
+					viewWidth(smViewWidth);
 					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 				}
 				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("ViewHeight", &viewHeight))
+				if (ImGui::InputFloat("ViewHeight", &smViewHeight))
 				{
-					json.at("viewHeight") = viewHeight;
+					viewHeight(smViewHeight);
+					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
+				}
+				*/
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				if (ImGui::InputFloat("NearZ", &smNearZ))
+				{
+					nearZ(smNearZ);
+					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
+				}
+				ImGui::TableSetColumnIndex(1);
+				if (ImGui::InputFloat("FarZ", &smFarZ))
+				{
+					farZ(smFarZ);
 					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 				}
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("NearZ", &nearZ))
+				if (ImGui::InputFloat("zBias", &smZBias, 0.0f, 0.0f, "%.7f"))
 				{
-					json.at("nearZ") = nearZ;
-					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
-				}
-				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("FarZ", &farZ))
-				{
-					json.at("farZ") = farZ;
-					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
+					zBias(smZBias);
 				}
 
 				ImGui::EndTable();
@@ -748,37 +781,45 @@ namespace Scene {
 
 		if (shadowMap && !shadowMapUpdateFlags)
 		{
-			unsigned int shadowMapWidth = static_cast<unsigned int>(json.at("shadowMapWidth"));
-			float nearZ = static_cast<float>(json.at("nearZ"));
-			float farZ = static_cast<float>(json.at("farZ"));
+			unsigned int smWidth = shadowMapWidth();
+			float smNearZ = nearZ();
+			float smFarZ = farZ();
+			float smZBias = zBias();
 
-			static std::vector<std::string> shadowMapSizes = { "64", "128", "256", "512", "1024", "2048" };
+			static std::vector<std::string> shadowMapSizes = { "32","64", "128", "256", "512", "1024", "2048" };
 
 			if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_NoSavedSettings))
 			{
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				std::string selectecShadowMapWidth = std::to_string(shadowMapWidth);
-				DrawComboSelection(selectecShadowMapWidth, shadowMapSizes, [this](std::string value)
+				std::string selectedShadowMapWidth = std::to_string(smWidth);
+				DrawComboSelection(selectedShadowMapWidth, shadowMapSizes, [this](std::string value)
 					{
-						json.at("shadowMapHeight") = std::stof(value);
-						json.at("shadowMapWidth") = std::stof(value);
+						shadowMapHeight(std::stof(value));
+						shadowMapWidth(std::stof(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 					}, "Dimension"
 				);
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("NearZ", &nearZ))
+				if (ImGui::InputFloat("NearZ", &smNearZ))
 				{
-					json.at("nearZ") = nearZ;
+					nearZ(smNearZ);
 					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 				}
 				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("FarZ", &farZ))
+				if (ImGui::InputFloat("FarZ", &smFarZ))
 				{
-					json.at("farZ") = farZ;
+					farZ(smFarZ);
 					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				if (ImGui::InputFloat("zBias", &smZBias, 0.0f, 0.0f, "%.7f"))
+				{
+					zBias(smZBias);
 				}
 
 				ImGui::EndTable();
@@ -793,8 +834,8 @@ namespace Scene {
 	{
 		if (shadowMapUpdateFlags) return;
 
-		float texWidth = static_cast<float>(json.at("shadowMapWidth"));
-		float texHeight = static_cast<float>(json.at("shadowMapHeight")) * ((lightType() == LT_Point) ? 6.0f : 1.0f);
+		float texWidth = static_cast<float>(shadowMapWidth());
+		float texHeight = static_cast<float>(shadowMapHeight()) * ((lightType() == LT_Point) ? 6.0f : 1.0f);
 
 		ImDrawTextureImage((ImTextureID)shadowMapMinMaxChainResultRenderPass->renderToTexture[0]->gpuTextureHandle.ptr,
 			static_cast<unsigned int>(texWidth),

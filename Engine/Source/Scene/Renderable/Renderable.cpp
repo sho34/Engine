@@ -27,7 +27,7 @@
 #include "../../Templates/Templates.h"
 #include <UUID.h>
 #include <NoStd.h>
-#include <Editor.h>
+#include <ImEditor.h>
 #include <Json.h>
 
 extern std::mutex rendererMutex;
@@ -348,7 +348,10 @@ namespace Scene {
 		XMFLOAT3 posV = position();
 		XMFLOAT3 rotV = rotation();
 		XMFLOAT3 scaleV = scale();
-		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		XMMATRIX rotationM = XMMatrixRotationQuaternion(rotQ);
 		XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
 		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
 		return XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
@@ -750,13 +753,14 @@ namespace Scene {
 	void Renderable::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
 		BoundingBox bb = animable ? boundingBoxCompute->boundingBox : boundingBox;
+		XMFLOAT3 renscale = scale();
 		XMVECTOR pv = { bb.Center.x, bb.Center.y, bb.Center.z };
 		XMFLOAT3 rotV = rotation();
-		XMVECTOR rot = XMQuaternionRotationRollPitchYaw(rotV.x, rotV.y, rotV.z);
+		XMVECTOR rot = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(rotV.x), XMConvertToRadians(rotV.y), XMConvertToRadians(rotV.z));
 		pv = XMVector3Rotate(pv, rot);
 		XMFLOAT3 boxP = { pv.m128_f32[0],pv.m128_f32[1],pv.m128_f32[2] };
-		bbox->position(boxP * scale() + position());
-		bbox->scale(bb.Extents * scale());
+		bbox->position(boxP * renscale + position());
+		bbox->scale(bb.Extents * renscale);
 		bbox->rotation(rotV);
 	}
 
@@ -1084,15 +1088,8 @@ namespace Scene {
 
 	void Renderable::WriteShadowMapConstantsBuffer(unsigned int backbufferIndex)
 	{
-		XMFLOAT3 posV = position();
-		XMFLOAT3 rotV = rotation();
-		XMFLOAT3 scaleV = scale();
-		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
-		XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
-		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
-		XMMATRIX world = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
-
-		WriteShadowMapConstantsBuffer("world", world, backbufferIndex);
+		XMMATRIX w = world();
+		WriteShadowMapConstantsBuffer("world", w, backbufferIndex);
 	}
 
 	void Renderable::SetCurrentAnimation(std::string animation, float animationTime, float timeFactor, bool autoPlay)
@@ -1126,7 +1123,6 @@ namespace Scene {
 		using namespace Animation;
 		TraverseMultiplycationQueue(currentAnimationTime, currentAnimation, animable->animations, bonesTransformation);
 	}
-
 
 	//DESTROY
 	void Renderable::Destroy()
@@ -1463,12 +1459,14 @@ namespace Scene {
 
 				int current_material_item = 0;
 
+				bool isModel3D = true;
 				if (std::find_if(meshesUUIDNames.begin(), meshesUUIDNames.end(), [selectables, current_item](UUIDName uuidName)
 					{
 						return std::get<0>(selectables[current_item]) == std::get<0>(uuidName);
 					}
 				) != meshesUUIDNames.end())
 				{
+					isModel3D = false;
 					ImGui::PushID("renderable-material-selector");
 					{
 						ImGui::Text("Select material");
@@ -1488,10 +1486,6 @@ namespace Scene {
 					ImGui::PopID();
 				}
 
-				std::vector<UUIDName> selectablesModels3D = { std::tie("", " ") };
-				nostd::AppendToVector(selectablesModels3D, modelsUUIDNames);
-				bool isModel3D = !!(FindSelectableIndex(selectablesModels3D, json, "model"));
-
 				if (ImGui::Button("Cancel")) { OnCancel(); }
 				ImGui::SameLine();
 				bool disabledCreate = (current_item == 0 || json.at("name") == "" || NameCollideWithSceneObjects(renderables, json));
@@ -1506,18 +1500,18 @@ namespace Scene {
 						if (ImGui::Button("Create"))
 						{
 							Renderable::popupModalId = 0;
+							nlohmann::json r;
 							if (isModel3D)
 							{
-								nlohmann::json r = {
+								r = {
 									{ "uuid", getUUID() },
 									{ "name", json.at("name") },
 									{ "model", json.at("model") }
 								};
-								CreateRenderable(r);
 							}
 							else
 							{
-								nlohmann::json r = {
+								r = {
 									{ "uuid", getUUID() },
 									{ "name", json.at("name") },
 									{ "meshMaterials",
@@ -1537,8 +1531,8 @@ namespace Scene {
 										}
 									}
 								};
-								CreateRenderable(r);
 							}
+							Editor::RegisterPickingComponents(CreateRenderable(r));
 						}
 					}, !disabledCreate
 				);
@@ -1618,7 +1612,7 @@ namespace Scene {
 		XMFLOAT3 rotV = rotation();
 		XMFLOAT3 scaleV = scale();
 		ImDrawFloatValues<XMFLOAT3>("renderable-world-position", { "x","y","z" }, posV, [this](XMFLOAT3 pos) {position(pos); });
-		ImDrawDegreesValues<XMFLOAT3>("renderable-world-rotation", { "roll","pitch","yaw" }, rotV, [this](XMFLOAT3 rot) {rotation(rot); });
+		ImDrawDegreesValues<XMFLOAT3>("renderable-world-rotation", { "pitch","yaw","roll" }, rotV, [this](XMFLOAT3 rot) {rotation(rot); });
 		ImDrawFloatValues<XMFLOAT3>("renderable-world-scale", { "x","y","z" }, scaleV, [this](XMFLOAT3 s) {scale(s); });
 	}
 

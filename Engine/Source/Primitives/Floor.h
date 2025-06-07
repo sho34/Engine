@@ -4,8 +4,8 @@
 struct Floor
 {
 	static constexpr uint32_t indices[] = {
-		//0, 1, 2, 3, 2, 1 //+Y
-		2, 1, 0, 1, 2, 3
+		0, 1, 2, 3, 2, 1 //+Y
+		//2, 1, 0, 1, 2, 3
 	};
 
 	static constexpr VertexClass VertexClass = VertexClass::POS_NORMAL;

@@ -175,11 +175,19 @@ namespace Animation {
 		TraverseMultiplycationQueue(time, animations->multiplyNavigator, animations->animationsBonesKeys[currentAnimation], bonesTransformation, animations->bonesOffsets, animations->rootNodeInverseTransform, XMMatrixIdentity());
 	}
 
+	static const XMMATRIX BonesTransformationFlipmYZ = XMMatrixSet(
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, -1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f
+	);
 	void TraverseMultiplycationQueue(float time, MultiplyCmdQueue& cmds, BonesKeysMap& boneKeys, BonesTransformations& bonesTransformation, BonesTransformations& bonesOffsets, XMMATRIX& rootNodeInverseTransform, XMMATRIX parentTransformation)
 	{
 		auto execCmds = cmds;
 		std::stack<XMMATRIX> transformation;
-		transformation.push(XMMatrixIdentity());
+		//using identity will make the model to be rotated. seems assimp doesn't take this in consideration when building the models
+		//transformation.push(XMMatrixIdentity());
+		transformation.push(BonesTransformationFlipmYZ);
 
 		while (!execCmds.empty())
 		{

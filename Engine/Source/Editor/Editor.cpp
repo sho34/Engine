@@ -7,7 +7,7 @@
 #include <imgui.h>
 #include <Mouse.h>
 #include <Application.h>
-#include <Editor.h>
+#include <ImEditor.h>
 #include "../Renderer/DeviceUtils/Resources/Resources.h"
 
 extern HWND hWnd;
@@ -796,7 +796,7 @@ namespace Editor {
 		}
 	}
 
-	XMFLOAT3 GetYawPitchRoll(XMFLOAT4X4 transform)
+	XMFLOAT3 GetPitchYawRoll(XMFLOAT4X4 transform)
 	{
 		float pitch = XMScalarASin(-transform._32);
 
@@ -807,7 +807,7 @@ namespace Editor {
 		float roll = XMVectorGetX(res);
 		float yaw = XMVectorGetY(res);
 
-		return XMFLOAT3(roll, pitch, yaw);
+		return XMFLOAT3(XMConvertToDegrees(pitch), XMConvertToDegrees(yaw), XMConvertToDegrees(roll));
 	}
 
 	void DrawRenderableGuizmo(std::shared_ptr<Camera> camera)
@@ -857,7 +857,7 @@ namespace Editor {
 		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
 		{
 			XMFLOAT3 newRot = renderable->rotation();
-			XMFLOAT3 rotDelta = GetYawPitchRoll(delta);
+			XMFLOAT3 rotDelta = GetPitchYawRoll(delta);
 			newRot.x += rotDelta.x;
 			newRot.y += rotDelta.y;
 			newRot.z += rotDelta.z;
@@ -913,7 +913,7 @@ namespace Editor {
 			newPos.y += XMtranslation.m128_f32[1];
 			newPos.z += XMtranslation.m128_f32[2];
 			light->position(newPos);
-			if (light->hasShadowMaps())
+			if (light->hasShadowMaps() && !light->shadowMapCameras.empty() && light->shadowMapCameras[0] != nullptr)
 			{
 				light->shadowMapCameras[0]->position(newPos);
 			}
@@ -921,12 +921,12 @@ namespace Editor {
 		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
 		{
 			XMFLOAT3 newRot = light->rotation();
-			XMFLOAT3 rotDelta = GetYawPitchRoll(delta);
+			XMFLOAT3 rotDelta = GetPitchYawRoll(delta);
 			newRot.x += rotDelta.x;
 			newRot.y += rotDelta.y;
 			newRot.z += rotDelta.z;
 			light->rotation(newRot);
-			if (light->hasShadowMaps())
+			if (light->hasShadowMaps() && !light->shadowMapCameras.empty() && light->shadowMapCameras[0] != nullptr)
 			{
 				light->shadowMapCameras[0]->rotation(XMFLOAT3({ newRot.x, newRot.y, 0.0f }));
 			}
@@ -975,7 +975,7 @@ namespace Editor {
 		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
 		{
 			XMFLOAT3 newRot = cam->rotation();
-			XMFLOAT3 rotDelta = GetYawPitchRoll(delta);
+			XMFLOAT3 rotDelta = GetPitchYawRoll(delta);
 			newRot.x += rotDelta.x;
 			newRot.y += rotDelta.y;
 			newRot.z += rotDelta.z;
@@ -1041,6 +1041,7 @@ namespace Editor {
 	{
 		ImGuizmo::SetOrthographic(false);
 		ImGuizmo::BeginFrame();
+		ImGuizmo::AllowAxisFlip(false);
 
 		ImGuiIO& io = ImGui::GetIO();
 		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
@@ -1481,8 +1482,8 @@ namespace Editor {
 				{
 					if (state.leftButton)
 					{
-						float dx = static_cast<float>(mousedx) * 0.01f;
-						float dy = static_cast<float>(mousedy) * 0.01f;
+						float dx = static_cast<float>(mousedx) * 0.3f;
+						float dy = static_cast<float>(mousedy) * 0.3f;
 						camera->Rotate(dx, dy);
 					}
 					else
@@ -1494,7 +1495,7 @@ namespace Editor {
 				{
 					if (state.rightButton)
 					{
-						float dx = static_cast<float>(mousedx) * 0.01f;
+						float dx = -static_cast<float>(mousedx) * 0.01f;
 						float dy = -static_cast<float>(mousedy) * 0.01f;
 						camera->MovePerpendicularFwAxis(dx, dy);
 					}
@@ -1525,13 +1526,17 @@ namespace Editor {
 
 	void MapPickingRenderables()
 	{
-		std::string pickingMaterialUUID = FindMaterialUUIDByName("Picking");
-
 		auto& renderables = GetRenderables();
 		for (auto& [uuid, renderable] : renderables)
 		{
-			renderable->CreatePickingComponents(mousePicking.pickingPass->passHash, pickingMaterialUUID);
+			RegisterPickingComponents(renderable);
 		}
+	}
+
+	void RegisterPickingComponents(std::shared_ptr<Renderable> renderable)
+	{
+		std::string pickingMaterialUUID = FindMaterialUUIDByName("Picking");
+		renderable->CreatePickingComponents(mousePicking.pickingPass->passHash, pickingMaterialUUID);
 	}
 
 	void RenderPickingPass(std::shared_ptr<Camera> camera)

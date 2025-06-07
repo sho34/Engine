@@ -12,7 +12,7 @@
 #include "../../Editor/Editor.h"
 //#include "../../Animation/Effects/Effects.h"
 #include <imgui.h>
-#include <Editor.h>
+#include <ImEditor.h>
 #endif
 #include <Json.h>
 #include <NoStd.h>
@@ -52,7 +52,6 @@ namespace Scene {
 		SetIfMissingJson(light->json, "color", XMFLOAT3(1.0f, 1.0f, 1.0f));
 		SetIfMissingJson(light->json, "brightness", 1.0f);
 		SetIfMissingJson(light->json, "rotation", XMFLOAT3(0.0f, 0.0f, 0.0f));
-		SetIfMissingJson(light->json, "coneAngle", XM_PIDIV4);
 
 #if defined(_EDITOR)
 		switch (light->lightType())
@@ -65,16 +64,20 @@ namespace Scene {
 		case LT_Directional:
 		{
 			light->editorDirectional = light->json;
+			SetIfMissingJson(light->json, "zBias", 0.0002f);
 		}
 		break;
 		case LT_Spot:
 		{
 			light->editorSpot = light->json;
+			SetIfMissingJson(light->json, "zBias", 0.0001f);
+			SetIfMissingJson(light->json, "coneAngle", 45.0f);
 		}
 		break;
 		case LT_Point:
 		{
 			light->editorPoint = light->json;
+			SetIfMissingJson(light->json, "zBias", 0.0001f);
 		}
 		break;
 		}
@@ -136,18 +139,18 @@ namespace Scene {
 
 	XMFLOAT3 Light::rotation()
 	{
-		return XMFLOAT3(json.at("rotation").at(0), json.at("rotation").at(1), json.at("rotation").at(2));
+		return XMFLOAT3(json.at("rotation").at(0), json.at("rotation").at(1), 0.0f);
 	}
 
 	void Light::rotation(XMFLOAT3 f3)
 	{
 		nlohmann::json& j = json.at("rotation");
-		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+		j.at(0) = f3.x; j.at(1) = f3.y;
 	}
 
 	void Light::rotation(nlohmann::json f3)
 	{
-		json.at("rotation") = f3;
+		json.at("rotation") = { f3.at(0), f3.at(0) };
 	}
 
 	XMFLOAT3 Light::color()
@@ -216,9 +219,93 @@ namespace Scene {
 	{
 		XMFLOAT3 posV = position();
 		XMFLOAT3 rotV = rotation();
-		XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		XMMATRIX rotationM = XMMatrixRotationQuaternion(rotQ);
 		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
 		return XMMatrixMultiply(rotationM, positionM);
+	}
+
+	XMVECTOR Light::fw()
+	{
+		FXMVECTOR dir = { 0.0f, 0.0f, 1.0f,0.0f };
+		XMFLOAT3 rotV = rotation();
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		XMVECTOR fw = XMVector3Normalize(XMVector3Rotate(dir, rotQ));
+		return fw;
+	}
+
+	unsigned int Light::shadowMapWidth()
+	{
+		return static_cast<unsigned int>(json.at("shadowMapWidth"));
+	}
+
+	void Light::shadowMapWidth(unsigned int shadowMapWidth)
+	{
+		json.at("shadowMapWidth") = shadowMapWidth;
+	}
+
+	unsigned int Light::shadowMapHeight()
+	{
+		return static_cast<unsigned int>(json.at("shadowMapHeight"));
+	}
+
+	void Light::shadowMapHeight(unsigned int shadowMapHeight)
+	{
+		json.at("shadowMapHeight") = shadowMapHeight;
+	}
+
+	float Light::viewWidth()
+	{
+		return static_cast<float>(json.at("viewHeight"));
+	}
+
+	void Light::viewWidth(float viewWidth)
+	{
+		json.at("viewHeight") = viewWidth;
+	}
+
+	float Light::viewHeight()
+	{
+		return static_cast<float>(json.at("viewHeight"));
+	}
+
+	void Light::viewHeight(float viewHeight)
+	{
+		json.at("viewHeight") = viewHeight;
+	}
+
+	float Light::nearZ()
+	{
+		return static_cast<float>(json.at("nearZ"));
+	}
+
+	void Light::nearZ(float nearZ)
+	{
+		json.at("nearZ") = nearZ;
+	}
+
+	float Light::farZ()
+	{
+		return static_cast<float>(json.at("farZ"));
+	}
+
+	void Light::farZ(float farZ)
+	{
+		json.at("farZ") = farZ;
+	}
+
+	float Light::zBias()
+	{
+		return json.at("zBias");
+	}
+
+	void Light::zBias(float zBias)
+	{
+		json.at("zBias") = zBias;
 	}
 
 	//READ&GET
@@ -372,14 +459,9 @@ namespace Scene {
 		break;
 		case LT_Directional:
 		{
-			XMFLOAT3 rot = light->rotation();
 			atts.lightColor = light->color() * light->brightness();
-			atts.atts1 = {
-				sinf(rot.x) * cosf(rot.y),
-				sinf(rot.y),
-				cosf(rot.x) * cosf(rot.y),
-				0.0f
-			};
+			XMVECTOR lightDir = light->fw();
+			atts.atts1 = *((XMFLOAT4*)&lightDir.m128_f32[0]);
 			atts.hasShadowMap = light->hasShadowMaps();
 			atts.shadowMapIndex = light->shadowMapIndex;
 		}
@@ -387,16 +469,12 @@ namespace Scene {
 		case LT_Spot:
 		{
 			XMFLOAT3 pos = light->position();
-			XMFLOAT3 rot = light->rotation();
 			XMFLOAT3 atte = light->attenuation();
 			atts.lightColor = light->color() * light->brightness();
 			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
-			atts.atts2 = {
-				sinf(rot.x) * cosf(rot.y),
-				sinf(rot.y),
-				cosf(rot.x) * cosf(rot.y),
-				cosf(light->coneAngle())
-			};
+			XMVECTOR lightDir = light->fw();
+			atts.atts2 = *((XMFLOAT4*)&lightDir.m128_f32[0]);
+			atts.atts2.w = cosf(XMConvertToRadians(light->coneAngle()));
 			atts.atts3 = { atte.x, atte.y, atte.z };
 			atts.hasShadowMap = light->hasShadowMaps();
 			atts.shadowMapIndex = light->shadowMapIndex;
@@ -514,7 +592,7 @@ namespace Scene {
 
 		XMFLOAT3 rot3 = rotation();
 		XMFLOAT2 rot2 = { rot3.x, rot3.y };
-		ImDrawDegreesValues<XMFLOAT2>("light-directional-rotation", { "azimuthal","polar" }, rot2, [this](XMFLOAT2 rot)
+		ImDrawDegreesValues<XMFLOAT2>("light-directional-rotation", { "pitch","yaw" }, rot2, [this](XMFLOAT2 rot)
 			{
 				editorDirectional["rotation"] = { rot.x, rot.y, 0.0f };
 				rotation(XMFLOAT3({ rot.x, rot.y, 0.0f }));
@@ -563,7 +641,7 @@ namespace Scene {
 
 		XMFLOAT3 rot3 = rotation();
 		XMFLOAT2 rot2 = { rot3.x, rot3.y };
-		ImDrawDegreesValues<XMFLOAT2>("light-spot-rotation", { "azimuthal","polar" }, rot2, [this](XMFLOAT2 rot)
+		ImDrawDegreesValues<XMFLOAT2>("light-spot-rotation", { "pitch","yaw" }, rot2, [this](XMFLOAT2 rot)
 			{
 				editorSpot["rotation"] = { rot.x, rot.y, 0.0f };
 				rotation(XMFLOAT3({ rot.x, rot.y, 0.0f }));
@@ -579,7 +657,11 @@ namespace Scene {
 			{
 				editorSpot["coneAngle"] = coneA;
 				coneAngle(coneA);
-			}
+				if (hasShadowMaps())
+				{
+					UpdateShadowMapCameraProperties();
+				}
+			}, 10.0f, 150.0f
 		);
 
 		XMFLOAT3 atte = attenuation();

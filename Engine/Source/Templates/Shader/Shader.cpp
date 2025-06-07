@@ -10,7 +10,7 @@
 #include "../../Scene/Scene.h"
 #endif
 #include <Application.h>
-#include <Editor.h>
+#include <ImEditor.h>
 #include "../TemplateDef.h"
 
 namespace Templates {

@@ -9,7 +9,7 @@
 #include "../../Renderer/Renderer.h"
 #include "../../Common/DirectXHelper.h"
 #include "../Utils/ImageConvert.h"
-#include <Editor.h>
+#include <ImEditor.h>
 #include "../../Editor/Editor.h"
 #include "../../Shaders/Compute/IBL/DiffuseIrradianceMap.h"
 #include "../../Shaders/Compute/IBL/PrefilteredEnvironmentMap.h"

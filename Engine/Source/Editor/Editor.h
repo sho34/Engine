@@ -53,6 +53,7 @@ namespace Editor {
 	void CreatePickingPass();
 	void DestroyPickingPass();
 	void MapPickingRenderables();
+	void RegisterPickingComponents(std::shared_ptr<Renderable> renderable);
 	void RenderPickingPass(std::shared_ptr<Camera> camera);
 	void PickFromScene();
 	void PickSceneObject(unsigned int pickedObjectId);

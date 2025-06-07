@@ -32,9 +32,9 @@ namespace Editor::DefaultLevel {
             }
           ],
           "name": "utahteapot",
-          "position": [ -2.0, -0.6000000238418579, 2.0 ],
+          "position": [ 0.0, -0.6000000238418579, 2.5 ],
           "rasterizerState":{
-            "CullMode":"FRONT"
+            "CullMode":"NONE"
           },
           "rotation": [ 0.0, 0.0, 0.0 ],
           "scale": [ 0.009999999776482582, 0.009999999776482582, 0.009999999776482582 ],
@@ -58,9 +58,9 @@ namespace Editor::DefaultLevel {
             "nearZ" : 0.009999999776482582,
             "width" : 1707
           },
-          "position": [ -5.699999809265137, 2.200000047683716, 3.799999952316284 ],
+          "position": [ 0.0, 0.0, 0.0 ],
           "projectionType" : "Perspective",
-          "rotation" : [ 1.5707963705062866, -0.19634954631328583, 0.0 ],
+          "rotation" : [ 0.0, 0.0, 0.0 ],
           "speed" : 0.05000000074505806,
           "uuid": "06de4a6c-0393-42b1-91ab-1d2389cb2cbc"
         }
@@ -85,9 +85,8 @@ namespace Editor::DefaultLevel {
           "shadowMapWidth" : 4096,
           "viewHeight" : 32.0,
           "viewWidth" : 32.0,
-          "distance": 30.0,
           "hasShadowMaps" : true,
-          "rotation" : [ 1.5449994802474976, -0.30000039935112, 0.0 ],
+          "rotation" : [ 0.0, 0.0 ],
           "lightType": "Directional",
           "name" : "light.1.dir",
           "uuid" : "9ec2714e-0184-45f2-aaee-b9b5d08e5763"

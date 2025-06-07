@@ -25,7 +25,7 @@ namespace Scene::CameraProjections {
 		}
 
 		inline void updateProjectionMatrix() {
-			projectionMatrix = XMMatrixOrthographicRH(width, height, nearZ, farZ);
+			projectionMatrix = XMMatrixOrthographicLH(width, height, nearZ, farZ);
 		}
 
 		inline void updateProjectionMatrix(float width, float height) {

@@ -126,7 +126,7 @@ inline bool ImDrawColorEdit4(std::string tableName, T& Tcolor, std::function<voi
 }
 
 template<typename T>
-inline bool ImDrawDegreesValues(std::string tableName, std::vector<std::string> componentsLabel, T& rot, std::function<void(T)> onChange)
+inline bool ImDrawDegreesValues(std::string tableName, std::vector<std::string> componentsLabel, T& rot, std::function<void(T)> onChange, float minDeg = -180.0f, float maxDeg = 180.0f)
 {
 	bool ret = false;
 	if (ImGui::BeginTable(tableName.c_str(), static_cast<int>(componentsLabel.size()) + 1, ImGuiTableFlags_NoSavedSettings))
@@ -134,6 +134,10 @@ inline bool ImDrawDegreesValues(std::string tableName, std::vector<std::string> 
 		std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
 		ImGui::PushID(tableId.c_str());
 		{
+			T rads;
+			for (int i = 0; i < componentsLabel.size(); i++) {
+				*(((float*)&rads) + i) = XMConvertToRadians(*(((float*)&rot) + i));
+			}
 			ImGui::TableNextRow();
 			ImGui::TableSetColumnIndex(0);
 			std::string label = tableId.substr(tableId.find_first_of("-") + 1);
@@ -143,8 +147,9 @@ inline bool ImDrawDegreesValues(std::string tableName, std::vector<std::string> 
 			{
 				for (int i = 0; i < componentsLabel.size(); i++) {
 					ImGui::TableSetColumnIndex(i + 1);
-					if (ImGui::SliderAngle(componentsLabel[i].c_str(), (((float*)&rot) + i), 0.0f, 360.0f, "%.0f", ImGuiSliderFlags_AlwaysClamp))
+					if (ImGui::SliderAngle(componentsLabel[i].c_str(), (((float*)&rads) + i), minDeg, maxDeg, "%.2f", ImGuiSliderFlags_AlwaysClamp))
 					{
+						*(((float*)&rot) + i) = XMConvertToDegrees(*(((float*)&rads) + i));
 						onChange(rot);
 						ret = true;
 					}

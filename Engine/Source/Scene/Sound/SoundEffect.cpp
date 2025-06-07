@@ -3,7 +3,7 @@
 #include "../Scene.h"
 #include "../../Templates/Templates.h"
 #include "../../Editor/Editor.h"
-#include <Editor.h>
+#include <ImEditor.h>
 #include <NoStd.h>
 #include <UUID.h>
 
