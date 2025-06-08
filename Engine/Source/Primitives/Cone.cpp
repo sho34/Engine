@@ -1,0 +1,47 @@
+#include "pch.h"
+#include "Cone.h"
+
+
+Cone::Cone(void* params)
+{
+	float dr = XM_2PI / static_cast<float>(spread);
+	float r = 0.0f;
+
+	XMVECTOR v = { 0.0f, 0.5f, 1.0f, 0.0f };
+	XMVECTOR n = { 0.0f, 0.5f, -1.0f, 0.0f };
+	XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(0.0f, 0.0f, dr);
+
+	unsigned int steps = spread * 2 + 1;
+	for (unsigned int i = 0; i < steps; i++)
+	{
+		XMVECTOR v2 = XMVector3Rotate(v, rotQ);
+		vertices.push_back({ .Position = *(XMFLOAT3*)v.m128_f32, .Normal = *(XMFLOAT3*)n.m128_f32 });
+		n = XMVector3Rotate(n, rotQ);
+		vertices.push_back({ .Position = *(XMFLOAT3*)v2.m128_f32, .Normal = *(XMFLOAT3*)n.m128_f32 });
+		vertices.push_back({ .Position = {0.0f,0.0f,0.0f}, .Normal = {0.0f, 0.0f, -1.0f } });
+
+		indices.push_back(vertices.size() - 1);
+		indices.push_back(vertices.size() - 3);
+		indices.push_back(vertices.size() - 2);
+
+		vertices.push_back({ .Position = *(XMFLOAT3*)v.m128_f32, .Normal = {0.0f, 0.0f, 1.0f } });
+		vertices.push_back({ .Position = *(XMFLOAT3*)v2.m128_f32, .Normal = {0.0f, 0.0f, 1.0f } });
+		vertices.push_back({ .Position = { 0.0f , 0.0f ,1.0f }, .Normal = {0.0f, 0.0f, 1.0f } });
+
+		v = v2;
+
+		indices.push_back(vertices.size() - 1);
+		indices.push_back(vertices.size() - 3);
+		indices.push_back(vertices.size() - 2);
+	}
+}
+
+std::vector<uint32_t> Cone::GetIndices()
+{
+	return indices;
+}
+
+std::vector<Cone::VertexType> Cone::GetVertices()
+{
+	return vertices;
+}

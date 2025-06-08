@@ -1,12 +1,13 @@
 #pragma once
+#include "Primitive.h"
 #include "../Renderer/VertexFormats.h"
 
-struct Decal
+struct Decal : public Primitive
 {
 	static constexpr VertexClass VertexClass = VertexClass::POS_TEXCOORD0;
 	typedef Vertex<VertexClass> VertexType;
 
-	static std::vector<uint32_t> GetIndices();
-	static std::vector<VertexType> GetVertices();
+	std::vector<uint32_t> GetIndices();
+	std::vector<VertexType> GetVertices();
 };
 

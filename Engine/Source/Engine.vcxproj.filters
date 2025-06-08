@@ -306,6 +306,15 @@
     <ClInclude Include="Shaders\Compute\IBL\BRDFLUT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Primitives\Sphere.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Primitive.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Primitives\Cone.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -471,6 +480,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Primitives\UtahTeapot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Primitives\Sphere.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Primitives\Cone.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

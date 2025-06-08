@@ -43,7 +43,7 @@ namespace Templates {
 			{
 				std::shared_ptr<MeshInstance> instance = std::make_shared<MeshInstance>();
 				instance->uuid = uuid;
-				LoadPrimitiveIntoMeshFunctions.at(name)(instance);
+				LoadPrimitiveIntoMeshFunctions.at(name)(instance, nullptr);
 				return instance;
 			}
 		);

@@ -2,11 +2,17 @@
 #include "Primitive.h"
 #include "../Renderer/VertexFormats.h"
 
-struct UtahTeapot : public Primitive
+struct Cone : public Primitive
 {
+	unsigned int spread = 36;
 	static constexpr VertexClass VertexClass = VertexClass::POS_NORMAL;
 	typedef Vertex<VertexClass> VertexType;
 
+	std::vector<VertexType> vertices;
+	std::vector<uint32_t> indices;
+
 	std::vector<uint32_t> GetIndices();
 	std::vector<VertexType> GetVertices();
+
+	Cone(void* params);
 };

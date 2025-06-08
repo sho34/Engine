@@ -7,6 +7,8 @@
 #include "Pentahedron.h"
 #include "UtahTeapot.h"
 #include "BoxLines.h"
+#include "Sphere.h"
+#include "Cone.h"
 
 extern std::shared_ptr<Renderer> renderer;
 namespace Primitives {
@@ -14,11 +16,12 @@ namespace Primitives {
 	using namespace Templates;
 
 	template<typename T>
-	void LoadPrimitiveIntoMesh(const std::shared_ptr<MeshInstance>& mesh) {
+	void LoadPrimitiveIntoMesh(const std::shared_ptr<MeshInstance>& mesh, void* params) {
 		mesh->vertexClass = T::VertexClass;
+		T p(params);
 
-		std::vector<uint32_t> indices = T::GetIndices();
-		std::vector<Vertex<T::VertexClass>> vertices = T::GetVertices();
+		std::vector<uint32_t> indices = p.GetIndices();
+		std::vector<Vertex<T::VertexClass>> vertices = p.GetVertices();
 
 		//BoundingBox::CreateFromPoints(mesh->boundingBox, _countof(T::vertices), &T::vertices[0].Position, sizeof(T::VertexType));
 		BoundingBox::CreateFromPoints(mesh->boundingBox, vertices.size(), &vertices.at(0).Position, sizeof(T::VertexType));
@@ -33,12 +36,14 @@ namespace Primitives {
 	}
 }
 
-static const std::map<std::string, std::function<void(const std::shared_ptr<Templates::MeshInstance>&)>> LoadPrimitiveIntoMeshFunctions =
+static const std::map<std::string, std::function<void(const std::shared_ptr<Templates::MeshInstance>&, void* params)>> LoadPrimitiveIntoMeshFunctions =
 {
 	{ "utahteapot", Primitives::LoadPrimitiveIntoMesh<UtahTeapot> },
 	{ "cube", Primitives::LoadPrimitiveIntoMesh<Cube> },
 	{ "pyramid", Primitives::LoadPrimitiveIntoMesh<Pentahedron> },
 	{ "floor", Primitives::LoadPrimitiveIntoMesh<Floor> },
 	{ "decal", Primitives::LoadPrimitiveIntoMesh<Decal> },
-	{ "boxlines", Primitives::LoadPrimitiveIntoMesh<BoxLines> }
+	{ "boxlines", Primitives::LoadPrimitiveIntoMesh<BoxLines> },
+	{ "sphere", Primitives::LoadPrimitiveIntoMesh<Sphere> },
+	{ "cone", Primitives::LoadPrimitiveIntoMesh<Cone> },
 };
