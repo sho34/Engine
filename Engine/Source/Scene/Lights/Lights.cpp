@@ -703,7 +703,10 @@ namespace Scene {
 				editorPoint["position"] = { pos.x, pos.y, pos.z };
 				if (hasShadowMaps())
 				{
-					shadowMapCameras[0]->position(pos);
+					for (auto& c : shadowMapCameras)
+					{
+						c->position(pos);
+					}
 				}
 			}
 		);

@@ -47,12 +47,20 @@ namespace Scene {
 		void position(XMFLOAT3 f3);
 		void position(nlohmann::json f3);
 
+		XMFLOAT3 rotation();
+		void rotation(XMFLOAT3 f3);
+		void rotation(nlohmann::json f3);
+		XMVECTOR rotationQ();
+
 		SOUND_EFFECT_INSTANCE_FLAGS instanceFlags();
 		void instanceFlags(SOUND_EFFECT_INSTANCE_FLAGS instanceFlags);
 
 		XMMATRIX world();
+		XMVECTOR fw();
 
 		std::unique_ptr<DirectX::SoundEffectInstance> soundEffectInstance;
+
+		bool playing = false;
 
 		void DetachSoundEffectTemplate();
 		void CreateSoundEffectInstance();
@@ -60,6 +68,7 @@ namespace Scene {
 
 		//3D
 		AudioEmitter audioEmitter;
+		void UpdateEmmiter();
 
 #if defined(_EDITOR)
 		static nlohmann::json creationJson;

@@ -454,9 +454,9 @@ void AnimableStep(double elapsedSeconds)
 
 void AudioStep()
 {
-	GetAudioListenerVectors([](XMFLOAT3 pos, XMFLOAT3 fw, XMFLOAT3 up)
+	GetAudioListenerVectors([](XMFLOAT3 pos, XMVECTOR orientation)
 		{
-			UpdateListener(pos, fw, up);
+			UpdateListener(pos, orientation);
 		}
 	);
 	UpdateAudio();

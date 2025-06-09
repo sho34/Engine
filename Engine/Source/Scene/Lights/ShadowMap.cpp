@@ -608,7 +608,7 @@ namespace Scene {
 				std::string selectecShadowMapWidth = std::to_string(smShadowMapWidth);
 				DrawComboSelection(selectecShadowMapWidth, shadowMapSizes, [this](std::string value)
 					{
-						shadowMapWidth(std::stof(value));
+						shadowMapWidth(std::stoi(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 					}, "shadowMapWidth"
 				);
@@ -616,7 +616,7 @@ namespace Scene {
 				std::string selectecShadowMapHeight = std::to_string(smShadowMapHeight);
 				DrawComboSelection(selectecShadowMapHeight, shadowMapSizes, [this](std::string value)
 					{
-						shadowMapHeight(std::stof(value));
+						shadowMapHeight(std::stoi(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 					}, "shadowMapHeight"
 				);
@@ -702,7 +702,7 @@ namespace Scene {
 				std::string selectecShadowMapWidth = std::to_string(smShadowMapWidth);
 				DrawComboSelection(selectecShadowMapWidth, shadowMapSizes, [this](std::string value)
 					{
-						shadowMapWidth(std::stof(value));
+						shadowMapWidth(std::stoi(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 					}, "TexWidth"
 				);
@@ -710,7 +710,7 @@ namespace Scene {
 				std::string selectecShadowMapHeight = std::to_string(smShadowMapHeight);
 				DrawComboSelection(selectecShadowMapHeight, shadowMapSizes, [this](std::string value)
 					{
-						shadowMapHeight(std::stof(value));
+						shadowMapHeight(std::stoi(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 					}, "TexHeight"
 				);
@@ -795,8 +795,8 @@ namespace Scene {
 				std::string selectedShadowMapWidth = std::to_string(smWidth);
 				DrawComboSelection(selectedShadowMapWidth, shadowMapSizes, [this](std::string value)
 					{
-						shadowMapHeight(std::stof(value));
-						shadowMapWidth(std::stof(value));
+						shadowMapHeight(std::stoi(value));
+						shadowMapWidth(std::stoi(value));
 						shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
 					}, "Dimension"
 				);

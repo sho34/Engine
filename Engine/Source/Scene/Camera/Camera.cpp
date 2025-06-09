@@ -485,6 +485,15 @@ namespace Scene
 		json.at("rotation") = f3;
 	}
 
+	XMVECTOR Camera::rotationQ()
+	{
+		XMFLOAT3 rotV = rotation();
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		return rotQ;
+	}
+
 	float Camera::white()
 	{
 		return json.at("white");

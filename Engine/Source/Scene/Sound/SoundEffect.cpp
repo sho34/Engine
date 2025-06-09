@@ -6,6 +6,7 @@
 #include <ImEditor.h>
 #include <NoStd.h>
 #include <UUID.h>
+#include "../../Audio/AudioSystem.h"
 
 #if defined(_EDITOR)
 namespace Editor {
@@ -38,6 +39,7 @@ namespace Scene {
 		SetIfMissingJson(fx->json, "loop", false);
 		SetIfMissingJson(fx->json, "instanceFlags", static_cast<int>(SoundEffectInstance_Default));
 		SetIfMissingJson(fx->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
+		SetIfMissingJson(fx->json, "rotation", XMFLOAT3({ 0.0f,0.0f,0.0f }));
 
 		soundsEffects.insert_or_assign(fx->uuid(), fx);
 
@@ -134,6 +136,31 @@ namespace Scene {
 		json.at("position") = f3;
 	}
 
+	XMFLOAT3 SoundEffect::rotation()
+	{
+		return XMFLOAT3(json.at("rotation").at(0), json.at("rotation").at(1), json.at("rotation").at(2));
+	}
+
+	void SoundEffect::rotation(XMFLOAT3 f3)
+	{
+		nlohmann::json& j = json.at("rotation");
+		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
+	}
+
+	void SoundEffect::rotation(nlohmann::json f3)
+	{
+		json.at("rotation") = f3;
+	}
+
+	XMVECTOR SoundEffect::rotationQ()
+	{
+		XMFLOAT3 rotV = rotation();
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		return rotQ;
+	}
+
 	SOUND_EFFECT_INSTANCE_FLAGS SoundEffect::instanceFlags()
 	{
 		return static_cast<SOUND_EFFECT_INSTANCE_FLAGS>(json.at("instanceFlags"));
@@ -147,11 +174,16 @@ namespace Scene {
 	XMMATRIX SoundEffect::world()
 	{
 		XMFLOAT3 posV = position();
-		//XMFLOAT3 rotV = rotation();
-		//XMMATRIX rotationM = XMMatrixRotationRollPitchYawFromVector({ rotV.x, rotV.y, rotV.z, 0.0f });
+		XMMATRIX rotationM = XMMatrixRotationQuaternion(rotationQ());
 		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
-		return positionM;
-		//return XMMatrixMultiply(rotationM, positionM);
+		return XMMatrixMultiply(rotationM, positionM);
+	}
+
+	XMVECTOR SoundEffect::fw()
+	{
+		FXMVECTOR dir = { 0.0f, 0.0f, 1.0f,0.0f };
+		XMVECTOR fw = XMVector3Normalize(XMVector3Rotate(dir, rotationQ()));
+		return fw;
 	}
 
 	void SoundEffect::DetachSoundEffectTemplate()
@@ -163,11 +195,11 @@ namespace Scene {
 	{
 		soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags());
 		soundEffectInstance->SetVolume(volume());
-		if (autoPlay()) soundEffectInstance->Play(loop());
 
 		if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D))
 		{
 			audioEmitter.SetPosition(position());
+			audioEmitter.SetOrientationFromQuaternion(rotationQ());
 		}
 	}
 
@@ -339,6 +371,28 @@ namespace Scene {
 
 	void SoundEffectsStep()
 	{
+		for (auto& it : soundsEffects)
+		{
+			auto& sfx = it.second;
+			if (sfx->autoPlay() && !sfx->playing)
+			{
+				sfx->playing = true;
+				if (nostd::bytesHas(sfx->instanceFlags(), SoundEffectInstance_Use3D))
+				{
+					sfx->UpdateEmmiter();
+				}
+				sfx->soundEffectInstance->Play(sfx->loop());
+			}
+		}
+
+		for (auto& sfx : Get3DSoundsEffects())
+		{
+			if (sfx->playing)
+			{
+				sfx->UpdateEmmiter();
+			}
+		}
+
 #if defined(_EDITOR)
 		std::map<std::string, std::shared_ptr<SoundEffect>> soundEffectsToDestroy;
 		std::copy_if(soundsEffects.begin(), soundsEffects.end(), std::inserter(soundEffectsToDestroy, soundEffectsToDestroy.end()), [](const auto& pair)
@@ -357,6 +411,12 @@ namespace Scene {
 			}
 		}
 #endif
+	}
+
+	void SoundEffect::UpdateEmmiter()
+	{
+		using namespace AudioSystem;
+		soundEffectInstance->Apply3D(GetAudioListener(), audioEmitter, false);
 	}
 
 #if defined(_EDITOR)
@@ -388,6 +448,18 @@ namespace Scene {
 			{
 				position(pos);
 				audioEmitter.SetPosition(pos);
+			}
+		);
+
+		XMFLOAT3 rotV = rotation();
+		ImDrawDegreesValues<XMFLOAT3>("renderable-world-rotation", { "pitch","yaw","roll" }, rotV, [this](XMFLOAT3 rot)
+			{
+				rotation(rot);
+				XMFLOAT3 rotV = rotation();
+				float roll, pitch, yaw;
+				pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+				XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+				audioEmitter.SetOrientationFromQuaternion(rotQ);
 			}
 		);
 	}

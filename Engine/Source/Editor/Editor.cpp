@@ -914,9 +914,12 @@ namespace Editor {
 			newPos.y += XMtranslation.m128_f32[1];
 			newPos.z += XMtranslation.m128_f32[2];
 			light->position(newPos);
-			if (light->hasShadowMaps() && !light->shadowMapCameras.empty() && light->shadowMapCameras[0] != nullptr)
+			if (light->hasShadowMaps())
 			{
-				light->shadowMapCameras[0]->position(newPos);
+				for (auto& c : light->shadowMapCameras)
+				{
+					c->position(newPos);
+				}
 			}
 		}
 		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
@@ -927,9 +930,12 @@ namespace Editor {
 			newRot.y += rotDelta.y;
 			newRot.z += rotDelta.z;
 			light->rotation(newRot);
-			if (light->hasShadowMaps() && !light->shadowMapCameras.empty() && light->shadowMapCameras[0] != nullptr)
+			if (light->hasShadowMaps())
 			{
-				light->shadowMapCameras[0]->rotation(XMFLOAT3({ newRot.x, newRot.y, 0.0f }));
+				for (auto& c : light->shadowMapCameras)
+				{
+					c->rotation(newRot);
+				}
 			}
 		}
 	}

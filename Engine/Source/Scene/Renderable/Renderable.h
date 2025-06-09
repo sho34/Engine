@@ -70,6 +70,7 @@ namespace Scene
 		XMFLOAT3 rotation();
 		void rotation(XMFLOAT3 f3);
 		void rotation(nlohmann::json f3);
+		XMVECTOR rotationQ();
 
 		XMFLOAT3 scale();
 		void scale(XMFLOAT3 f3);

@@ -112,6 +112,7 @@ namespace Scene {
 		XMFLOAT3 rotation();
 		void rotation(XMFLOAT3 f3);
 		void rotation(nlohmann::json f3);
+		XMVECTOR rotationQ();
 
 		float white();
 		void white(float f);

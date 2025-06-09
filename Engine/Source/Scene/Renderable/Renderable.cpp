@@ -267,6 +267,15 @@ namespace Scene {
 		json.at("rotation") = f3;
 	}
 
+	XMVECTOR Renderable::rotationQ()
+	{
+		XMFLOAT3 rotV = rotation();
+		float roll, pitch, yaw;
+		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
+		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
+		return rotQ;
+	}
+
 	XMFLOAT3 Renderable::scale()
 	{
 		return XMFLOAT3(json.at("scale").at(0), json.at("scale").at(1), json.at("scale").at(2));
@@ -346,12 +355,8 @@ namespace Scene {
 	XMMATRIX Renderable::world()
 	{
 		XMFLOAT3 posV = position();
-		XMFLOAT3 rotV = rotation();
 		XMFLOAT3 scaleV = scale();
-		float roll, pitch, yaw;
-		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
-		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
-		XMMATRIX rotationM = XMMatrixRotationQuaternion(rotQ);
+		XMMATRIX rotationM = XMMatrixRotationQuaternion(rotationQ());
 		XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
 		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
 		return XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);

@@ -30,16 +30,17 @@ namespace AudioSystem {
 		GetAudioEngine()->Update();
 	}
 
-	void UpdateListener(XMFLOAT3 position, XMFLOAT3 forward, XMFLOAT3 up)
+	DirectX::AudioListener& GetAudioListener()
+	{
+		return listener;
+	}
+
+	void UpdateListener(XMFLOAT3 position, XMVECTOR orientation)
 	{
 		using namespace Scene;
 
 		listener.SetPosition(position);
-		listener.SetOrientation(forward, up);
-		for (auto& fx : Get3DSoundsEffects())
-		{
-			fx->soundEffectInstance->Apply3D(listener, fx->audioEmitter);
-		}
+		listener.SetOrientationFromQuaternion(orientation);
 	}
 
 	std::unique_ptr<DirectX::AudioEngine>& GetAudioEngine()

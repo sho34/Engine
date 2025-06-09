@@ -1,11 +1,7 @@
 BUGS:
 -visualizar el point light, después el spot y se ve el point achatado
 
-TODO:
--Cambiar las rotaciones para que usen quaterniones y grados
-	-Sound Effects
--Agregar mesh de esfera
--Agregar mesh de cono
+TODO
 -Agregar Blending
 -Arreglar el tema del defined(_HAS_METALLIC_B...) en PBR.hlsl que hace fallback a blinnphong
 -Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
@@ -17,9 +13,13 @@ TODO:
 -Deferred Rendering
 
 DONE
+-Arreglar sonido que, cuando se parte un nivel que tiene sonido el volumen del 1er frame parte muy alto
+-Agregar mesh de esfera
+-Agregar mesh de cono
 -muevo el sliderbar de una imagen con frames y si la paso por el area de juego se mueve la camara
 -Arreglar los bounding boxes rotados, escalados y en animaciones
 -Cambiar las rotaciones para que usen quaterniones y grados
+	-Sound Effects
 	-Scene Objects
 	-Camaras
 	-Lights

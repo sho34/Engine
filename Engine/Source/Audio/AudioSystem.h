@@ -5,7 +5,8 @@ namespace AudioSystem {
 	void InitAudio();
 	void ShutdownAudio();
 	void UpdateAudio();
-	void UpdateListener(XMFLOAT3 position, XMFLOAT3 forward, XMFLOAT3 up);
+	DirectX::AudioListener& GetAudioListener();
+	void UpdateListener(XMFLOAT3 position, XMVECTOR orientation);
 	std::unique_ptr<DirectX::AudioEngine>& GetAudioEngine();
 }
 

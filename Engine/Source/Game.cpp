@@ -197,15 +197,11 @@ void GameDestroy()
 	resolvePass = nullptr;
 }
 
-void GetAudioListenerVectors(std::function<void(XMFLOAT3 pos, XMFLOAT3 fw, XMFLOAT3 up)> audioListenerCallback)
+void GetAudioListenerVectors(std::function<void(XMFLOAT3, XMVECTOR)> audioListenerCallback)
 {
 	if (!mainPassCamera) return;
 
-	XMFLOAT3 pos = mainPassCamera->position();
-	XMVECTOR fw = mainPassCamera->CameraFw();
-	XMVECTOR up = mainPassCamera->CameraUp();
-
-	audioListenerCallback(pos, *(XMFLOAT3*)&fw.m128_f32, *(XMFLOAT3*)&up.m128_f32);
+	audioListenerCallback(mainPassCamera->position(), mainPassCamera->rotationQ());
 }
 
 void WindowResizeReleaseResources()
