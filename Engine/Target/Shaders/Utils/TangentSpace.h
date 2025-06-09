@@ -1,9 +1,3 @@
-float3 getNormal(float3 n, float3 t, float2 uv, Texture2D normalMap, SamplerState samp)
-{
-    t = normalize(t);
-    t = normalize(t - n * dot(n, t)); //recalculate tangent
-    float3 b = normalize(cross(n, t)); //build biTangent
-    float3x3 ts2ws = float3x3(t, b, n); //tangent space to world space
-    float3 nts = normalMap.Sample(samp, uv).rgb * 2.0f - 1.0f; //normal in tangent space
-    return normalize(mul(nts, ts2ws));
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:dfe28c4370412f4a78e236739ccf9baecc9ed086d5f4a39526671221b13a0f11
+size 518
