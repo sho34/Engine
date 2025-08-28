@@ -1,30 +1,53 @@
 #pragma once
 
 #include "Level.h"
-using namespace Scene::Level;
-
-#include "Camera/Camera.h"
-#include "Lights/Lights.h"
-#include "Renderable/Renderable.h"
-#include "Sound/SoundEffect.h"
 #include <Application.h>
+#include <map>
+#include <string>
+#include <vector>
+#include <UUID.h>
+#if defined(_EDITOR)
+#include <IconsFontAwesome5.h>
+#endif
+#include <memory>
+#include <nlohmann/json.hpp>
+#include <SceneObject.h>
+#include <JExposeTypes.h>
 
-using namespace Scene;
-
-enum _SceneObjects {
+enum SceneObjectType {
+	SO_None,
 	SO_Renderables,
 	SO_Lights,
 	SO_Cameras,
 	SO_SoundEffects
 };
 
-static const std::unordered_map<_SceneObjects, std::string> SceneObjectsToStr = {
+inline const std::map<SceneObjectType, std::string> SceneObjectTypeToString = {
 	{ SO_Renderables, "Renderables" },
 	{ SO_Lights,	"Lights" },
 	{ SO_Cameras, "Cameras" },
 	{ SO_SoundEffects, "SoundEffects" }
 };
 
+inline const std::map<std::string, SceneObjectType> StringToSceneObjectType = {
+	{ "Renderables", SO_Renderables },
+	{ "Lights", SO_Lights },
+	{ "Cameras", SO_Cameras },
+	{ "SoundEffects", SO_SoundEffects }
+};
+
+#if defined(_EDITOR)
+inline const std::map<SceneObjectType, const char* > SceneObjectsTypePanelMenuItems = {
+	{ SO_Renderables, ICON_FA_SNOWMAN "Renderables" },
+	{ SO_Lights, ICON_FA_LIGHTBULB "Lights" },
+	{ SO_Cameras, ICON_FA_CAMERA "Cameras" },
+	{ SO_SoundEffects, ICON_FA_MUSIC "SoundEffects" }
+};
+#endif
+
+using namespace Scene::Level;
+
+/*
 template<typename T>
 std::vector<UUIDName> GetSceneObjectsUUIDsNames(std::map<std::string, std::shared_ptr<T>>& objects)
 {
@@ -53,6 +76,7 @@ std::vector<UUIDName> GetSceneObjectsUUIDsNames(std::map<std::string, std::share
 
 	return uuidNames;
 }
+*/
 
 inline bool NameCollideWithSceneObjects(auto map, nlohmann::json& json)
 {
@@ -64,87 +88,34 @@ inline bool NameCollideWithSceneObjects(auto map, nlohmann::json& json)
 	);
 }
 
-#if defined(_EDITOR)
-static const std::map<_SceneObjects, std::function<std::vector<UUIDName>()>> GetSceneObjects =
-{
-	{ SO_Renderables, GetRenderablesUUIDNames },
-	{ SO_Lights, GetLightsUUIDNames },
-	{ SO_Cameras, GetCamerasUUIDNames },
-	{ SO_SoundEffects, GetSoundEffectsUUIDNames }
-};
-
-static const std::map<_SceneObjects, std::function<void(std::string, std::string&)>> SetSelectedSceneObject =
-{
-	{ SO_Renderables, SelectRenderable },
-	{ SO_Lights, SelectLight },
-	{ SO_Cameras, SelectCamera },
-	{ SO_SoundEffects, SelectSoundEffect }
-};
-
-static const std::map<_SceneObjects, std::function<void(std::string&)>> DeSelectSceneObject =
-{
-	{ SO_Renderables, DeSelectRenderable },
-	{ SO_Lights, DeSelectLight },
-	{ SO_Cameras, DeSelectCamera },
-	{ SO_SoundEffects, DeSelectSoundEffect }
-};
-
-static const std::map<_SceneObjects, std::function<void(std::string, ImVec2, ImVec2, bool)>> DrawSceneObjectPanel =
-{
-	{ SO_Renderables, DrawRenderablePanel },
-	{ SO_Lights, DrawLightPanel },
-	{ SO_Cameras, DrawCameraPanel },
-	{ SO_SoundEffects, DrawSoundEffectPanel }
-};
-
-static const std::map<_SceneObjects, std::function<void()>> DrawSceneObjectsPopups =
-{
-	{ SO_Renderables, DrawRenderablesPopups },
-	{ SO_Lights, DrawLightsPopups },
-	{ SO_Cameras, DrawCamerasPopups },
-	{ SO_SoundEffects, DrawSoundEffectsPopups }
-};
-
-static const std::map<_SceneObjects, std::function<std::string(std::string)>> GetSceneObjectName =
-{
-	{ SO_Renderables, GetRenderableName },
-	{ SO_Lights, GetLightName },
-	{ SO_Cameras, GetCameraName },
-	{ SO_SoundEffects, GetSoundEffectName }
-};
-
-static const std::map<_SceneObjects, std::function<bool()>> SceneObjectPopupIsOpen = {
-	{ SO_Renderables, GetRenderablePopupIsOpen },
-	{ SO_Lights, GetLightPopupIsOpen },
-	{ SO_Cameras, GetCameraPopupIsOpen },
-	{ SO_SoundEffects, GetSoundEffectPopupIsOpen }
-};
-
-static const std::map<_SceneObjects, std::function<void()>> CreateSceneObject =
-{
-	{ SO_Renderables, CreateNewRenderable },
-	{ SO_Lights, CreateNewLight },
-	{ SO_Cameras, CreateNewCamera },
-	{ SO_SoundEffects, CreateNewSoundEffect }
-};
-
-static const std::map<_SceneObjects, std::function<void(std::string)>> DeleteSceneObject =
-{
-	{ SO_Renderables, DeleteRenderable },
-	{ SO_Lights, DeleteLight },
-	{ SO_Cameras, DeleteCamera },
-	{ SO_SoundEffects, DeleteSoundEffect }
-};
-
-#endif
-
 namespace DX { class StepTimer; }
 
 namespace Scene
 {
+	struct Camera;
+
 	void SceneObjectsStep(DX::StepTimer& timer);
+	void CreateRenderablesCameraBinding();
 	void WriteConstantsBuffers();
 	void RenderSceneShadowMaps();
-	void RenderSceneObjects(size_t passHash, std::shared_ptr<Camera>& camera);
+	void RenderSceneCameras();
+
+#if defined(_EDITOR)
 	bool AnySceneObjectPopupOpen();
+	void DrawSceneObjectsPopups(SceneObjectType so);
+	bool SceneObjectPopupIsOpen(SceneObjectType so);
+
+	std::shared_ptr<SceneObject> GetSceneObject(std::string uuid);
+	std::map<SceneObjectType, std::vector<UUIDName>> GetSceneObjects();
+	std::vector<UUIDName> GetSceneObjects(SceneObjectType so);
+	SceneObjectType GetSceneObjectType(std::string uuid);
+	std::string GetSceneObjectName(SceneObjectType so, std::string uuid);
+	std::string GetSceneObjectUUID(std::string name);
+	std::vector<std::pair<std::string, JsonToEditorValueType>> GetSceneObjectAttributes(SceneObjectType so);
+	std::map<std::string, JEdvDrawerFunction> GetSceneObjectDrawers(SceneObjectType so);
+
+	void CreateSceneObject(SceneObjectType so);
+	void DeleteSceneObject(SceneObjectType so, std::string uuid);
+	void DeleteSceneObject(std::string uuid);
+#endif
 }

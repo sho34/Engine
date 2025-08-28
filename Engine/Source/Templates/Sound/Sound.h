@@ -4,22 +4,39 @@
 #include <Audio.h>
 #include <Application.h>
 #include <nlohmann/json.hpp>
-#include "../../Scene/Sound/SoundEffect.h"
+#include <Sound/SoundFX.h>
 #include <UUID.h>
+#include <JTemplate.h>
+#include <Templates.h>
+#include <TemplateDecl.h>
+#include <JExposeTypes.h>
 
 using namespace DirectX;
 
-typedef std::tuple<
-	std::string, //name
-	nlohmann::json, //data
-	std::shared_ptr<DirectX::SoundEffect> //DirectXTK SoundEffect Instance
-#if defined(_EDITOR)
-	,
-	std::vector<std::shared_ptr<Scene::SoundEffect>> //Scene's SoundEffect instances
-#endif
-> SoundTemplate;
+namespace Templates
+{
+#include <JExposeAttOrder.h>
+#include <SoundAtt.h>
+#include <JExposeEnd.h>
 
-namespace Templates {
+#include <JExposeAttDrawersDecl.h>
+#include <SoundAtt.h>
+#include <JExposeEnd.h>
+
+	struct SoundJson : JTemplate
+	{
+		TEMPLATE_DECL(Sound);
+
+#include <JExposeAttFlags.h>
+#include <SoundAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeDecl.h>
+#include <SoundAtt.h>
+#include <JExposeEnd.h>
+	};
+
+	TEMPDECL_FULL(Sound);
 
 #if defined(_EDITOR)
 	enum SoundPopupModal
@@ -31,39 +48,28 @@ namespace Templates {
 
 	namespace Sound
 	{
-		inline static const std::string templateName = "audio.json";
-#if defined(_EDITOR)
-		void ReleaseSoundEffectsInstances();
-		void DrawEditorInformationAttributes(std::string uuid);
-		void DrawEditorAssetAttributes(std::string uuid);
-#endif
+		inline static const std::string templateName = "sounds.json";
 	}
 
-	//CREATE
-	void CreateSound(nlohmann::json json);
-	std::unique_ptr<DirectX::SoundEffectInstance> GetSoundEffectInstance(std::string uuid, SOUND_EFFECT_INSTANCE_FLAGS flags);
-
-	//READ&GET
-	std::vector<std::string> GetSoundsNames();
-	std::string GetSoundName(std::string uuid);
-	std::vector<UUIDName> GetSoundsUUIDsNames();
-
-	//UPDATE
-
-	//DESTROY
-	void ReleaseSoundTemplates();
+	void ReleaseSoundEffectsInstances();
 
 	//EDITOR
 #if defined(_EDITOR)
-	void BindNotifications(std::string uuid, std::shared_ptr<Scene::SoundEffect> soundEffect);
-	void UnbindNotifications(std::string uuid, std::shared_ptr<Scene::SoundEffect> soundEffect);
-	void DrawSoundPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
 	void CreateNewSound();
 	void DeleteSound(std::string uuid);
 	void DrawSoundsPopups();
-	bool SoundsPopupIsOpen();
 	void WriteSoundsJson(nlohmann::json& json);
 #endif
+
+	std::tuple<
+		std::unique_ptr<DirectX::SoundEffect>,
+		std::unique_ptr<DirectX::SoundEffectInstance>
+	> GetSoundEffectInstance(std::string uuid, unsigned int flags);
+
+	void DestroySoundEffectInstance(std::string uuid, std::tuple<
+		std::unique_ptr<DirectX::SoundEffect>,
+		std::unique_ptr<DirectX::SoundEffectInstance>
+	>& soundEffectInstance);
 
 };
 

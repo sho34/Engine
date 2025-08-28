@@ -1,7 +1,9 @@
 #include "pch.h"
 #include "ComputeShader.h"
-#include "../../Renderer/Renderer.h"
+#include <Renderer.h>
 #include "ComputeInterface.h"
+#include <DeviceUtils/RootSignature/RootSignature.h>
+#include <DeviceUtils/PipelineState/PipelineState.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -46,7 +48,13 @@ namespace ComputeShader
 		using namespace DeviceUtils;
 
 		//Get an instance of the BoundingBox Compute shader
-		shader = GetShaderInstance({ .shaderType = COMPUTE_SHADER, .shaderUUID = FindShaderUUIDByName(shaderName) });
+		std::string csShaderInstanceUUID = FindShaderUUIDByName(shaderName);
+		Source compCS = { .shaderType = COMPUTE_SHADER, .shaderUUID = csShaderInstanceUUID };
+		shader = GetShaderInstance(csShaderInstanceUUID, [csShaderInstanceUUID, compCS]
+			{
+				return std::make_shared<ShaderInstance>(compCS.shaderUUID, compCS.shaderUUID, compCS);
+			}
+		);
 
 		//Build the shader's root signature
 		auto& vsCBparams = shader->constantsBuffersParameters;
@@ -56,21 +64,20 @@ namespace ComputeShader
 		auto& psSRVTexparams = shader->srvTexParameters;
 		auto& psSamplersParams = shader->samplersParameters;
 
-		RootSignatureDesc rootSignatureDesc = std::tie(vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
-		rootSignature = CreateRootSignature(rootSignatureDesc);
-
-		size_t rootSignatureHash = std::get<0>(rootSignature);
-		ComputePipelineStateDesc pipelineStateDesc = std::tie(shader->byteCode, rootSignatureHash);
-		pipelineState = CreateComputePipelineState(pipelineStateDesc);
+		rootSignature = CreateRootSignature(std::string("rootSignature:" + shaderName), vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
+		//
+		//size_t rootSignatureHash = std::get<0>(rootSignature);
+		//ComputePipelineStateDesc pipelineStateDesc = std::tie(shader->byteCode, rootSignatureHash);
+		pipelineState = CreateComputePipelineState(std::string("pipelineState:" + shaderName), shader->byteCode, rootSignature);
 	}
 
 	void ComputeShader::SetComputeState()
 	{
 		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
-		CComPtr<ID3D12RootSignature>& rs = std::get<1>(rootSignature);
-		CComPtr<ID3D12PipelineState>& ps = std::get<1>(pipelineState);
-
-		commandList->SetComputeRootSignature(rs);
-		commandList->SetPipelineState(ps);
+		//CComPtr<ID3D12RootSignature>& rs = std::get<1>(rootSignature);
+		//CComPtr<ID3D12PipelineState>& ps = std::get<1>(pipelineState);
+		//
+		commandList->SetComputeRootSignature(rootSignature);
+		commandList->SetPipelineState(pipelineState);
 	}
 }

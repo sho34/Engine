@@ -1,14 +1,16 @@
 #include "pch.h"
 #include "PipelineState.h"
-#include "../../Renderer.h"
-#include "../../VertexFormats.h"
-#include "../../../Common/DirectXHelper.h"
+#include <Renderer.h>
+#include <VertexFormats.h>
+#include <DirectXHelper.h>
 #include <NoStd.h>
 #include <ios>
 #include "../RootSignature/RootSignature.h"
+//#include <ImEditor.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
+/*
 template <>
 struct std::hash<GraphicsPipelineStateDesc>
 {
@@ -54,9 +56,11 @@ struct std::hash<ComputePipelineStateDesc>
 		return h;
 	}
 };
+*/
 
 namespace DeviceUtils
 {
+	/*
 	static RefTracker<size_t, HashedPipelineState> refTracker;
 
 	HashedPipelineState CreateGraphicsPipelineState(GraphicsPipelineStateDesc& p)
@@ -82,6 +86,7 @@ namespace DeviceUtils
 			}
 		);
 	}
+	*/
 
 	CComPtr<ID3D12PipelineState> CreateGraphicsPipelineState(
 		std::string name,
@@ -135,6 +140,7 @@ namespace DeviceUtils
 		return pipelineState;
 	}
 
+	/*
 	HashedPipelineState CreateComputePipelineState(ComputePipelineStateDesc& p)
 	{
 		size_t hash = std::hash<ComputePipelineStateDesc>()(p);
@@ -151,6 +157,7 @@ namespace DeviceUtils
 			}
 		);
 	}
+	*/
 
 	CComPtr<ID3D12PipelineState> CreateComputePipelineState(std::string name, ShaderByteCode& csCode, CComPtr<ID3D12RootSignature>& rootSignature)
 	{
@@ -174,16 +181,17 @@ namespace DeviceUtils
 	}
 
 #if defined(_EDITOR)
+	/*
 	std::map<std::string, std::function<void(nlohmann::json&)>> addToBlendDescRenderTarget = {
 		{ "BlendEnable", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["BlendEnable"] = false; }},
 		{ "LogicOpEnable", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["LogicOpEnable"] = false; }},
-		{ "SrcBlend", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["SrcBlend"] = blendToString.at(D3D12_BLEND_ONE); }},
-		{ "DestBlend", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["DestBlend"] = blendToString.at(D3D12_BLEND_ZERO); }},
-		{ "BlendOp", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["BlendOp"] = blendOpToString.at(D3D12_BLEND_OP_ADD); }},
-		{ "SrcBlendAlpha", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["SrcBlendAlpha"] = blendToString.at(D3D12_BLEND_ONE); }},
-		{ "DestBlendAlpha", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["DestBlendAlpha"] = blendToString.at(D3D12_BLEND_ZERO); }},
-		{ "BlendOpAlpha", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["BlendOpAlpha"] = blendOpToString.at(D3D12_BLEND_OP_ADD); }},
-		{ "LogicOp", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["LogicOp"] = logicOpToString.at(D3D12_LOGIC_OP_NOOP); }},
+		{ "SrcBlend", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["SrcBlend"] = D3D12_BLENDToString.at(D3D12_BLEND_ONE); }},
+		{ "DestBlend", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["DestBlend"] = D3D12_BLENDToString.at(D3D12_BLEND_ZERO); }},
+		{ "BlendOp", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["BlendOp"] = D3D12_BLEND_OPToString.at(D3D12_BLEND_OP_ADD); }},
+		{ "SrcBlendAlpha", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["SrcBlendAlpha"] = D3D12_BLENDToString.at(D3D12_BLEND_ONE); }},
+		{ "DestBlendAlpha", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["DestBlendAlpha"] = D3D12_BLENDToString.at(D3D12_BLEND_ZERO); }},
+		{ "BlendOpAlpha", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["BlendOpAlpha"] = D3D12_BLEND_OPToString.at(D3D12_BLEND_OP_ADD); }},
+		{ "LogicOp", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["LogicOp"] = D3D12_LOGIC_OPToString.at(D3D12_LOGIC_OP_NOOP); }},
 		{ "RenderTargetWriteMask", [](nlohmann::json& RenderTargetBlendDesc) { RenderTargetBlendDesc["RenderTargetWriteMask"] = D3D12_COLOR_WRITE_ENABLE_ALL; }},
 	};
 
@@ -192,19 +200,19 @@ namespace DeviceUtils
 		{ "LogicOpEnable", [](nlohmann::json& BlendDesc) { drawFromCheckBox(BlendDesc,"LogicOpEnable"); }},
 		{ "BlendEnable", [](nlohmann::json& BlendDesc) { drawFromCheckBox(BlendDesc, "BlendEnable"); } },
 		{ "LogicOpEnable", [](nlohmann::json& BlendDesc) { drawFromCheckBox(BlendDesc,"LogicOpEnable"); } },
-		{ "SrcBlend", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"SrcBlend",stringToBlend); } },
-		{ "DestBlend", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"DestBlend",stringToBlend); } },
-		{ "BlendOp", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"BlendOp",stringToBlendOp); } },
-		{ "SrcBlendAlpha", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"SrcBlendAlpha",stringToBlend); } },
-		{ "DestBlendAlpha", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"DestBlendAlpha",stringToBlend); } },
-		{ "BlendOpAlpha", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"BlendOpAlpha",stringToBlendOp); } },
-		{ "LogicOp", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"LogicOp",stringToLogicOp); } },
-		{ "RenderTargetWriteMask", [](nlohmann::json& BlendDesc) { drawFromUInt(BlendDesc,"RenderTargetWriteMask"); } },
+		{ "SrcBlend", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"SrcBlend",StringToD3D12_BLEND); } },
+		{ "DestBlend", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"DestBlend",StringToD3D12_BLEND); } },
+		{ "BlendOp", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"BlendOp",StringToD3D12_BLEND_OP); } },
+		{ "SrcBlendAlpha", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"SrcBlendAlpha",StringToD3D12_BLEND); } },
+		{ "DestBlendAlpha", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"DestBlendAlpha",StringToD3D12_BLEND); } },
+		{ "BlendOpAlpha", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"BlendOpAlpha",StringToD3D12_BLEND_OP); } },
+		{ "LogicOp", [](nlohmann::json& BlendDesc) { drawFromCombo(BlendDesc,"LogicOp",StringToD3D12_LOGIC_OP); } },
+		{ "RenderTargetWriteMask", [](nlohmann::json& BlendDesc) { DrawFromUInt(BlendDesc,"RenderTargetWriteMask"); } },
 	};
 
 	void ImDrawBlendStatesRenderTargets(nlohmann::json& BlendState)
 	{
-		ImDrawDynamicArray(
+		DrawDynamicArray(
 			"BLEND#RT",
 			BlendState.at("RenderTarget"),
 			[](nlohmann::json& RenderTarget, unsigned int index)
@@ -241,8 +249,8 @@ namespace DeviceUtils
 	};
 
 	std::map<std::string, std::function<void(nlohmann::json&)>> addToRasterizerState = {
-		{ "FillMode", [](nlohmann::json& RasterizerState) { RasterizerState["FillMode"] = fillModeToString.at(D3D12_FILL_MODE_SOLID); }},
-		{ "CullMode", [](nlohmann::json& RasterizerState) { RasterizerState["CullMode"] = cullModeToString.at(D3D12_CULL_MODE_BACK); } },
+		{ "FillMode", [](nlohmann::json& RasterizerState) { RasterizerState["FillMode"] = D3D12_FILL_MODEToString.at(D3D12_FILL_MODE_SOLID); }},
+		{ "CullMode", [](nlohmann::json& RasterizerState) { RasterizerState["CullMode"] = D3D12_CULL_MODEToString.at(D3D12_CULL_MODE_BACK); } },
 		{ "FrontCounterClockwise", [](nlohmann::json& RasterizerState) { RasterizerState["FrontCounterClockwise"] = false; } },
 		{ "DepthBias", [](nlohmann::json& RasterizerState) { RasterizerState["DepthBias"] = D3D12_DEFAULT_DEPTH_BIAS; } },
 		{ "DepthBiasClamp", [](nlohmann::json& RasterizerState) { RasterizerState["DepthBiasClamp"] = D3D12_DEFAULT_DEPTH_BIAS_CLAMP; } },
@@ -251,27 +259,27 @@ namespace DeviceUtils
 		{ "MultisampleEnable", [](nlohmann::json& RasterizerState) { RasterizerState["MultisampleEnable"] = false; } },
 		{ "AntialiasedLineEnable", [](nlohmann::json& RasterizerState) { RasterizerState["AntialiasedLineEnable"] = false; } },
 		{ "ForcedSampleCount", [](nlohmann::json& RasterizerState) { RasterizerState["ForcedSampleCount"] = 0; } },
-		{ "ConservativeRaster", [](nlohmann::json& RasterizerState) { RasterizerState["ConservativeRaster"] = conservativeRasterizationModeToString.at(D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF); } },
+		{ "ConservativeRaster", [](nlohmann::json& RasterizerState) { RasterizerState["ConservativeRaster"] = D3D12_CONSERVATIVE_RASTERIZATION_MODEToString.at(D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF); } },
 	};
 
 	std::map<std::string, std::function<void(nlohmann::json&)>> drawRasterizerState = {
-		{ "FillMode", [](nlohmann::json& RasterizerState) { drawFromCombo(RasterizerState, "FillMode", stringToFillMode); }},
-		{ "CullMode", [](nlohmann::json& RasterizerState) { drawFromCombo(RasterizerState, "CullMode", stringToCullMode); } },
+		{ "FillMode", [](nlohmann::json& RasterizerState) { drawFromCombo(RasterizerState, "FillMode", StringToD3D12_FILL_MODE); }},
+		{ "CullMode", [](nlohmann::json& RasterizerState) { drawFromCombo(RasterizerState, "CullMode", StringToD3D12_CULL_MODE); } },
 		{ "FrontCounterClockwise", [](nlohmann::json& RasterizerState) { drawFromCheckBox(RasterizerState,"FrontCounterClockwise"); } },
-		{ "DepthBias", [](nlohmann::json& RasterizerState) { drawFromInt(RasterizerState,"DepthBias"); } },
-		{ "DepthBiasClamp", [](nlohmann::json& RasterizerState) { drawFromFloat(RasterizerState,"DepthBiasClamp"); } },
-		{ "SlopeScaledDepthBias", [](nlohmann::json& RasterizerState) { drawFromFloat(RasterizerState,"SlopeScaledDepthBias"); } },
+		{ "DepthBias", [](nlohmann::json& RasterizerState) { DrawFromInt(RasterizerState,"DepthBias"); } },
+		{ "DepthBiasClamp", [](nlohmann::json& RasterizerState) { DrawFromFloat(RasterizerState,"DepthBiasClamp"); } },
+		{ "SlopeScaledDepthBias", [](nlohmann::json& RasterizerState) { DrawFromFloat(RasterizerState,"SlopeScaledDepthBias"); } },
 		{ "DepthClipEnable", [](nlohmann::json& RasterizerState) { drawFromCheckBox(RasterizerState,"DepthClipEnable"); } },
 		{ "MultisampleEnable", [](nlohmann::json& RasterizerState) { drawFromCheckBox(RasterizerState,"MultisampleEnable"); } },
 		{ "AntialiasedLineEnable", [](nlohmann::json& RasterizerState) { drawFromCheckBox(RasterizerState,"AntialiasedLineEnable"); } },
-		{ "ForcedSampleCount", [](nlohmann::json& RasterizerState) { drawFromUInt(RasterizerState,"ForcedSampleCount"); } },
-		{ "ConservativeRaster", [](nlohmann::json& RasterizerState) { drawFromCombo(RasterizerState,"ConservativeRaster",stringToConservativeRasterizationMode); } },
+		{ "ForcedSampleCount", [](nlohmann::json& RasterizerState) { DrawFromUInt(RasterizerState,"ForcedSampleCount"); } },
+		{ "ConservativeRaster", [](nlohmann::json& RasterizerState) { drawFromCombo(RasterizerState,"ConservativeRaster",StringToD3D12_CONSERVATIVE_RASTERIZATION_MODE); } },
 	};
 
 	std::map<std::string, std::function<void(nlohmann::json&)>> addToPipelineState = {
 		{ "blendState", [](nlohmann::json& json) { json["blendState"] = nlohmann::json::object(); } },
 		{ "rasterizerState", [](nlohmann::json& json) { json["rasterizerState"] = nlohmann::json::object(); } },
-		{ "primitiveTopologyType", [](nlohmann::json& json) { json["primitiveTopologyType"] = primitiveTopologyTypeToString.at(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE); } },
+		{ "primitiveTopologyType", [](nlohmann::json& json) { json["primitiveTopologyType"] = D3D12_PRIMITIVE_TOPOLOGY_TYPEToString.at(D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE); } },
 	};
 
 	std::map<std::string, std::function<void(nlohmann::json&)>> drawPipelineState = {
@@ -285,12 +293,13 @@ namespace DeviceUtils
 				ImDrawObject("RasterizerState", json.at("rasterizerState"), addToRasterizerState, drawRasterizerState);
 			}
 		},
-		{ "primitiveTopologyType", [](nlohmann::json& json) { drawFromCombo(json, "primitiveTopologyType", stringToPrimitiveTopologyType); } },
+		{ "primitiveTopologyType", [](nlohmann::json& json) { drawFromCombo(json, "primitiveTopologyType", StringToD3D12_PRIMITIVE_TOPOLOGY_TYPE); } },
 	};
 
 	void ImDrawGraphicsPipelineState(nlohmann::json& json)
 	{
 		ImDrawObject("PipelineState", json, addToPipelineState, drawPipelineState);
 	}
+	*/
 #endif
 };

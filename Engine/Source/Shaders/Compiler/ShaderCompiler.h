@@ -2,14 +2,15 @@
 
 #include "CustomIncludeHandler.h"
 #include "CompilerQueue.h"
-#include "../../Templates/Shader/Shader.h"
+#include <Shader/Shader.h>
 
 using namespace Templates;
 
 namespace ShaderCompiler {
 
 	void BuildShaderCompiler();
-	std::shared_ptr<ShaderInstance> Compile(Source params, ShaderIncludesDependencies& dependencies);
+	//std::shared_ptr<ShaderInstance> Compile(Source params, ShaderIncludesDependencies& dependencies);
+	void Compile(ShaderInstance& shaderInstance, Source params, ShaderIncludesDependencies& dependencies);
 	void DestroyShaderCompiler();
 
 	//compiler and utils

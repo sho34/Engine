@@ -54,7 +54,7 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="d3dx12.h">
+    <ClInclude Include="Common\d3dx12.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\Renderer.h">
@@ -93,7 +93,7 @@
     <ClInclude Include="pch.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Common\d3dx12.h">
+    <ClInclude Include="Common\d3dx12.h.bkp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Primitives\Pentahedron.h">
@@ -192,7 +192,7 @@
     <ClInclude Include="Templates\Templates.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Sound\SoundEffect.h">
+    <ClInclude Include="Scene\Sound\SoundFX.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Editor\IconsFontAwesome5.h">
@@ -204,7 +204,7 @@
     <ClInclude Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\RenderPass\RenderPass.h">
+    <ClInclude Include="Renderer\RenderPass\RenderToTexturePass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Scene\Lights\ShadowMap.h">
@@ -213,7 +213,7 @@
     <ClInclude Include="Primitives\BoxLines.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pch\ImEditor.h">
+    <ClInclude Include="Editor\ImEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch\Json.h">
@@ -315,6 +315,126 @@
     <ClInclude Include="Primitives\Cone.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Templates\RenderPass\RenderPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\RenderPass\SwapChainPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\SceneObjectDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\SceneObjectDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material\MeshMaterial.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material\RasterizerDesc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Material\BlendDesc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\RenderPass\Override\ResolvePass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\RenderPass\Override\OverridePass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\RenderPass\Override\ToneMappingPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene\SceneObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExpose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeEnd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeInit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Templates\ShaderAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Templates\RenderPassAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Templates\TextureAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Scene\RenderableAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Templates\MaterialAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Scene\CameraAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Templates\Model3DAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Scene\SoundFXAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Templates\SoundAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Scene\LightsAtt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pch\JExposeEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttOrder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttFlags.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttDrawersDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\JTemplate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\Shader\ShaderInstance.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttUpdate.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttDrawersDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\RenderPass\Override\MinMaxChainPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Templates\RenderPass\Override\MinMaxChainResultPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\RightPanelComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeTrackUUIDDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeTrackUUIDDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -404,13 +524,13 @@
     <ClCompile Include="Scene\Level.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Sound\SoundEffect.cpp">
+    <ClCompile Include="Scene\Sound\SoundFX.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\RenderPass\RenderPass.cpp">
+    <ClCompile Include="Renderer\RenderPass\RenderToTexturePass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Scene\Lights\ShadowMap.cpp">
@@ -486,6 +606,36 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Primitives\Cone.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\RenderPass\RenderPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\RenderPass\SwapChainPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\RenderPass\Override\ResolvePass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\RenderPass\Override\ToneMappingPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\RenderPass\Override\OverridePass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\DefaultLevel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\ImEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\RenderPass\Override\MinMaxChainPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Templates\RenderPass\Override\MinMaxChainResultPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\RightPanelComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

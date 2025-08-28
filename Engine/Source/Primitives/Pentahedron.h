@@ -1,6 +1,6 @@
 #pragma once
 #include "Primitive.h"
-#include "../Renderer/VertexFormats.h"
+#include <VertexFormats.h>
 
 struct Pentahedron : public Primitive
 {

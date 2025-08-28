@@ -1,25 +1,15 @@
 #pragma once
 
-#include "../../../d3dx12.h"
-#include "../../../Templates/Material/Material.h"
-
-typedef std::tuple<
-	ShaderConstantsBufferParametersMap,
-	ShaderConstantsBufferParametersMap,
-	ShaderUAVParametersMap,
-	ShaderSRVCSParametersMap,
-	ShaderSRVTexParametersMap,
-	ShaderSamplerParametersMap,
-	std::vector<MaterialSamplerDesc>
-> RootSignatureDesc;
-
-typedef std::tuple<size_t, CComPtr<ID3D12RootSignature>> HashedRootSignature;
+#include <d3dx12.h>
+#include <Templates.h>
+#include <Material/SamplerDesc.h>
+#include <ShaderMaterials.h>
+#include <winrt/base.h>
+#include <atlbase.h>
 
 namespace DeviceUtils
 {
 	using namespace Templates;
-
-	HashedRootSignature CreateRootSignature(RootSignatureDesc& rootSignatureDesc);
 
 	CComPtr<ID3D12RootSignature> CreateRootSignature(
 		std::string name,
@@ -33,8 +23,6 @@ namespace DeviceUtils
 	);
 
 	CComPtr<ID3D12RootSignature> CreateComputeShaderRootSignature(std::string name);
-
-	CComPtr<ID3D12RootSignature> GetRootSignature(size_t rootSignatureHash);
 
 	std::map<INT, CD3DX12_DESCRIPTOR_RANGE> GetRootSignatureRanges(
 		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,

@@ -9,6 +9,8 @@
 #include "DeviceUtils/RenderTarget/RenderTarget.h"
 #include "DeviceUtils/RenderToTexture/RenderToTexture.h"
 
+using namespace DeviceUtils;
+
 static std::shared_ptr<Renderer> renderer = nullptr;
 
 #if defined(_DEBUG)
@@ -75,7 +77,18 @@ void Renderer::CreateComputeEngine()
 {
 }
 
+void Renderer::CreateSwapChainPass()
+{
+	swapChainPass = GetRenderPassInstance(nullptr, 0, FindRenderPassUUIDByName("simplePass"));
+}
+
 //DESTROY
+void Renderer::DestroySwapChainPass()
+{
+	DestroyRenderPassInstance(swapChainPass);
+	swapChainPass = nullptr;
+}
+
 void Renderer::Destroy() {
 	Flush();
 
@@ -110,6 +123,9 @@ void Renderer::Destroy() {
 	debugController = nullptr;
 
 	//debugDevice->ReportLiveDeviceObjects(D3D12_RLDO_DETAIL);
+	//debugDevice->ReportLiveDeviceObjects(D3D12_RLDO_IGNORE_INTERNAL);
+	//debugDevice->ReportLiveDeviceObjects(D3D12_RLDO_SUMMARY);
+
 	debugDevice.Release();
 	debugDevice = nullptr;
 #endif

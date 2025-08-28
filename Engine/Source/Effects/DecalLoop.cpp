@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "DecalLoop.h"
-#include "../Scene/Renderable/Renderable.h"
+#include <Renderable/Renderable.h>
 
 namespace Effects {
 	using namespace Scene;
@@ -29,7 +29,7 @@ namespace Effects {
 	void WriteDecalLoopConstantsBuffers(unsigned int backbufferIndex)
 	{
 		for (auto& [renderable, decal] : decalLoopEffects) {
-			renderable->WriteConstantsBuffer("frameIndex", decal->currentFrame, backbufferIndex);
+			//renderable->WriteConstantsBuffer("frameIndex", decal->currentFrame, backbufferIndex);
 		}
 	}
 

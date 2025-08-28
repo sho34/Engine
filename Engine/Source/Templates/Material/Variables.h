@@ -1,4 +1,8 @@
 #pragma once
+#include <ShaderMaterials.h>
+#include <nlohmann/json.hpp>
+#include <DirectXMath.h>
+#include <SimpleMath.h>
 
 template<MaterialVariablesTypes T, typename V>
 MaterialVariableInitialValue TransformJsonToMaterialVariableInitialValue(nlohmann::json json) {
@@ -28,3 +32,4 @@ nlohmann::json TransformMaterialValueMappingToJson(MaterialInitialValueMap mappe
 
 void TransformJsonToMaterialValueMapping(MaterialInitialValueMap& map, nlohmann::json object, std::string key);
 
+void valueMappingToJson(MaterialVariablesTypes type, nlohmann::json& matInitialValue, MaterialVariableInitialValue& varValue);

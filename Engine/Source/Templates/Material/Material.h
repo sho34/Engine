@@ -1,40 +1,85 @@
 #pragma once
 
-#include "../Shader/Shader.h"
-#include "../../Renderer/VertexFormats.h"
+//#include "../Shader/Shader.h"
+#include <VertexFormats.h>
 #include "Variables.h"
 #include "SamplerDesc.h"
-#include <tuple>
-#include <d3d12.h>
+#include "RasterizerDesc.h"
+#include "BlendDesc.h"
 #include <wrl/client.h>
 #include <atlbase.h>
-#if defined(_EDITOR)
-#include <imgui.h>
-#endif
+#include <TemplateDecl.h>
+#include <Json.h>
+#include <DXTypes.h>
+#include <NoStd.h>
+#include <Textures/Texture.h>
+#include <ShaderMaterials.h>
+#include <JTemplate.h>
+#include <JExposeTypes.h>
 
-namespace Templates { struct MeshInstance; struct TextureInstance; }
-namespace Scene { struct Renderable; }
+namespace Templates
+{
+	struct ShaderInstance;
+};
 
-using namespace Scene;
+using namespace Templates;
 
-typedef std::tuple<
-	std::string, //name
-	nlohmann::json //data
-#if defined(_EDITOR)
-	,
-	std::vector<std::tuple<std::shared_ptr<Renderable>, unsigned int>>
-#endif
-> MaterialTemplate;
+enum TextureShaderUsage;
+
+typedef std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> TextureUsageInstanceMap;
+typedef std::pair<TextureShaderUsage, std::shared_ptr<TextureInstance>> TextureUsageInstancePair;
+
+inline MaterialInitialValuePair ToMaterialInitialValuePair(nlohmann::json j)
+{
+	return MaterialInitialValuePair(j.at("variable"), JsonToMaterialInitialValue(j));
+}
+
+inline nlohmann::json FromMaterialInitialValuePair(MaterialInitialValuePair p)
+{
+	nlohmann::json j = nlohmann::json({});
+
+	j["variable"] = p.first;
+	j["variableType"] = MaterialVariablesTypesToString.at(p.second.variableType);
+	valueMappingToJson(p.second.variableType, j, p.second);
+	return j;
+}
+
+inline TextureShaderUsagePair ToTextureShaderUsagePair(nlohmann::json::iterator it)
+{
+	return { StringToTextureShaderUsage.at(it.key()), it.value() };
+}
+
+inline nlohmann::json FromTextureShaderUsagePair(TextureShaderUsagePair m)
+{
+	nlohmann::json j = nlohmann::json::object({});
+	j[TextureShaderUsageToString.at(m.first)] = m.second;
+	return j;
+}
 
 namespace Templates {
 
-#if defined(_EDITOR)
-	enum MaterialPopupModal
+#include <JExposeAttOrder.h>
+#include <MaterialAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttDrawersDecl.h>
+#include <MaterialAtt.h>
+#include <JExposeEnd.h>
+
+	struct MaterialJson : public JTemplate
 	{
-		MaterialPopupModal_CannotDelete = 1,
-		MaterialPopupModal_CreateNew = 2
+		TEMPLATE_DECL(Material);
+
+#include <JExposeAttFlags.h>
+#include <MaterialAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeDecl.h>
+#include <MaterialAtt.h>
+#include <JExposeEnd.h>
 	};
-#endif
+
+	TEMPDECL_FULL(Material);
 
 	namespace Material
 	{
@@ -45,82 +90,44 @@ namespace Templates {
 #endif
 	};
 
-	struct MaterialInstance {
+	//DESTROY
+	//void FreeGPUTexturesUploadIntermediateResources();
+
+	struct MaterialInstance
+	{
+		MaterialInstance(const std::string uuid) { assert(!!!"do not use"); }
+		explicit MaterialInstance(const std::string instance_uuid, const std::string uuid, VertexClass vClass, bool isShadowed, TextureShaderUsageMap overrideTextures = {});
 		~MaterialInstance() { Destroy(); }
-		std::string material;
-		std::string instanceName;
-		std::map<TextureShaderUsage, std::string> tupleTextures;
+
+		std::string materialUUID;
+		std::string instanceUUID;
+
+		std::string vertexShaderUUID;
+		std::string pixelShaderUUID;
+
 		VertexClass vertexClass;
-		bool castShadows;
-		bool ibl;
+		bool shadowed;
 		MaterialVariablesMapping variablesMapping;
 		std::vector<size_t> variablesBufferSize;
 		std::vector<std::vector<byte>> variablesBuffer;
-		std::string vertexShaderUUID;
-		std::string pixelShaderUUID;
+
 		std::vector<std::string> defines;
 		std::shared_ptr<ShaderInstance> vertexShader;
 		std::shared_ptr<ShaderInstance> pixelShader;
 		std::vector<MaterialSamplerDesc> samplers;
-		std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> textures;
+		TextureUsageInstanceMap textures;
 		std::map<unsigned int, ::CD3DX12_GPU_DESCRIPTOR_HANDLE> uav;
-		unsigned int changesCounter = 0U;
-		std::vector<std::function<void()>> rebuildCallbacks;
-		std::vector<std::function<void()>> propagateMappedValueChanges;
 
-		void BuildMaterialTextures();
-		void BuildMaterialShaderDefines();
-		void GetShaderInstances();
-		void BindRebuildChange(std::function<void()> changeListener);
-		void NotifyRebuild();
-		void NotifyTextureChange();
-		void BindMappedValueChange(std::function<void()> changeListener);
-		void NotifyMappedValueChange();
+		void CreateMaterialShaderDefines();
+		void CreateShaderInstances();
 		void Destroy();
 		bool ShaderInstanceHasRegister(std::function<int(std::shared_ptr<ShaderInstance>&)> getRegister);
-		bool ConstantsBufferContains(std::string varName);
-		ShaderConstantsBufferVariable& GetConstantsBufferVariable(std::string varName);
-		void LoadVariablesMapping(nlohmann::json material);
-		void SetUAVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
-		void SetSRVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
-		void UpdateMappedValues(nlohmann::json mappedValues);
-		void CallRebuildCallbacks() { for (auto& cb : rebuildCallbacks) { cb(); } }
-		void CallMappedValueChangesPropagation() { for (auto& cb : propagateMappedValueChanges) { cb(); } }
-		bool CanReleaseGPUUploadIntermediateResources();
-		void ReleaseGPUUploadIntermediateResources();
+		void LoadVariablesMapping();
+		void SetUAVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& slot);
+		void SetSRVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& slot);
 	};
 
-	//CREATE
-	void CreateMaterial(nlohmann::json json);
-	std::shared_ptr<MaterialInstance> GetMaterialInstance(std::string uuid, const std::map<TextureShaderUsage, std::string>& textures, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
-	void LoadMaterialInstance(std::string uuid, const std::shared_ptr<MeshInstance>& mesh, std::string instanceName, const std::shared_ptr<MaterialInstance>& material, const std::map<TextureShaderUsage, std::string>& textures, bool castShadows, bool ibl);
+	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& materialInstance);
 
-	//READ&GET
-	nlohmann::json GetMaterialTemplate(std::string uuid);
-	std::string GetMaterialName(std::string uuid);
-	std::vector<std::string> GetMaterialsNames();
-	std::vector<UUIDName> GetMaterialsUUIDsNames();
-	std::string FindMaterialUUIDByName(std::string name);
-
-	//UPDATE
-	void TransformJsonToMaterialTextures(std::map<TextureShaderUsage, std::string>& textures, nlohmann::json object, const std::string& key);
-
-	//DESTROY
-	void DestroyMaterial(std::string uuid);
-	void ReleaseMaterialTemplates();
-	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& material, const std::shared_ptr<MeshInstance>& mesh, nlohmann::json shaderAttributes);
-	void FreeGPUTexturesUploadIntermediateResources();
-
-	//EDITOR
-#if defined(_EDITOR)
-	void DrawMaterialPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop);
-	bool DrawTextureParameters(nlohmann::json& mat, std::set<TextureShaderUsage> texturesInShader);
-	bool DrawSamplerParameters(nlohmann::json& mat, unsigned int totalSamplers, std::function<nlohmann::json()> getSamplerJson);
-	void CreateNewMaterial();
-	void DeleteMaterial(std::string uuid);
-	void DrawMaterialsPopups();
-	bool MaterialsPopupIsOpen();
-	void DetachShader(std::string uuid);
-	void WriteMaterialsJson(nlohmann::json& json);
-#endif
+	TEMPDECL_REFTRACKER(Material);
 };

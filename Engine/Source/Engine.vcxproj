@@ -134,11 +134,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <PreprocessToFile>false</PreprocessToFile>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -151,21 +153,24 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
       <LanguageStandard_C>Default</LanguageStandard_C>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mtd.lib;zlibstaticd.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Debug;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Debug;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Debug;../../SDKs/imgui/x64/Debug;../../SDKs/imguizmo/x64/Debug;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mtd.lib;zlibstaticd.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;CmdLineHelpers.lib;DirectXTex.lib;texconv.lib;texassemble.lib;texdiag.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Debug;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Debug;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Debug;../../SDKs/imgui/x64/Debug;../../SDKs/imguizmo/x64/Debug;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Debug;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ForceFileOutput>
+      </ForceFileOutput>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
@@ -176,7 +181,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -199,7 +204,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -222,7 +227,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;HAS_DIRECTXTK12;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/tween</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
@@ -246,7 +251,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
@@ -269,8 +274,43 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Editor\RightPanelComponent.h" />
+    <ClInclude Include="JExpose\JExposeAttDrawersDef.h" />
+    <ClInclude Include="JExpose\JExposeAttUpdate.h" />
+    <ClInclude Include="JExpose\JExpose.h" />
+    <ClInclude Include="JExpose\JExposeAttOrder.h" />
+    <ClInclude Include="JExpose\JExposeAttFlags.h" />
+    <ClInclude Include="JExpose\JExposeDecl.h" />
+    <ClInclude Include="JExpose\JExposeTrackUUIDDecl.h" />
+    <ClInclude Include="JExpose\JExposeTrackUUIDDef.h" />
+    <ClInclude Include="JExpose\JExposeTypes.h" />
+    <ClInclude Include="JExpose\JObject.h" />
+    <ClInclude Include="pch\JExposeEditor.h" />
+    <ClInclude Include="JExpose\JExposeEnd.h" />
+    <ClInclude Include="JExpose\JExposeInit.h" />
+    <ClInclude Include="JExpose\JExposeAttDrawersDecl.h" />
+    <ClInclude Include="JExpose\Scene\CameraAtt.h" />
+    <ClInclude Include="JExpose\Scene\LightsAtt.h" />
+    <ClInclude Include="JExpose\Scene\RenderableAtt.h" />
+    <ClInclude Include="Scene\SceneObject.h" />
+    <ClInclude Include="JExpose\Scene\SoundFXAtt.h" />
+    <ClInclude Include="JExpose\Templates\MaterialAtt.h" />
+    <ClInclude Include="JExpose\Templates\Model3DAtt.h" />
+    <ClInclude Include="Templates\JTemplate.h" />
+    <ClInclude Include="Templates\RenderPass\Override\MinMaxChainPass.h" />
+    <ClInclude Include="Templates\RenderPass\Override\MinMaxChainResultPass.h" />
+    <ClInclude Include="Templates\RenderPass\Override\ToneMappingPass.h" />
     <ClInclude Include="Primitives\Cone.h" />
     <ClInclude Include="Primitives\Primitive.h" />
+    <ClInclude Include="Renderer\RenderPass\SwapChainPass.h" />
+    <ClInclude Include="Templates\RenderPass\Override\OverridePass.h" />
+    <ClInclude Include="Templates\RenderPass\Override\ResolvePass.h" />
+    <ClInclude Include="Scene\SceneObjectDecl.h" />
+    <ClInclude Include="Scene\SceneObjectDef.h" />
+    <ClInclude Include="Templates\Material\BlendDesc.h" />
+    <ClInclude Include="Templates\Material\MeshMaterial.h" />
+    <ClInclude Include="Templates\Material\RasterizerDesc.h" />
+    <ClInclude Include="Templates\RenderPass\RenderPass.h" />
     <ClInclude Include="Shaders\Compute\IBL\BRDFLUT.h" />
     <ClInclude Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.h" />
     <ClInclude Include="Shaders\Compute\IBL\DiffuseIrradianceMap.h" />
@@ -295,6 +335,11 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameDecl.h" />
     <ClInclude Include="Primitives\Sphere.h" />
+    <ClInclude Include="JExpose\Templates\RenderPassAtt.h" />
+    <ClInclude Include="JExpose\Templates\ShaderAtt.h" />
+    <ClInclude Include="JExpose\Templates\SoundAtt.h" />
+    <ClInclude Include="JExpose\Templates\TextureAtt.h" />
+    <ClInclude Include="Templates\Shader\ShaderInstance.h" />
     <ClInclude Include="Utils\Utils.h" />
     <ClInclude Include="Utils\ImageConvert.h" />
     <ClInclude Include="pch\Command.h" />
@@ -306,7 +351,7 @@
     <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />
     <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h" />
     <ClInclude Include="pch\DXTypes.h" />
-    <ClInclude Include="pch\ImEditor.h" />
+    <ClInclude Include="Editor\ImEditor.h" />
     <ClInclude Include="pch\Json.h" />
     <ClInclude Include="pch\NoStd.h" />
     <ClInclude Include="Primitives\BoxLines.h" />
@@ -345,7 +390,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.h" />
-    <ClInclude Include="Renderer\RenderPass\RenderPass.h" />
+    <ClInclude Include="Renderer\RenderPass\RenderToTexturePass.h" />
     <ClInclude Include="Scene\Level.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
@@ -355,7 +400,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Scene\Sound\SoundEffect.h">
+    <ClInclude Include="Scene\Sound\SoundFX.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
@@ -387,7 +432,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Common\d3dx12.h" />
+    <ClInclude Include="Common\d3dx12.h.bkp" />
     <ClInclude Include="Common\DirectXHelper.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
@@ -414,7 +459,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="d3dx12.h" />
+    <ClInclude Include="Common\d3dx12.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Primitives\Pentahedron.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -508,6 +553,13 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Editor\DefaultLevel.cpp" />
+    <ClCompile Include="Editor\ImEditor.cpp" />
+    <ClCompile Include="Editor\RightPanelComponent.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\MinMaxChainPass.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\MinMaxChainResultPass.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\OverridePass.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\ToneMappingPass.cpp" />
     <ClCompile Include="Primitives\BoxLines.cpp" />
     <ClCompile Include="Primitives\Cone.cpp" />
     <ClCompile Include="Primitives\Cube.cpp" />
@@ -516,6 +568,9 @@
     <ClCompile Include="Primitives\Pentahedron.cpp" />
     <ClCompile Include="Primitives\UtahTeapot.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.cpp" />
+    <ClCompile Include="Renderer\RenderPass\SwapChainPass.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\ResolvePass.cpp" />
+    <ClCompile Include="Templates\RenderPass\RenderPass.cpp" />
     <ClCompile Include="Shaders\Compute\IBL\BRDFLUT.cpp" />
     <ClCompile Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.cpp" />
     <ClCompile Include="Shaders\Compute\IBL\DiffuseIrradianceMap.cpp" />
@@ -554,12 +609,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.cpp" />
-    <ClCompile Include="Renderer\RenderPass\RenderPass.cpp" />
+    <ClCompile Include="Renderer\RenderPass\RenderToTexturePass.cpp" />
     <ClCompile Include="Scene\Level.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Scene\Sound\SoundEffect.cpp">
+    <ClCompile Include="Scene\Sound\SoundFX.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>

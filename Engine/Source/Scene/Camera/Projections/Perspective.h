@@ -45,4 +45,21 @@ namespace Scene::CameraProjections {
 
 	};
 
+	inline Perspective ToPerspective(nlohmann::json& j)
+	{
+		Perspective p;
+		p.nearZ = static_cast<float>(j.at("nearZ"));
+		p.farZ = static_cast<float>(j.at("farZ"));
+		p.fovAngleY = static_cast<float>(j.at("fovAngleY"));
+		return p;
+	}
+
+	inline nlohmann::json FromPerspective(Perspective p)
+	{
+		return {
+			{ "nearZ", p.nearZ },
+			{ "farZ", p.farZ },
+			{ "fovAngleY", p.fovAngleY }
+		};
+	}
 };

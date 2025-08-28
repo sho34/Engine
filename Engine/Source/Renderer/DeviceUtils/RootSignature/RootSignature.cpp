@@ -1,63 +1,15 @@
 #include "pch.h"
 #include "RootSignature.h"
-#include "../../../Renderer/Renderer.h"
-#include "../../../Common/DirectXHelper.h"
+#include <Renderer.h>
+#include <DirectXHelper.h>
+#include <winrt/base.h>
+#include <atlbase.h>
+#include <NoStd.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
-template <>
-struct std::hash<RootSignatureDesc>
-{
-	std::size_t operator()(const RootSignatureDesc& r) const
-	{
-		using std::hash;
-		const ShaderConstantsBufferParametersMap& cbufferVSParamsDef = std::get<0>(r);
-		const ShaderConstantsBufferParametersMap& cbufferPSParamsDef = std::get<1>(r);
-		const ShaderUAVParametersMap& uavParamsDef = std::get<2>(r);
-		const ShaderSRVCSParametersMap& srvCSParamsDef = std::get<3>(r);
-		const ShaderSRVTexParametersMap& srvTexParamsDef = std::get<4>(r);
-		const ShaderSamplerParametersMap& samplersDef = std::get<5>(r);
-		const std::vector<MaterialSamplerDesc>& matSampler = std::get<6>(r);
-
-		size_t h = 0ULL;
-		nostd::hash_combine(h,
-			std::hash<ShaderConstantsBufferParametersMap>()(cbufferVSParamsDef),
-			std::hash<ShaderConstantsBufferParametersMap>()(cbufferPSParamsDef),
-			std::hash<ShaderUAVParametersMap>()(uavParamsDef),
-			std::hash<ShaderSRVCSParametersMap>()(srvCSParamsDef),
-			std::hash<ShaderSRVTexParametersMap>()(srvTexParamsDef),
-			std::hash<ShaderSamplerParametersMap>()(samplersDef),
-			std::hash<std::vector<MaterialSamplerDesc>>()(matSampler)
-		);
-		return h;
-	}
-};
-
 namespace DeviceUtils
 {
-	static RefTracker<size_t, HashedRootSignature> refTracker;
-
-	using namespace Templates;
-
-	HashedRootSignature CreateRootSignature(RootSignatureDesc& r)
-	{
-		size_t hash = std::hash<RootSignatureDesc>()(r);
-		return refTracker.AddRef(hash, [hash, &r]()
-			{
-				return std::make_tuple(hash, CreateRootSignature(std::to_string(hash),
-					std::get<0>(r),
-					std::get<1>(r),
-					std::get<2>(r),
-					std::get<3>(r),
-					std::get<4>(r),
-					std::get<5>(r),
-					std::get<6>(r)
-					)
-				);
-			}
-		);
-	}
-
 	CComPtr<ID3D12RootSignature> CreateRootSignature(
 		std::string name,
 		ShaderConstantsBufferParametersMap& cbufferVSParamsDef,
@@ -110,11 +62,6 @@ namespace DeviceUtils
 	CComPtr<ID3D12RootSignature> CreateComputeShaderRootSignature(std::string name)
 	{
 		return CComPtr<ID3D12RootSignature>();
-	}
-
-	CComPtr<ID3D12RootSignature> GetRootSignature(size_t rootSignatureHash)
-	{
-		return std::get<1>(refTracker.FindValue(rootSignatureHash));
 	}
 
 	const ShaderConstantsBufferParameter& FindRegisterByName(ShaderConstantsBufferParametersMap& paramsVS, ShaderConstantsBufferParametersMap& paramsPS, std::string name) {

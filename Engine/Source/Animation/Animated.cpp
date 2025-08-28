@@ -1,9 +1,9 @@
 #include "pch.h"
 #include <stack>
 #include "Animated.h"
-#include "../Renderer/Renderer.h"
-#include "../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
-#include "../Scene/Renderable/Renderable.h"
+#include <Renderer.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
+#include <Renderable/Renderable.h>
 
 extern std::shared_ptr<Renderer> renderer;
 

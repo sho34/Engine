@@ -93,7 +93,7 @@ namespace raymii {
 				throw std::runtime_error("popen() failed!");
 			}
 			try {
-				while (std::fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+				while (std::fgets(buffer.data(), static_cast<int>(buffer.size()), pipe) != nullptr) {
 					result += buffer.data();
 				}
 			}

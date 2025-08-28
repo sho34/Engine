@@ -1,9 +1,10 @@
 #include "pch.h"
 #include "LuminanceHistogramAverage.h"
 
-#include "../../../Renderer/Renderer.h"
-#include "../../../Renderer/DeviceUtils/Resources/Resources.h"
-#include "../../../Common/DirectXHelper.h"
+#include <Renderer.h>
+#include <DeviceUtils/Resources/Resources.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
+#include <DirectXHelper.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -12,8 +13,8 @@ using namespace DeviceUtils;
 namespace ComputeShader
 {
 	LuminanceHistogramAverage::LuminanceHistogramAverage(
-		::CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle,
-		::CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle
+		CD3DX12_CPU_DESCRIPTOR_HANDLE cpuHandle,
+		CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle
 	) : ComputeInterface("LuminanceHistogramAverage_cs")
 	{
 		//cpu/gpu handles of the previously computed histogram, this is an UAV of 256 uints

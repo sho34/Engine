@@ -7,7 +7,7 @@ struct RefTracker
 	std::map<K, V, C> instances;
 	std::map<V, unsigned int> instancesRefCount;
 
-	V AddRef(K key, std::function<V()> newRefCallback = []() { return V(); })
+	V AddRef(K key, std::function<V()> newRefCallback)
 	{
 		V instance;
 		if (instances.contains(key))

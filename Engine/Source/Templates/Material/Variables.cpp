@@ -1,8 +1,5 @@
 #include "pch.h"
 #include "Variables.h"
-#include <nlohmann/json.hpp>
-#include <DirectXMath.h>
-#include <SimpleMath.h>
 
 template<>
 MaterialVariableInitialValue TransformJsonToMaterialVariableInitialValue<MAT_VAR_RGB, XMFLOAT3>(nlohmann::json json)
@@ -51,7 +48,7 @@ MaterialVariableInitialValue TransformJsonToMaterialVariableInitialValue<MAT_VAR
 	return MaterialVariableInitialValue({ .variableType = MAT_VAR_MATRIX4X4, .value = value });
 }
 
-static std::map<std::string, std::function<MaterialVariableInitialValue(nlohmann::json)>> jsonToMaterialVariableInitialValue =
+static std::map<std::string, std::function<MaterialVariableInitialValue(nlohmann::json)>> JsonToMaterialVariableInitialValue =
 {
 	{ "BOOLEAN", TransformJsonToMaterialVariableInitialValue<MAT_VAR_BOOLEAN,BOOLEAN> },
 	{ "INTEGER", TransformJsonToMaterialVariableInitialValue<MAT_VAR_INTEGER,INT> },
@@ -67,7 +64,7 @@ static std::map<std::string, std::function<MaterialVariableInitialValue(nlohmann
 
 MaterialVariableInitialValue JsonToMaterialInitialValue(nlohmann::json json)
 {
-	return jsonToMaterialVariableInitialValue.at(json.at("variableType"))(json);
+	return JsonToMaterialVariableInitialValue.at(json.at("variableType"))(json);
 }
 
 static std::map<MaterialVariablesTypes, std::function<void(MaterialVariableInitialValue& def, void* dst, size_t size)>> materialVariableInitialValueToDestionation =
@@ -122,18 +119,22 @@ void WriteMaterialVariableInitialValueToJson<XMMATRIX>(nlohmann::json& matInitia
 	};
 }
 
-static std::map<MaterialVariablesTypes, std::function<void(nlohmann::json& matInitialValue, MaterialVariableInitialValue& varValue)>> valueMappingToJson = {
-	{ MAT_VAR_BOOLEAN, WriteMaterialVariableInitialValueToJson<BOOLEAN>},
-	{ MAT_VAR_INTEGER, WriteMaterialVariableInitialValueToJson<INT>},
-	{ MAT_VAR_UNSIGNED_INTEGER, WriteMaterialVariableInitialValueToJson<UINT>},
-	{ MAT_VAR_RGB, WriteMaterialVariableInitialValueToJson<XMFLOAT3>},
-	{ MAT_VAR_RGBA, WriteMaterialVariableInitialValueToJson<XMFLOAT4>},
-	{ MAT_VAR_FLOAT, WriteMaterialVariableInitialValueToJson<FLOAT>},
-	{ MAT_VAR_FLOAT2, WriteMaterialVariableInitialValueToJson<XMFLOAT2>},
-	{ MAT_VAR_FLOAT3, WriteMaterialVariableInitialValueToJson<XMFLOAT3>},
-	{ MAT_VAR_FLOAT4, WriteMaterialVariableInitialValueToJson<XMFLOAT4>},
-	{ MAT_VAR_MATRIX4X4, WriteMaterialVariableInitialValueToJson<XMMATRIX>},
-};
+void valueMappingToJson(MaterialVariablesTypes type, nlohmann::json& matInitialValue, MaterialVariableInitialValue& varValue)
+{
+	const std::map<MaterialVariablesTypes, std::function<void(nlohmann::json& matInitialValue, MaterialVariableInitialValue& varValue)>> vMappingToJson = {
+		{ MAT_VAR_BOOLEAN, WriteMaterialVariableInitialValueToJson<BOOLEAN>},
+		{ MAT_VAR_INTEGER, WriteMaterialVariableInitialValueToJson<INT>},
+		{ MAT_VAR_UNSIGNED_INTEGER, WriteMaterialVariableInitialValueToJson<UINT>},
+		{ MAT_VAR_RGB, WriteMaterialVariableInitialValueToJson<XMFLOAT3>},
+		{ MAT_VAR_RGBA, WriteMaterialVariableInitialValueToJson<XMFLOAT4>},
+		{ MAT_VAR_FLOAT, WriteMaterialVariableInitialValueToJson<FLOAT>},
+		{ MAT_VAR_FLOAT2, WriteMaterialVariableInitialValueToJson<XMFLOAT2>},
+		{ MAT_VAR_FLOAT3, WriteMaterialVariableInitialValueToJson<XMFLOAT3>},
+		{ MAT_VAR_FLOAT4, WriteMaterialVariableInitialValueToJson<XMFLOAT4>},
+		{ MAT_VAR_MATRIX4X4, WriteMaterialVariableInitialValueToJson<XMMATRIX>},
+	};
+	return vMappingToJson.at(type)(matInitialValue, varValue);
+}
 
 nlohmann::json TransformMaterialValueMappingToJson(MaterialInitialValueMap mappedValues) {
 
@@ -145,8 +146,8 @@ nlohmann::json TransformMaterialValueMappingToJson(MaterialInitialValueMap mappe
 			nlohmann::json matInitialValue = nlohmann::json({});
 
 			matInitialValue["variable"] = pair.first;
-			matInitialValue["variableType"] = MaterialVariablesTypesNames.at(pair.second.variableType);
-			valueMappingToJson.at(pair.second.variableType)(matInitialValue, pair.second);
+			matInitialValue["variableType"] = MaterialVariablesTypesToString.at(pair.second.variableType);
+			valueMappingToJson(pair.second.variableType, matInitialValue, pair.second);
 			return matInitialValue;
 		}
 	);

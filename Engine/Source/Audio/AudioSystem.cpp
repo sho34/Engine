@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "AudioSystem.h"
-#include "../Templates/Sound/Sound.h"
-#include "../Scene/Sound/SoundEffect.h"
+#include <Sound/Sound.h>
+#include <Sound/SoundFX.h>
 #include <Audio.h>
 
 namespace AudioSystem {

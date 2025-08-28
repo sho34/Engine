@@ -69,3 +69,4 @@ inline void RemoveJsonAttributes(nlohmann::json& dst, std::vector<std::string>& 
 		if (dst.contains(key)) dst.erase(key);
 	}
 }
+

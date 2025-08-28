@@ -1,11 +1,18 @@
 #include "pch.h"
 #include "Engine.h"
 #include "Game.h"
-#include "Effects/Effects.h"
+//#include <Effects.h>
+#include <Lights/Lights.h>
+#include <RenderPass/RenderPass.h>
+#include <Mesh/Mesh.h>
+#include <Model3D/Model3D.h>
+#include <Sound/Sound.h>
+#include <Textures/Texture.h>
 
+using namespace Templates::RenderPass;
 using namespace Scene;
 using namespace ShaderCompiler;
-using namespace Effects;
+//using namespace Effects;
 
 #define MAX_LOADSTRING 100
 
@@ -21,8 +28,8 @@ bool appDone = false;
 bool inSizeMove = false;
 bool resizeWindow = false;
 bool minimized = false;
-unsigned int resizeWidth = 0;
-unsigned int resizeHeight = 0;
+//unsigned int resizeWidth = 0;
+//unsigned int resizeHeight = 0;
 bool inFullScreen = false;
 #if defined(_EDITOR)
 bool editorPlayMode = false;
@@ -194,22 +201,26 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	//initialize the shader compiler and changes monitor
 	BuildShaderCompiler();
-	MonitorShaderChanges(defaultShadersFolder);
+	//MonitorShaderChanges(defaultShadersFolder);
 
 	//Initialize the audio system
 	InitAudio();
+
+	//create the templates
+	CreateSystemTemplates();
+	CreateTemplates();
 
 	//initialize the render and reset the commands
 	renderer = std::make_shared<Renderer>();
 	renderer->Initialize(hWnd);
 	renderer->ResetCommands();
 
-	//create the templates
-	CreateSystemTemplates();
-	CreateTemplates();
+	//create the resources
 	CreateLightingResourcesMapping();
+	CreateMainHeap();
 
-	SetupRenderPipeline();
+	//create the swap chain pass
+	renderer->CreateSwapChainPass();
 
 	//create the editor and a default scene
 #if defined(_EDITOR)
@@ -217,7 +228,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 #endif
 
 	//kick the audio listener update
-	AudioStep();
+	AudioStep(0.0f);
 
 	//execute the commands on the GPU and wait for it's completion
 	renderer->CloseCommandsAndFlush();
@@ -228,8 +239,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 void CreateSystemTemplates() {
 	using namespace Templates;
 
-	Templates::LoadTemplates(Templates::systemShaders, Templates::CreateShader);
-	Templates::LoadTemplates(Templates::systemMaterials, Templates::CreateMaterial);
+	Templates::LoadTemplates(Templates::GetSystemShaders(), Templates::CreateShader);
+	Templates::LoadTemplates(Templates::GetSystemMaterials(), Templates::CreateMaterial);
+	Templates::LoadTemplates(Templates::GetSystemRenderPasses(), Templates::CreateRenderPass);
 
 	CreatePrimitiveMeshTemplate("d41e5c29-49bb-4f2c-aa2b-da781fbac512", "floor");
 	CreatePrimitiveMeshTemplate("d8bfdef4-55f9-4f6e-b4a8-20915eb854d6", "utahteapot");
@@ -250,6 +262,7 @@ void CreateTemplates() {
 	Templates::LoadTemplates(defaultTemplatesFolder, Model3D::templateName, Templates::CreateModel3D);
 	Templates::LoadTemplates(defaultTemplatesFolder, Sound::templateName, Templates::CreateSound);
 	Templates::LoadTemplates(defaultTemplatesFolder, Texture::templateName, Templates::CreateTexture);
+	Templates::LoadTemplates(defaultTemplatesFolder, RenderPass::templateName, Templates::CreateRenderPass);
 }
 
 void CreateLightingResourcesMapping() {
@@ -345,8 +358,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (renderer) {
 			GetWindowRect(hWnd, &hWndRect);
 			resizeWindow = true;
-			resizeWidth = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
-			resizeHeight = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
+			//resizeWidth = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
+			//resizeHeight = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
 		}
 	}
 	break;
@@ -355,8 +368,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (renderer)
 		{
 			resizeWindow = true;
-			resizeWidth = LOWORD(lParam);
-			resizeHeight = HIWORD(lParam);
+			//resizeWidth = LOWORD(lParam);
+			//resizeHeight = HIWORD(lParam);
+			//if (resizeHeight == 0U && resizeWidth == 0U)
+			minimized = (LOWORD(lParam) == 0U && HIWORD(lParam) == 0U);
+			/*
 			if (resizeHeight == 0U && resizeWidth == 0U)
 			{
 				minimized = true;
@@ -364,7 +380,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			else
 			{
 				minimized = false;
-			}
+			}*/
 		}
 	}
 	break;
@@ -433,8 +449,8 @@ void AppStep() {
 	}
 	timer.Tick([&]() {});
 	GameInputStep();
+	TemplatesStep(timer);
 	SceneObjectsStep(timer);
-	TemplatesInstancesStep();
 	GameStep();
 	Render();
 	FreeGPUIntermediateResources();
@@ -446,13 +462,13 @@ void GameInputStep()
 
 void AnimableStep(double elapsedSeconds)
 {
-	for (auto& [name, r] : GetAnimables())
+	for (auto& r : GetAnimables())
 	{
 		r->StepAnimation(elapsedSeconds);
 	}
 }
 
-void AudioStep()
+void AudioStep(float step)
 {
 	GetAudioListenerVectors([](XMFLOAT3 pos, XMVECTOR orientation)
 		{
@@ -460,7 +476,7 @@ void AudioStep()
 		}
 	);
 	UpdateAudio();
-	SoundEffectsStep();
+	SoundEffectsStep(step);
 }
 
 //RENDER
@@ -485,12 +501,21 @@ void ResizeWindow()
 	resizeWindow = false;
 	renderer->Flush();
 
-	WindowResizeReleaseResources();
+	Templates::RenderPass::ResizeRelease();
+	//WindowResizeReleaseResources();
+
+	GetWindowRect(hWnd, &hWndRect);
+
 	if (renderer)
 	{
-		renderer->Resize(resizeWidth, resizeHeight);
+		renderer->swapChainPass->ResizeRelease();
+		renderer->UpdateViewportPerspective();
+		renderer->Resize(HWNDWIDTH, HWNDHEIGHT);
+		renderer->swapChainPass->Resize(HWNDWIDTH, HWNDHEIGHT);
 	}
-	WindowResize(resizeWidth, resizeHeight);
+
+	Templates::RenderPass::Resize(HWNDWIDTH, HWNDHEIGHT);
+	//WindowResize(resizeWidth, resizeHeight);
 }
 
 //DESTROY
@@ -501,14 +526,10 @@ void DestroyInstance()
 
 #if defined(_EDITOR)
 	DestroyEditor();
-#endif
-
-	GameDestroy();
-
-#if defined(_EDITOR)
 	DestroyTemplatesReferences();
 #endif
 
+	GameDestroy();
 	DestroySceneObjects();
 	DestroyLightsResources();
 	DestroyShadowMapResources();
@@ -521,7 +542,7 @@ void DestroyInstance()
 	gamePad.reset();
 	keyboard.reset();
 
-	DestroyRenderPipeline();
+	DestroyMainHeap();
 
 	DestroyShaderCompiler();
 

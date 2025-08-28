@@ -9,7 +9,7 @@ namespace DeviceUtils
 		size = sz;
 		descriptorHeap = DeviceUtils::CreateDescriptorHeap(device, size, heapType, flags);
 		descriptorSize = device->GetDescriptorHandleIncrementSize(heapType);
-		std::string heapName = "descriptorHeap-" + heapTypeToString.at(heapType);
+		std::string heapName = "descriptorHeap-" + D3D12_DESCRIPTOR_HEAP_TYPEToString.at(heapType);
 
 		CCNAME_D3D12_OBJECT_N(descriptorHeap, heapName);
 		LogCComPtrAddress(heapName, descriptorHeap);

@@ -109,6 +109,20 @@ namespace DX
 		OutputDebugStringA("Matrix\n");
 		OutputDebugStringA(matrixDump.c_str());
 	}
+
+	inline XMFLOAT3 GetPitchYawRoll(XMFLOAT4X4 transform)
+	{
+		float pitch = XMScalarASin(-transform._32);
+
+		XMVECTOR from(XMVectorSet(transform._12, transform._31, 0.0f, 0.0f));
+		XMVECTOR to(XMVectorSet(transform._22, transform._33, 0.0f, 0.0f));
+		XMVECTOR res(XMVectorATan2(from, to));
+
+		float roll = XMVectorGetX(res);
+		float yaw = XMVectorGetY(res);
+
+		return XMFLOAT3(XMConvertToDegrees(pitch), XMConvertToDegrees(yaw), XMConvertToDegrees(roll));
+	}
 }
 
 // Nombrar función del asistente para ComPtr<T>.

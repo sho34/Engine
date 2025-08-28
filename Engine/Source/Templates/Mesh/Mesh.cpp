@@ -1,14 +1,13 @@
 #include "pch.h"
 #include "Mesh.h"
 #include "../../Primitives/Primivites.h"
-#include "../../Renderer/Renderer.h"
+#include <Renderer.h>
 #include <set>
 #include <memory>
 #include <NoStd.h>
-#include "../Templates.h"
+#include <Templates.h>
 #include <Application.h>
 
-//extern std::mutex rendererMutex;
 namespace Templates {
 
 	std::map<std::string, MeshTemplate> meshes;

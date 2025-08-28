@@ -1,8 +1,18 @@
 #pragma once
 #include "../ComputeInterface.h"
+#include <filesystem>
+#include <DirectXTex.h>
+#include <d3dx12.h>
+#include <wrl.h>
+#include <wrl/client.h>
+#include <atlbase.h>
+
+namespace Templates { struct TextureInstance; };
+namespace DeviceUtils { struct ConstantsBuffer; };
 
 namespace ComputeShader
 {
+	using namespace Templates;
 	using namespace DeviceUtils;
 
 	struct PreFilteredEnvironmentMap : public ComputeInterface
@@ -17,13 +27,13 @@ namespace ComputeShader
 		std::filesystem::path outputFile;
 
 		std::shared_ptr<TextureInstance> envMap;
-		::CD3DX12_CPU_DESCRIPTOR_HANDLE envMapCubeCpuHandle; //SRV, (T0)
-		::CD3DX12_GPU_DESCRIPTOR_HANDLE envMapCubeGpuHandle; //SRV, (T0)
+		CD3DX12_CPU_DESCRIPTOR_HANDLE envMapCubeCpuHandle; //SRV, (T0)
+		CD3DX12_GPU_DESCRIPTOR_HANDLE envMapCubeGpuHandle; //SRV, (T0)
 
 		std::vector<D3D12_RESOURCE_DESC> resourcesDesc;
 		std::vector<CComPtr<ID3D12Resource>> resources;
-		std::vector<::CD3DX12_CPU_DESCRIPTOR_HANDLE> mipsResultsCpuHandle; //UAV, (U0) 
-		std::vector<::CD3DX12_GPU_DESCRIPTOR_HANDLE> mipsResultsGpuHandle; //UAV, (U0)
+		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> mipsResultsCpuHandle; //UAV, (U0) 
+		std::vector<CD3DX12_GPU_DESCRIPTOR_HANDLE> mipsResultsGpuHandle; //UAV, (U0)
 		std::vector<std::shared_ptr<ConstantsBuffer>> mipsResultsCB; //CBV, (C0)
 
 		std::vector<size_t> readBackSizes;

@@ -1,16 +1,18 @@
 #include "pch.h"
 #include "Lights.h"
-#include "../Camera/Camera.h"
-#include "../../Common/d3dx12.h"
-#include "../../Common/DirectXHelper.h"
-#include "../../Renderer/Renderer.h"
-#include "../../Renderer/RenderPass/RenderPass.h"
-#include "../../Renderer/DeviceUtils/D3D12Device/Builder.h"
-#include "../../Renderer/DeviceUtils/D3D12Device/Interop.h"
-#include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
-#include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
+#include <Camera/Camera.h>
+#include <d3dx12.h>
+#include <DirectXHelper.h>
+#include <Renderer.h>
+#include <RenderPass/RenderToTexturePass.h>
+#include <DeviceUtils/D3D12Device/Builder.h>
+#include <DeviceUtils/D3D12Device/Interop.h>
+#include <DeviceUtils/RootSignature/RootSignature.h>
+#include <DeviceUtils/PipelineState/PipelineState.h>
 #if defined(_EDITOR)
-#include "../../Editor/Editor.h"
+#include <Editor.h>
+#include <RenderPass/Override/MinMaxChainPass.h>
+#include <RenderPass/Override/MinMaxChainResultPass.h>
 #endif
 
 extern std::shared_ptr<Renderer> renderer;
@@ -71,22 +73,15 @@ namespace Scene {
 		lightsWithShadowMaps.push_back(this_ptr);
 	}
 
-	void Light::CreateDirectionalLightShadowMap()
+	nlohmann::json Light::CreateDirectionalShadowMapCameraJson()
 	{
-		shadowMapScissorRect.clear();
-		shadowMapViewport.clear();
-
-		shadowMapProjectionMatrix = XMMatrixOrthographicLH(viewWidth(), viewHeight(), nearZ(), farZ());
-		shadowMapScissorRect.push_back({ 0, 0, static_cast<long>(shadowMapWidth()), static_cast<long>(shadowMapHeight()) });
-		shadowMapViewport.push_back({ 0.0f , 0.0f, static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()), 0.0f, 1.0f });
-		shadowMapTexelInvSize = { 1.0f / static_cast<float>(shadowMapWidth()), 1.0f / static_cast<float>(shadowMapHeight()) };
-
 		XMFLOAT3 rot = rotation();
-
-		auto camera = CreateCamera({
+		nlohmann::json j = {
 			{ "uuid", uuid() + "-cam"},
-			{ "name", name() + ".cam"},
-			{ "projectionType", "Orthographic" },
+			{ "hidden", true },
+			{ "fitWindow", false },
+			{ "name", name() + ".cam" },
+			{ "projectionType", ProjectionsTypesToString.at(PROJ_Orthographic) },
 			{ "orthographic", {
 				{ "nearZ", nearZ() },
 				{ "farZ", farZ() },
@@ -94,13 +89,52 @@ namespace Scene {
 				{ "height", viewHeight() },
 			}},
 			{ "rotation", { rot.x, rot.y, rot.z}},
-			{ "light", uuid()}
-			}
-		);
-		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(camera->CameraFw()), -directionalDistance());
-		camera->position(*(XMFLOAT3*)camPos.m128_f32);
-		camera->orthographic.updateProjectionMatrix(viewWidth(), viewHeight());
-		shadowMapCameras.push_back(camera);
+			{ "light", uuid()},
+			{ "renderPasses", { FindRenderPassUUIDByName("ShadowMap") }}
+		};
+		return j;
+	}
+
+	void Light::CreateDirectionalLightShadowMap()
+	{
+		shadowMapScissorRect.clear();
+		shadowMapViewport.clear();
+
+		std::shared_ptr<Camera> cam = std::make_shared<Camera>(CreateDirectionalShadowMapCameraJson());
+		cam->this_ptr = cam;
+		cam->BindToScene();
+		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(cam->forward()), -dirDist());
+		cam->position(*(XMFLOAT3*)camPos.m128_f32);
+		shadowMapCameras.push_back(cam);
+		UpdateShadowMapCameraProperties();
+	}
+
+	nlohmann::json Light::CreateSpotShadowMapCameraJson()
+	{
+		float spotDim = 2.0f * sinf(XMConvertToRadians(coneAngle())) * farZ();
+
+		XMFLOAT3 pos = position();
+		XMFLOAT3 rot = rotation();
+
+		nlohmann::json j = {
+			{ "uuid", uuid() + "-cam"},
+			{ "hidden", true },
+			{ "fitWindow", false },
+			{ "name", name() + ".cam" },
+			{ "projectionType", ProjectionsTypesToString.at(PROJ_Perspective) },
+			{ "perspective", {
+				{ "nearZ", nearZ() },
+				{ "farZ", farZ() },
+				{ "fovAngleY", coneAngle() * 2.0f },
+				{ "width", spotDim },
+				{ "height", spotDim }
+			}},
+			{ "position", { pos.x, pos.y, pos.z}},
+			{ "rotation", { rot.x, rot.y, rot.z }},
+			{ "light", uuid()},
+			{ "renderPasses", { FindRenderPassUUIDByName("ShadowMap") }}
+		};
+		return j;
 	}
 
 	void Light::CreateSpotLightShadowMap()
@@ -108,83 +142,179 @@ namespace Scene {
 		shadowMapScissorRect.clear();
 		shadowMapViewport.clear();
 
-		float spotDim = 2.0f * sinf(XMConvertToRadians(coneAngle())) * farZ();
-
-		auto camera = CreateCamera(
-			{
-			{ "uuid", uuid() + "-cam"},
-			{ "name", name() + ".cam"},
-			{ "projectionType", "Perspective" },
-			{ "perspective", {
-				{ "fovAngleY", coneAngle() * 2.0f },
-				{ "width", spotDim },
-				{ "height", spotDim },
-				//{ "width", viewWidth() },
-				//{ "height", viewHeight() },
-			}},
-			{ "position", { position().x, position().y, position().z}},
-			{ "rotation", { rotation().x, rotation().y, 0.0f }},
-			{ "light", uuid()}
-			}
-		);
-		shadowMapCameras.push_back(camera);
-
+		std::shared_ptr<Camera> cam = std::make_shared<Camera>(CreateSpotShadowMapCameraJson());
+		cam->this_ptr = cam;
+		cam->BindToScene();
+		shadowMapCameras.push_back(cam);
 		UpdateShadowMapCameraProperties();
 	}
 
-	void Light::UpdateShadowMapCameraProperties()
+	nlohmann::json Light::CreatePointShadowMapCameraJson(unsigned camIndex)
 	{
-		float spotDim = 2.0f * sinf(XMConvertToRadians(coneAngle())) * farZ();
+		float fDim = static_cast<float>(shadowMapWidth());;
+		XMFLOAT3 pos = position();
 
-		shadowMapProjectionMatrix = XMMatrixPerspectiveFovLH(XMConvertToRadians(coneAngle()) * 2.0f, 1.0f, nearZ(), farZ());
-		shadowMapScissorRect.push_back({ 0, 0, static_cast<long>(shadowMapWidth()), static_cast<long>(shadowMapHeight()) });
-		shadowMapViewport.push_back({ 0.0f , 0.0f, static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()), 0.0f, 1.0f });
-		shadowMapTexelInvSize = { 1.0f / static_cast<float>(shadowMapWidth()), 1.0f / static_cast<float>(shadowMapHeight()) };
-		shadowMapCameras.at(0)->perspective.fovAngleY = coneAngle() * 2.0f;
-		shadowMapCameras.at(0)->perspective.updateProjectionMatrix(spotDim, spotDim);
+		nlohmann::json j = {
+			{ "uuid", uuid() + "-cam-" + std::to_string(camIndex)},
+			{ "hidden", true },
+			{ "name", name() + ".cam." + std::to_string(camIndex)},
+			{ "fitWindow", false },
+			{ "projectionType", ProjectionsTypesToString.at(PROJ_Perspective) },
+			{ "perspective",
+			{
+				{ "nearZ", nearZ() },
+				{ "farZ", farZ() },
+				{ "fovAngleY", 90.0f },
+				{ "width", fDim },
+				{ "height", fDim },
+			}
+			},
+			{ "position", { pos.x, pos.y, pos.z}},
+			{ "light", uuid()},
+			{ "renderPasses", { FindRenderPassUUIDByName("ShadowMap") }}
+		};
+		return j;
 	}
 
 	void Light::CreatePointLightShadowMap()
 	{
 		shadowMapScissorRect.clear();
 		shadowMapViewport.clear();
-		for (unsigned int i = 0U; i < 6U; i++)
-		{
-			shadowMapScissorRect.push_back({ 0, static_cast<long>(i) * static_cast<long>(shadowMapHeight()), static_cast<long>(shadowMapWidth()), static_cast<long>(i + 1U) * static_cast<long>(shadowMapHeight()) });
-			shadowMapViewport.push_back({ 0.0f, static_cast<float>(i) * static_cast<float>(shadowMapHeight()), static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()), 0.0f, 1.0f });
-		}
-		shadowMapClearScissorRect = { 0, 0, static_cast<long>(shadowMapWidth()), 6L * static_cast<long>(shadowMapHeight()) };
-		shadowMapClearViewport = { 0.0f, 0.0f , static_cast<float>(shadowMapWidth()), 6L * static_cast<float>(shadowMapHeight()), 0.0f, 1.0f };
-		shadowMapProjectionMatrix = XMMatrixPerspectiveFovLH(DirectX::XM_PIDIV2, 1.0f, nearZ(), farZ());
 
 		for (unsigned int i = 0U; i < 6U; i++)
 		{
-			auto camera = CreateCamera(
-				{
-					{ "name", name() + ".cam." + std::to_string(i)},
-					{ "uuid", uuid() + "-cam-" + std::to_string(i)},
-					{ "projectionType", "Perspective" },
-					{ "perspective",
-					{
-						{ "fovAngleY", 90.0f },
-						{ "width", static_cast<float>(shadowMapWidth()) },
-						{ "height", static_cast<float>(shadowMapHeight()) },
-					}
-					},
-					{ "position", { position().x, position().y, position().z}},
-					{ "light", uuid()}
-				}
-			);
-			camera->perspective.updateProjectionMatrix(static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()));
-
-			shadowMapCameras.push_back(camera);
+			std::shared_ptr<Camera> cam = std::make_shared<Camera>(CreatePointShadowMapCameraJson(i));
+			cam->this_ptr = cam;
+			cam->BindToScene();
+			shadowMapCameras.push_back(cam);
 		}
+		UpdateShadowMapCameraProperties();
+	}
+
+	void Light::UpdateShadowMapCameraProperties()
+	{
+		if (shadowMapCameras.empty()) return;
+
+		switch (lightType())
+		{
+		case LT_Directional:
+		{
+			UpdateDirectionalShadowMapCameraProperties();
+		}
+		break;
+		case LT_Spot:
+		{
+			UpdateSpotShadowMapCameraProperties();
+		}
+		break;
+		case LT_Point:
+		{
+			UpdatePointShadowMapCameraProperties();
+		}
+		break;
+		default:
+		{
+			assert(lightType() != LT_Directional || lightType() != LT_Spot || lightType() != LT_Point);
+		}
+		break;
+		}
+	}
+
+	void Light::UpdateDirectionalShadowMapCameraProperties()
+	{
+		shadowMapScissorRect.push_back({ 0, 0, static_cast<long>(shadowMapWidth()), static_cast<long>(shadowMapHeight()) });
+		shadowMapViewport.push_back({ 0.0f , 0.0f, static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()), 0.0f, 1.0f });
+		shadowMapTexelInvSize = { 1.0f / static_cast<float>(shadowMapWidth()), 1.0f / static_cast<float>(shadowMapHeight()) };
+		shadowMapCameras.at(0)->orthographicProjection.updateProjectionMatrix(viewWidth(), viewHeight());
+	}
+
+	void Light::UpdateSpotShadowMapCameraProperties()
+	{
+		float spotDim = 2.0f * sinf(XMConvertToRadians(coneAngle())) * farZ();
+		shadowMapScissorRect.push_back({ 0, 0, static_cast<long>(shadowMapWidth()), static_cast<long>(shadowMapHeight()) });
+		shadowMapViewport.push_back({ 0.0f , 0.0f, static_cast<float>(shadowMapWidth()), static_cast<float>(shadowMapHeight()), 0.0f, 1.0f });
+		shadowMapTexelInvSize = { 1.0f / static_cast<float>(shadowMapWidth()), 1.0f / static_cast<float>(shadowMapHeight()) };
+		shadowMapCameras.at(0)->perspectiveProjection.fovAngleY = coneAngle() * 2.0f;
+		shadowMapCameras.at(0)->perspectiveProjection.updateProjectionMatrix(spotDim, spotDim);
+	}
+
+	void Light::UpdatePointShadowMapCameraProperties()
+	{
+		float fDim = static_cast<float>(shadowMapWidth());;
+		long lDim = static_cast<long>(shadowMapWidth());;
+		XMFLOAT3 pos = position();
+
+		shadowMapScissorRect.clear();
+		shadowMapViewport.clear();
+		for (unsigned int i = 0U; i < 6U; i++)
+		{
+			shadowMapScissorRect.push_back({ 0, static_cast<long>(i) * lDim, lDim, static_cast<long>(i + 1U) * lDim });
+			shadowMapViewport.push_back({ 0.0f, static_cast<float>(i) * fDim, fDim, fDim, 0.0f, 1.0f });
+		}
+
+		for (unsigned int i = 0U; i < 6U; i++)
+		{
+			shadowMapCameras.at(i)->perspectiveProjection.updateProjectionMatrix(fDim, fDim);
+		}
+	}
+
+	void Light::UpdateShadowMapCameraTransformation()
+	{
+		if (shadowMapCameras.empty()) return;
+
+		switch (lightType())
+		{
+		case LT_Directional:
+		{
+			UpdateDirectionalShadowMapCameraTransformation();
+		}
+		break;
+		case LT_Spot:
+		{
+			UpdateSpotShadowMapCameraTransformation();
+		}
+		break;
+		case LT_Point:
+		{
+			UpdatePointShadowMapCameraTransformation();
+		}
+		break;
+		default:
+		{
+			assert(lightType() != LT_Directional || lightType() != LT_Spot || lightType() != LT_Point);
+		}
+		break;
+		}
+	}
+
+	void Light::UpdateDirectionalShadowMapCameraTransformation()
+	{
+		auto cam = shadowMapCameras.at(0);
+		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(cam->forward()), -dirDist());
+		cam->position(*(XMFLOAT3*)camPos.m128_f32);
+		cam->rotation(rotation());
+	}
+
+	void Light::UpdateSpotShadowMapCameraTransformation()
+	{
+		shadowMapCameras.at(0)->rotation(rotation());
+		shadowMapCameras.at(0)->position(position());
+	}
+
+	void Light::UpdatePointShadowMapCameraTransformation()
+	{
+		XMFLOAT3 pos = position();
+		std::for_each(shadowMapCameras.begin(), shadowMapCameras.end(), [&pos](auto& cam)
+			{
+				cam->position(pos);
+			}
+		);
 	}
 
 	void Light::CreateShadowMapDepthStencilResource()
 	{
 		unsigned int w = shadowMapWidth();
-		unsigned int h = shadowMapHeight() * ((lightType() == LT_Point) ? 6U : 1U);
+		unsigned int h = ((lightType() == LT_Point) ? 6U * shadowMapWidth() : shadowMapHeight());
 		shadowMapRenderPass = CreateRenderPass(name() + "->shadowMap", {}, DXGI_FORMAT_D32_FLOAT, w, h);
 
 		shadowMapIndex = GetNextAvailableShadowMapSlot();
@@ -198,6 +328,20 @@ namespace Scene {
 	}
 
 #if defined(_EDITOR)
+	void Light::EditorPreview(size_t flags)
+	{
+		if (flags & (1 << Light::Update_hasShadowMaps))
+		{
+			if (hasShadowMaps())
+				CreateShadowMapMinMaxChain();
+		}
+	}
+
+	void Light::DestroyEditorPreview()
+	{
+
+	}
+
 	void Light::CreateShadowMapMinMaxChain()
 	{
 		//pick the gpu handles for the final shadowmap and copies for the min/max chain initial calculation
@@ -206,17 +350,33 @@ namespace Scene {
 		CD3DX12_GPU_DESCRIPTOR_HANDLE shadowMapChainGpuHandle2 = shadowMapChainGpuHandle;
 
 		float texWidth = static_cast<float>(shadowMapWidth());
-		float texHeight = static_cast<float>(shadowMapHeight()) * ((lightType() == LT_Point) ? 6.0f : 1.0f);
+		float texHeight = static_cast<float>(((lightType() == LT_Point) ? 6U * shadowMapWidth() : shadowMapHeight()));
 
 		//calculate the width/height of the texture and the TexelInvSize of the shadow map texture for the current pass
 		unsigned int width = static_cast<unsigned int>(texWidth) >> 1;
 		unsigned int height = static_cast<unsigned int>(texHeight) >> 1;
-		XMFLOAT2 TexelInvSize = { 1.0f / static_cast<float>(texWidth), 1.0f / static_cast<float>(texHeight) };
 
+		unsigned int renderPassIndex = 0;
 		do
 		{
+			shadowMapMinMaxChainRenderPass.push_back(
+				GetRenderPassInstance(nullptr, renderPassIndex, FindRenderPassUUIDByName("ShadowMapMinMaxChainPass"), max(2U, width), max(2U, height))
+			);
+			auto& rpInstance = shadowMapMinMaxChainRenderPass.back();
+			std::shared_ptr<MinMaxChainPass> chainPass = std::dynamic_pointer_cast<MinMaxChainPass>(rpInstance->overridePass);
+			chainPass->shadowMapChainGpuHandle1 = shadowMapChainGpuHandle1;
+			chainPass->shadowMapChainGpuHandle2 = shadowMapChainGpuHandle2;
+
+			shadowMapChainGpuHandle1 = chainPass->renderPassInstance->rendererToTexturePass->renderToTexture.at(0)->gpuTextureHandle;
+			shadowMapChainGpuHandle2 = chainPass->renderPassInstance->rendererToTexturePass->renderToTexture.at(1)->gpuTextureHandle;
+
+			//rpInstance->overridePass->prevPassRTT = prevPassRTT;
+			//prevPassRTT = rpInstance->rendererToTexturePass->renderToTexture.at(0);
 			//push a render pass for the current chain depth
+			/*
 			std::string ShadowMinMaxChainRenderPassName = "ShadowMapMinMaxChainRenderPass[" + std::to_string(max(2U, width)) + "," + std::to_string(max(2U, height)) + "]";
+			OutputDebugStringA((ShadowMinMaxChainRenderPassName + "\n").c_str());
+
 			shadowMapMinMaxChainRenderPass.push_back(
 				CreateRenderPass(
 					ShadowMinMaxChainRenderPassName,
@@ -226,7 +386,8 @@ namespace Scene {
 					max(2U, height)
 				)
 			);
-
+			*/
+			/*
 			//push a renderable for the current
 			shadowMapMinMaxChainRenderable.push_back(
 				CreateRenderable(
@@ -258,13 +419,15 @@ namespace Scene {
 					}
 				)
 			);
-
+			*/
+			/*
 			//write the TexelInvSize to constants buffers
 			for (unsigned int i = 0; i < renderer->numFrames; i++)
 			{
 				shadowMapMinMaxChainRenderable.back()->WriteConstantsBuffer("texelInvSize", TexelInvSize, i);
 			}
-
+			*/
+			/*
 			//get the material instance of the renderable and push the gpu handles 1&2 of the chain
 			std::shared_ptr<MaterialInstance>& shadowMapMinMaxChainMaterial = shadowMapMinMaxChainRenderable.back()->meshMaterials.begin()->second;
 
@@ -279,13 +442,27 @@ namespace Scene {
 			shadowMapChainGpuHandle2 = pass->renderToTexture[1]->gpuTextureHandle;
 
 			//calculate the next TexelInvSize
-			TexelInvSize = { 1.0f / static_cast<float>(max(2U, width)), 1.0f / static_cast<float>(max(2U, height)) };
+			*/
 
 			//calculate the next width and height
 			width = max(1U, width >> 1);
 			height = max(1U, height >> 1);
 		} while (width != 1U || height != 1U);
 
+		unsigned int texUWidth = 512U;
+		unsigned int texUHeight = 512U * ((lightType() == LT_Point) ? 6U : 1U);
+		shadowMapMinMaxChainResultRenderPass = GetRenderPassInstance(
+			nullptr, 0, FindRenderPassUUIDByName("ShadowMapMinMaxChainResultPass"), texUWidth, texUHeight);
+
+		std::shared_ptr<MinMaxChainResultPass> resultPass = std::dynamic_pointer_cast<MinMaxChainResultPass>(shadowMapMinMaxChainResultRenderPass->overridePass);
+
+		std::shared_ptr<RenderPassInstance> last = shadowMapMinMaxChainRenderPass.back();
+		resultPass->depthGpuHandle = shadowMapChainGpuHandle;
+		resultPass->shadowMapChainGpuHandle1 = last->rendererToTexturePass->renderToTexture.at(0)->gpuTextureHandle;
+		resultPass->shadowMapChainGpuHandle2 = last->rendererToTexturePass->renderToTexture.at(1)->gpuTextureHandle;
+		resultPass->CreateFSQuad((lightType() != LT_Spot) ? "DepthMinMaxToRGBA" : "DepthMinMaxToRGBASpot");
+
+		/*
 		//create the end result render pass
 		shadowMapMinMaxChainResultRenderPass = CreateRenderPass(
 			"ShadowMinMaxChainRenderPassResult",
@@ -294,8 +471,10 @@ namespace Scene {
 			static_cast<unsigned int>(texWidth),
 			static_cast<unsigned int>(texHeight)
 		);
+		*/
 
 		//create the end result renderable
+		/*
 		shadowMapMinMaxChainResultRenderable = CreateRenderable(
 			{
 				{ "meshMaterials" ,
@@ -324,7 +503,8 @@ namespace Scene {
 				}
 			}
 		);
-
+		*/
+		/*
 		std::shared_ptr<RenderToTexturePass>& lastMinMaxPass = shadowMapMinMaxChainRenderPass.back();
 		std::shared_ptr<MaterialInstance>& shadowMapMinMaxChainResultMaterial = shadowMapMinMaxChainResultRenderable->meshMaterials.begin()->second;
 
@@ -334,8 +514,53 @@ namespace Scene {
 		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_DepthTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat1, shadowMapChainGpuHandle));
 		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_MinTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat2, lastMinMaxPass->renderToTexture[0]->gpuTextureHandle));
 		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_MaxTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat3, lastMinMaxPass->renderToTexture[1]->gpuTextureHandle));
+		*/
+	}
+
+	void Light::DestroyShadowMapMinMaxChain()
+	{
+		DestroyRenderPassInstance(shadowMapMinMaxChainResultRenderPass);
+		shadowMapMinMaxChainResultRenderPass = nullptr;
+		for (auto& rp : shadowMapMinMaxChainRenderPass)
+		{
+			DestroyRenderPassInstance(rp);
+			rp = nullptr;
+		}
+		shadowMapMinMaxChainRenderPass.clear();
+	}
+
+	void RenderShadowMapMinMaxChain()
+	{
+		std::vector<std::shared_ptr<Light>> lights = GetLights();
+		std::for_each(lights.begin(), lights.end(), [](auto& l)
+			{
+				if (l->shadowMapMinMaxChainRenderPass.empty()) return;
+				l->RenderShadowMapMinMaxChain();
+			}
+		);
+	}
+
+	void Light::RenderShadowMapMinMaxChain()
+	{
+		for (auto& rpi : shadowMapMinMaxChainRenderPass)
+		{
+			rpi->Pass();
+		}
+		shadowMapMinMaxChainResultRenderPass->Pass();
 	}
 #endif
+
+	void Light::BindRenderablesToShadowMapCamera()
+	{
+		for (auto& r : GetRenderables())
+		{
+			if (!r->castShadows()) continue;
+			for (auto& cam : shadowMapCameras)
+			{
+				cam->BindRenderable(r);
+			}
+		}
+	}
 
 	bool SceneHasShadowMaps()
 	{
@@ -380,7 +605,7 @@ namespace Scene {
 		usedShadowMapSlots.erase(slot);
 	}
 
-	void UpdateConstantsBufferShadowMapAttributes(const std::shared_ptr<Light>& light, unsigned int backbufferIndex, unsigned int shadowMapIndex)
+	void WriteConstantsBufferShadowMapAttributes(const std::shared_ptr<Light>& light, unsigned int backbufferIndex, unsigned int shadowMapIndex)
 	{
 		if (!light->hasShadowMaps()) return;
 
@@ -390,16 +615,16 @@ namespace Scene {
 		switch (light->lightType()) {
 		case LT_Directional:
 		{
-			XMMATRIX view = light->shadowMapCameras[0]->ViewMatrix();
-			XMMATRIX projection = light->shadowMapCameras[0]->orthographic.projectionMatrix;
+			XMMATRIX view = light->shadowMapCameras[0]->view();
+			XMMATRIX projection = light->shadowMapCameras[0]->orthographicProjection.projectionMatrix;
 			atts.atts0 = XMMatrixMultiply(view, projection);
 			atts.atts6 = { light->zBias(), light->shadowMapTexelInvSize.x, light->shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
 		}
 		break;
 		case LT_Spot:
 		{
-			XMMATRIX view = light->shadowMapCameras[0]->ViewMatrix();
-			XMMATRIX projection = light->shadowMapCameras[0]->perspective.projectionMatrix;
+			XMMATRIX view = light->shadowMapCameras[0]->view();
+			XMMATRIX projection = light->shadowMapCameras[0]->perspectiveProjection.projectionMatrix;
 			atts.atts0 = XMMatrixMultiply(view, projection);
 			atts.atts6 = { light->zBias(), light->shadowMapTexelInvSize.x, light->shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
 		}
@@ -408,8 +633,8 @@ namespace Scene {
 		{
 			XMMATRIX* attsN = &atts.atts0;
 			for (UINT i = 0U; i < 6U; i++) {
-				XMMATRIX view = light->shadowMapCameras[i]->ViewMatrix();
-				XMMATRIX projection = light->shadowMapCameras[i]->perspective.projectionMatrix;
+				XMMATRIX view = light->shadowMapCameras[i]->view();
+				XMMATRIX projection = light->shadowMapCameras[i]->perspectiveProjection.projectionMatrix;
 				*attsN = XMMatrixMultiply(view, projection);
 				attsN++;
 			}
@@ -426,6 +651,16 @@ namespace Scene {
 		size_t offset = shadowMapsCbv->alignedConstantBufferSize * backbufferIndex;
 		offset += sizeof(ShadowMapAttributes) * shadowMapIndex;
 		memcpy(shadowMapsCbv->mappedConstantBuffer + offset, &atts, sizeof(atts));
+	}
+
+	void WriteShadowMapCamerasConstantsBuffers(const std::shared_ptr<Light>& light, unsigned int backbufferIndex)
+	{
+		if (!light->hasShadowMaps()) return;
+
+		for (auto& cam : light->shadowMapCameras)
+		{
+			cam->WriteConstantsBuffer(backbufferIndex);
+		}
 	}
 
 	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex)
@@ -477,39 +712,22 @@ namespace Scene {
 	{
 		for (auto& cam : shadowMapCameras)
 		{
-			cam->light = nullptr;
-			cam->this_ptr = nullptr;
 			DestroyCamera(cam);
 		}
 		shadowMapCameras.clear();
 	}
 
-#if defined(_EDITOR)
-	void Light::DestroyShadowMapMinMaxChain()
-	{
-		shadowMapMinMaxChainRenderPass.clear();
-		for (auto& renderable : shadowMapMinMaxChainRenderable)
-		{
-			DestroyRenderable(renderable);
-		}
-		shadowMapMinMaxChainRenderable.clear();
-		shadowMapMinMaxChainResultRenderPass = nullptr;
-		DestroyRenderable(shadowMapMinMaxChainResultRenderable);
-	}
-#endif
-
 	//RENDER
-
 	std::set<LightType> onePassTypes = { LT_Directional, LT_Spot };
-	void Light::RenderShadowMap(std::function<void(size_t passHash, unsigned int)> renderScene)
+	void Light::RenderShadowMap(std::function<void(unsigned int)> renderScene)
 	{
 		auto& commandList = renderer->commandList;
 
-		shadowMapRenderPass->Pass([this, renderScene, &commandList](size_t passHash)
+		shadowMapRenderPass->Pass([this, renderScene, &commandList]
 			{
 				if (onePassTypes.contains(lightType()))
 				{
-					renderScene(passHash, 0);
+					renderScene(0);
 				}
 				else
 				{
@@ -517,59 +735,14 @@ namespace Scene {
 					{
 						commandList->RSSetViewports(1, &shadowMapViewport.at(i));
 						commandList->RSSetScissorRects(1, &shadowMapScissorRect.at(i));
-						renderScene(passHash, i);
+						renderScene(i);
 					}
 				}
 			}
 		);
 	}
 
-#if defined(_EDITOR)
-	void Light::RenderShadowMapMinMaxChain()
-	{
-#if defined(_DEVELOPMENT)
-		auto& commandList = renderer->commandList;
-
-		PIXBeginEvent(commandList.p, 0, "ShadowMapMinMaxChain");
-#endif
-
-		for (unsigned int i = 0; i < shadowMapMinMaxChainRenderPass.size(); i++)
-		{
-			std::shared_ptr<RenderToTexturePass>& renderPass = shadowMapMinMaxChainRenderPass[i];
-			std::shared_ptr<Renderable>& quad = shadowMapMinMaxChainRenderable[i];
-
-#if defined(_DEVELOPMENT)
-			PIXBeginEvent(commandList.p, 0, renderPass->name.c_str());
-#endif
-			renderPass->Pass([&quad](size_t passHash)
-				{
-					quad->visible(true);
-					quad->Render(passHash);
-					quad->visible(false);
-				}
-			);
-#if defined(_DEVELOPMENT)
-			PIXEndEvent(commandList.p);
-#endif
-		}
-
-#if defined(_DEVELOPMENT)
-		PIXBeginEvent(commandList.p, 0, "ShadowMapMinMaxChainResult");
-#endif
-		shadowMapMinMaxChainResultRenderPass->Pass([this](size_t passHash)
-			{
-				shadowMapMinMaxChainResultRenderable->visible(true);
-				shadowMapMinMaxChainResultRenderable->Render(passHash);
-				shadowMapMinMaxChainResultRenderable->visible(false);
-			}
-		);
-
-#if defined(_DEVELOPMENT)
-		PIXEndEvent(commandList.p);
-		PIXEndEvent(commandList.p);
-#endif
-	}
-
+	/*
 	void Light::ImDrawDirectionalShadowMap()
 	{
 		std::string tableName = "light-directional-shadowmap";
@@ -663,7 +836,9 @@ namespace Scene {
 			ImDrawShadowMapMinMaxChain();
 		}
 	}
+	*/
 
+	/*
 	void Light::ImDrawSpotShadowMap()
 	{
 		std::string tableName = "light-spot-shadowmap";
@@ -715,21 +890,19 @@ namespace Scene {
 					}, "TexHeight"
 				);
 
-				/*
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("ViewWidth", &smViewWidth))
-				{
-					viewWidth(smViewWidth);
-					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
-				}
-				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("ViewHeight", &smViewHeight))
-				{
-					viewHeight(smViewHeight);
-					shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
-				}
-				*/
+				//ImGui::TableNextRow();
+				//ImGui::TableSetColumnIndex(0);
+				//if (ImGui::InputFloat("ViewWidth", &smViewWidth))
+				//{
+				//	viewWidth(smViewWidth);
+				//	shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
+				//}
+				//ImGui::TableSetColumnIndex(1);
+				//if (ImGui::InputFloat("ViewHeight", &smViewHeight))
+				//{
+				//	viewHeight(smViewHeight);
+				//	shadowMapUpdateFlags |= ShadowMapUpdateFlags_RebuildBoth;
+				//}
 
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
@@ -759,7 +932,9 @@ namespace Scene {
 			ImDrawShadowMapMinMaxChain();
 		}
 	}
+	*/
 
+	/*
 	void Light::ImDrawPointShadowMap()
 	{
 		std::string tableName = "light-point-shadowmap";
@@ -829,7 +1004,9 @@ namespace Scene {
 			ImDrawShadowMapMinMaxChain();
 		}
 	}
+	*/
 
+	/*
 	void Light::ImDrawShadowMapMinMaxChain()
 	{
 		if (shadowMapUpdateFlags) return;
@@ -842,8 +1019,7 @@ namespace Scene {
 			static_cast<unsigned int>(texHeight)
 		);
 	}
-
-#endif
+	*/
 
 	void DestroyShadowMaps()
 	{

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "RenderPass/RenderPass.h"
+#include <RenderPass/RenderPass.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
+using namespace Templates;
 
 struct Renderer : public std::enable_shared_from_this<Renderer>
 {
@@ -35,9 +36,13 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 
 	unsigned int backBufferIndex;
 
+	//the swap chain pass
+	std::shared_ptr<RenderPassInstance> swapChainPass;
+
 	//CREATE
 	void Initialize(HWND hwnd);
 	void CreateComputeEngine();
+	void CreateSwapChainPass();
 
 	//READ&GET
 
@@ -53,6 +58,7 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 	void Flush();
 
 	//DESTROY
+	void DestroySwapChainPass();
 	void Destroy();
 };
 

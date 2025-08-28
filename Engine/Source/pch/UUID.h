@@ -22,7 +22,7 @@ inline std::string getUUID()
 	return guid;
 }
 
-inline int FindSelectableIndex(auto selectables, nlohmann::json& json, std::string att)
+inline int FindSelectableIndex(auto selectables, nlohmann::json& json, auto att)
 {
 	auto& value = json.at(att);
 	return static_cast<int>(std::find_if(selectables.begin(), selectables.end(), [value](UUIDName uuidName)

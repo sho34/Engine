@@ -1,9 +1,9 @@
 #pragma once
 #include <map>
 #include <atlbase.h>
-#include "../../../d3dx12.h"
-//#include "../../Renderer.h"
-//#include "../../../Templates/Material/Material.h"
+#include <d3dx12.h>
+//#include <Renderer.h>
+//#include <Material/Material.h>
 
 namespace DeviceUtils
 {
@@ -41,7 +41,6 @@ namespace DeviceUtils
 	void DestroyConstantsBuffer();
 	::CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(const std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int index);
 	::CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(const std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int index);
-	//void WriteMaterialVariablesToConstantsBufferSpace(MaterialPtr& material, std::shared_ptr<ConstantsBufferViewData>& cbvData, UINT cbvFrameIndex);
 };
 
 typedef std::map<std::shared_ptr<DeviceUtils::ConstantsBuffer>, std::vector<::CD3DX12_CPU_DESCRIPTOR_HANDLE>> ConstantsBufferCpuHandleMap;

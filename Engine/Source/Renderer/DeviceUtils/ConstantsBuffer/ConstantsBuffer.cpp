@@ -1,9 +1,9 @@
 #include "pch.h"
 #include "ConstantsBuffer.h"
-#include "../D3D12Device/Builder.h"
-#include "../DescriptorHeap/DescriptorHeap.h"
-#include "../../Renderer.h"
-#include "../../../Common/DirectXHelper.h"
+#include <DeviceUtils/D3D12Device/Builder.h>
+#include <DeviceUtils/DescriptorHeap/DescriptorHeap.h>
+#include <Renderer.h>
+#include <DirectXHelper.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -109,6 +109,7 @@ namespace DeviceUtils
 
 	void DestroyConstantsBuffer(std::shared_ptr<ConstantsBuffer>& cbuffer)
 	{
+		if (!cbuffer) return;
 		DEBUG_PTR_COUNT(cbuffer);
 		nostd::vector_erase(constantsBuffers, cbuffer);
 		cbuffer = nullptr;

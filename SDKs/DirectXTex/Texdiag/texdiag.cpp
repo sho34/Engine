@@ -189,7 +189,7 @@ namespace
         { nullptr,                  0 }
     };
 
-    #define DEFFMT(fmt) { L## #fmt, DXGI_FORMAT_ ## fmt }
+#define DEFFMT(fmt) { L## #fmt, DXGI_FORMAT_ ## fmt }
 
     const SValue<DXGI_FORMAT> g_pFormats[] =
     {
@@ -354,7 +354,7 @@ namespace
         { nullptr, DXGI_FORMAT_UNKNOWN }
     };
 
-    #undef DEFFMT
+#undef DEFFMT
 
     const SValue<uint32_t> g_pFilters[] =
     {
@@ -383,15 +383,15 @@ namespace
     constexpr uint32_t CODEC_TGA = 0xFFFF0002;
     constexpr uint32_t CODEC_HDR = 0xFFFF0005;
 
-    #ifdef USE_OPENEXR
+#ifdef USE_OPENEXR
     constexpr uint32_t CODEC_EXR = 0xFFFF0008;
-    #endif
-    #ifdef USE_LIBJPEG
+#endif
+#ifdef USE_LIBJPEG
     constexpr uint32_t CODEC_JPEG = 0xFFFF0009;
-    #endif
-    #ifdef USE_LIBPNG
+#endif
+#ifdef USE_LIBPNG
     constexpr uint32_t CODEC_PNG = 0xFFFF000A;
-    #endif
+#endif
 
     const SValue<uint32_t> g_pDumpFileTypes[] =
     {
@@ -633,18 +633,18 @@ namespace
         case CODEC_HDR:
             return SaveToHDRFile(*image, fileName);
 
-    #ifdef USE_OPENEXR
+        #ifdef USE_OPENEXR
         case CODEC_EXR:
             return SaveToEXRFile(*image, fileName);
-    #endif
-    #ifdef USE_LIBJPEG
+        #endif
+        #ifdef USE_LIBJPEG
         case CODEC_JPEG:
             return SaveToJPEGFile(*image, fileName);
-    #endif
-    #ifdef USE_LIBPNG
+        #endif
+        #ifdef USE_LIBPNG
         case CODEC_PNG:
             return SaveToPNGFile(*image, fileName);
-    #endif
+        #endif
         default:
             return SaveToWICFile(*image, WIC_FLAGS_NONE, GetWICCodec(static_cast<WICCodecs>(codec)), fileName);
         }
@@ -3034,7 +3034,16 @@ namespace
 #pragma prefast(disable : 28198, "Command-line tool, frees all memory on exit")
 #endif
 
+#include "texdiag.h"
+
+#if !defined(_LIB)
 int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
+{
+    return texDiag(argc, argv);
+}
+#endif
+
+int texDiag(int argc, wchar_t* argv[], DirectX::TexMetadata* texMetaData)
 {
     // Parameters and defaults
     TEX_FILTER_FLAGS dwFilter = TEX_FILTER_DEFAULT;
@@ -3653,6 +3662,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             TexMetadata info;
             std::unique_ptr<ScratchImage> image;
             hr = LoadImage(curpath.c_str(), dwOptions, dwFilter, info, image);
+            if (texMetaData) memcpy(texMetaData, &info, sizeof(info));
             if (FAILED(hr))
             {
                 wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
@@ -4066,3 +4076,5 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
     return 0;
 }
+
+

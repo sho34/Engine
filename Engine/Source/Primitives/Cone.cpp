@@ -20,9 +20,9 @@ Cone::Cone(void* params)
 		vertices.push_back({ .Position = *(XMFLOAT3*)v2.m128_f32, .Normal = *(XMFLOAT3*)n.m128_f32 });
 		vertices.push_back({ .Position = {0.0f,0.0f,0.0f}, .Normal = {0.0f, 0.0f, -1.0f } });
 
-		indices.push_back(vertices.size() - 1);
-		indices.push_back(vertices.size() - 3);
-		indices.push_back(vertices.size() - 2);
+		indices.push_back(static_cast<unsigned int>(vertices.size() - 1ULL));
+		indices.push_back(static_cast<unsigned int>(vertices.size() - 3ULL));
+		indices.push_back(static_cast<unsigned int>(vertices.size() - 2ULL));
 
 		vertices.push_back({ .Position = *(XMFLOAT3*)v.m128_f32, .Normal = {0.0f, 0.0f, 1.0f } });
 		vertices.push_back({ .Position = *(XMFLOAT3*)v2.m128_f32, .Normal = {0.0f, 0.0f, 1.0f } });
@@ -30,9 +30,9 @@ Cone::Cone(void* params)
 
 		v = v2;
 
-		indices.push_back(vertices.size() - 1);
-		indices.push_back(vertices.size() - 3);
-		indices.push_back(vertices.size() - 2);
+		indices.push_back(static_cast<unsigned int>(vertices.size() - 1ULL));
+		indices.push_back(static_cast<unsigned int>(vertices.size() - 3ULL));
+		indices.push_back(static_cast<unsigned int>(vertices.size() - 2ULL));
 	}
 }
 

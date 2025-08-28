@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Resources.h"
-#include "../Renderer/Renderer.h"
+#include <Renderer.h>
 
 extern std::shared_ptr<Renderer> renderer;
 

@@ -1,6 +1,6 @@
 #pragma once
-#include "../Templates/Mesh/Mesh.h"
-#include "../Renderer/Renderer.h"
+#include <Mesh/Mesh.h>
+#include <Renderer.h>
 #include "Cube.h"
 #include "Decal.h"
 #include "Floor.h"

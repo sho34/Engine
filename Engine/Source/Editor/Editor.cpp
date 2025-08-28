@@ -1,21 +1,39 @@
 #include "pch.h"
 
 #if defined(_EDITOR)
-#include "Editor.h"
-#include "../Renderer/Renderer.h"
-#include "../Renderer/RenderPass/RenderPass.h"
-#include <imgui.h>
+#include <JExposeEditor.h>
+#include <Editor.h>
 #include <Mouse.h>
 #include <Application.h>
-#include <ImEditor.h>
-#include "../Renderer/DeviceUtils/Resources/Resources.h"
+#include <JObject.h>
+#include <Renderer.h>
+#include <RenderPass/RenderPass.h>
+#include <DeviceUtils/Resources/Resources.h>
+#include <Renderable/Renderable.h>
+#include <Camera/Camera.h>
+#include <Lights/Lights.h>
+#include <Sound/SoundFX.h>
+#include <Templates.h>
+#include <Sound/Sound.h>
+#include <Textures/Texture.h>
+#include <Shader/Shader.h>
+#include <imgui.h>
+#include <ImGuizmo.h>
+#include <imgui_impl_win32.h>
+#include <imgui_impl_dx12.h>
+#include <IconsFontAwesome5.h>
+#include <functional>
+#include <RightPanelComponent.h>
 
 extern HWND hWnd;
 extern RECT hWndRect;
 extern std::unique_ptr<DirectX::Mouse> mouse;
+extern std::unique_ptr<DirectX::Keyboard> keyboard;
 extern std::shared_ptr<Renderer> renderer;
 extern std::string gameAppTitle;
-extern std::filesystem::path levelToLoad;
+extern bool inSizeMove;
+extern RECT GetMaximizedAreaSize();
+//extern std::filesystem::path levelToLoad;
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -29,18 +47,18 @@ namespace Editor {
 	bool dragDrop = false;
 	int lastMouseX;
 	int lastMouseY;
-	bool boundingBoxRendering = false;
+
 	std::shared_ptr<Renderable> boundingBox = nullptr;
-	_SceneObjects soTab = _SceneObjects::SO_Renderables;
-	std::string selSO = "";
-	_Templates tempTab = _Templates::T_Materials;
-	std::string selTemp = "";
+
 	float titleBH = static_cast<float>(ApplicationBarBottom);
 	float panW = static_cast<float>(RightPanelWidth);
 	ImGuiWindowFlags panFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
 	bool NonGameMode = false;
 	bool lockedGameAreaInput = false;
+
+	RightPanelComponent sceneObjectEdition("sceneObjects", { "hidden", "uuid" }, { "Scene Objects", "Details" }, { "Scene Objects" });
+	RightPanelComponent templateEdition("templates", { "hidden", "uuid" }, { "Templates", "Details" }, { "Templates" });
 
 	ImGui_ImplDX12_InitInfo init_info = {};
 
@@ -55,11 +73,12 @@ namespace Editor {
 
 	struct
 	{
-		std::shared_ptr<RenderToTexturePass> pickingPass;
+		std::shared_ptr<RenderPassInstance> pickingPass;
 		CComPtr<ID3D12Resource> pickingCpuBuffer;
 		unsigned int pickingX = 0U;
 		unsigned int pickingY = 0U;
 		bool doPicking = false;
+		nostd::VectorSet<std::shared_ptr<SceneObject>> pickedObjects;
 		void Reset()
 		{
 			pickingX = 0U;
@@ -91,7 +110,6 @@ namespace Editor {
 		{
 			return (state.leftButton && (state.x != pickingX || state.y != pickingY));
 		}
-
 	} mousePicking;
 
 	struct
@@ -177,23 +195,47 @@ namespace Editor {
 		SetupImGuiStyle();
 	}
 
-	void CreateRenderableBoundingBox()
+	bool RenderableBoundingBoxExists()
 	{
-		boundingBox = CreateRenderable(R"(
-			{
-				"meshMaterials": [ { "material": "2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc", "mesh" : "30f15e68-db42-46fa-b846-b2647a0ac9b9" } ],
-				"meshMaterialsShadowMap": [],
-				"name": "EditorBoundingBox",
-				"uuid": "797b3a2b-6854-47ab-8e07-1974055e490d",
-				"position": [ 0.0, 0.0, 0.0],
-				"primitiveTopologyType":"LINE",
-				"rotation": [ 0.0, 0.0, 0.0 ],
-				"scale": [ 1.0, 1.0, 1.0],
-				"skipMeshes":[],
-				"visible":false,
-				"hidden":true
-			}
-		)"_json);
+		return boundingBox != nullptr;
+	}
+
+	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera)
+	{
+		boundingBox = std::make_shared<Renderable>(
+			nlohmann::json(
+				{
+					{ "meshMaterials",
+						{
+							{
+								{ "material", "2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc"},
+								{ "mesh", "30f15e68-db42-46fa-b846-b2647a0ac9b9" }
+							}
+						}
+					},
+					{ "castShadows", false },
+					{ "shadowed", false },
+					{ "name" , "EditorBoundingBox" },
+					{ "uuid" , "797b3a2b-6854-47ab-8e07-1974055e490d" },
+					{ "position" , { 0.0f, 0.0f, 0.0f} },
+					{ "topology", "LINELIST"},
+					{ "rotation" , { 0.0, 0.0, 0.0 } },
+					{ "scale" , { 1.0f, 1.0f, 1.0f } },
+					{ "skipMeshes" , {}},
+					{ "visible" , false},
+					{ "hidden" , true},
+					{ "camera", { camera->uuid() }}
+				}
+			)
+		);
+		boundingBox->this_ptr = boundingBox;
+		boundingBox->BindToScene();
+		camera->BindRenderable(boundingBox);
+	}
+
+	void DestroyRenderableBoundingBox()
+	{
+		DestroyRenderable(boundingBox);
 	}
 
 	void ImGuiImplRenderInit()
@@ -295,6 +337,10 @@ namespace Editor {
 	void DestroyEditor() {
 		initialized = false;
 
+		sceneObjectEdition.Destroy();
+		templateEdition.Destroy();
+
+		mousePicking.pickedObjects.clear();
 		DestroyRenderable(boundingBox);
 
 		// Cleanup
@@ -356,6 +402,14 @@ namespace Editor {
 
 	void DrawEditor(std::shared_ptr<Camera> camera) {
 
+		if (inSizeMove) return;
+
+		unsigned int backBufferIndex = renderer->backBufferIndex;
+		auto pass = renderer->swapChainPass->swapChainPass;
+		auto backBuffer = pass->renderTargets[backBufferIndex];
+		auto commandList = renderer->commandList;
+		TransitionResource(commandList, backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
 		// Start the Dear ImGui frame
 		ImGui_ImplDX12_NewFrame();
 		ImGui_ImplWin32_NewFrame();
@@ -364,15 +418,23 @@ namespace Editor {
 
 		Editor::NonGameMode = false;
 
+		if (templateEdition.selectedNextFrame != "")
+		{
+			OpenTemplate(templateEdition.selectedNextFrame);
+			templateEdition.selectedNextFrame = "";
+		}
+
 		DrawApplicationBar();
 		DrawRightPanel();
-		DrawSelectedObjectGuizmo(camera);
+		DrawPickedObjectsGuizmo(camera, gizmoOperation, gizmoMode);
 
 		// Rendering
 		ImGui::Render();
 
 		// Render Dear ImGui graphics
 		ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), renderer->commandList);
+
+		TransitionResource(commandList, backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 	}
 
 	void DrawApplicationBar()
@@ -391,7 +453,7 @@ namespace Editor {
 					OpenLevelFile();
 				}
 
-				DrawItemWithEnabledState([]
+				ImGui::DrawItemWithEnabledState([]
 					{
 						if (ImGui::MenuItem(ICON_FA_SAVE "Save")) {
 							SaveLevelToFile(currentLevelName);
@@ -459,11 +521,13 @@ namespace Editor {
 					else
 					{
 						HWND desktopHwnd = GetDesktopWindow();
-						RECT desktopRect;
-						GetClientRect(desktopHwnd, &desktopRect);
-						int winWidth = desktopRect.right;
-						int winHeight = desktopRect.bottom - 40;
-						SetWindowPos(hWnd, HWND_TOP, 0, 0, winWidth, winHeight, 0);
+						//RECT desktopRect;
+						//GetClientRect(desktopHwnd, &desktopRect);
+						//int winWidth = desktopRect.right;
+						//int winHeight = desktopRect.bottom - 40;
+						//SetWindowPos(hWnd, HWND_TOP, 0, 0, winWidth, winHeight, 0);
+						RECT desktopRect = GetMaximizedAreaSize();
+						SetWindowPos(hWnd, HWND_TOP, 0, 0, desktopRect.right - desktopRect.left, desktopRect.bottom - desktopRect.top, 0);
 					}
 					maximized = !maximized;
 				}},
@@ -489,338 +553,307 @@ namespace Editor {
 		HandleApplicationDragTitleBar(dragRect);
 	}
 
-	void DrawTableRows(auto GetObjects, auto OnSelect, auto OnDelete)
+	void OpenSceneObject(std::string uuid)
 	{
-		ImGui::TableSetupColumn("Delete", ImGuiTableColumnFlags_WidthFixed);
-		ImGui::TableSetupColumn("Object", ImGuiTableColumnFlags_WidthStretch);
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		ImGui::TableHeader("");
-		ImGui::TableSetColumnIndex(1);
-		ImGui::TableHeader("Object");
-
-		int row = 0;
-		for (UUIDName uuidName : GetObjects())
-		{
-			std::string name = std::get<1>(uuidName);
-			std::string uuid = std::get<0>(uuidName);
-			std::string rowName = "table-row-" + uuid;
-			ImGui::PushID(rowName.c_str());
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			if (ImGui::SmallButton(ICON_FA_TIMES)) { OnDelete(uuid); }
-			ImGui::TableSetColumnIndex(1);
-			if (ImGui::TextLink(name.c_str())) { OnSelect(uuid); }
-			ImGui::PopID();
-		}
+		sceneObjectEdition.selected = { uuid };
+		OnChangeSceneObjectTab(templateEdition.detailAbleTabs.at(1));
 	}
 
-	void BuildAssetsTree(std::map<std::string, std::any>& assets, std::vector<std::string>& parts)
+	void OnChangeSceneObjectTab(std::string newTab)
 	{
-		std::string part = *parts.begin();
-		if (!assets.contains(part))
+		sceneObjectEdition.selectedTab = newTab;
+		sceneObjectEdition.editables = sceneObjectEdition.selected;
+		if (newTab == sceneObjectEdition.detailAbleTabs.at(1))
 		{
-			assets.insert_or_assign(part, std::map<std::string, std::any>());
-		}
-
-		if (parts.begin() != parts.end() - 1)
-		{
-			std::map<std::string, std::any>& child = std::any_cast<std::map<std::string, std::any>&>(assets.at(part));
-			std::vector<std::string> nextParts;
-			std::copy(parts.begin() + 1, parts.end(), std::back_inserter(nextParts));
-			BuildAssetsTree(child, nextParts);
-		}
-	}
-
-	void DrawAssetTreeNodes(std::map<std::string, std::any>& dump, std::string path, auto OnPick, auto OnDelete)
-	{
-		for (auto it = dump.begin(); it != dump.end(); it++)
-		{
-			std::map<std::string, std::any>& child = std::any_cast<std::map<std::string, std::any>&>(it->second);
-			std::string p = path + (path.empty() ? "" : "/") + it->first;
-
-			if (child.empty())
+			sceneObjectEdition.CreateEditableAttributesToMatch<SceneObjectType>(
+				GetSceneObjectType,
+				GetSceneObject,
+				GetSceneObjectAttributes,
+				GetSceneObjectDrawers
+			);
+			for (auto& uuid : sceneObjectEdition.editables)
 			{
-				ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.15f));
-				{
-					ImGui::PushID((std::string("delete-") + p).c_str());
-					{
-						if (ImGui::Button(ICON_FA_TIMES, ImVec2(16.0f, 16.0f)))
-						{
-							OnDelete(p);
-						}
-					}
-					ImGui::PopID();
-				}
-				ImGui::PopStyleVar();
-
-				ImGui::SameLine();
-
-				if (ImGui::TreeNodeEx(it->first.c_str(), ImGuiTreeNodeFlags_Leaf))
-				{
-					if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiPopupFlags_MouseButtonLeft))
-					{
-						OnPick(p);
-					}
-					ImGui::TreePop();
-				}
+				SendEditorPreview(uuid, GetSceneObject, sceneObjectEdition.drawers);
 			}
-			else
+		}
+		else
+		{
+			for (auto& uuid : sceneObjectEdition.editables)
 			{
-				if (ImGui::TreeNodeEx(it->first.c_str()))
-				{
-					DrawAssetTreeNodes(child, p, OnPick, OnDelete);
-					ImGui::TreePop();
-				}
+				SendEditorDestroyPreview(uuid, GetSceneObject);
 			}
 		}
 	}
 
-	void DrawAssetsTree(auto GetObjects, auto OnPick, auto OnDelete, std::string ignorePrefix)
+	void OpenTemplate(std::string uuid)
 	{
-		std::map<std::string, std::any> assets;
+		templateEdition.selected = { uuid };
+		OnChangeTemplateTab(templateEdition.detailAbleTabs.at(1));
+	}
 
-		for (UUIDName uuidName : GetObjects())
+	void OpenTemplateOnNextFrame(std::string uuid)
+	{
+		templateEdition.selectedNextFrame = uuid;
+	}
+
+	void SendEditorPreview(std::string uuid, auto GetJObject, auto drawers)
+	{
+		size_t flags = 0;
+		std::shared_ptr<JObject> j = GetJObject(uuid);
+		for (auto& [attribute, _] : drawers)
 		{
-			std::string uuid = std::get<0>(uuidName);
-			std::string path = std::get<1>(uuidName);
+			auto& tp = j->UpdateFlagsMap.at(attribute);
+			if (!std::get<1>(tp)) continue;
+			flags |= std::get<0>(tp);
+		}
+		j->EditorPreview(flags);
+	}
 
-			if (!ignorePrefix.empty())
+	void SendEditorDestroyPreview(std::string uuid, auto GetJObject)
+	{
+		std::shared_ptr<JObject> j = GetJObject(uuid);
+		j->DestroyEditorPreview();
+	}
+
+	void OnChangeTemplateTab(std::string newTab)
+	{
+		templateEdition.selectedTab = newTab;
+		templateEdition.editables = templateEdition.selected;
+		if (newTab == templateEdition.detailAbleTabs.at(1))
+		{
+			templateEdition.CreateEditableAttributesToMatch<TemplateType>(
+				GetTemplateType,
+				GetTemplate,
+				GetTemplateAttributes,
+				GetTemplateDrawers
+			);
+			for (auto& uuid : templateEdition.editables)
 			{
-				path = std::regex_replace(path, std::regex(ignorePrefix), "");
+				SendEditorPreview(uuid, GetTemplate, templateEdition.drawers);
 			}
-
-			std::vector<std::string> parts = nostd::split(path, "/");
-			BuildAssetsTree(assets, parts);
 		}
-
-		DrawAssetTreeNodes(assets, "", OnPick, OnDelete);
-	}
-
-	void DrawListPanel(auto OnCreate, auto DrawObjects)
-	{
-		if (ImGui::SmallButton(ICON_FA_PLUS))
+		else
 		{
-			OnCreate();
-		}
-
-		DrawObjects();
-	}
-
-	template<typename T, typename V>
-	void DrawTabPanel(ImVec2 pos, ImVec2 size, const char* name, T& tab,
-		std::unordered_map<T, std::string> TabToStr,
-		V& selected,
-		std::map<T, std::function<void()>> OnCreate,
-		auto DrawObjects
-	)
-	{
-		ImGui::SetNextWindowPos(pos);
-		ImGui::SetNextWindowSize(size);
-		std::string panelName = "panel-" + TabToStr.at(tab);
-		ImGui::BeginChild(panelName.c_str());
-		{
-			std::string tabBarName = "tabBar-" + std::string(name);
-			ImGui::BeginTabBar(tabBarName.c_str());
+			for (auto& uuid : templateEdition.editables)
 			{
-				for (auto& [type, name] : TabToStr) {
-					ImGuiTabItemFlags_ flag = (tab == type) ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
-					if (flag == ImGuiTabItemFlags_SetSelected)
-					{
-						ImGui::PushStyleColor(ImGuiCol_Tab, ImVec4(0.230f, 0.230f, 0.230f, 1.0f));
-						ImGui::PushStyleColor(ImGuiCol_TabHovered, ImVec4(0.230f, 0.230f, 0.230f, 1.0f));
-					}
-					if (ImGui::TabItemButton(name.c_str(), flag))
-					{
-						tab = type;
-					}
-					if (flag == ImGuiTabItemFlags_SetSelected)
-					{
-						ImGui::PopStyleColor();
-						ImGui::PopStyleColor();
-					}
-
-				}
-				DrawListPanel(
-					OnCreate.at(tab),
-					DrawObjects
-				);
+				SendEditorDestroyPreview(uuid, GetTemplate);
 			}
-			ImGui::EndTabBar();
 		}
-		ImGui::EndChild();
-	}
-
-	template<typename T, typename V>
-	void DrawDetailPanel(ImVec2 pos, ImVec2 size, T& tab,
-		V& selected,
-		std::unordered_map<T, std::string> SelectedPrefix,
-		std::map<T, std::function<std::string(V)>> GetSelectedName,
-		std::map<T, std::function<void(V, ImVec2, ImVec2, bool)>> DrawSelectedPanel,
-		std::map<T, std::function<void(V&)>> OnDeSelect
-	)
-	{
-		bool pop = false;
-		std::string panelName = "panel-" + SelectedPrefix.at(tab);// + GetSelectedName.at(tab)(selected);
-		ImGui::SetNextWindowPos(pos);
-		ImGui::SetNextWindowSize(size);
-		ImGui::BeginChild(panelName.c_str(), ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding);
-		{
-			if (ImGui::SmallButton("<<")) { pop = true; }
-			ImGui::SameLine();
-			ImGui::Text(GetSelectedName.at(tab)(selected).c_str());
-
-			ImGui::NewLine();
-			DrawSelectedPanel.at(tab)(selected, pos, size, pop);
-		}
-		ImGui::EndChild();
-		if (pop) { OnDeSelect.at(tab)(selected); }
 	}
 
 	void DrawRightPanel() {
+
 		const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
 		ImVec2 panPos = ImVec2(viewport->Size.x - panW, titleBH);
 		ImVec2 panSize = ImVec2(panW, viewport->Size.y - titleBH + 10.0f);
+
+		auto getSceneObjects = []()
+			{
+				auto sceneObjects = GetSceneObjects();
+				std::vector<UUIDName> sceneObjectsList;
+				for (auto& [type, uuidnames] : sceneObjects)
+				{
+					for (auto& uuidname : uuidnames)
+					{
+						std::string& uuid = std::get<0>(uuidname);
+						std::string& name = std::get<1>(uuidname);
+
+						std::string nname = SceneObjectTypeToString.at(type) + "/" + name;
+						sceneObjectsList.push_back(std::tie(uuid, nname));
+					}
+				}
+				return sceneObjectsList;
+			};
+		auto getTemplates = []()
+			{
+				auto templates = GetTemplates();
+				std::vector<UUIDName> templatesList;
+				for (auto& [type, uuidnames] : templates)
+				{
+					for (auto& uuidname : uuidnames)
+					{
+						std::string& uuid = std::get<0>(uuidname);
+						std::string& name = std::get<1>(uuidname);
+
+						std::string nname = TemplateTypeToString.at(type) + "/" + name;
+						templatesList.push_back(std::tie(uuid, nname));
+					}
+				}
+				return templatesList;
+			};
+		auto matchSceneObjectsAttributes = []()
+			{
+				sceneObjectEdition.CreateEditableAttributesToMatch<SceneObjectType>(
+					GetSceneObjectType,
+					GetSceneObject,
+					GetSceneObjectAttributes,
+					GetSceneObjectDrawers
+				);
+			};
+		auto matchTemplatesAttributes = []()
+			{
+				templateEdition.CreateEditableAttributesToMatch<TemplateType>(
+					GetTemplateType,
+					GetTemplate,
+					GetTemplateAttributes,
+					GetTemplateDrawers
+				);
+			};
 
 		ImGui::SetNextWindowPos(panPos);
 		ImGui::SetNextWindowSize(panSize);
 		ImGui::Begin("Right panel", (bool*)1, panFlags);
 		{
 			ImVec2 soPos = ImVec2(panPos.x, panPos.y);
-			ImVec2 tempPos = ImVec2(panPos.x, panSize.y * 0.5f + 20.0f);
 			ImVec2 soSize = ImVec2(panSize.x, panSize.y * 0.5f);
+			ImVec2 tempPos = ImVec2(panPos.x, panSize.y + 20.0f);
 			ImVec2 tempSize = ImVec2(panSize.x, panSize.y * 0.5f - 20.0f);
 
-			if (selSO.empty())
-			{
-				std::map<_SceneObjects, std::function<void(std::string, std::string&)>> SetSelectedSceneObjectProxy;
+			sceneObjectEdition.DrawPanel(soPos, soSize, SceneObjectsTypePanelMenuItems,
+				getSceneObjects, GetSceneObject,
+				OnChangeSceneObjectTab,
+				matchSceneObjectsAttributes,
+				[](std::string uuid) { SendEditorPreview(uuid, GetSceneObject, sceneObjectEdition.drawers); },
+				[](std::string uuid) { DeleteSceneObject(uuid); }
+			);
 
-				std::transform(SetSelectedSceneObject.begin(), SetSelectedSceneObject.end(), std::inserter(SetSelectedSceneObjectProxy, SetSelectedSceneObjectProxy.end()), [](auto pair)
-					{
-						return std::pair<_SceneObjects, std::function<void(std::string, std::string&)>>(pair.first, [pair](std::string a, std::string& b)
-							{
-								boundingBox->visible(true);
-								pair.second(a, b);
-							}
-						);
-					}
-				);
-
-				DrawTabPanel(soPos, soSize, "Scene Objects", soTab, SceneObjectsToStr, selSO,
-					CreateSceneObject,
-					[SetSelectedSceneObjectProxy]()
-					{
-						std::string tableName = (SceneObjectsToStr.at(soTab) + "-table");
-						if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX))
-						{
-							DrawTableRows(
-								GetSceneObjects.at(soTab),
-								[SetSelectedSceneObjectProxy](std::string uuid) { SetSelectedSceneObjectProxy.at(soTab)(uuid, selSO); },
-								[](std::string uuid) { DeleteSceneObject.at(soTab)(uuid); }
-							);
-							ImGui::EndTable();
-						}
-					}
-				);
-			}
-			else
-			{
-				std::map<_SceneObjects, std::function<void(std::string&)>> DeSelectSceneObjectProxy;
-
-				std::transform(DeSelectSceneObject.begin(), DeSelectSceneObject.end(), std::inserter(DeSelectSceneObjectProxy, DeSelectSceneObjectProxy.end()), [](auto pair)
-					{
-						return std::pair<_SceneObjects, std::function<void(std::string&)>>(pair.first, [pair](std::string& b)
-							{
-								boundingBox->visible(false);
-								pair.second(b);
-							}
-						);
-					}
-				);
-
-				DrawDetailPanel(soPos, soSize, soTab, selSO, SceneObjectsToStr, GetSceneObjectName, DrawSceneObjectPanel, DeSelectSceneObjectProxy);
-			}
-
-			if (selTemp.empty())
-			{
-				DrawTabPanel(tempPos, tempSize, "Templates", tempTab, TemplatesToStr, selTemp,
-					CreateTemplate,
-					[]()
-					{
-						if (std::set({ T_Materials,T_Models3D,T_Shaders,T_Sounds }).contains(tempTab))
-						{
-							std::string tableName = (TemplatesToStr.at(tempTab) + "-table");
-							if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_PadOuterX))
-							{
-								DrawTableRows(
-									GetTemplates.at(tempTab),
-									[](std::string uuid) { SetSelectedTemplate.at(tempTab)(uuid, selTemp); },
-									[](std::string uuid) { DeleteTemplate.at(tempTab)(uuid); }
-								);
-								ImGui::EndTable();
-							}
-						}
-						else if (std::set({ T_Textures }).contains(tempTab))
-						{
-							DrawAssetsTree(GetTemplates.at(tempTab), [](std::string texName)
-								{
-									std::string uuid = FindTextureUUIDByName(defaultAssetsFolder + texName);
-									SetSelectedTemplate.at(tempTab)(uuid, selTemp);
-								},
-								[](std::string texName)
-								{
-									std::string uuid = FindTextureUUIDByName(defaultAssetsFolder + texName);
-									DeleteTemplate.at(tempTab)(uuid);
-								}
-								, defaultAssetsFolder
-							);
-						}
-					}
-				);
-			}
-			else
-			{
-				DrawDetailPanel(tempPos, tempSize, tempTab, selTemp, TemplatesToStr, GetTemplateName, DrawTemplatePanel, DeSelectTemplate);
-			}
+			templateEdition.DrawPanel(tempPos, tempSize, TemplateTypePanelMenuItems,
+				getTemplates, GetTemplate,
+				OnChangeTemplateTab,
+				matchTemplatesAttributes,
+				[](std::string uuid) { SendEditorPreview(uuid, GetTemplate, templateEdition.drawers); },
+				[](std::string uuid) { DeleteTemplate(uuid); }
+			);
 		}
 		ImGui::End();
-
-		if (selSO == "")
-		{
-			DrawSceneObjectsPopups.at(soTab)();
-		}
-		if (selTemp == "")
-		{
-			DrawTemplatesPopups.at(tempTab)();
-		}
 	}
 
-	XMFLOAT3 GetPitchYawRoll(XMFLOAT4X4 transform)
+	void MarkScenePanelAssetsAsDirty()
 	{
-		float pitch = XMScalarASin(-transform._32);
-
-		XMVECTOR from(XMVectorSet(transform._12, transform._31, 0.0f, 0.0f));
-		XMVECTOR to(XMVectorSet(transform._22, transform._33, 0.0f, 0.0f));
-		XMVECTOR res(XMVectorATan2(from, to));
-
-		float roll = XMVectorGetX(res);
-		float yaw = XMVectorGetY(res);
-
-		return XMFLOAT3(XMConvertToDegrees(pitch), XMConvertToDegrees(yaw), XMConvertToDegrees(roll));
+		sceneObjectEdition.dirtyAssetsTree = true;
 	}
 
-	void DrawRenderableGuizmo(std::shared_ptr<Camera> camera)
+	void MarkTemplatesPanelAssetsAsDirty()
 	{
-		std::shared_ptr<Renderable> renderable = GetRenderable(selSO);
+		templateEdition.dirtyAssetsTree = true;
+	}
 
-		XMFLOAT4X4 world;
+	void DestroyEditorSceneObjectsReferences()
+	{
+		sceneObjectEdition.Destroy();
+	}
+
+	void DrawPickedObjectsGuizmo(std::shared_ptr<Camera> camera, ImGuizmo::OPERATION& gizmoOperation, ImGuizmo::MODE& gizmoMode)
+	{
+		if (mousePicking.pickedObjects.size() == 0ULL) return;
+
+		auto translateObjects = [](XMVECTOR translation)
+			{
+				for (auto& o : mousePicking.pickedObjects)
+				{
+					if (!o->contains("position")) continue;
+
+					XMFLOAT3 pos = ToXMFLOAT3(o->at("position"));
+					pos.x += translation.m128_f32[0];
+					pos.y += translation.m128_f32[1];
+					pos.z += translation.m128_f32[2];
+					nlohmann::json patch = { {"position",FromXMFLOAT3(pos)} };
+					o->JUpdate(patch);
+				}
+			};
+		auto rotateObjects = [](XMFLOAT4X4 transformation)
+			{
+				XMFLOAT3 p0 = ToXMFLOAT3((*mousePicking.pickedObjects.begin())->at("position"));
+				XMFLOAT4 vp0 = { p0.x,p0.y,p0.z,0.0f };
+				XMVECTOR pf032 = XMLoadFloat4(&vp0);
+
+				XMFLOAT3 rotDelta = DX::GetPitchYawRoll(transformation);
+
+				for (auto& o : mousePicking.pickedObjects)
+				{
+					if (!o->contains("rotation")) continue;
+
+					XMFLOAT3 rot = ToXMFLOAT3(o->at("rotation"));
+					rot.x += rotDelta.x;
+					rot.y += rotDelta.y;
+					rot.z += rotDelta.z;
+
+					if (o != *mousePicking.pickedObjects.begin())
+					{
+						XMFLOAT3 p = ToXMFLOAT3(o->at("position"));
+						XMFLOAT4 vp = { p.x,p.y,p.z,0.0f };
+						XMVECTOR pf32 = XMLoadFloat4(&vp);
+						XMVECTOR diff = XMVectorSubtract(pf32, pf032);
+						XMVECTOR newPos = XMVector3Transform(diff, XMLoadFloat4x4(&transformation));
+						newPos = XMVectorAdd(newPos, pf032);
+
+						nlohmann::json patch = {
+							{ "position", FromXMFLOAT3(*(XMFLOAT3*)newPos.m128_f32) },
+							{ "rotation", FromXMFLOAT3(rot) }
+						};
+						o->JUpdate(patch);
+					}
+					else
+					{
+						nlohmann::json patch = { { "rotation",FromXMFLOAT3(rot) } };
+						o->JUpdate(patch);
+					}
+				}
+			};
+		auto scaleObjects = [](XMVECTOR XMscale, XMFLOAT4X4 transformation)
+			{
+				XMFLOAT3 p0 = ToXMFLOAT3((*mousePicking.pickedObjects.begin())->at("position"));
+				XMFLOAT4 vp0 = { p0.x,p0.y,p0.z,0.0f };
+				XMVECTOR pf032 = XMLoadFloat4(&vp0);
+
+				for (auto& o : mousePicking.pickedObjects)
+				{
+					if (!o->contains("scale")) continue;
+
+					XMFLOAT3 scl = ToXMFLOAT3(o->at("scale"));
+					scl.x *= XMscale.m128_f32[0];
+					scl.y *= XMscale.m128_f32[1];
+					scl.z *= XMscale.m128_f32[2];
+
+					if (o != *mousePicking.pickedObjects.begin())
+					{
+						XMFLOAT3 p = ToXMFLOAT3(o->at("position"));
+						XMFLOAT4 vp = { p.x,p.y,p.z,0.0f };
+						XMVECTOR pf32 = XMLoadFloat4(&vp);
+						XMVECTOR diff = XMVectorSubtract(pf32, pf032);
+						XMVECTOR newPos = XMVector3Transform(diff, XMLoadFloat4x4(&transformation));
+						newPos = XMVectorAdd(newPos, pf032);
+
+						nlohmann::json patch = {
+							{ "position", FromXMFLOAT3(*(XMFLOAT3*)newPos.m128_f32) },
+							{ "scale", FromXMFLOAT3(scl) }
+						};
+						o->JUpdate(patch);
+					}
+					else
+					{
+						nlohmann::json patch = { { "scale",FromXMFLOAT3(scl) } };
+						o->JUpdate(patch);
+					}
+				}
+			};
+
+		ImGuizmo::BeginFrame();
+		ImGuizmo::SetOrthographic(false);
+		ImGuizmo::AllowAxisFlip(false);
+
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+		ImGuizmo::SetID(0);
+
+		XMFLOAT4X4 w;
 		XMFLOAT4X4 view;
 		XMFLOAT4X4 proj;
-		XMStoreFloat4x4(&world, renderable->world());
-		XMStoreFloat4x4(&view, camera->ViewMatrix());
-		XMStoreFloat4x4(&proj, camera->perspective.projectionMatrix);
+		XMStoreFloat4x4(&w, (*mousePicking.pickedObjects.begin())->world());
+		XMStoreFloat4x4(&view, camera->view());
+		XMStoreFloat4x4(&proj, camera->perspectiveProjection.projectionMatrix);
 
 		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
 		{
@@ -839,7 +872,7 @@ namespace Editor {
 		}
 
 		XMFLOAT4X4 delta;
-		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *world.m, *delta.m, NULL, NULL, NULL);
+		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *w.m, *delta.m, NULL, NULL, NULL);
 
 		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
 		XMVECTOR XMtranslation;
@@ -849,253 +882,41 @@ namespace Editor {
 
 		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
 		{
-			XMFLOAT3 newPos = renderable->position();
-			newPos.x += XMtranslation.m128_f32[0];
-			newPos.y += XMtranslation.m128_f32[1];
-			newPos.z += XMtranslation.m128_f32[2];
-			renderable->position(newPos);
+			translateObjects(XMtranslation);
 		}
 		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
 		{
-			XMFLOAT3 newRot = renderable->rotation();
-			XMFLOAT3 rotDelta = GetPitchYawRoll(delta);
-			newRot.x += rotDelta.x;
-			newRot.y += rotDelta.y;
-			newRot.z += rotDelta.z;
-			renderable->rotation(newRot);
+			rotateObjects(delta);
 		}
 		else if (gizmoOperation == ImGuizmo::OPERATION::SCALE)
 		{
-			XMFLOAT3 newScale = renderable->scale();
-			newScale.x *= XMscale.m128_f32[0];
-			newScale.y *= XMscale.m128_f32[1];
-			newScale.z *= XMscale.m128_f32[2];
-			renderable->scale(newScale);
-		}
-	}
-
-	void DrawLightGuizmo(std::shared_ptr<Camera> camera)
-	{
-		std::shared_ptr<Light> light = GetLight(selSO);
-
-		if (light->lightType() == LT_Ambient) return;
-
-		XMFLOAT4X4 world;
-		XMFLOAT4X4 view;
-		XMFLOAT4X4 proj;
-		XMStoreFloat4x4(&world, light->world());
-		XMStoreFloat4x4(&view, camera->ViewMatrix());
-		XMStoreFloat4x4(&proj, camera->perspective.projectionMatrix);
-
-		if ((ImGui::IsKeyPressed(ImGuiKey_T) && light->lightType() != LT_Directional) || light->lightType() == LT_Point) // t ky
-		{
-			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
-			gizmoMode = ImGuizmo::MODE::WORLD;
-		}
-		if ((ImGui::IsKeyPressed(ImGuiKey_R) && light->lightType() != LT_Point) || light->lightType() == LT_Directional) // r key
-		{
-			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
-			gizmoMode = ImGuizmo::MODE::WORLD;
-		}
-
-		XMFLOAT4X4 delta;
-		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *world.m, *delta.m, NULL, NULL, NULL);
-
-		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
-		XMVECTOR XMtranslation;
-		XMVECTOR XMrotation;
-		XMVECTOR XMscale;
-		XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
-
-		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
-		{
-			XMFLOAT3 newPos = light->position();
-			newPos.x += XMtranslation.m128_f32[0];
-			newPos.y += XMtranslation.m128_f32[1];
-			newPos.z += XMtranslation.m128_f32[2];
-			light->position(newPos);
-			if (light->hasShadowMaps())
-			{
-				for (auto& c : light->shadowMapCameras)
-				{
-					c->position(newPos);
-				}
-			}
-		}
-		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
-		{
-			XMFLOAT3 newRot = light->rotation();
-			XMFLOAT3 rotDelta = GetPitchYawRoll(delta);
-			newRot.x += rotDelta.x;
-			newRot.y += rotDelta.y;
-			newRot.z += rotDelta.z;
-			light->rotation(newRot);
-			if (light->hasShadowMaps())
-			{
-				for (auto& c : light->shadowMapCameras)
-				{
-					c->rotation(newRot);
-				}
-			}
-		}
-	}
-
-	void DrawCameraGuizmo(std::shared_ptr<Camera> camera)
-	{
-		std::shared_ptr<Camera> cam = GetCamera(selSO);
-
-		XMFLOAT4X4 world;
-		XMFLOAT4X4 view;
-		XMFLOAT4X4 proj;
-		XMStoreFloat4x4(&world, cam->world());
-		XMStoreFloat4x4(&view, camera->ViewMatrix());
-		XMStoreFloat4x4(&proj, camera->perspective.projectionMatrix);
-
-		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
-		{
-			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
-			gizmoMode = ImGuizmo::MODE::WORLD;
-		}
-		if (ImGui::IsKeyPressed(ImGuiKey_R)) // r key
-		{
-			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
-			gizmoMode = ImGuizmo::MODE::WORLD;
-		}
-
-		XMFLOAT4X4 delta;
-		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *world.m, *delta.m, NULL, NULL, NULL);
-
-		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
-		XMVECTOR XMtranslation;
-		XMVECTOR XMrotation;
-		XMVECTOR XMscale;
-		XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
-
-		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
-		{
-			XMFLOAT3 newPos = cam->position();
-			newPos.x += XMtranslation.m128_f32[0];
-			newPos.y += XMtranslation.m128_f32[1];
-			newPos.z += XMtranslation.m128_f32[2];
-			cam->position(newPos);
-		}
-		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
-		{
-			XMFLOAT3 newRot = cam->rotation();
-			XMFLOAT3 rotDelta = GetPitchYawRoll(delta);
-			newRot.x += rotDelta.x;
-			newRot.y += rotDelta.y;
-			newRot.z += rotDelta.z;
-			cam->rotation(newRot);
-		}
-	}
-
-	void DrawSoundGuizmo(std::shared_ptr<Camera> camera)
-	{
-		std::shared_ptr<Scene::SoundEffect> sound = GetSoundEffect(selSO);
-
-		XMFLOAT4X4 world;
-		XMFLOAT4X4 view;
-		XMFLOAT4X4 proj;
-		XMStoreFloat4x4(&world, sound->world());
-		XMStoreFloat4x4(&view, camera->ViewMatrix());
-		XMStoreFloat4x4(&proj, camera->perspective.projectionMatrix);
-
-		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
-		{
-			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
-			gizmoMode = ImGuizmo::MODE::WORLD;
-		}
-		/*
-		if (ImGui::IsKeyPressed(ImGuiKey_R)) // r key
-		{
-			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
-			gizmoMode = ImGuizmo::MODE::WORLD;
-		}
-		*/
-
-		XMFLOAT4X4 delta;
-		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *world.m, *delta.m, NULL, NULL, NULL);
-
-		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
-		XMVECTOR XMtranslation;
-		XMVECTOR XMrotation;
-		XMVECTOR XMscale;
-		XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
-
-		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
-		{
-			XMFLOAT3 newPos = sound->position();
-			newPos.x += XMtranslation.m128_f32[0];
-			newPos.y += XMtranslation.m128_f32[1];
-			newPos.z += XMtranslation.m128_f32[2];
-			sound->position(newPos);
-		}
-		/*
-		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
-		{
-			XMFLOAT3 newRot = sound->rotation();
-			XMFLOAT3 rotDelta = GetYawPitchRoll(delta);
-			newRot.x += rotDelta.x;
-			newRot.y += rotDelta.y;
-			newRot.z += rotDelta.z;
-			sound->rotation(newRot);
-		}
-		*/
-	}
-
-	void DrawSelectedObjectGuizmo(std::shared_ptr<Camera> camera)
-	{
-		ImGuizmo::SetOrthographic(false);
-		ImGuizmo::BeginFrame();
-		ImGuizmo::AllowAxisFlip(false);
-
-		ImGuiIO& io = ImGui::GetIO();
-		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-
-		if (selSO == "" || camera == nullptr) return;
-
-		ImGuizmo::SetID(0);
-
-		switch (soTab)
-		{
-		case SO_Renderables:
-		{
-			DrawRenderableGuizmo(camera);
-		}
-		break;
-		case SO_Lights:
-		{
-			DrawLightGuizmo(camera);
-		}
-		break;
-		case SO_Cameras:
-		{
-			DrawCameraGuizmo(camera);
-		}
-		break;
-		case SO_SoundEffects:
-		{
-			DrawSoundGuizmo(camera);
-		}
-		break;
+			scaleObjects(XMscale, delta);
+			//XMFLOAT3 newScale = boundingBox->scale();
+			//newScale.x *= XMscale.m128_f32[0];
+			//newScale.y *= XMscale.m128_f32[1];
+			//newScale.z *= XMscale.m128_f32[2];
+			//scale(newScale);
 		}
 	}
 
 	void OpenLevelFile()
 	{
-		OpenFile([](std::filesystem::path path)
+		using namespace Scene::Level;
+
+		ImGui::OpenFile([](std::filesystem::path path)
 			{
 				std::filesystem::path jsonFilePath = path;
 				jsonFilePath.replace_extension(".json");
-				levelToLoad = jsonFilePath;
-				soTab = _SceneObjects::SO_Renderables;
+				SetLevelToLoad(jsonFilePath.generic_string());
+				//levelToLoad = jsonFilePath;
+				/*
+				soTab = SceneObjectType::SO_Renderables;
 				selSO = "";
-				tempTab = _Templates::T_Materials;
+				tempTab = TemplateType::T_Materials;
 				selTemp = "";
+				*/
 			},
-			defaultLevelsFolder
-		);
+			defaultLevelsFolder);
 	}
 
 	void SaveLevelToFile(std::string levelFileName)
@@ -1247,56 +1068,81 @@ namespace Editor {
 		Templates::SaveTemplates(defaultTemplatesFolder, Texture::templateName, WriteTexturesJson);
 	}
 
-	void SelectSceneObject(_SceneObjects objectType, std::string uuid)
+	void SelectSceneObject(std::string uuid)
 	{
-		soTab = objectType;
-		selSO = uuid;
-		gizmoOperation = ImGuizmo::TRANSLATE;
-		gizmoMode = ImGuizmo::WORLD;
-	}
+		std::map<std::tuple<bool, bool>, std::function<void()>> actions =
+		{
+			{ std::make_tuple(false,false), [] //no shift, selecting nothing
+				{
+					mousePicking.pickedObjects.clear();
+					sceneObjectEdition.selected.clear();
+				}
+			},
+			{ std::make_tuple(false,true), [uuid] //no shift, selecting something
+				{
+					mousePicking.pickedObjects.clear();
+					sceneObjectEdition.selected.clear();
+					mousePicking.pickedObjects.insert(GetSceneObject(uuid));
+					sceneObjectEdition.selected.insert(uuid);
+					gizmoOperation = ImGuizmo::TRANSLATE;
+					gizmoMode = ImGuizmo::WORLD;
+				}
+			},
+			{ std::make_tuple(true,false), [] //shift, selecthing nothing. this wil undo last selection
+				{
+					if (mousePicking.pickedObjects.size() > 1ULL)
+					{
+						std::shared_ptr<SceneObject> last = mousePicking.pickedObjects.back();
+						std::string uuid = last->at("uuid");
+						mousePicking.pickedObjects.erase_back();
+						sceneObjectEdition.selected.erase(uuid);
+					}
+					else
+					{
+						mousePicking.pickedObjects.clear();
+						sceneObjectEdition.selected.clear();
+					}
+				}
+			},
+			{ std::make_tuple(true,true), [uuid]
+				{
+					gizmoOperation = ImGuizmo::TRANSLATE;
+					gizmoMode = ImGuizmo::WORLD;
+					mousePicking.pickedObjects.insert(GetSceneObject(uuid));
+					sceneObjectEdition.selected.insert(uuid);
+				}
+			},
+		};
 
-	void RenderSelectedLightShadowMapChain()
-	{
-		if (soTab != _SceneObjects::SO_Lights || selSO == "") return;
-
-		std::shared_ptr<Light> light = GetLight(selSO);
-		if (!light->hasShadowMaps() || light->shadowMapUpdateFlags) return;
-
-		light->RenderShadowMapMinMaxChain();
+		actions.at(std::make_tuple(keyboard->GetState().LeftShift, uuid != ""))();
 	}
 
 	void WriteRenderableBoundingBoxConstantsBuffer()
 	{
-		if (selSO.empty()) return;
-
-		switch (soTab)
+		if (mousePicking.pickedObjects.empty())
 		{
-		case SO_Renderables:
+			boundingBox->visible(false);
+			return;
+		}
+		boundingBox->visible(true);
+		BoundingBox bb;
+		bool first = true;
+		for (auto& o : mousePicking.pickedObjects)
 		{
-			GetRenderable(selSO)->FillRenderableBoundingBox(boundingBox);
+			if (first)
+			{
+				bb = o->GetBoundingBox();
+				first = false;
+			}
+			else
+			{
+				BoundingBox bm;
+				bb.CreateMerged(bm, bb, o->GetBoundingBox());
+				bb = bm;
+			}
 		}
-		break;
-		case SO_Lights:
-		{
-			GetLight(selSO)->FillRenderableBoundingBox(boundingBox);
-		}
-		break;
-		case SO_Cameras:
-		{
-			GetCamera(selSO)->FillRenderableBoundingBox(boundingBox);
-		}
-		break;
-		case SO_SoundEffects:
-		{
-			GetSoundEffect(selSO)->FillRenderableBoundingBox(boundingBox);
-		}
-		break;
-		default:
-		{
-		}
-		break;
-		}
-
+		boundingBox->scale(bb.Extents);
+		boundingBox->position(bb.Center);
 		boundingBox->WriteConstantsBuffer(renderer->backBufferIndex);
 	}
 
@@ -1325,37 +1171,6 @@ namespace Editor {
 				ImGui::EndPopup();
 			}
 		}
-	}
-
-	void ImDrawMaterialShaderSelection(nlohmann::json& mat, std::string key, ShaderType type, std::function<void()> cb)
-	{
-		ImGui::Text(("Shader " + key).c_str());
-
-		ImGui::PushID(("shader-name-combo-" + key).c_str());
-		{
-			std::string shaderUUID = mat.contains(key) ? mat.at(key) : "";
-			if (shaderUUID != "")
-			{
-				if (ImGui::Button(ICON_FA_FILE_CODE))
-				{
-					Editor::tempTab = T_Shaders;
-					Editor::selTemp = shaderUUID;
-				}
-				ImGui::SameLine();
-			}
-
-			std::vector<UUIDName> selectables = GetShadersUUIDsNamesByType(type);
-			SortUUIDByName(selectables);
-			std::string shaderName = shaderUUID != "" ? GetShaderName(shaderUUID) : " ";
-			UUIDName selected = std::tie(shaderUUID, shaderName);
-			DrawComboSelection(selected, selectables, [&mat, key, cb](UUIDName shader)
-				{
-					mat.at(key) = std::get<0>(shader);
-					cb();
-				}, ""
-			);
-		}
-		ImGui::PopID();
 	}
 
 	//MOUSE PROCESSING
@@ -1528,69 +1343,59 @@ namespace Editor {
 		}
 	}
 
+	bool PickingPassExists()
+	{
+		return mousePicking.pickingPass != nullptr;
+	}
+
 	//OBJECT PICKING
 	void CreatePickingPass()
 	{
-		unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
-		unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
-
-		mousePicking.pickingPass = CreateRenderPass("pickingPass", { DXGI_FORMAT_R32_UINT }, DXGI_FORMAT_D32_FLOAT, width, height);
+		mousePicking.pickingPass = GetRenderPassInstance(nullptr, 0, FindRenderPassUUIDByName("PickingPass"), HWNDWIDTH, HWNDHEIGHT);
 	}
 
 	void DestroyPickingPass()
 	{
+		if (mousePicking.pickingPass) {
+			DestroyRenderPassInstance(mousePicking.pickingPass);
+		}
 		mousePicking.pickingPass = nullptr;
-	}
-
-	void MapPickingRenderables()
-	{
-		auto& renderables = GetRenderables();
-		for (auto& [uuid, renderable] : renderables)
+		if (mousePicking.pickingCpuBuffer)
 		{
-			RegisterPickingComponents(renderable);
+			mousePicking.pickingCpuBuffer = nullptr;
 		}
 	}
 
-	void RegisterPickingComponents(std::shared_ptr<Renderable> renderable)
+	void BindPickingRenderables()
 	{
-		std::string pickingMaterialUUID = FindMaterialUUIDByName("Picking");
-		renderable->CreatePickingComponents(mousePicking.pickingPass->passHash, pickingMaterialUUID);
+		for (auto& r : GetRenderables())
+		{
+			r->CreateRenderPassMaterialsInstances(mousePicking.pickingPass);
+			r->CreateRenderPassConstantsBuffersInstances(mousePicking.pickingPass);
+			r->CreateRenderPassRootSignatures(mousePicking.pickingPass);
+			r->CreateRenderPassPipelineStates(mousePicking.pickingPass);
+		}
 	}
 
 	void RenderPickingPass(std::shared_ptr<Camera> camera)
 	{
-		if (!mousePicking.doPicking) return;
+		if (!camera || !mousePicking.doPicking) return;
 
 #if defined(_DEVELOPMENT)
 		PIXBeginEvent(renderer->commandList.p, 0, L"Scene Picker");
 #endif
 
-		auto WritePickingConstantsBuffer = [](std::shared_ptr<Renderable> r, unsigned int objectId, unsigned int backbufferIndex)
-			{
-				XMMATRIX world = r->world();
-				r->WriteConstantsBuffer(r->pickingMeshMaterials, r->pickingMeshConstantsBuffer, "world", world, backbufferIndex);
-				r->WriteConstantsBuffer(r->pickingMeshMaterials, r->pickingMeshConstantsBuffer, "objectId", objectId, backbufferIndex);
-			};
-
-		mousePicking.pickingPass->Pass([WritePickingConstantsBuffer, camera](size_t passHash)
+		mousePicking.pickingPass->rendererToTexturePass->Pass([camera]()
 			{
 				unsigned int backBufferIndex = renderer->backBufferIndex;
-				camera->WriteConstantsBuffer(backBufferIndex);
-
 				unsigned int objectId = 1U;
-				for (auto& [name, r] : GetRenderables())
+				for (auto& r : GetRenderables())
 				{
-					if (!r->visible()) continue;
+					OutputDebugStringA(("RenderPickingPass:" + r->name() + ":" + std::to_string(objectId) + "\n").c_str());
+					if (!r->visible() || boundingBox == r) continue;
 
-					WritePickingConstantsBuffer(r, objectId, backBufferIndex);
-
-					r->RenderCustomizable(passHash,
-						r->pickingMeshMaterials,
-						r->pickingMeshConstantsBuffer,
-						r->pickingMeshHashedRootSignatures,
-						r->pickingMeshHashedPipelineStates,
-						camera
-					);
+					r->WriteConstantsBuffer("objectId", objectId, backBufferIndex);
+					r->Render(mousePicking.pickingPass, camera);
 					objectId++;
 				}
 			}
@@ -1610,9 +1415,9 @@ namespace Editor {
 		DeviceUtils::CaptureTexture(
 			renderer->d3dDevice,
 			renderer->commandQueue,
-			mousePicking.pickingPass->renderToTexture[0]->renderToTexture,
-			mousePicking.pickingPass->renderToTexture[0]->width * sizeof(unsigned int),
-			mousePicking.pickingPass->renderToTexture[0]->resourceDesc,
+			mousePicking.pickingPass->rendererToTexturePass->renderToTexture[0]->renderToTexture,
+			mousePicking.pickingPass->rendererToTexturePass->renderToTexture[0]->width * sizeof(unsigned int),
+			mousePicking.pickingPass->rendererToTexturePass->renderToTexture[0]->resourceDesc,
 			mousePicking.pickingCpuBuffer,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
@@ -1628,7 +1433,7 @@ namespace Editor {
 		unsigned int* pReadbackBufferData{};
 		mousePicking.pickingCpuBuffer->Map(0, &readbackBufferRange, reinterpret_cast<void**>(&pReadbackBufferData));
 
-		Editor::PickSceneObject(pReadbackBufferData[offset]);
+		PickSceneObject(pReadbackBufferData[offset]);
 
 		D3D12_RANGE emptyRange{ 0, 0 };
 		mousePicking.pickingCpuBuffer->Unmap(0, &emptyRange);
@@ -1643,38 +1448,34 @@ namespace Editor {
 
 		if (pickedObjectId == 0U)
 		{
-			SelectSceneObject(_SceneObjects::SO_Renderables, "");
-			boundingBox->visible(false);
+			SelectSceneObject("");
 			return;
 		}
 
 		unsigned int objectId = 1U;
-		for (auto& [uuid, r] : GetRenderables())
+		for (auto& r : GetRenderables())
 		{
+			OutputDebugStringA(("PickSceneObject:" + r->name() + ":" + std::to_string(objectId) + "\n").c_str());
+
 			if (!r->visible()) continue;
 
 			if (pickedObjectId == objectId)
 			{
-				if (uuid != selSO)
-				{
-					SelectSceneObject(_SceneObjects::SO_Renderables, uuid);
-					boundingBox->visible(true);
-				}
+				SelectSceneObject(r->uuid());
 				break;
 			}
 			objectId++;
 		}
-
 	}
 
 	void ReleasePickingPassResources()
 	{
-		if (mousePicking.pickingPass) mousePicking.pickingPass->ReleaseResources();
+		if (mousePicking.pickingPass) mousePicking.pickingPass->rendererToTexturePass->ReleaseResources();
 	}
 
 	void ResizePickingPass(unsigned int width, unsigned int height)
 	{
-		if (mousePicking.pickingPass) mousePicking.pickingPass->Resize(width, height);
+		if (mousePicking.pickingPass) mousePicking.pickingPass->rendererToTexturePass->Resize(width, height);
 	}
 };
 

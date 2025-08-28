@@ -95,9 +95,9 @@ void Sphere::TeselateIcosahedron(std::vector<XMFLOAT3>& points, std::vector<uint
 			NormalizePoint(v4, 0.5f);
 			NormalizePoint(v5, 0.5f);
 
-			uint32_t i3 = points.size();
-			uint32_t i4 = points.size() + 1;
-			uint32_t i5 = points.size() + 2;
+			uint32_t i3 = static_cast<uint32_t>(points.size());
+			uint32_t i4 = static_cast<uint32_t>(points.size() + 1ULL);
+			uint32_t i5 = static_cast<uint32_t>(points.size() + 2ULL);
 
 			points.push_back(v3);
 			points.push_back(v4);

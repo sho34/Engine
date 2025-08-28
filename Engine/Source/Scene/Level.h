@@ -2,6 +2,10 @@
 
 namespace Scene::Level
 {
+	void SetLevelToLoad(std::string levelName);
+	bool PendingLevelToLoad();
+	void LoadPendingLevel();
+
 	//level handling
 #if defined(_EDITOR)
 	void LoadDefaultLevel();

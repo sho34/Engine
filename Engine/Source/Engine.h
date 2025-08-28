@@ -3,25 +3,23 @@
 #include "resource.h"
 
 #if defined(_DEVELOPMENT)
-#include "Shaders/Compiler/ShaderCompiler.h"
+#include <ShaderCompiler.h>
 #endif
-#include "Shaders/Compute/ComputeInterface.h"
-#include "Common/StepTimer.h"
-#include "Renderer/Renderer.h"
-#include "Renderer/DeviceUtils/Resources/Resources.h"
+#include <ComputeInterface.h>
+#include <StepTimer.h>
+#include <Renderer.h>
+#include <DeviceUtils/Resources/Resources.h>
 
-//#include "Animation/Effects/Effects.h"
-#include "Audio/AudioSystem.h"
+#include <AudioSystem.h>
 #if defined(_EDITOR)
-#include "Editor/Editor.h"
-#include "Editor/DefaultLevel.h"
+#include <Editor.h>
+#include <DefaultLevel.h>
 #endif
 
-#include "Templates/Templates.h"
-#include "Scene/Scene.h"
+#include <Templates.h>
+#include <Scene.h>
 
 using namespace DeviceUtils;
-using namespace RenderPass;
 //using namespace Animation::Effects;
 using namespace AudioSystem;
 #if defined(_EDITOR)
@@ -44,7 +42,7 @@ LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 void AppStep();
 void GameInputStep();
 void AnimableStep(double elapsedSeconds);
-void AudioStep();
+void AudioStep(float step);
 void CameraStep();
 
 //RENDER

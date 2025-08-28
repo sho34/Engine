@@ -2,6 +2,29 @@
 
 namespace nostd {
 
+	template <class T>
+	class VectorSet
+	{
+	public:
+		using iterator = typename std::vector<T>::iterator;
+		using const_iterator = typename std::vector<T>::const_iterator;
+		iterator begin() { return theVector.begin(); }
+		iterator end() { return theVector.end(); }
+		const_iterator begin() const { return theVector.begin(); }
+		const_iterator end() const { return theVector.end(); }
+		const T& front() const { return theVector.front(); }
+		const T& back() const { return theVector.back(); }
+		void insert(const T& item) { if (theSet.insert(item).second) theVector.push_back(item); }
+		size_t count(const T& item) const { return theSet.count(item); }
+		bool empty() const { return theSet.empty(); }
+		size_t size() const { return theSet.size(); }
+		void clear() { theSet.clear(); theVector.clear(); }
+		void erase_back() { T last = theVector.back(); theVector.pop_back(); theSet.erase(last); }
+	private:
+		std::vector<T> theVector;
+		std::set<T>    theSet;
+	};
+
 	template<typename T, typename E>
 	inline bool bytesHas(T bytes, E flag) {
 		return (bytes & flag) == flag;
@@ -222,4 +245,12 @@ namespace nostd {
 		return std::regex_replace(path, std::regex("\\\\"), "/");
 	}
 
+	inline std::string as_string(std::string_view v) {
+		return { v.data(), v.size() };
+	}
+
+	int findElementIndex(auto element, auto options)
+	{
+		return static_cast<int>(std::find(options.begin(), options.end(), element) - options.begin());
+	}
 }

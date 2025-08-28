@@ -1,19 +1,23 @@
 #include "pch.h"
-#include "Level.h"
+#include <Level.h>
 //scene objects
-#include "Scene.h"
+#include <Scene.h>
+#include <Camera/Camera.h>
+#include <Renderable/Renderable.h>
+#include <Lights/Lights.h>
+#include <Sound/SoundFX.h>
 //audio
-#include "../Audio/AudioSystem.h"
+#include <AudioSystem.h>
 using namespace AudioSystem;
 //effects
-#include "../Effects/Effects.h"
-//#include "../Effects/DecalLoop.h"
-//#include "../Effects/LightOscilation.h"
-//renderer
-#include "../Renderer/Renderer.h"
+#include <Effects.h>
+//#include <DecalLoop.h>
+//#include <LightOscilation.h>
+#include <Renderer.h>
 #if defined(_EDITOR)
-#include "../Editor/Editor.h"
-#include "../Editor/DefaultLevel.h"
+#include <Editor.h>
+#include <DefaultLevel.h>
+
 using namespace Editor;
 namespace Editor {
 	extern std::string currentLevelName;
@@ -25,38 +29,73 @@ extern std::shared_ptr<Renderer> renderer;
 namespace Scene::Level {
 	using namespace Scene;
 
-	void LoadSceneObjects(nlohmann::json j, std::string type, std::function<void(nlohmann::json)> loadCallback)
+	std::filesystem::path levelToLoad;
+
+	void SetLevelToLoad(std::string levelName)
 	{
-		if (j.contains(type)) std::for_each(j[type].begin(), j[type].end(), loadCallback);
+		levelToLoad = levelName;
+	}
+
+	bool PendingLevelToLoad()
+	{
+		return !levelToLoad.empty();
+	}
+
+	void LoadPendingLevel()
+	{
+		DestroyEditorSceneObjectsReferences();
+		DestroySceneObjects();
+		LoadLevel(levelToLoad);
+		levelToLoad = "";
+	}
+
+	template<typename T>
+	void LoadSceneObjects(nlohmann::json j, std::string type/*, std::function<std::shared_ptr<T>(std::shared_ptr<T>&)> loadCallback*/)
+	{
+		if (j.contains(type))
+		{
+			std::for_each(j.at(type).begin(), j.at(type).end(), [](nlohmann::json& json)
+				{
+					std::shared_ptr<T> o = std::make_shared<T>(json);
+					o->this_ptr = o;
+					o->BindToScene();
+				}
+			);
+		}
 	}
 
 #if defined(_EDITOR)
+
 	void LoadDefaultLevel()
 	{
-		LoadSceneObjects(DefaultLevel::renderables, "renderables", CreateRenderable);
-		LoadSceneObjects(DefaultLevel::cameras, "cameras", CreateCamera);
-		LoadSceneObjects(DefaultLevel::lights, "lights", CreateLight);
+		LoadSceneObjects<Renderable>(DefaultLevel::GetDefaultLevelRenderables(), "renderables");
+		LoadSceneObjects<Camera>(DefaultLevel::GetDefaultLevelCameras(), "cameras");
+		LoadSceneObjects<Light>(DefaultLevel::GetDefaultLevelLights(), "lights");
+		LoadSceneObjects<SoundFX>(DefaultLevel::GetDefaultLevelSounds(), "sounds");
+		CreateRenderablesCameraBinding();
 	}
 #endif
 
 	void LoadLevel(std::filesystem::path level)
 	{
 		std::string pathStr = (std::filesystem::exists(level) ? level.generic_string() : (defaultLevelsFolder + level.generic_string() + ".json"));
-		std::string debug = "Loading level: " + pathStr + "\n";
-		OutputDebugStringA(debug.c_str());
+		OutputDebugStringA(std::string("Loading level: " + pathStr + "\n").c_str());
+
 		std::ifstream file(pathStr);
 		nlohmann::json data = nlohmann::json::parse(file);
 
 		DestroySceneObjects();
 
-		LoadSceneObjects(data, "renderables", CreateRenderable);
-		LoadSceneObjects(data, "cameras", CreateCamera);
-		LoadSceneObjects(data, "lights", CreateLight);
-		LoadSceneObjects(data, "sounds", CreateSoundEffect);
+		LoadSceneObjects<Renderable>(data, "renderables");
+		LoadSceneObjects<Camera>(data, "cameras");
+		LoadSceneObjects<Light>(data, "lights");
+		LoadSceneObjects<SoundFX>(data, "sounds");
+		CreateRenderablesCameraBinding();
 
 		file.close();
 #if defined(_EDITOR)
 		Editor::currentLevelName = level.filename().string();
+		Editor::MarkScenePanelAssetsAsDirty();
 #endif
 	}
 
@@ -72,17 +111,19 @@ namespace Scene::Level {
 		//Destroy sound instances
 		DestroySoundEffects();
 
-		//Destroy the lights
-		DestroyLights();
-		DestroyShadowMaps();
-
-		//Destroy the cameras
-		DestroyCameras();
-
-		//Destroy animated
+		//Destroy animated(this will destroy constants buffers)
 		DestroyAnimated();
 
-		//Destroy the renderables
+		//Destroy the renderables(this will detach the renderables from the cameras and destroy the renderables, materials, cbv, meshes, etc)
 		DestroyRenderables();
+
+		//Destroy the shadowmaps(this will destroy the shadow map cameras and render to textures of the shadowmaps)
+		DestroyShadowMaps();
+		//Destroy the lights(this will destroy the lights and it's cbvs)
+		DestroyLights();
+
+		//Destroy the cameras(this will destroy the cameras and the render passes)
+		DestroyCameras();
+
 	}
 }

@@ -4,7 +4,7 @@
 #include <map>
 #include <DirectXMath.h>
 #include <assimp/scene.h>
-#include "../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include <memory>
 
 namespace Scene { struct Renderable; };

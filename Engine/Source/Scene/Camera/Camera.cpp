@@ -1,96 +1,69 @@
 #include "pch.h"
 #include "Camera.h"
-#include "../Scene.h"
-#include "../Lights/Lights.h"
-#include "../../Renderer/Renderer.h"
+#include <Scene.h>
+#include <Lights/Lights.h>
+#include <Renderer.h>
 #include <nlohmann/json.hpp>
 #if defined(_EDITOR)
-#include "../../Editor/Editor.h"
-#include <ImEditor.h>
 #include "imgui.h"
+#include <Templates.h>
+#include <Textures/Texture.h>
 #endif
 #include <Keyboard.h>
 #include <GamePad.h>
 #include <SimpleMath.h>
 #include <Mouse.h>
+#include <RenderPass/RenderPass.h>
+#include <DeviceUtils/RenderToTexture/RenderToTexture.h>
+
+using namespace DeviceUtils;
 
 extern RECT hWndRect;
 extern std::shared_ptr<Renderer> renderer;
 
 namespace Scene
 {
+#include <JExposeAttDrawersDef.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeTrackUUIDDef.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
+
 	using namespace DeviceUtils;
 	using namespace DirectX;
 
 	static inline std::string defaultCamUUID = "br0ken-camuuid";
 
-	std::vector<std::shared_ptr<Camera>> cameraByIndex;
-	std::map<std::string, std::shared_ptr<Camera>> cameraByUUID;
-#if defined(_EDITOR)
-	std::map<std::shared_ptr<Camera>, std::vector<std::function<void()>>> cameraDestructionCallbacks;
-	nlohmann::json Camera::creationJson;
-	unsigned int Camera::popupModalId = 0U;
-#endif
-
-	std::shared_ptr<Camera> CreateCamera(nlohmann::json cameraj)
+	Camera::Camera(nlohmann::json json) :SceneObject(json)
 	{
-		std::shared_ptr<Camera> camera = std::make_shared<Camera>();
-		camera->json = cameraj;
-		camera->this_ptr = camera;
+#include <JExposeInit.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
 
-		SetIfMissingJson(camera->json, "name", "cam." + std::to_string(cameraByIndex.size()));
-		SetIfMissingJson(camera->json, "uuid", defaultCamUUID);
-		SetIfMissingJson(camera->json, "fitWindow", false);
-		SetIfMissingJson(camera->json, "projectionType", ProjectionTypesToStr.at(PROJ_Perspective));
-		SetIfMissingJson(camera->json, "minLogLuminance", -2.0f);
-		SetIfMissingJson(camera->json, "maxLogLuminance", 10.0f);
-		SetIfMissingJson(camera->json, "tau", 1.1f);
-		SetIfMissingJson(camera->json, "IBLIrradiance", "");
-		SetIfMissingJson(camera->json, "IBLPreFilteredEnvironment", "");
-		SetIfMissingJson(camera->json, "IBLBRDFLUT", "");
+#include <JExposeAttUpdate.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
 
-		bool fitToWindow = camera->json.at("fitWindow");
-
-		switch (StrToProjectionTypes.at(camera->json.at("projectionType")))
+		switch (projectionType())
 		{
 		case PROJ_Perspective:
 		{
-			float winWidth = fitToWindow ? static_cast<float>(hWndRect.right - hWndRect.left) : static_cast<float>(cameraj["perspective"]["width"]);
-			float winHeight = fitToWindow ? static_cast<float>(hWndRect.bottom - hWndRect.top) : static_cast<float>(cameraj["perspective"]["height"]);
-			float nearZ = cameraj["perspective"].contains("nearZ") ? static_cast<float>(cameraj["perspective"]["nearZ"]) : CameraProjections::Perspective::defaultNearZ;
-			float farZ = cameraj["perspective"].contains("farZ") ? static_cast<float>(cameraj["perspective"]["farZ"]) : CameraProjections::Perspective::defaultFarZ;
-			float fovAngleY = cameraj["perspective"].contains("fovAngleY") ? static_cast<float>(cameraj["perspective"]["fovAngleY"]) : CameraProjections::Perspective::defaultFovAngleY;
-
-			camera->perspective = {
-				.nearZ = nearZ,
-				.farZ = farZ,
-				.fovAngleY = fovAngleY,
-				.width = winWidth,
-				.height = winHeight,
+			perspectiveProjection = {
+				.nearZ = projectionNearZ(), .farZ = projectionFarZ(),
+				.fovAngleY = projectionfovAngleY(), .width = projectionWidth(), .height = projectionHeight()
 			};
-			camera->perspective.updateProjectionMatrix();
-#if defined(_EDITOR)
-			camera->editorPerspective.Copy(camera->perspective);
-#endif
+			perspectiveProjection.updateProjectionMatrix();
 		}
 		break;
 		case PROJ_Orthographic:
 		{
-			float winWidth = fitToWindow ? static_cast<float>(hWndRect.right - hWndRect.left) : static_cast<float>(cameraj["orthographic"]["width"]);
-			float winHeight = fitToWindow ? static_cast<float>(hWndRect.bottom - hWndRect.top) : static_cast<float>(cameraj["orthographic"]["height"]);
-			float nearZ = cameraj["orthographic"].contains("nearZ") ? static_cast<float>(cameraj["orthographic"]["nearZ"]) : CameraProjections::Orthographic::defaultNearZ;
-			float farZ = cameraj["orthographic"].contains("farZ") ? static_cast<float>(cameraj["orthographic"]["farZ"]) : CameraProjections::Orthographic::defaultFarZ;
-
-			camera->orthographic = {
-				.nearZ = nearZ,
-				.farZ = farZ,
-				.width = winWidth,
-				.height = winHeight
+			orthographicProjection = {
+				.nearZ = projectionNearZ(), .farZ = projectionFarZ(),
+				.width = projectionWidth(), .height = projectionHeight()
 			};
-			camera->orthographic.updateProjectionMatrix();
-#if defined(_EDITOR)
-			camera->editorOrthographic.Copy(camera->orthographic);
-#endif
+			orthographicProjection.updateProjectionMatrix();
 		}
 		break;
 		default:
@@ -100,389 +73,137 @@ namespace Scene
 		break;
 		}
 
-		SetIfMissingJson(camera->json, "position", XMFLOAT3({ 0.0f,0.0f,0.0f }));
-		SetIfMissingJson(camera->json, "rotation", XMFLOAT3({ 0.0f,0.0f,0.0f }));
-		SetIfMissingJson(camera->json, "speed", 0.05f);
-		SetIfMissingJson(camera->json, "white", 1.1f);
-
-		if (cameraj.contains("light"))
+		if (!light().empty())
 		{
-			camera->light = GetLight(cameraj["light"]);
-		}
-
-		camera->CreateIBLTexturesInstances();
-		camera->CreateConstantsBuffer();
-
-		cameraByIndex.push_back(camera);
-		cameraByUUID.insert_or_assign(camera->json.at("uuid"), camera);
-
-		return camera;
-	}
-
-	std::vector<std::shared_ptr<Camera>> GetCameras()
-	{
-		return cameraByIndex;
-	}
-
-	std::vector<std::string> GetCamerasNames()
-	{
-		std::map<std::string, std::shared_ptr<Camera>> c;
-		std::copy_if(cameraByUUID.begin(), cameraByUUID.end(), std::inserter(c, c.end()), [](const auto& pair)
-			{
-				return !pair.second->light;
-			}
-		);
-		std::vector<std::string> cameraNames;
-		std::transform(c.begin(), c.end(), std::back_inserter(cameraNames), [](const auto& pair)
-			{
-				return pair.second->name();
-			}
-		);
-		return cameraNames;
-	}
-
-	std::vector<UUIDName> GetCamerasUUIDNames()
-	{
-		std::map<std::string, std::shared_ptr<Camera>> ret;
-		std::copy_if(cameraByUUID.begin(), cameraByUUID.end(), std::inserter(ret, ret.end()), [](const auto& pair)
-			{
-				return !pair.second->hidden() && pair.second->light == nullptr;
-			}
-		);
-
-		return GetSceneObjectsUUIDsNames(ret);
-	}
-
-#if defined(_EDITOR)
-	void SelectCamera(std::string uuid, std::string& edSO)
-	{
-		edSO = uuid;
-	}
-
-	void DeSelectCamera(std::string& edSO)
-	{
-		edSO = "";
-	}
-
-	void DrawCameraPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
-	{
-		std::shared_ptr<Camera> camera = cameraByUUID.at(uuid);
-
-		if (camera->light != nullptr)
-		{
-			ImGui::Text("camera is controlled by light");
-			ImGui::SameLine();
-			if (ImGui::TextLink(camera->light->name().c_str()))
-			{
-				Editor::SelectSceneObject(_SceneObjects::SO_Lights, camera->light->uuid());
-			}
-			return;
-		}
-
-		std::string tableName = "camera-panel";
-		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
-		{
-			camera->DrawEditorInformationAttributes();
-			camera->DrawEditorWorldAttributes();
-			camera->DrawEditorCameraAttributes();
-			camera->DrawEditorIBLAttributes();
-			ImGui::EndTable();
+			lightCam = FindInLights(light());
 		}
 	}
-
-	std::string GetCameraName(std::string uuid)
-	{
-		std::shared_ptr<Camera> camera = cameraByUUID.at(uuid);
-		return camera->json.at("name");
-	}
-
-	void CreateNewCamera()
-	{
-		Camera::popupModalId = RenderablePopupModal_CreateNew;
-		Camera::creationJson = nlohmann::json(
-			{
-				{ "name", "" },
-				{ "projectionType", ProjectionTypesToStr.at(PROJ_Perspective) }
-			}
-		);
-	}
-
-	void Camera::BindDestruction(std::function<void()> cb)
-	{
-		cameraDestructionCallbacks[this_ptr].push_back(cb);
-	}
-
-	void DeleteCamera(std::string uuid)
-	{
-		std::shared_ptr<Camera> camera = cameraByUUID.at(uuid);
-		if (camera->hidden() || !camera->light)
-		{
-			camera->cameraUpdateFlags |= CameraFlags_Destroy;
-		}
-	}
-
-	void DrawCamerasPopups()
-	{
-		Editor::DrawCreateWindow(Camera::popupModalId, CameraPopupModal_CreateNew, "New Camera", [](auto OnCancel)
-			{
-				nlohmann::json& json = Camera::creationJson;
-
-				ImGui::PushID("camera-name");
-				{
-					ImGui::Text("Name");
-					ImDrawJsonInputText(json, "name");
-				}
-				ImGui::PopID();
-
-				ImGui::Text("Projection Type");
-
-				ImGui::PushID("camera-projection-type");
-				{
-					std::string projectionType = json.at("projectionType");
-					DrawComboSelection(projectionType, ProjectionsTypesStr, [&json](std::string newProjection)
-						{
-							json.at("projectionType") = newProjection;
-						}
-					);
-				}
-				ImGui::PopID();
-
-				if (ImGui::Button("Cancel")) { OnCancel(); }
-				ImGui::SameLine();
-				bool disabledCreate = json.at("name") == "";
-
-				DrawItemWithEnabledState([&json]
-					{
-						if (ImGui::Button("Create"))
-						{
-							Camera::popupModalId = 0;
-							nlohmann::json r = {
-								{ "uuid", getUUID() },
-								{ "name", json.at("name") },
-								{ "projectionType", json.at("projectionType") }
-							};
-
-							ProjectionsTypes projType = StrToProjectionTypes.at(json.at("projectionType"));
-							switch (projType)
-							{
-							case PROJ_Perspective:
-							{
-								r["perspective"]["width"] = 1024;
-								r["perspective"]["height"] = 1024;
-								r["perspective"]["nearZ"] = CameraProjections::Perspective::defaultNearZ;
-								r["perspective"]["farZ"] = CameraProjections::Perspective::defaultFarZ;
-								r["perspective"]["fovAngleY"] = CameraProjections::Perspective::defaultFovAngleY;
-							}
-							break;
-							case PROJ_Orthographic:
-							{
-								r["orthographic"]["width"] = 1024;
-								r["orthographic"]["height"] = 1024;
-								r["orthographic"]["nearZ"] = CameraProjections::Orthographic::defaultNearZ;
-								r["orthographic"]["farZ"] = CameraProjections::Orthographic::defaultFarZ;
-							}
-							break;
-							default:
-							{}
-							break;
-							}
-
-							CreateCamera(r);
-						}
-					}, !disabledCreate
-				);
-			}
-		);
-	}
-
-	bool GetCameraPopupIsOpen()
-	{
-		return !!Camera::popupModalId;
-	}
-
-	void WriteCamerasJson(nlohmann::json& json)
-	{
-		std::map<std::string, std::shared_ptr<Camera>> filtered;
-		std::copy_if(cameraByUUID.begin(), cameraByUUID.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
-			{
-				auto& [uuid, camera] = pair;
-				return !camera->hidden() && camera->light == nullptr;
-			}
-		);
-		std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
-			{
-				auto& [uuid, camera] = pair;
-				nlohmann::json ret = camera->json;
-				ret["uuid"] = uuid;
-				return ret;
-			}
-		);
-	}
-#endif
 
 	void CamerasStep()
 	{
-#if defined(_EDITOR)
-		std::vector<std::shared_ptr<Camera>> camerasToDestroy;
-		std::copy_if(cameraByIndex.begin(), cameraByIndex.end(), std::back_inserter(camerasToDestroy), [](const std::shared_ptr<Camera>& cam)
+		std::set<std::shared_ptr<Camera>> cams;
+		std::transform(Cameras.begin(), Cameras.end(), std::inserter(cams, cams.begin()), [](const auto& pair) { return pair.second; });
+
+		std::set<std::shared_ptr<Camera>> camsRpi;
+		std::copy_if(cams.begin(), cams.end(), std::inserter(camsRpi, camsRpi.begin()), [](const auto& cam)
 			{
-				return cam->cameraUpdateFlags & CameraFlags_Destroy;
+				return cam->dirty(Camera::Update_renderPasses);
 			}
 		);
 
-		std::map<std::shared_ptr<Camera>, std::set<TextureShaderUsage>> camerasToDestroyIBL;
-		std::map<std::shared_ptr<Camera>, std::set<TextureShaderUsage>> camerasToCreateIBL;
-		std::set<std::shared_ptr<Camera>> camerasToResetFlag;
-		for (auto& cam : cameraByIndex)
+		std::map<std::string, std::shared_ptr<Camera>> swapCCams(Cameras.begin(), Cameras.end());
+		for (auto& pair : swapCCams)
 		{
-			for (auto& [usage, flag] : cam->iblTexturesFlags)
+			auto [uuid, cam] = pair;
+			if (!cam->dirty(Camera::Update_useSwapChain)) continue;
+			cam->clean(Camera::Update_useSwapChain);
+			if (cam->useSwapChain())
 			{
-				if (flag & CameraIBLTextureFlags_Destroy) camerasToDestroyIBL[cam].insert(usage);
-				if (flag & CameraIBLTextureFlags_Create) camerasToCreateIBL[cam].insert(usage);
+				InsertCameraIntoSwapChainCameras(cam);
 			}
-			if (cam->iblTexturesFlags.size() > 0ULL) camerasToResetFlag.insert(cam);
+			else
+			{
+				EraseCameraFromSwapChainCameras(cam);
+			}
+			camsRpi.insert(cam);
 		}
 
-		bool goCritical = (camerasToDestroy.size() > 0ULL || camerasToDestroyIBL.size() > 0ULL || camerasToCreateIBL.size() > 0ULL);
-
-		if (goCritical)
+		if (camsRpi.size() > 0ULL)
 		{
 			renderer->Flush();
-			renderer->RenderCriticalFrame([&camerasToDestroy, &camerasToDestroyIBL, &camerasToCreateIBL, &camerasToResetFlag]
+			renderer->RenderCriticalFrame([&camsRpi]
 				{
-					for (auto& [cam, usages] : camerasToDestroyIBL)
+					for (auto& c : camsRpi)
 					{
-						for (auto& usage : usages)
-						{
-							DestroyTextureInstance(cam->iblTextures.at(usage));
-							cam->iblTextures.erase(usage);
-						}
-					}
-					camerasToDestroyIBL.clear();
+						c->clean(Camera::Update_renderPasses);
 
-					for (auto& [cam, usages] : camerasToCreateIBL)
-					{
-						std::map<TextureShaderUsage, std::string> textures;
-						for (auto& usage : usages)
+						for (auto rpi : c->cameraRenderPasses)
 						{
-							if (cam->json.at(iblUsageTexture.at(usage)) != "")
+							if (rpi->renderCallbackOverride == RenderPassRenderCallbackOverride_Resolve)
 							{
-								textures.insert_or_assign(usage, cam->json.at(iblUsageTexture.at(usage)));
+								EraseCameraFromSwapChainCameras(c);
+								break;
 							}
 						}
-						std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> newInstances = GetTextures(textures);
-						for (auto& [usage, texInstance] : newInstances)
+
+						for (auto& renderable : c->renderables)
 						{
-							cam->iblTextures.insert_or_assign(usage, texInstance);
+							renderable->DestroyMaterialsInstances(c);
+							renderable->DestroyConstantsBuffersInstances(c);
+							renderable->DestroyRootSignatures(c);
+							renderable->DestroyPipelineStates(c);
 						}
-					}
-					camerasToCreateIBL.clear();
+						c->DestroyRenderPasses();
 
-					for (auto& cam : camerasToResetFlag)
-					{
-						cam->iblTexturesFlags.clear();
-					}
-
-					camerasToCreateIBL.clear();
-
-					for (auto& cam : camerasToDestroy)
-					{
-						if (cameraDestructionCallbacks.contains(cam))
+						c->CreateRenderPasses();
+						for (auto& renderable : c->renderables)
 						{
-							for (auto& cb : cameraDestructionCallbacks.at(cam))
+							renderable->CreateMaterialsInstances(c);
+							renderable->CreateConstantsBuffersInstances(c);
+							renderable->CreateRootSignatures(c);
+							renderable->CreatePipelineStates(c);
+						}
+
+						for (auto rpi : c->cameraRenderPasses)
+						{
+							if (rpi->renderCallbackOverride == RenderPassRenderCallbackOverride_Resolve)
 							{
-								cb();
+								InsertCameraIntoSwapChainCameras(c);
+								break;
 							}
-							cameraDestructionCallbacks.erase(cam);
 						}
-						DestroyCamera(cam);
 					}
-					camerasToDestroy.clear();
 				}
 			);
 		}
-#endif
 	}
 
 	void DestroyCamera(std::shared_ptr<Camera>& camera)
 	{
 		if (camera == nullptr) return;
-		nostd::vector_erase(cameraByIndex, camera);
-		cameraByUUID.erase(camera->json.at("uuid"));
+		DEBUG_PTR_COUNT_JSON(camera);
+
+		camera->UnbindFromScene();
 		camera->this_ptr = nullptr;
 		camera = nullptr;
 	}
 
 	void DestroyCameras()
 	{
-		for (auto& cam : cameraByIndex)
+		auto cams = Cameras;
+		for (auto& [_, cam] : cams)
 		{
-			cam->this_ptr = nullptr;
-			cam->light = nullptr;
+			DestroyCamera(cam);
 		}
-		cameraByIndex.clear();
-		cameraByUUID.clear();
+		Cameras.clear();
+		WindowCameras.clear();
+	}
+
 #if defined(_EDITOR)
-		cameraDestructionCallbacks.clear();
+	void WriteCamerasJson(nlohmann::json& json)
+	{
+		//std::map<std::string, std::shared_ptr<Camera>> filtered;
+		//std::copy_if(cameraByUUID.begin(), cameraByUUID.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
+		//	{
+		//		auto& [uuid, camera] = pair;
+		//		return !camera->hidden() && camera->light == nullptr;
+		//	}
+		//);
+		//std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
+		//	{
+		//		auto& [uuid, camera] = pair;
+		//		nlohmann::json ret = camera->json;
+		//		ret["uuid"] = uuid;
+		//		return ret;
+		//	}
+		//);
+	}
 #endif
-	}
-
-	std::string Camera::uuid()
-	{
-		return json.at("uuid");
-	}
-
-	void Camera::uuid(std::string uuid)
-	{
-		json["uuid"] = uuid;
-	}
-
-	std::string Camera::name()
-	{
-		return json.at("name");
-	}
-
-	void Camera::name(std::string name)
-	{
-		json["name"] = name;
-	}
-
-	XMFLOAT3 Camera::position()
-	{
-		return XMFLOAT3(json.at("position").at(0), json.at("position").at(1), json.at("position").at(2));
-	}
 
 	XMVECTOR Camera::positionV()
 	{
 		XMFLOAT3 pos = position();
 		return { pos.x,pos.y,pos.z,0.0f };
-	}
-
-	void Camera::position(XMFLOAT3 f3)
-	{
-		nlohmann::json& j = json.at("position");
-		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
-	}
-
-	void Camera::position(nlohmann::json f3)
-	{
-		json.at("position") = f3;
-	}
-
-	XMFLOAT3 Camera::rotation()
-	{
-		return XMFLOAT3(json.at("rotation").at(0), json.at("rotation").at(1), json.at("rotation").at(2));
-	}
-
-	void Camera::rotation(XMFLOAT3 f3)
-	{
-		nlohmann::json& j = json.at("rotation");
-		j.at(0) = f3.x; j.at(1) = f3.y; j.at(2) = f3.z;
-	}
-
-	void Camera::rotation(nlohmann::json f3)
-	{
-		json.at("rotation") = f3;
 	}
 
 	XMVECTOR Camera::rotationQ()
@@ -494,44 +215,44 @@ namespace Scene
 		return rotQ;
 	}
 
-	float Camera::white()
+	XMVECTOR Camera::forward()
 	{
-		return json.at("white");
+		if (lightCam != nullptr && lightCam->lightType() == LT_Point)
+		{
+			unsigned int i = 0U;
+			for (; i < 6U; i++) {
+				if (lightCam->shadowMapCameras[i].get() == this)
+				{
+					return Scene::PointLightDirection[i];
+				}
+			}
+		}
+
+		FXMVECTOR dir = { 0.0f, 0.0f, 1.0f,0.0f };
+		return XMVector3Normalize(XMVector3Rotate(dir, rotationQ()));
 	}
 
-	void Camera::white(float f)
+	XMVECTOR Camera::up()
 	{
-		json.at("white") = f;
+		if (lightCam != nullptr && lightCam->lightType() == LT_Point)
+		{
+			unsigned int i = 0U;
+			for (; i < 6U; i++)
+			{
+				if (lightCam->shadowMapCameras[i].get() == this)
+				{
+					return Scene::PointLightUp[i];
+				}
+			}
+		}
+
+		FXMVECTOR up = { 0.0f, 1.0f, 0.0f,0.0f };
+		return XMVector3Normalize(XMVector3Rotate(up, rotationQ()));
 	}
 
-	float Camera::minLogLuminance()
+	XMVECTOR Camera::right()
 	{
-		return json.at("minLogLuminance");
-	}
-
-	void Camera::minLogLuminance(float f)
-	{
-		json.at("minLogLuminance") = f;
-	}
-
-	float Camera::maxLogLuminance()
-	{
-		return json.at("maxLogLuminance");
-	}
-
-	void Camera::maxLogLuminance(float f)
-	{
-		json.at("maxLogLuminance") = f;
-	}
-
-	float Camera::tau()
-	{
-		return json.at("tau");
-	}
-
-	void Camera::tau(float f)
-	{
-		json.at("tau") = f;
+		return XMVector3Cross(forward(), up());
 	}
 
 	XMMATRIX Camera::world()
@@ -546,66 +267,244 @@ namespace Scene
 		return XMMatrixMultiply(rotationM, positionM);
 	}
 
+	XMMATRIX Camera::view()
+	{
+		return XMMatrixLookToLH(positionV(), forward(), up());
+	}
+
+	XMMATRIX Camera::projection()
+	{
+		return (projectionType() == PROJ_Orthographic) ? orthographicProjection.projectionMatrix : perspectiveProjection.projectionMatrix;
+	}
+
+	float Camera::projectionWidth()
+	{
+		switch (projectionType())
+		{
+		case PROJ_Perspective:
+			return  fitWindow() ? static_cast<float>(abs(hWndRect.right - hWndRect.left)) : perspective().width;
+			break;
+		default:
+			return  fitWindow() ? static_cast<float>(abs(hWndRect.right - hWndRect.left)) : orthographic().width;
+			break;
+		}
+	}
+
+	float Camera::projectionHeight()
+	{
+		switch (projectionType())
+		{
+		case PROJ_Perspective:
+			return  fitWindow() ? static_cast<float>(abs(hWndRect.top - hWndRect.bottom)) : perspective().height;
+			break;
+		default:
+			return  fitWindow() ? static_cast<float>(abs(hWndRect.top - hWndRect.bottom)) : orthographic().height;
+			break;
+		}
+	}
+
+	float Camera::projectionNearZ()
+	{
+		return (projectionType() == PROJ_Perspective) ? perspective().nearZ : orthographic().nearZ;
+	}
+
+	float Camera::projectionFarZ()
+	{
+		return (projectionType() == PROJ_Perspective) ? perspective().farZ : orthographic().farZ;
+	}
+
+	float Camera::projectionfovAngleY()
+	{
+		return (projectionType() == PROJ_Perspective) ? perspective().fovAngleY : 0.0f;
+	}
+
+	void Camera::CreateRenderPasses()
+	{
+		using namespace Templates;
+
+		for (unsigned int i = 0; i < renderPasses().size(); i++)
+		{
+			std::string passUUID = renderPasses().at(i);
+			if (passUUID == "") continue;
+			std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(passUUID);
+			if (rp->type() == RenderPassType_SwapChainPass && rp->renderCallbackOverride() != RenderPassRenderCallbackOverride_Resolve) continue;
+
+			cameraRenderPasses.push_back(
+				GetRenderPassInstance(
+					this_ptr,
+					i,
+					passUUID,
+					static_cast<unsigned int>(projectionWidth()),
+					static_cast<unsigned int>(projectionHeight())
+				)
+			);
+		}
+	}
+
+	void Camera::DestroyRenderPasses()
+	{
+		for (auto& rp : cameraRenderPasses)
+		{
+			DestroyRenderPassInstance(rp);
+			rp = nullptr;
+		}
+		cameraRenderPasses.clear();
+	}
+
+	void Camera::ResizeReleasePasses()
+	{
+		for (auto& pass : cameraRenderPasses)
+		{
+			pass->ResizeRelease();
+		}
+	}
+
+	void Camera::ResizePasses(unsigned int width, unsigned int height)
+	{
+		for (auto& pass : cameraRenderPasses)
+		{
+			pass->Resize(width, height);
+		}
+		switch (projectionType())
+		{
+		case PROJ_Perspective:
+		{
+			perspectiveProjection.updateProjectionMatrix(static_cast<float>(width), static_cast<float>(height));
+		}
+		break;
+		case PROJ_Orthographic:
+		{
+			orthographicProjection.updateProjectionMatrix(static_cast<float>(width), static_cast<float>(height));
+		}
+		break;
+		}
+	}
+
+	void Camera::BindToScene()
+	{
+		InsertCameraIntoCameras(this_ptr);
+		if (fitWindow()) {
+			InsertCameraIntoWindowCameras(this_ptr);
+		}
+		if (useSwapChain()) {
+			InsertCameraIntoSwapChainCameras(this_ptr);
+		}
+		if (mouseController()) {
+			InsertCameraIntoMouseCameras(this_ptr);
+		}
+
+		CreateIBLTexturesInstances();
+		CreateConstantsBuffer();
+		CreateRenderPasses();
+	}
+
+	void Camera::BindRenderable(std::shared_ptr<Renderable> renderable)
+	{
+		renderables.insert(renderable);
+		renderable->bindedCameras.insert(uuid());
+		renderable->CreateMaterialsInstances(this_ptr);
+		renderable->CreateConstantsBuffersInstances(this_ptr);
+		renderable->CreateRootSignatures(this_ptr);
+		renderable->CreatePipelineStates(this_ptr);
+	}
+
+	void Camera::UnbindFromScene()
+	{
+		EraseCameraFromCameras(this_ptr);
+		EraseCameraFromWindowCameras(this_ptr);
+		EraseCameraFromMouseCameras(this_ptr);
+		EraseCameraFromSwapChainCameras(this_ptr);
+		for (auto& renderable : renderables)
+		{
+			renderable->bindedCameras.erase(uuid());
+			renderable->DestroyMaterialsInstances(this_ptr);
+			renderable->DestroyConstantsBuffersInstances(this_ptr);
+			renderable->DestroyRootSignatures(this_ptr);
+			renderable->DestroyPipelineStates(this_ptr);
+		}
+		renderables.clear();
+		DestroyRenderPasses();
+		DestroyConstantsBuffer(cameraCbv);
+	}
+
+	void Camera::UnbindRenderable(std::shared_ptr<Renderable> renderable)
+	{
+		if (renderables.contains(renderable)) renderables.erase(renderable);
+	}
+
+	void Camera::Render()
+	{
+		WriteConstantsBuffer(renderer->backBufferIndex);
+
+		auto draw = [this](std::shared_ptr<RenderPassInstance> rp)
+			{
+				for (auto r : renderables)
+				{
+					r->Render(rp, this_ptr);
+				}
+			};
+
+		std::vector<std::shared_ptr<RenderPassInstance>> rpiv = cameraRenderPasses;
+		if (useSwapChain())
+		{
+			rpiv.push_back(renderer->swapChainPass);
+		}
+
+		for (auto& rp : rpiv)
+		{
+			rp->Pass([rp, draw]() {draw(rp); });
+		}
+	}
+
 	void Camera::Destroy()
 	{
-		for (auto& [_, tex] : iblTextures)
-		{
-			DestroyTextureInstance(tex);
-		}
-		iblTextures.clear();
-		DestroyConstantsBuffer(cameraCbv);
+
 	}
 
 	void Camera::CreateIBLTexturesInstances()
 	{
-		if (std::any_of(iblJsonTextures.begin(), iblJsonTextures.end(), [this](auto& tup)
-			{
-				std::string& attName = std::get<0>(tup);
-				return json.at(attName) == "";
-			}
-		))
-			return;
-
-		std::map<TextureShaderUsage, std::string> textures;
-		std::transform(iblJsonTextures.begin(), iblJsonTextures.end(), std::inserter(textures, textures.end()), [this](auto& tup)
-			{
-				std::string& attName = std::get<0>(tup);
-				TextureShaderUsage& usage = std::get<1>(tup);
-				return std::pair<TextureShaderUsage, std::string>(usage, json.at(attName));
-			}
-		);
-
-		iblTextures = GetTextures(textures);
+		//if (std::any_of(iblJsonTextures.begin(), iblJsonTextures.end(), [this](auto& tup)
+		//	{
+		//		std::string& attName = std::get<0>(tup);
+		//		return json.at(attName) == "";
+		//	}
+		//))
+		//	return;
+		//
+		//std::map<TextureShaderUsage, std::string> textures;
+		//std::transform(iblJsonTextures.begin(), iblJsonTextures.end(), std::inserter(textures, textures.end()), [this](auto& tup)
+		//	{
+		//		std::string& attName = std::get<0>(tup);
+		//		TextureShaderUsage& usage = std::get<1>(tup);
+		//		return std::pair<TextureShaderUsage, std::string>(usage, json.at(attName));
+		//	}
+		//);
+		//
+		//iblTextures = GetTextures(textures);
 	}
 
 	void Camera::CreateConstantsBuffer()
 	{
-		cameraCbv = DeviceUtils::CreateConstantsBuffer(sizeof(CameraAttributes) * renderer->numFrames, json.at("name"));
+		cameraCbv = DeviceUtils::CreateConstantsBuffer(sizeof(CameraAttributes) * renderer->numFrames, name());
 	}
 
 	void Camera::WriteConstantsBuffer(unsigned int backbufferIndex)
 	{
 		CameraAttributes atts{};
-		if (StrToProjectionTypes.at(json.at("projectionType")) == PROJ_Orthographic)
-		{
-			atts.viewProjection = XMMatrixMultiply(ViewMatrix(), orthographic.projectionMatrix);
-		}
-		else
-		{
-			atts.viewProjection = XMMatrixMultiply(ViewMatrix(), perspective.projectionMatrix);
-		}
 
-		XMFLOAT3 pos = position();
-		XMVECTOR fw = CameraFw();
+		atts.viewProjection = XMMatrixMultiply(view(), projection());
 
-		atts.eyePosition = { pos.x, pos.y, pos.z, 0.0f };
-		atts.eyeForward = *(XMFLOAT4*)&fw.m128_f32;
+		XMVECTOR pos = positionV();
+		XMVECTOR fw = forward();
+
+		atts.eyePosition = *(XMFLOAT4*)pos.m128_f32;
+		atts.eyeForward = *(XMFLOAT4*)fw.m128_f32;
 		atts.white = white();
 
 		if (iblTextures.contains(TextureShaderUsage_IBLPreFilteredEnvironment))
 		{
-			nlohmann::json& tex = GetTextureTemplate(iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->materialTexture);
-			atts.IBLNumEnvLevels = static_cast<float>(tex.at("mipLevels"));
+			std::shared_ptr<TextureJson> tex = GetTextureTemplate(iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->materialTexture);
+			atts.IBLNumEnvLevels = static_cast<float>(tex->mipLevels());
 		}
 		else
 		{
@@ -615,60 +514,11 @@ namespace Scene
 		memcpy(cameraCbv->mappedConstantBuffer + cameraCbv->alignedConstantBufferSize * backbufferIndex, &atts, sizeof(atts));
 	}
 
-	XMMATRIX Camera::ViewMatrix()
-	{
-		return XMMatrixLookToLH(positionV(), CameraFw(), CameraUp());
-	}
-
-	XMVECTOR Camera::CameraFw()
-	{
-		if (light != nullptr && light->lightType() == LT_Point)
-		{
-			unsigned int i = 0U;
-			for (; i < 6U; i++) {
-				if (light->shadowMapCameras[i].get() == this)
-				{
-					return Scene::PointLightDirection[i];
-				}
-			}
-		}
-
-		XMFLOAT3 rotV = rotation();
-		FXMVECTOR dir = { 0.0f, 0.0f, 1.0f,0.0f };
-		float roll, pitch, yaw;
-		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
-		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
-		XMVECTOR fw = XMVector3Normalize(XMVector3Rotate(dir, rotQ));
-		return fw;
-	}
-
-	XMVECTOR Camera::CameraUp()
-	{
-		if (light != nullptr && light->lightType() == LT_Point)
-		{
-			unsigned int i = 0U;
-			for (; i < 6U; i++)
-			{
-				if (light->shadowMapCameras[i].get() == this)
-				{
-					return Scene::PointLightUp[i];
-				}
-			}
-		}
-
-		XMFLOAT3 rotV = rotation();
-		FXMVECTOR up = { 0.0f, 1.0f, 0.0f,0.0f };
-		float roll, pitch, yaw;
-		pitch = rotV.x; yaw = rotV.y; roll = rotV.z;
-		XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(XMConvertToRadians(pitch), XMConvertToRadians(yaw), XMConvertToRadians(roll));
-		return XMVector3Normalize(XMVector3Rotate(up, rotQ));
-	}
-
 	void Camera::ProcessKeyboardInput(DirectX::Keyboard::KeyboardStateTracker& tracker, DirectX::Keyboard::State& state)
 	{
-		if (light == nullptr || light->lightType() == LT_Spot || light->lightType() == LT_Point)
+		if (lightCam == nullptr || lightCam->lightType() == LT_Spot || lightCam->lightType() == LT_Point)
 		{
-			float moveSpeed = json.at("speed") * ((state.LeftShift || state.RightShift) ? 10.0f : 1.0f);
+			float moveSpeed = speed() * ((state.LeftShift || state.RightShift) ? 10.0f : 1.0f);
 			if (state.Up) { MoveForward(moveSpeed); }
 			if (state.Down) { MoveBack(moveSpeed); }
 			if (state.Left) { MoveLeft(moveSpeed); }
@@ -678,18 +528,14 @@ namespace Scene
 
 	void Camera::MoveAlongFwAxis(float dz)
 	{
-		XMVECTOR newPos = XMVectorAdd(positionV(), CameraFw() * dz);
+		XMVECTOR newPos = positionV() + forward() * dz;
 		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
 	void Camera::MovePerpendicularFwAxis(float dx, float dy)
 	{
-		XMVECTOR up = CameraUp();
-		XMVECTOR right = XMVector3Cross(CameraFw(), up);
-		XMVECTOR newPos = positionV();
-		newPos += up * dy;
-		newPos += right * dx;
+		XMVECTOR newPos = positionV() + up() * dy + right() * dx;
 		position(*(XMFLOAT3*)newPos.m128_f32);
 	}
 
@@ -699,16 +545,16 @@ namespace Scene
 		UdateLightRotation();
 	}
 
-	void Camera::ProcessGamepadInput(DirectX::GamePad::State& gamePadState, Vector2 gamePadCameraRotationSensitivity)
+	void Camera::ProcessGamepadInput(DirectX::GamePad::State& gamePadState, DirectX::SimpleMath::Vector2 gamePadCameraRotationSensitivity)
 	{
-		if (light == nullptr || light->lightType() == LT_Spot || light->lightType() == LT_Point)
+		if (lightCam == nullptr || lightCam->lightType() == LT_Spot || lightCam->lightType() == LT_Point)
 		{
-			if (gamePadState.thumbSticks.leftY > 0) { MoveForward(json.at("speed")); }
-			if (gamePadState.thumbSticks.leftY < 0) { MoveBack(json.at("speed")); }
-			if (gamePadState.thumbSticks.leftX < 0) { MoveLeft(json.at("speed")); }
-			if (gamePadState.thumbSticks.leftX > 0) { MoveRight(json.at("speed")); }
+			if (gamePadState.thumbSticks.leftY > 0) { MoveForward(speed()); }
+			if (gamePadState.thumbSticks.leftY < 0) { MoveBack(speed()); }
+			if (gamePadState.thumbSticks.leftX < 0) { MoveLeft(speed()); }
+			if (gamePadState.thumbSticks.leftX > 0) { MoveRight(speed()); }
 		}
-		if (light == nullptr || light->lightType() == LT_Directional || light->lightType() == LT_Spot)
+		if (lightCam == nullptr || lightCam->lightType() == LT_Directional || lightCam->lightType() == LT_Spot)
 		{
 			Vector2 stickDiff = { gamePadState.thumbSticks.rightX, gamePadState.thumbSticks.rightY };
 			rotation(rotation() - XMFLOAT3{ stickDiff.x * gamePadCameraRotationSensitivity.x, stickDiff.y * gamePadCameraRotationSensitivity.y, 0.0f });
@@ -731,20 +577,20 @@ namespace Scene
 
 	int lastWheelValue = 0;
 	float wheelDiffFactor = 0.0001f;
-	void Camera::ProcessCameraMouseRotation(DirectX::Mouse::State& mouseState, Vector2 rotationSensitivity, bool firstStep)
+	void Camera::ProcessCameraMouseRotation(DirectX::Mouse::State& mouseState, DirectX::SimpleMath::Vector2 rotationSensitivity, bool firstStep)
 	{
-		if (light == nullptr || light->lightType() == LT_Directional || light->lightType() == LT_Spot)
+		if (lightCam == nullptr || lightCam->lightType() == LT_Directional || lightCam->lightType() == LT_Spot)
 		{
 			Vector2 mouseDiff = GetMouseDiff(mouseState);
 			mouseDiff = firstStep ? Vector2(0.0f, 0.0f) : mouseDiff;
 			rotation(rotation() - XMFLOAT3{ mouseDiff.x * rotationSensitivity.x, mouseDiff.y * rotationSensitivity.y, 0.0f });
 			UdateLightRotation();
-			if (light != nullptr && light->lightType() == LT_Directional)
+			if (lightCam != nullptr && lightCam->lightType() == LT_Directional)
 			{
 				float diff = static_cast<float>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
-				orthographic.expandView(diff);
+				orthographicProjection.expandView(diff);
 			}
-			else if (light == nullptr)
+			else if (lightCam == nullptr)
 			{
 				float diff = static_cast<float>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
 			}
@@ -753,19 +599,19 @@ namespace Scene
 
 	void Camera::UpdateLightPosition()
 	{
-		if (light == nullptr) return;
+		if (lightCam == nullptr) return;
 
-		switch (light->lightType())
+		switch (lightCam->lightType())
 		{
 		case LT_Spot:
 		{
-			light->position(position());
+			lightCam->position(position());
 		}
 		break;
 		case LT_Point:
 		{
-			light->position(position());
-			for (auto cam : light->shadowMapCameras)
+			lightCam->position(position());
+			for (auto cam : lightCam->shadowMapCameras)
 			{
 				cam->position(position());
 			}
@@ -776,22 +622,22 @@ namespace Scene
 
 	void Camera::UdateLightRotation()
 	{
-		if (light == nullptr) return;
+		if (lightCam == nullptr) return;
 
 		XMFLOAT3 rot = rotation();
 
-		switch (light->lightType())
+		switch (lightCam->lightType())
 		{
 		case LT_Directional:
 		{
-			light->rotation(rot);
-			XMVECTOR camPos = XMVectorScale(XMVector3Normalize(CameraFw()), light->directionalDistance());
+			lightCam->rotation(rot);
+			XMVECTOR camPos = XMVectorScale(XMVector3Normalize(forward()), lightCam->dirDist());
 			position(*(XMFLOAT3*)camPos.m128_f32);
 		}
 		break;
 		case LT_Spot:
 		{
-			light->rotation(rot);
+			lightCam->rotation(rot);
 		}
 		break;
 		}
@@ -799,274 +645,43 @@ namespace Scene
 
 	void Camera::MoveForward(float step)
 	{
-		XMVECTOR newPos = XMVectorAdd(positionV(), CameraFw() * step);
+		XMVECTOR newPos = XMVectorAdd(positionV(), forward() * step);
 		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
 	void Camera::MoveBack(float step)
 	{
-		XMVECTOR newPos = XMVectorAdd(positionV(), CameraFw() * -step);
+		XMVECTOR newPos = XMVectorAdd(positionV(), forward() * -step);
 		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
 	void Camera::MoveLeft(float step)
 	{
-		XMVECTOR newPos = XMVectorAdd(positionV(), XMVector3Cross(CameraFw(), CameraUp()) * -step);
+		XMVECTOR newPos = XMVectorAdd(positionV(), XMVector3Cross(forward(), up()) * -step);
 		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
 	void Camera::MoveRight(float step)
 	{
-		XMVECTOR newPos = XMVectorAdd(positionV(), XMVector3Cross(CameraFw(), CameraUp()) * step);
+		XMVECTOR newPos = XMVectorAdd(positionV(), XMVector3Cross(forward(), up()) * step);
 		position(*(XMFLOAT3*)newPos.m128_f32);
 		UpdateLightPosition();
 	}
 
-	size_t GetNumCameras() { return cameraByIndex.size(); }
-	std::shared_ptr<Camera> GetCamera(unsigned int index) { return cameraByIndex[index]; }
-	std::shared_ptr<Camera> GetCamera(std::string uuid) { return cameraByUUID.at(uuid); }
-	std::shared_ptr<Camera> GetCameraByName(std::string name)
-	{
-		for (auto& [_, cam] : cameraByUUID)
-		{
-			if (cam->name() == name) return cam;
-		}
-		return nullptr;
-	}
-
-#if defined(_EDITOR)
-
-	void Camera::DrawEditorInformationAttributes()
-	{
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		std::string tableName = "camera-information-atts";
-		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
-		{
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			std::string currentName = name();
-			if (ImGui::InputText("name", &currentName))
-			{
-				name(currentName);
-			}
-			ImGui::EndTable();
-		}
-	}
-
-	void Camera::DrawEditorWorldAttributes()
-	{
-		XMFLOAT3 posV = position();
-		XMFLOAT3 rotV = rotation();
-		ImDrawFloatValues<XMFLOAT3>("camera-world-position", { "x","y","z" }, posV, [this](XMFLOAT3 pos) {position(pos); });
-		ImDrawDegreesValues<XMFLOAT3>("camera-world-rotation", { "pitch","yaw","roll" }, rotV, [this](XMFLOAT3 rot) {rotation(rot); });
-	}
-
-	void Camera::DrawEditorCameraAttributes()
-	{
-		std::vector<std::string> selectables = ProjectionsTypesStr;
-		std::string selected = json.at("projectionType");
-
-		DrawComboSelection(selected, selectables, [this](std::string projection)
-			{
-				json["projectionType"] = projection;
-				switch (StrToProjectionTypes.at(json.at("projectionType"))) {
-				case PROJ_Orthographic:
-				{
-					orthographic.Copy(editorOrthographic);
-				}
-				break;
-				case PROJ_Perspective:
-				{
-					perspective.Copy(editorPerspective);
-				}
-				break;
-				}
-			},
-			"Projection"
-		);
-
-		auto updateEditorPerspective = [this]()
-			{
-				perspective.updateProjectionMatrix();
-				editorPerspective.Copy(perspective);
-			};
-
-		auto updateEditorOrthographic = [this]()
-			{
-				orthographic.updateProjectionMatrix();
-				editorOrthographic.Copy(orthographic);
-			};
-
-		if (StrToProjectionTypes.at(json.at("projectionType")) == PROJ_Perspective)
-		{
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			std::string tableName = "camera-projection-perspective-atts";
-			if (ImGui::BeginTable(tableName.c_str(), 3, ImGuiTableFlags_NoSavedSettings))
-			{
-				ImGui::PushID("perspective");
-
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("perspective");
-
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("nearZ", &perspective.nearZ))
-				{
-					updateEditorPerspective();
-				}
-				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("farZ", &perspective.farZ))
-				{
-					updateEditorPerspective();
-				}
-				ImGui::TableSetColumnIndex(2);
-				if (ImGui::SliderAngle("fovAngleY", &perspective.fovAngleY, 10.0f, 150.0f))
-				{
-					updateEditorPerspective();
-				}
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("width", &perspective.width))
-				{
-					updateEditorPerspective();
-				}
-				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("height", &perspective.height))
-				{
-					updateEditorPerspective();
-				}
-
-				ImGui::PopID();
-				ImGui::EndTable();
-			}
-		}
-		else
-		{
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			std::string tableName = "camera-projection-orthographic-atts";
-			if (ImGui::BeginTable(tableName.c_str(), 2, ImGuiTableFlags_NoSavedSettings))
-			{
-				ImGui::PushID("orthographic");
-
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				ImGui::Text("orthographic");
-
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("nearZ", &orthographic.nearZ))
-				{
-					updateEditorOrthographic();
-				}
-				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("farZ", &orthographic.farZ))
-				{
-					updateEditorOrthographic();
-				}
-
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				if (ImGui::InputFloat("width", &orthographic.width))
-				{
-					updateEditorOrthographic();
-				}
-				ImGui::TableSetColumnIndex(1);
-				if (ImGui::InputFloat("height", &orthographic.height))
-				{
-					updateEditorOrthographic();
-				}
-
-				ImGui::PopID();
-				ImGui::EndTable();
-			}
-		}
-
-		float w = white();
-		if (ImGui::InputFloat("white", &w))
-		{
-			white(w);
-		}
-
-		float minLogL = minLogLuminance();
-		if (ImGui::InputFloat("minLogLuminance", &minLogL))
-		{
-			minLogLuminance(minLogL);
-		}
-
-		float maxLogL = maxLogLuminance();
-		if (ImGui::InputFloat("maxLogLuminance", &maxLogL))
-		{
-			maxLogLuminance(maxLogL);
-		}
-
-		float tauf = tau();
-		if (ImGui::InputFloat("tau", &tauf))
-		{
-			tau(tauf);
-		}
-	}
-
-	void Camera::DrawEditorIBLAttributes()
-	{
-		std::vector<UUIDName> selectables = GetTexturesUUIDsNames();
-		SortUUIDByName(selectables);
-
-		for (auto& ibl : iblJsonTextures)
-		{
-			std::string name = std::get<0>(ibl);
-			TextureShaderUsage usage = std::get<1>(ibl);
-
-			ImGui::PushID(name.c_str());
-			{
-				UUIDName selected = std::make_tuple("", "");
-				if (json.at(name) != "")
-					selected = std::make_tuple(std::string(json.at(name)), GetTextureName(std::string(json.at(name))));
-
-				DrawComboSelection(selected, selectables, [this, name, usage](UUIDName selection)
-					{
-						std::string texUUID = std::get<0>(selection);
-						json.at(name) = texUUID;
-						if (texUUID == "")
-						{
-							iblTexturesFlags.insert_or_assign(usage, CameraIBLTextureFlags_Destroy);
-						}
-						else
-						{
-							iblTexturesFlags.insert_or_assign(usage, CameraIBLTextureFlags_Create);
-						}
-					}, name
-				);
-
-				if (iblTextures.contains(usage))
-				{
-					std::shared_ptr<TextureInstance> texInstance = iblTextures.at(usage);
-					nlohmann::json& texJson = GetTextureTemplate(texInstance->materialTexture);
-					ImDrawTextureImage(texInstance->gpuHandle.ptr, static_cast<unsigned int>(texJson.at("width")), static_cast<unsigned int>(texJson.at("height")));
-				}
-			}
-			ImGui::PopID();
-		}
-	}
-#endif
-
 	void Camera::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
-		bbox->position(json.at("position"));
-		bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
-		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
+		//bbox->position(json.at("position"));
+		//bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
+		//bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 
 	void Camera::SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
 	{
-		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLIrradiance)->gpuHandle);
-		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->gpuHandle);
-		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLBRDFLUT)->gpuHandle);
+		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLIrradiance)->gpuHandle);
+		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->gpuHandle);
+		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLBRDFLUT)->gpuHandle);
 	}
 }

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "../../../d3dx12.h"
-#include "../../../Templates/Material/Material.h"
+#include <d3dx12.h>
+#include <Material/Material.h>
 
+/*
 typedef std::tuple<
 	std::vector<D3D12_INPUT_ELEMENT_DESC>,
 	ShaderByteCode, ShaderByteCode, size_t,
@@ -16,12 +17,15 @@ typedef std::tuple<
 > ComputePipelineStateDesc;
 
 typedef std::tuple<size_t, CComPtr<ID3D12PipelineState>> HashedPipelineState;
+*/
 
 namespace DeviceUtils
 {
+	/*
 	using namespace Templates;
 
 	HashedPipelineState CreateGraphicsPipelineState(GraphicsPipelineStateDesc& p);
+	*/
 
 	CComPtr<ID3D12PipelineState> CreateGraphicsPipelineState(
 		std::string name,
@@ -36,7 +40,7 @@ namespace DeviceUtils
 		DXGI_FORMAT& depthStencilFormat
 	);
 
-	HashedPipelineState CreateComputePipelineState(ComputePipelineStateDesc& p);
+	//HashedPipelineState CreateComputePipelineState(ComputePipelineStateDesc& p);
 
 	CComPtr<ID3D12PipelineState> CreateComputePipelineState(
 		std::string name,

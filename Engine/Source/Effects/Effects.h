@@ -1,5 +1,6 @@
 #pragma once
-
+#include <map>
+#include <functional>
 #include "DecalLoop.h"
 #include "LightOscilation.h"
 

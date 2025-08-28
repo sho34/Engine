@@ -1,20 +1,18 @@
 #include "pch.h"
+#include "Model3D.h"
+#include <Templates.h>
+#include <TemplateDef.h>
+#include <Mesh/Mesh.h>
+#include <Renderable/Renderable.h>
+#include <VertexFormats.h>
+#include <Animated.h>
 #include <d3d12.h>
 #include <nlohmann/json.hpp>
-#include "Model3D.h"
-#include "../Mesh/Mesh.h"
-#include "../Scene/Renderable/Renderable.h"
-#include "../../Renderer/VertexFormats.h"
-#include "../../Animation/Animated.h"
 #include <Application.h>
 #include <NoStd.h>
 #if defined(_EDITOR)
-#include "../../Editor/Editor.h"
-#include <ImEditor.h>
-namespace Editor {
-	extern _Templates tempTab;
-	extern std::string selTemp;
-}
+#include <Textures/Texture.h>
+#include <Material/Material.h>
 #endif
 #if defined(_DEVELOPMENT)
 #include <Command.h>
@@ -23,89 +21,60 @@ namespace Editor {
 
 using namespace Animation;
 using namespace DeviceUtils;
+using namespace Templates;
 
 namespace Templates
 {
-	std::map<std::string, Model3DTemplate> model3ds;
+#include <JExposeAttDrawersDef.h>
+#include <Model3DAtt.h>
+#include <JExposeEnd.h>
 
-	namespace Model3D
+	Model3DJson::Model3DJson(nlohmann::json json) : JTemplate(json)
 	{
-#if defined(_EDITOR)
-		nlohmann::json creationJson;
-		unsigned int popupModalId = 0U;
-#endif
-		static RefTracker<std::string, std::shared_ptr<Model3DInstance>> refTracker; //uuid -> model3dInstance
-	};
+#include <JExposeInit.h>
+#include <Model3DAtt.h>
+#include <JExposeEnd.h>
 
-	//CREATE
-	void CreateModel3D(nlohmann::json json)
-	{
-		std::string uuid = json.at("uuid");
-
-		if (model3ds.contains("uuid"))
-		{
-			assert(!!!"model3d creation collision");
-		}
-		Model3DTemplate t;
-
-		std::string& name = std::get<0>(t);
-		name = json.at("name");
-
-		nlohmann::json& data = std::get<1>(t);
-		data = json;
-		data.erase("name");
-		data.erase("uuid");
-
-		model3ds.insert_or_assign(uuid, t);
+#include <JExposeAttUpdate.h>
+#include <Model3DAtt.h>
+#include <JExposeEnd.h>
 	}
 
-	void CreateModel3DMaterialsTemplates(std::string uuid, const aiScene* aiModel)
-	{
-		nlohmann::json& mdl = std::get<1>(model3ds.at(uuid));
+	TEMPDEF_FULL(Model3D);
+	TEMPDEF_REFTRACKER(Model3D);
 
-		if (mdl.contains("materials") && mdl.at("materials").size() == aiModel->mNumMeshes)
-			return;
-
-		mdl["materials"] = nlohmann::json::array();
-
-		std::string filename = default3DModelsFolder + std::string(mdl.at("path"));
-		std::filesystem::path path(filename);
-
-		//go through all the meshes in the model
-		for (unsigned int meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++)
-		{
-			auto aMesh = aiModel->mMeshes[meshIndex];
-			aiMaterial* aiMat = aiModel->mMaterials[aMesh->mMaterialIndex];
-			nlohmann::json texturesJson = GetAiMaterialTexturesJson(path.relative_path(), aiMat);
-
-			std::string materialUUID = GetModel3DMaterialInstanceUUID(uuid, meshIndex);
-			nlohmann::json materialTemplate = GetMaterialTemplate(materialUUID);
-
-			if (materialTemplate.empty())
-			{
-				nlohmann::json materialJson = CreateModel3DMaterialJson(
-					materialUUID,
-					GetModel3DMaterialInstanceName(std::get<0>(model3ds.at(uuid)), meshIndex),
-					mdl.at("shader_vs"),
-					mdl.at("shader_ps"),
-					aiModel->mMaterials[aMesh->mMaterialIndex]
-				);
-				materialJson["textures"] = texturesJson;
-				CreateMaterial(materialJson);
-			}
-
-			mdl["materials"].push_back(materialUUID);
-		}
+	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index) {
+		return "mesh-" + uuid + "-" + std::to_string(index);
 	}
 
-	void LoadModel3DInstance(std::shared_ptr<Model3DInstance>& model, std::string uuid, nlohmann::json shaderAttributes)
+	std::string GetModel3DMaterialInstanceUUID(std::string uuid, unsigned int index) {
+		return "mat-" + uuid + "-" + std::to_string(index);
+	}
+
+	std::string GetModel3DMaterialInstanceName(std::string model3dName, unsigned int index)
 	{
-		model->uuid = uuid;
-		model->shaderAttributes = shaderAttributes;
+		return "mat-" + model3dName + "-" + std::to_string(index);
+	}
 
-		nlohmann::json& mdl = std::get<1>(model3ds.at(uuid));
+	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D)
+	{
+		std::string uuid = model3D->model3DUUID;
 
-		std::string filename = default3DModelsFolder + std::string(mdl.at("path"));
+		using namespace Model3D;
+		refTracker.RemoveRef(uuid, model3D);
+	}
+
+	Model3DInstance::Model3DInstance(std::string uuid)
+	{
+		model3DUUID = uuid;
+		LoadModel3DInstance();
+	}
+
+	void Model3DInstance::LoadModel3DInstance()
+	{
+		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(model3DUUID);
+
+		std::string filename = default3DModelsFolder + mdl->path();
 
 		std::filesystem::path path(filename);
 
@@ -124,13 +93,13 @@ namespace Templates
 		//fill the length of the animations so they can be looped
 		if (aiModel->mNumAnimations > 0U)
 		{
-			model->animations = CreateAnimatedFromAssimp(aiModel);
+			animations = CreateAnimatedFromAssimp(aiModel);
 		}
 
-		CreateModel3DMaterialsTemplates(uuid, aiModel);
+		CreateModel3DMaterialsTemplates(aiModel);
 
-		model->vertexClass = !model->animations ? POS_NORMAL_TANGENT_TEXCOORD0 : POS_NORMAL_TANGENT_TEXCOORD0_SKINNING;
-		size_t vertexSize = !model->animations ? sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0>) : sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>);
+		vertexClass = !animations ? POS_NORMAL_TANGENT_TEXCOORD0 : POS_NORMAL_TANGENT_TEXCOORD0_SKINNING;
+		size_t vertexSize = !animations ? sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0>) : sizeof(Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>);
 
 		//go through all the meshes in the model
 		for (unsigned int meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++)
@@ -138,37 +107,105 @@ namespace Templates
 			auto aMesh = aiModel->mMeshes[meshIndex];
 
 			std::vector<byte> vertexData(vertexSize * aMesh->mNumVertices);
-			VerticesLoader.at(model->vertexClass)(aMesh, vertexData);
+			VerticesLoader.at(vertexClass)(aMesh, vertexData);
 
 			std::vector<unsigned int> indicesData;
 			LoadIndices(aMesh, indicesData);
 
-			if (model->animations) {
-				LoadBonesInVertices(aMesh, model->animations->bonesOffsets, reinterpret_cast<Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>*>(vertexData.data()));
+			if (animations) {
+				LoadBonesInVertices(aMesh, animations->bonesOffsets, reinterpret_cast<Vertex<POS_NORMAL_TANGENT_TEXCOORD0_SKINNING>*>(vertexData.data()));
 			}
 
 			unsigned int indicesCount = aMesh->mNumFaces * aMesh->mFaces[0].mNumIndices;
-			std::shared_ptr<MeshInstance> mesh = GetMeshInstance(GetModel3DMeshInstanceUUID(uuid, meshIndex), model->vertexClass, vertexData.data(), static_cast<unsigned int>(vertexSize), aMesh->mNumVertices, indicesData.data(), indicesCount);
+			std::shared_ptr<MeshInstance> mesh = GetMeshInstance(GetModel3DMeshInstanceUUID(model3DUUID, meshIndex), vertexClass, vertexData.data(), static_cast<unsigned int>(vertexSize), aMesh->mNumVertices, indicesData.data(), indicesCount);
 
 			CreateBoundingBox(mesh->boundingBox, aMesh);
 
-			model->meshes.push_back(mesh);
+			meshes.push_back(mesh);
 
-			model->materialUUIDs = mdl.at("materials");
+			materialUUIDs = mdl->materials();
 		}
 
 		importer.FreeScene();
+	}
 
-		for (unsigned int i = 0; i < model->materialUUIDs.size(); i++)
+	void Model3DInstance::CreateModel3DMaterialsTemplates(const aiScene* aiModel)
+	{
+		using namespace Templates;
+
+		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(model3DUUID);
+
+		if (mdl->materials().size() == aiModel->mNumMeshes)
+			return;
+
+		std::string filename = default3DModelsFolder + mdl->path();
+		std::filesystem::path path(filename);
+
+		//go through all the meshes in the model
+		for (unsigned int meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++)
 		{
-			std::shared_ptr<MaterialInstance> materialInstance = model->GetModel3DMaterialInstance(i);
-			model->materials.push_back(materialInstance);
+			auto aMesh = aiModel->mMeshes[meshIndex];
+			aiMaterial* aiMat = aiModel->mMaterials[aMesh->mMaterialIndex];
+
+			MaterialJson texturesMaterialJson = GetAssimpTexturesMaterialJson(path.relative_path(), aiMat);
+
+			std::string materialUUID = GetModel3DMaterialInstanceUUID(model3DUUID, meshIndex);
+
+			if (!MaterialTemplateExist(materialUUID))
+			{
+				MaterialJson materialJson = CreateModel3DMaterialJson(
+					materialUUID,
+					GetModel3DMaterialInstanceName(model3DUUID, meshIndex),
+					mdl->shader_vs(),
+					mdl->shader_ps(),
+					aiModel->mMaterials[aMesh->mMaterialIndex]
+				);
+				materialJson.merge_patch(texturesMaterialJson);
+				CreateMaterial(materialJson);
+			}
+			mdl->materials_push_back(materialUUID);
 		}
 	}
 
-#if defined(_DEVELOPMENT)
+	void Model3DInstance::CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh)
+	{
+		XMFLOAT3 center = {
+			0.5f * (aMesh->mAABB.mMin[0] + aMesh->mAABB.mMax[0]),
+			0.5f * (aMesh->mAABB.mMin[1] + aMesh->mAABB.mMax[1]),
+			0.5f * (aMesh->mAABB.mMin[2] + aMesh->mAABB.mMax[2]),
+		};
 
-	void PushAssimpTextureToJson(nlohmann::json& j, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT fallbackFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB)
+		XMFLOAT3 extents = {
+			0.5f * fabs(aMesh->mAABB.mMin[0] - aMesh->mAABB.mMax[0]),
+			0.5f * fabs(aMesh->mAABB.mMin[1] - aMesh->mAABB.mMax[1]),
+			0.5f * fabs(aMesh->mAABB.mMin[2] - aMesh->mAABB.mMax[2]),
+		};
+
+		boundingBox = BoundingBox(center, extents);
+	}
+
+	MaterialJson Model3DInstance::GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, aiMaterial* material)
+	{
+		using namespace Templates::Model3D;
+
+		MaterialJson mat(nlohmann::json({}));
+
+		aiString diffuseName;
+		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
+		PushAssimpTextureToJson(mat, TextureShaderUsage_Base, relativePath, diffuseName, defaultBaseTexture);
+
+		aiString normalMapName;
+		material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
+		PushAssimpTextureToJson(mat, TextureShaderUsage_NormalMap, relativePath, normalMapName, defaultNormalMap, DXGI_FORMAT_R8G8B8A8_UNORM);
+
+		aiString metallicRoughnessName;
+		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
+		PushAssimpTextureToJson(mat, TextureShaderUsage_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
+
+		return mat;
+	}
+
+	void Model3DInstance::PushAssimpTextureToJson(MaterialJson& m, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture, DXGI_FORMAT fallbackFormat)
 	{
 		std::filesystem::path textureJsonPath = fallbackTexture;
 		DXGI_FORMAT textureJsonFormat = fallbackFormat;
@@ -187,368 +224,53 @@ namespace Templates
 			{
 				texUUID = CreateTextureTemplate(textureJsonPath.string(), textureJsonFormat);
 			}
-			j[textureShaderUsageToStr.at(textureType)] = texUUID;
+			m.textures_insert(textureType, texUUID);
 		}
-	};
+	}
 
-	nlohmann::json CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, aiMaterial* material)
+	MaterialJson Model3DInstance::CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, aiMaterial* material)
 	{
-		nlohmann::json matJson = nlohmann::json({});
+		MaterialJson matJson(nlohmann::json({}));
 
-		matJson["uuid"] = materialUUID;
-		matJson["name"] = materialName;
-		matJson["shader_vs"] = vertexShader;
-		matJson["shader_ps"] = pixelShader;
+		matJson.create_uuid(materialUUID);
+		matJson.create_name(materialName);
+		matJson.create_shader_vs(vertexShader);
+		matJson.create_shader_ps(pixelShader);
+		matJson.create_mappedValues({});
 
 		bool twoSided;
 		material->Get(AI_MATKEY_TWOSIDED, twoSided);
-		matJson["rasterizerState"]["CullMode"] = cullModeToString.at((twoSided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK));
-
-		MaterialInitialValueMap matInitialValue;
+		D3D12_RASTERIZER_DESC rasterizerState;
+		rasterizerState.CullMode = twoSided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK;
+		matJson.rasterizerState(rasterizerState);
 
 		ai_real shininess;
 		material->Get(AI_MATKEY_SHININESS, shininess);
-		matInitialValue["specularExponent"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, shininess };
+		matJson.mappedValues_push_back({ "specularExponent",{ MaterialVariablesTypes::MAT_VAR_FLOAT, shininess } });
 
 		ai_real metallic;
 		material->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
-		matInitialValue["metallicFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, metallic };
+		matJson.mappedValues_push_back({ "metallicFactor",{ MaterialVariablesTypes::MAT_VAR_FLOAT, metallic } });
 
 		ai_real roughness;
 		material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
-		matInitialValue["roughnessFactor"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, roughness };
+		matJson.mappedValues_push_back({ "roughnessFactor",{ MaterialVariablesTypes::MAT_VAR_FLOAT, roughness } });
 
 		aiString alphaMode;
 		material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode);
 		if (strcmp(alphaMode.C_Str(), "OPAQUE") == 0)
 		{
-			matInitialValue["alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, 1.0f };
+			matJson.mappedValues_push_back({ "alphaCut",{ MaterialVariablesTypes::MAT_VAR_FLOAT, 1.0f } });
 		}
 		else
 		{
 			ai_real alphaCut;
 			material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, alphaCut);
-			matInitialValue["alphaCut"] = { MaterialVariablesTypes::MAT_VAR_FLOAT, alphaCut };
+			matJson.mappedValues_push_back({ "alphaCut",{ MaterialVariablesTypes::MAT_VAR_FLOAT, alphaCut } });
 		}
 
-		matJson["mappedValues"] = TransformMaterialValueMappingToJson(matInitialValue);
-
-		matJson["samplers"] = nlohmann::json::array();
-		matJson["samplers"].push_back(MaterialSamplerDesc().json());
+		matJson.create_samplers({ MaterialSamplerDesc() });
 
 		return matJson;
-	}
-
-	nlohmann::json GetAiMaterialTexturesJson(std::filesystem::path relativePath, aiMaterial* material)
-	{
-		nlohmann::json json = nlohmann::json({});
-
-		aiString diffuseName;
-		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
-		PushAssimpTextureToJson(json, TextureShaderUsage_Base, relativePath, diffuseName, "Assets/textures/gridmap.dds");
-
-		aiString normalMapName;
-		material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
-		PushAssimpTextureToJson(json, TextureShaderUsage_NormalMap, relativePath, normalMapName, "Assets/textures/bumpmapflat.dds", DXGI_FORMAT_R8G8B8A8_UNORM);
-
-		aiString metallicRoughnessName;
-		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
-		PushAssimpTextureToJson(json, TextureShaderUsage_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
-
-		return json;
-	}
-#endif
-
-	void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh)
-	{
-		XMFLOAT3 center = {
-			0.5f * (aMesh->mAABB.mMin[0] + aMesh->mAABB.mMax[0]),
-			0.5f * (aMesh->mAABB.mMin[1] + aMesh->mAABB.mMax[1]),
-			0.5f * (aMesh->mAABB.mMin[2] + aMesh->mAABB.mMax[2]),
-		};
-
-		XMFLOAT3 extents = {
-			0.5f * fabs(aMesh->mAABB.mMin[0] - aMesh->mAABB.mMax[0]),
-			0.5f * fabs(aMesh->mAABB.mMin[1] - aMesh->mAABB.mMax[1]),
-			0.5f * fabs(aMesh->mAABB.mMin[2] - aMesh->mAABB.mMax[2]),
-		};
-
-		boundingBox = BoundingBox(center, extents);
-	}
-
-	Model3DTemplate GetModel3DTemplate(std::string uuid)
-	{
-		return model3ds.at(uuid);
-	}
-
-	//READ&GET
-	std::shared_ptr<Model3DInstance> GetModel3DInstance(std::string uuid, nlohmann::json shaderAttributes)
-	{
-		if (!model3ds.contains(uuid)) return nullptr;
-
-		using namespace Model3D;
-		return refTracker.AddRef(uuid, [uuid, shaderAttributes]()
-			{
-				std::shared_ptr<Model3DInstance> instance = std::make_shared<Model3DInstance>();
-				LoadModel3DInstance(instance, uuid, shaderAttributes);
-				return instance;
-			}
-		);
-	}
-
-#if defined(_EDITOR)
-	std::vector<std::string> GetModels3DNames() {
-		return GetNames(model3ds);
-	}
-#endif
-
-	std::string GetModel3DName(std::string uuid)
-	{
-		return std::get<0>(model3ds.at(uuid));
-	}
-
-#if defined(_EDITOR)
-	std::vector<UUIDName> GetModels3DUUIDsNames()
-	{
-		return GetUUIDsNames(model3ds);
-	}
-#endif
-
-	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index) {
-		return "mesh-" + uuid + "-" + std::to_string(index);
-	}
-
-	std::string GetModel3DMaterialInstanceUUID(std::string uuid, unsigned int index) {
-		return "mat-" + uuid + "-" + std::to_string(index);
-	}
-
-	std::string GetModel3DMaterialInstanceName(std::string model3dName, unsigned int index)
-	{
-		return "mat-" + model3dName + "-" + std::to_string(index);
-	}
-
-	//UPDATE
-
-	//DESTROY
-#if defined(_EDITOR)
-	void Model3D::ReleaseRenderablesInstances()
-	{
-		for (auto& [uuid, tuple] : model3ds)
-		{
-			auto& instances = std::get<2>(tuple);
-			instances.clear();
-		}
-	}
-#endif
-
-	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D)
-	{
-		std::string uuid = model3D->uuid;
-
-		using namespace Model3D;
-		refTracker.RemoveRef(uuid, model3D);
-	}
-
-	//EDITOR
-	void ReleaseModel3DTemplates()
-	{
-		using namespace Model3D;
-		refTracker.Clear();
-		model3ds.clear();
-	}
-
-#if defined(_EDITOR)
-	void BindNotifications(std::string uuid, std::shared_ptr<Scene::Renderable> renderable)
-	{
-		auto& instances = std::get<2>(model3ds.at(uuid));
-		instances.push_back(renderable);
-	}
-
-	void UnbindNotifications(std::string uuid, std::shared_ptr<Scene::Renderable> renderable)
-	{
-		auto& instances = std::get<2>(model3ds.at(uuid));
-		for (auto it = instances.begin(); it != instances.end(); )
-		{
-			if (*it = renderable)
-			{
-				it = instances.erase(it);
-			}
-			else
-			{
-				it++;
-			}
-		}
-	}
-
-	void ReloadModel3DInstances(std::string uuid)
-	{
-		auto& instances = std::get<2>(model3ds.at(uuid));
-		for (auto& it : instances)
-		{
-			it->ReloadModel3D();
-		}
-	}
-
-	void DrawModel3DPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
-	{
-		std::string tableName = "model3d-panel";
-		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
-		{
-			Model3D::DrawEditorInformationAttributes(uuid);
-			Model3D::DrawEditorAssetAttributes(uuid);
-			Model3D::DrawEditorMaterialAttributes(uuid);
-			ImGui::EndTable();
-		}
-	}
-
-	void CreateNewModel3D()
-	{
-		Model3D::popupModalId = Model3DPopupModal_CreateNew;
-		Model3D::creationJson = nlohmann::json(
-			{
-				{ "name", "" },
-				{ "path", "" },
-				{ "shader_vs", "" },
-				{ "shader_ps", "" },
-				{ "uuid", getUUID() }
-			}
-		);
-	}
-
-	void Model3D::DrawEditorInformationAttributes(std::string uuid)
-	{
-		nlohmann::json& json = std::get<1>(model3ds.at(uuid));
-
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(0);
-		std::string tableName = "model3d-information-atts";
-		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
-		{
-			ImGui::TableNextRow();
-			ImGui::TableSetColumnIndex(0);
-			std::string& currentName = std::get<0>(model3ds.at(uuid));
-			ImGui::InputText("name", &currentName);
-			ImGui::EndTable();
-		}
-	}
-
-	void Model3D::DrawEditorAssetAttributes(std::string uuid)
-	{
-		nlohmann::json& json = std::get<1>(model3ds.at(uuid));
-
-		std::string parentFolder = default3DModelsFolder;
-		std::string fileName = "";
-		if (json.contains("path") && !json.at("path").empty())
-		{
-			fileName = json.at("path");
-			std::filesystem::path rootFolder = fileName;
-			parentFolder = default3DModelsFolder + rootFolder.parent_path().string();
-		}
-
-		ImGui::PushID("File-Selector");
-		{
-			ImDrawFileSelector("##", fileName, [&json, uuid](std::filesystem::path path)
-				{
-					std::filesystem::path curPath = std::filesystem::current_path().append(default3DModelsFolder);
-					std::filesystem::path relPath = std::filesystem::relative(path, curPath);
-					json.at("path") = relPath.string();
-					ReloadModel3DInstances(uuid);
-				},
-				parentFolder, "3d model files. (*.gltf)", "*.gltf"
-			);
-		}
-		ImGui::PopID();
-	}
-
-	void Model3D::DrawEditorMaterialAttributes(std::string uuid)
-	{
-		nlohmann::json& json = std::get<1>(model3ds.at(uuid));
-
-		auto reloadModel = [uuid]() { ReloadModel3DInstances(uuid); };
-
-		Editor::ImDrawMaterialShaderSelection(json, "shader_vs", VERTEX_SHADER, reloadModel);
-		Editor::ImDrawMaterialShaderSelection(json, "shader_ps", PIXEL_SHADER, reloadModel);
-	}
-
-	void DeleteModel3D(std::string uuid)
-	{
-		nlohmann::json json = std::get<1>(model3ds.at(uuid));
-		if (json.contains("systemCreated") && json.at("systemCreated") == true)
-		{
-			Model3D::popupModalId = Model3DPopupModal_CannotDelete;
-		}
-	}
-
-	void DrawModels3DsPopups()
-	{
-		Editor::DrawOkPopup(Model3D::popupModalId, Model3DPopupModal_CannotDelete, "Cannot delete model3d", []
-			{
-				ImGui::Text("Cannot delete a system created model 3D");
-			}
-		);
-
-		Editor::DrawCreateWindow(Model3D::popupModalId, Model3DPopupModal_CreateNew, "Create new 3d model", [](auto OnCancel)
-			{
-				nlohmann::json& json = Model3D::creationJson;
-
-				ImGui::PushID("model3d-name");
-				{
-					ImGui::Text("Name");
-					ImDrawJsonInputText(json, "name");
-				}
-				ImGui::PopID();
-
-				std::string parentFolder = default3DModelsFolder;
-
-				ImGui::PushID("model3d-path");
-				{
-					ImDrawJsonFilePicker(json, "path", parentFolder, "3d model files. (*.gltf)", "*.gltf");
-				}
-				ImGui::PopID();
-
-				Editor::ImDrawMaterialShaderSelection(json, "shader_vs", VERTEX_SHADER);
-				Editor::ImDrawMaterialShaderSelection(json, "shader_ps", PIXEL_SHADER);
-
-				if (ImGui::Button("Cancel")) { OnCancel(); }
-				ImGui::SameLine();
-
-				bool disabledCreate = json.at("path") == "" || json.at("name") == "" || json.at("shader_vs") == "" || json.at("shader_ps") == "";
-
-				if (disabledCreate)
-				{
-					ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-					ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-				}
-
-				if (ImGui::Button("Create"))
-				{
-					Model3D::popupModalId = 0;
-					CreateModel3D(json);
-				}
-
-				if (disabledCreate)
-				{
-					ImGui::PopItemFlag();
-					ImGui::PopStyleVar();
-				}
-			}
-		);
-	}
-
-	bool Models3DsPopupIsOpen()
-	{
-		return !!Model3D::popupModalId;
-	}
-
-	void WriteModel3DsJson(nlohmann::json& json)
-	{
-		WriteTemplateJson(json, model3ds);
-	}
-
-#endif
-
-	std::shared_ptr<MaterialInstance> Model3DInstance::GetModel3DMaterialInstance(unsigned int meshIndex)
-	{
-		return GetMaterialInstance(materialUUIDs[meshIndex], std::map<TextureShaderUsage, std::string>(), meshes[meshIndex], shaderAttributes);
 	}
 }

@@ -1,5 +1,10 @@
 #pragma once
 
+#include <set>
+#include <vector>
+#include <string>
+#include <map>
+
 enum ShaderType {
 	VERTEX_SHADER,
 	PIXEL_SHADER,
@@ -18,7 +23,7 @@ inline static std::map<std::string, ShaderType> StrToShaderType = {
 	{ "VERTEX_SHADER", VERTEX_SHADER },
 	{ "PIXEL_SHADER", PIXEL_SHADER },
 	{ "GEOMETRY_SHADER", GEOMETRY_SHADER },
-	{ "COMPUTE_SHADER", GEOMETRY_SHADER },
+	{ "COMPUTE_SHADER", COMPUTE_SHADER },
 };
 
 //shader compilation source (it's shader type, the hlsl path, the uuid and defines)
@@ -113,6 +118,7 @@ struct std::hash<ShaderUAVParametersMap>
 //Texture Type
 enum TextureShaderUsage
 {
+	TextureShaderUsage_None,
 	TextureShaderUsage_IBLIrradiance,
 	TextureShaderUsage_IBLPreFilteredEnvironment,
 	TextureShaderUsage_IBLBRDFLUT,
@@ -124,10 +130,12 @@ enum TextureShaderUsage
 	TextureShaderUsage_MaxTexture,
 	TextureShaderUsage_DepthTexture,
 	TextureShaderUsage_AverageLuminance,
-
 };
 
-inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToStr = {
+typedef std::map<TextureShaderUsage, std::string> TextureShaderUsageMap;
+typedef std::pair<TextureShaderUsage, std::string> TextureShaderUsagePair;
+
+inline static std::map<TextureShaderUsage, std::string> TextureShaderUsageToString = {
 	{ TextureShaderUsage_Base, "BaseTexture" },
 	{ TextureShaderUsage_NormalMap, "NormalMapTexture" },
 	{ TextureShaderUsage_MetallicRoughness, "MetallicRoughnessTexture" },
@@ -141,7 +149,7 @@ inline static std::map<TextureShaderUsage, std::string> textureShaderUsageToStr 
 	{ TextureShaderUsage_IBLBRDFLUT, "IBLBRDFLUT" },
 };
 
-inline static std::map<std::string, TextureShaderUsage> strToTextureShaderUsage = {
+inline static std::map<std::string, TextureShaderUsage> StringToTextureShaderUsage = {
 	{ "BaseTexture", TextureShaderUsage_Base },
 	{ "NormalMapTexture", TextureShaderUsage_NormalMap },
 	{ "MetallicRoughnessTexture", TextureShaderUsage_MetallicRoughness },
@@ -199,6 +207,18 @@ inline static std::set<TextureShaderUsage> materialTexturesShaderUsage = {
 	TextureShaderUsage_MetallicRoughness
 };
 
+inline void TransformJsonToMaterialTextures(std::map<TextureShaderUsage, std::string>& textures, nlohmann::json& object, const std::string& key)
+{
+	if (!object.contains(key)) return;
+
+	nlohmann::json jtextures = object[key];
+
+	for (nlohmann::json::iterator it = jtextures.begin(); it != jtextures.end(); it++)
+	{
+		textures.insert_or_assign(StringToTextureShaderUsage.at(it.key()), it.value());
+	}
+}
+
 enum TextureType
 {
 	TextureType_2D,
@@ -206,14 +226,14 @@ enum TextureType
 	TextureType_Cube,
 };
 
-inline static std::map<TextureType, std::string> textureTypeToString =
+inline static std::map<TextureType, std::string> TextureTypeToString =
 {
 	{ TextureType_2D, "2D" },
 	{ TextureType_Array, "Array" },
 	{ TextureType_Cube, "Cube" },
 };
 
-inline static std::map<std::string, TextureType> stringToTextureType =
+inline static std::map<std::string, TextureType> StringToTextureType =
 {
 	{ "2D", TextureType_2D },
 	{ "Array", TextureType_Array },
@@ -302,6 +322,7 @@ typedef std::unordered_set<std::string> ShaderDependencies;
 typedef std::map<Source, ShaderDependencies> ShaderIncludesDependencies;
 
 enum MaterialVariablesTypes {
+	MAT_VAR_NONE,
 	MAT_VAR_BOOLEAN,
 	MAT_VAR_INTEGER,
 	MAT_VAR_UNSIGNED_INTEGER,
@@ -314,7 +335,7 @@ enum MaterialVariablesTypes {
 	MAT_VAR_MATRIX4X4
 };
 
-static std::map<MaterialVariablesTypes, std::string> MaterialVariablesTypesNames = {
+static std::map<MaterialVariablesTypes, std::string> MaterialVariablesTypesToString = {
 	{ MAT_VAR_BOOLEAN, "BOOLEAN"},
 	{ MAT_VAR_INTEGER, "INTEGER"},
 	{ MAT_VAR_UNSIGNED_INTEGER, "UNSIGNED_INTEGER"},
@@ -327,7 +348,7 @@ static std::map<MaterialVariablesTypes, std::string> MaterialVariablesTypesNames
 	{ MAT_VAR_MATRIX4X4, "MATRIX4X4"},
 };
 
-static std::map<std::string, MaterialVariablesTypes> StrToMaterialVariablesTypes = {
+static std::map<std::string, MaterialVariablesTypes> StringToMaterialVariablesTypes = {
 	{ "BOOLEAN", MAT_VAR_BOOLEAN },
 	{ "INTEGER", MAT_VAR_INTEGER },
 	{ "UNSIGNED_INTEGER", MAT_VAR_UNSIGNED_INTEGER },
@@ -390,70 +411,70 @@ static std::map<MaterialVariablesTypes, std::function<void(nlohmann::json&, std:
 	{
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_BOOLEAN)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_BOOLEAN)},
 			{"value",false}
 		});
 	}},
 	{ MAT_VAR_INTEGER, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_INTEGER)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_INTEGER)},
 			{"value",0}
 		});
 	}},
 	{ MAT_VAR_UNSIGNED_INTEGER, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_UNSIGNED_INTEGER)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_UNSIGNED_INTEGER)},
 			{"value",0U}
 		});
 	}},
 	{ MAT_VAR_RGB, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_RGB)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_RGB)},
 			{"value", {1.0f, 1.0f, 1.0f } }
 		});
 	}},
 	{ MAT_VAR_RGBA, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_RGBA)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_RGBA)},
 			{"value", {1.0f, 1.0f, 1.0f, 1.0f } }
 		});
 	}},
 	{ MAT_VAR_FLOAT, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_FLOAT)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_FLOAT)},
 			{"value", 0.0f }
 		});
 	}},
 	{ MAT_VAR_FLOAT2, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_FLOAT2)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_FLOAT2)},
 			{"value", { 0.0f, 0.0f } }
 		});
 	}},
 	{ MAT_VAR_FLOAT3, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_FLOAT3)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_FLOAT3)},
 			{"value", { 0.0f, 0.0f, 0.0f }}
 		});
 	}},
 	{ MAT_VAR_FLOAT4, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_FLOAT4)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_FLOAT4)},
 			{"value", { 0.0f, 0.0f, 0.0f, 0.0f } }
 		});
 	}},
 	{ MAT_VAR_MATRIX4X4, [](nlohmann::json& mappedValues, std::string variable) {
 		mappedValues.push_back({
 			{"variable",variable},
-			{"variableType",MaterialVariablesTypesNames.at(MAT_VAR_MATRIX4X4)},
+			{"variableType",MaterialVariablesTypesToString.at(MAT_VAR_MATRIX4X4)},
 			{"value", {
 				1.0f, 0.0f, 0.0f, 0.0f,
 				0.0f, 1.0f, 0.0f, 0.0f,

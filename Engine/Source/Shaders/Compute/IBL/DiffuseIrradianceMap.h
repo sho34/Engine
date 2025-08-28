@@ -1,10 +1,17 @@
 #pragma once
 #include "../ComputeInterface.h"
-#include "../../../Renderer/DeviceUtils/RenderToTexture/RenderToTexture.h"
+#include <filesystem>
+#include <wrl.h>
+#include <wrl/client.h>
+#include <atlbase.h>
+#include <d3dx12.h>
+#include <SimpleMath.h>
+
+namespace Templates { struct TextureInstance; };
 
 namespace ComputeShader
 {
-	using namespace DeviceUtils;
+	using namespace Templates;
 
 	struct DiffuseIrradianceMap : public ComputeInterface
 	{
@@ -19,13 +26,13 @@ namespace ComputeShader
 		std::filesystem::path outputFile;
 
 		std::shared_ptr<TextureInstance> envMap;
-		::CD3DX12_CPU_DESCRIPTOR_HANDLE envMapCubeCpuHandle; //SRV, (T0)
-		::CD3DX12_GPU_DESCRIPTOR_HANDLE envMapCubeGpuHandle; //SRV, (T0)
+		CD3DX12_CPU_DESCRIPTOR_HANDLE envMapCubeCpuHandle; //SRV, (T0)
+		CD3DX12_GPU_DESCRIPTOR_HANDLE envMapCubeGpuHandle; //SRV, (T0)
 
 		D3D12_RESOURCE_DESC resourceDesc;
 		CComPtr<ID3D12Resource> resource;
-		::CD3DX12_CPU_DESCRIPTOR_HANDLE resultCpuHandle; //UAV, (U0) 
-		::CD3DX12_GPU_DESCRIPTOR_HANDLE resultGpuHandle; //UAV, (U0)
+		CD3DX12_CPU_DESCRIPTOR_HANDLE resultCpuHandle; //UAV, (U0) 
+		CD3DX12_GPU_DESCRIPTOR_HANDLE resultGpuHandle; //UAV, (U0)
 
 		CComPtr<ID3D12Resource> readBackResource;
 

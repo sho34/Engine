@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "RenderableBoundingBox.h"
-#include "../../../Scene/Renderable/Renderable.h"
-#include "../../../Renderer/Renderer.h"
-#include "../../../Renderer/DeviceUtils/Resources/Resources.h"
+#include <Renderable/Renderable.h>
+#include <Renderer.h>
+#include <DeviceUtils/Resources/Resources.h>
 
 extern std::shared_ptr<Renderer> renderer;
 

@@ -3,7 +3,8 @@
 #include <assimp/scene.h>
 #include <cstddef>
 #include <functional>
-#include "../Animation/Animated.h"
+#include <Animated.h>
+#include <set>
 
 using namespace DirectX;
 
@@ -21,6 +22,21 @@ enum VertexClass {
 	POS_NORMAL_TANGENT_TEXCOORD0_SKINNING,
 	POS_NORMAL_TANGENT_BITANGENT_TEXCOORD0,
 	POS_NORMAL_TANGENT_BITANGENT_TEXCOORD0_SKINNING
+};
+
+static std::map < VertexClass, std::string> VertexClassToString =
+{
+	{ POS, "VertexPos"},
+	{ POS_SKINNING, "VertexPosSkinning" },
+	{ POS_COLOR, "VertexPosColor" },
+	{ POS_TEXCOORD0, "VertexPosTexCoord" },
+	{ POS_TEXCOORD0_SKINNING, "VertexPosTexCoordSkinning" },
+	{ POS_NORMAL, "VertexPosNormal" },
+	{ POS_NORMAL_TEXCOORD0, "VertexPosNormalTexCoord" },
+	{ POS_NORMAL_TANGENT_TEXCOORD0, "VertexPosNormalTangentTexCoord" },
+	{ POS_NORMAL_TANGENT_TEXCOORD0_SKINNING, "VertexPosNormalTangentTexCoordSkinning" },
+	{ POS_NORMAL_TANGENT_BITANGENT_TEXCOORD0, "VertexPosNormalTangentBiTangentTexCoord" },
+	{ POS_NORMAL_TANGENT_BITANGENT_TEXCOORD0_SKINNING, "VertexPosNormalTangentBiTangentTexCoordSkinning" }
 };
 
 //define the data of each vertex type
@@ -292,6 +308,14 @@ static const std::map<VertexComponent, std::string> VertexComponentDefines = {
 	{ VertexComponent::_TANGENT,"_HAS_TANGENT" },
 	{ VertexComponent::_BITANGENT,"_HAS_BITANGENT" },
 	{ VertexComponent::_SKINNING,"_HAS_SKINNING" }
+};
+
+static const std::set<std::string> VertexTextureCompoentsString =
+{
+	VertexComponentDefines.at(VertexComponent::_TEXCOORD0),
+	VertexComponentDefines.at(VertexComponent::_TEXCOORD1),
+	VertexComponentDefines.at(VertexComponent::_TEXCOORD2),
+	VertexComponentDefines.at(VertexComponent::_TEXCOORD3),
 };
 
 static const std::map<VertexClass, std::vector<std::string>> VertexClassDefines = {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <nlohmann/json.hpp>
+
 namespace Scene { struct Renderable; };
 namespace Effects {
 

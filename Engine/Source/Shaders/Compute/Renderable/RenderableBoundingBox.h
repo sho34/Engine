@@ -6,13 +6,15 @@
 #include "../ComputeInterface.h"
 #include "../../../Common/d3dx12.h"
 #include "../../../Common/DirectXHelper.h"
-#include "../../../Renderer/DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
+//#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 
 namespace Scene { struct Renderable; };
+namespace DeviceUtils { struct ConstantsBuffer; };
 
 namespace ComputeShader
 {
 	using namespace DeviceUtils;
+	using namespace Scene;
 
 	struct RenderableBoundingBox : public ComputeInterface
 	{

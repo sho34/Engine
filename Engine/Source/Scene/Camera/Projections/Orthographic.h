@@ -57,4 +57,24 @@ namespace Scene::CameraProjections {
 
 	};
 
+	inline Orthographic ToOrthographic(nlohmann::json& j)
+	{
+		Orthographic p;
+		p.nearZ = static_cast<float>(j.at("nearZ"));
+		p.farZ = static_cast<float>(j.at("farZ"));
+		p.width = static_cast<float>(j.at("width"));
+		p.height = static_cast<float>(j.at("height"));
+		return p;
+	}
+
+	inline nlohmann::json FromOrthographic(Orthographic p)
+	{
+		return {
+			{ "nearZ", p.nearZ },
+			{ "farZ", p.farZ },
+			{ "width", p.width },
+			{ "height", p.height },
+		};
+	}
+
 };

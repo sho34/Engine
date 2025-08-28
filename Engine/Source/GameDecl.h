@@ -1,8 +1,5 @@
 #pragma once
-#pragma once
 
-extern void SetupRenderPipeline();
-extern void DestroyRenderPipeline();
 extern void RunRender();
 extern void PostRender();
 extern void GameStep();

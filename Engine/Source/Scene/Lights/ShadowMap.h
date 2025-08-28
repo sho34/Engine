@@ -26,6 +26,7 @@ namespace Scene {
 	};
 
 #if defined(_EDITOR)
+	/*
 	enum ShadowMapUpdateFlags {
 		ShadowMapUpdateFlags_CreateShadowMap = 0x1,
 		ShadowMapUpdateFlags_DestroyShadowMap = 0x2,
@@ -39,6 +40,7 @@ namespace Scene {
 		ShadowMapUpdateFlags_DestroyBoth = ShadowMapUpdateFlags_DestroyShadowMap | ShadowMapUpdateFlags_DestroyShadowMapMinMaxChain,
 		ShadowMapUpdateFlags_RebuildBoth = ShadowMapUpdateFlags_CreateBoth | ShadowMapUpdateFlags_DestroyBoth
 	};
+	*/
 #endif
 
 	struct ShadowMapAttributes {
@@ -66,7 +68,8 @@ namespace Scene {
 	//UPDATE
 	void AllocShadowMapSlot(unsigned int slot);
 	void FreeShadowMapSlot(unsigned int slot);
-	void UpdateConstantsBufferShadowMapAttributes(const std::shared_ptr<Light>& light, unsigned int backbufferIndex, unsigned int shadowMapIndex);
+	void WriteConstantsBufferShadowMapAttributes(const std::shared_ptr<Light>& light, unsigned int backbufferIndex, unsigned int shadowMapIndex);
+	void WriteShadowMapCamerasConstantsBuffers(const std::shared_ptr<Light>& light, unsigned int backbufferIndex);
 
 	//RENDER
 

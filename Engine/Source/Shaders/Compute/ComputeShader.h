@@ -1,22 +1,31 @@
 #pragma once
 #include <string>
-#include "../../Renderer/DeviceUtils/RootSignature/RootSignature.h"
-#include "../../Renderer/DeviceUtils/PipelineState/PipelineState.h"
+#include <vector>
+#include <Material/SamplerDesc.h>
+#include <Shader/Shader.h>
+#include <Shader/ShaderInstance.h>
+//#include <DeviceUtils/RootSignature/RootSignature.h>
+//#include <DeviceUtils/PipelineState/PipelineState.h>
 
-namespace Templates { struct ShaderInstance; };
+using namespace Templates;
 
 namespace ComputeShader
 {
-	using namespace Templates;
-	struct ComputeInterface;
+	//struct ComputeInterface;
 
 	struct ComputeShader
 	{
 		std::shared_ptr<ShaderInstance> shader = nullptr;
-		HashedRootSignature rootSignature;
-		HashedPipelineState pipelineState;
+		CComPtr<ID3D12RootSignature> rootSignature;
+		CComPtr<ID3D12PipelineState> pipelineState;
+		//HashedRootSignature rootSignature;
+		//HashedPipelineState pipelineState;
 
-		~ComputeShader() { DestroyShaderBinary(shader); }
+		~ComputeShader() {
+			RemoveShaderInstance(shader->instanceUUID, shader);
+			shader = nullptr;
+			/*DestroyShaderBinary(shader);*/
+		}
 		void Init(std::string shaderName, std::vector<MaterialSamplerDesc> samplers = {});
 		void SetComputeState();
 	};

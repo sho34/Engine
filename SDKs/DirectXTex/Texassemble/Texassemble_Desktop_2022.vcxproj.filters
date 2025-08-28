@@ -21,6 +21,6 @@
     </Manifest>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Common\CmdLineHelpers.h" />
+    <ClInclude Include="texassemble.h" />
   </ItemGroup>
 </Project>

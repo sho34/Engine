@@ -1,16 +1,18 @@
 #pragma once
-
-#include "../Templates/Templates.h"
-#include "../Scene/Scene.h"
+#include <Scene.h>
+#include <wrl.h>
+#include <Camera/Camera.h>
+#include <Renderable/Renderable.h>
+#include <JObject.h>
 
 #if defined(_EDITOR)
+
+using namespace Scene;
 
 namespace Editor {
 
 	static const LONG ApplicationBarBottom = 19L;
 	static const LONG RightPanelWidth = 400L;
-
-	using namespace Scene;
 
 	void InitEditor();
 
@@ -20,14 +22,21 @@ namespace Editor {
 	bool WndProcHandlerEditor(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	void HandleApplicationDragTitleBar(RECT& dragRect);
 
-	void DrawEditor(std::shared_ptr<Camera> camera = nullptr);
+	void DrawEditor(std::shared_ptr<Camera> camera);
 	void DrawApplicationBar();
+	void OpenSceneObject(std::string uuid);
+	void OnChangeSceneObjectTab(std::string newTab);
+	void OpenTemplate(std::string uuid);
+	void OpenTemplateOnNextFrame(std::string uuid);
+	void SendEditorPreview(std::string uuid, auto GetJObject, auto drawers);
+	void SendEditorDestroyPreview(std::string uuid, auto GetJObject);
+	void OnChangeTemplateTab(std::string newTab);
 	void DrawRightPanel();
-	void DrawRenderableGuizmo(std::shared_ptr<Camera> camera);
-	void DrawLightGuizmo(std::shared_ptr<Camera> camera);
-	void DrawCameraGuizmo(std::shared_ptr<Camera> camera);
-	void DrawSoundGuizmo(std::shared_ptr<Camera> camera);
-	void DrawSelectedObjectGuizmo(std::shared_ptr<Camera> camera);
+	void MarkScenePanelAssetsAsDirty();
+	void MarkTemplatesPanelAssetsAsDirty();
+	void DestroyEditorSceneObjectsReferences();
+
+	void DrawPickedObjectsGuizmo(std::shared_ptr<Camera> camera, ImGuizmo::OPERATION& gizmoOperation, ImGuizmo::MODE& gizmoMode);
 
 	void OpenLevelFile();
 
@@ -35,26 +44,25 @@ namespace Editor {
 	void SaveLevelAs();
 	void SaveTemplates();
 
-	void SelectSceneObject(_SceneObjects objectType, std::string uuid);
+	void SelectSceneObject(std::string uuid);
 
-	void RenderSelectedLightShadowMapChain();
-
-	void CreateRenderableBoundingBox();
+	bool RenderableBoundingBoxExists();
+	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera);
+	void DestroyRenderableBoundingBox();
 	void WriteRenderableBoundingBoxConstantsBuffer();
 	void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent);
 	void DrawCreateWindow(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void(std::function<void()>)> drawContent);
-	void ImDrawMaterialShaderSelection(nlohmann::json& mat, std::string key, ShaderType type, std::function<void()> cb = [] {});
 
 	//MOUSE PROCESSING
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera);
 
 	//OBJECT PICKING
+	bool PickingPassExists();
 	void CreatePickingPass();
 	void DestroyPickingPass();
-	void MapPickingRenderables();
-	void RegisterPickingComponents(std::shared_ptr<Renderable> renderable);
-	void RenderPickingPass(std::shared_ptr<Camera> camera);
+	void BindPickingRenderables();
+	void RenderPickingPass(std::shared_ptr<Camera> cam);
 	void PickFromScene();
 	void PickSceneObject(unsigned int pickedObjectId);
 	void ReleasePickingPassResources();

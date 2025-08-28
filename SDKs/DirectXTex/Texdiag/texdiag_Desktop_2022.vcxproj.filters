@@ -20,6 +20,6 @@
     </Manifest>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Common\CmdLineHelpers.h" />
+    <ClInclude Include="texdiag.h" />
   </ItemGroup>
 </Project>

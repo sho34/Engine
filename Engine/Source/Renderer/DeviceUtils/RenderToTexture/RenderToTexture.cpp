@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "RenderToTexture.h"
-#include "../D3D12Device/Builder.h"
-#include "../../Renderer.h"
-#include "../../../Common/DirectXHelper.h"
+#include <DeviceUtils/D3D12Device/Builder.h>
+#include <Renderer.h>
+#include <DirectXHelper.h>
 
 extern std::shared_ptr<Renderer> renderer;
 

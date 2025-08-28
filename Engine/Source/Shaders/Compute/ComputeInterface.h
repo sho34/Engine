@@ -5,7 +5,7 @@ namespace Scene { struct Renderable; };
 
 namespace ComputeShader
 {
-	using namespace DeviceUtils;
+	//using namespace DeviceUtils;
 
 	struct ComputeInterface
 	{
