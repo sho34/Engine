@@ -9,11 +9,13 @@ namespace Scene::CameraProjections {
 	struct Orthographic {
 		static constexpr float defaultNearZ = 0.01f;
 		static constexpr float defaultFarZ = 1000.0f;
+		static constexpr float defaultWidth = 1000.0f;
+		static constexpr float defaultHeight = 1000.0f;
 
 		float nearZ = defaultNearZ;
 		float farZ = defaultFarZ;
-		float width = 1000.0f;
-		float height = 1000.0f;
+		float width = defaultWidth;
+		float height = defaultHeight;
 		XMMATRIX projectionMatrix;
 
 		void Copy(Orthographic& other) {
@@ -29,27 +31,22 @@ namespace Scene::CameraProjections {
 		}
 
 		inline void updateProjectionMatrix(float width, float height) {
-
 			this->width = width;
 			this->height = height;
 			updateProjectionMatrix();
 		};
 
 		inline void updateNearZ(float nearZ) {
-
 			this->nearZ = nearZ;
 			updateProjectionMatrix();
-
 		}
 
 		inline void updateFarZ(float farZ) {
-
 			this->farZ = farZ;
 			updateProjectionMatrix();
 		}
 
-		inline void expandView(float diff)
-		{
+		inline void expandView(float diff) {
 			width = std::clamp(width + diff, 4.0f, 200.0f);
 			height = std::clamp(height + diff, 4.0f, 200.0f);
 			updateProjectionMatrix();
@@ -76,5 +73,4 @@ namespace Scene::CameraProjections {
 			{ "height", p.height },
 		};
 	}
-
 };

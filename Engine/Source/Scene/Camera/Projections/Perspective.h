@@ -9,13 +9,15 @@ namespace Scene::CameraProjections {
 	struct Perspective {
 		static constexpr float defaultFovAngleY = 70.0f;
 		static constexpr float defaultNearZ = 0.01f;
-		static constexpr float defaultFarZ = 100.0f;
+		static constexpr float defaultFarZ = 1000.0f;
+		static constexpr float defaultWidth = 1000.0f;
+		static constexpr float defaultHeight = 1000.0f;
 
 		float nearZ = defaultNearZ;
 		float farZ = defaultFarZ;
 		float fovAngleY = defaultFovAngleY;
-		float width = 1000.0f;
-		float height = 1000.0f;
+		float width = defaultWidth;
+		float height = defaultHeight;
 		XMMATRIX projectionMatrix;
 
 		void Copy(Perspective& other) {
@@ -51,6 +53,8 @@ namespace Scene::CameraProjections {
 		p.nearZ = static_cast<float>(j.at("nearZ"));
 		p.farZ = static_cast<float>(j.at("farZ"));
 		p.fovAngleY = static_cast<float>(j.at("fovAngleY"));
+		if (j.contains("width")) p.width = static_cast<float>(j.at("width"));
+		if (j.contains("height")) p.width = static_cast<float>(j.at("height"));
 		return p;
 	}
 
@@ -59,7 +63,9 @@ namespace Scene::CameraProjections {
 		return {
 			{ "nearZ", p.nearZ },
 			{ "farZ", p.farZ },
-			{ "fovAngleY", p.fovAngleY }
+			{ "fovAngleY", p.fovAngleY },
+			{ "width", p.width },
+			{ "height", p.height }
 		};
 	}
 };

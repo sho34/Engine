@@ -45,32 +45,7 @@ namespace Scene
 #include <CameraAtt.h>
 #include <JExposeEnd.h>
 
-		switch (projectionType())
-		{
-		case PROJ_Perspective:
-		{
-			perspectiveProjection = {
-				.nearZ = projectionNearZ(), .farZ = projectionFarZ(),
-				.fovAngleY = projectionfovAngleY(), .width = projectionWidth(), .height = projectionHeight()
-			};
-			perspectiveProjection.updateProjectionMatrix();
-		}
-		break;
-		case PROJ_Orthographic:
-		{
-			orthographicProjection = {
-				.nearZ = projectionNearZ(), .farZ = projectionFarZ(),
-				.width = projectionWidth(), .height = projectionHeight()
-			};
-			orthographicProjection.updateProjectionMatrix();
-		}
-		break;
-		default:
-		{
-			assert(true); //not implemented
-		}
-		break;
-		}
+		UpdateProjection();
 
 		if (!light().empty())
 		{
@@ -120,6 +95,22 @@ namespace Scene
 			{
 				EraseCameraFromMouseCameras(cam);
 			}
+		}
+
+		for (auto& pair : allCams)
+		{
+			auto [uuid, cam] = pair;
+			if (
+				!cam->dirty(Camera::Update_projectionType) &&
+				!cam->dirty(Camera::Update_perspective) &&
+				!cam->dirty(Camera::Update_orthographic) &&
+				!cam->dirty(Camera::Update_fitWindow)
+				) continue;
+			cam->clean(Camera::Update_projectionType);
+			cam->clean(Camera::Update_perspective);
+			cam->clean(Camera::Update_orthographic);
+			cam->clean(Camera::Update_fitWindow);
+			cam->UpdateProjection();
 		}
 
 		if (camsRpi.size() > 0ULL)
@@ -296,10 +287,12 @@ namespace Scene
 		switch (projectionType())
 		{
 		case PROJ_Perspective:
-			return  fitWindow() ? static_cast<float>(abs(hWndRect.right - hWndRect.left)) : perspective().width;
-			break;
+		{
+			return fitWindow() ? static_cast<float>(abs(hWndRect.right - hWndRect.left)) : perspective().width;
+		}
+		break;
 		default:
-			return  fitWindow() ? static_cast<float>(abs(hWndRect.right - hWndRect.left)) : orthographic().width;
+			return fitWindow() ? static_cast<float>(abs(hWndRect.right - hWndRect.left)) : orthographic().width;
 			break;
 		}
 	}
@@ -389,6 +382,36 @@ namespace Scene
 		case PROJ_Orthographic:
 		{
 			orthographicProjection.updateProjectionMatrix(static_cast<float>(width), static_cast<float>(height));
+		}
+		break;
+		}
+	}
+
+	void Camera::UpdateProjection()
+	{
+		switch (projectionType())
+		{
+		case PROJ_Perspective:
+		{
+			perspectiveProjection = {
+				.nearZ = projectionNearZ(), .farZ = projectionFarZ(),
+				.fovAngleY = projectionfovAngleY(), .width = projectionWidth(), .height = projectionHeight()
+			};
+			perspectiveProjection.updateProjectionMatrix();
+		}
+		break;
+		case PROJ_Orthographic:
+		{
+			orthographicProjection = {
+				.nearZ = projectionNearZ(), .farZ = projectionFarZ(),
+				.width = projectionWidth(), .height = projectionHeight()
+			};
+			orthographicProjection.updateProjectionMatrix();
+		}
+		break;
+		default:
+		{
+			assert(true); //not implemented
 		}
 		break;
 		}

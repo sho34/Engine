@@ -116,6 +116,7 @@ namespace Scene {
 		void DestroyRenderPasses();
 		void ResizeReleasePasses();
 		void ResizePasses(unsigned int width, unsigned int height);
+		void UpdateProjection();
 
 		std::set<std::shared_ptr<Renderable>> renderables;
 		void BindRenderable(std::shared_ptr<Renderable> renderable);

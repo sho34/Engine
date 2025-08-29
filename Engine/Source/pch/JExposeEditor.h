@@ -4463,7 +4463,92 @@ inline JEdvDrawerFunction DrawValue<Perspective, jedv_t_object>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			ImGui::Text(attribute.c_str());
+			using namespace Scene::CameraProjections;
+
+			std::set<std::string> projectionTypes;
+			std::set<bool> fitWindow;
+			for (auto& j : json) {
+				projectionTypes.insert(j->at("projectionType"));
+				fitWindow.insert(bool(j->at("fitWindow")));
+			}
+			if (projectionTypes.size() > 1ULL || StringToProjectionsTypes.at(*projectionTypes.begin()) != PROJ_Perspective) return;
+
+			std::vector<std::tuple<std::string, std::string, float>> perspAtts = {
+				std::make_tuple("nearZ", "%0.5f", Perspective::defaultNearZ),
+				std::make_tuple("farZ", "%.2f", Perspective::defaultFarZ),
+				std::make_tuple("fovAngleY", "%.2f", Perspective::defaultFovAngleY),
+			};
+
+			if (fitWindow.size() <= 1ULL && (*fitWindow.begin()) == false)
+			{
+				perspAtts.push_back(std::make_tuple("width", "%.0f", Perspective::defaultWidth));
+				perspAtts.push_back(std::make_tuple("height", "%.0f", Perspective::defaultHeight));
+			}
+
+			auto updateValue = [attribute, &json](std::string att, float value)
+				{
+					using namespace Scene::CameraProjections;
+					for (auto& j : json)
+					{
+						nlohmann::json patch =
+						{
+							{ attribute,
+								{
+									{ att, value }
+								}
+							}
+						};
+						j->JUpdate(patch);
+					}
+				};
+
+			std::string tableName = "tables-" + attribute + "-table";
+			if (ImGui::BeginTable(tableName.c_str(), 2, defaultTableFlags))
+			{
+				for (auto tup : perspAtts)
+				{
+					auto att = std::get<0>(tup);
+					auto format = std::get<1>(tup);
+					auto defaultV = std::get<2>(tup);
+
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text(att.c_str());
+					ImGui::TableSetColumnIndex(1);
+					ImGui::PushID(att.c_str());
+
+					std::set<float> fs;
+					for (auto& j : json)
+					{
+						float v = j->at(attribute).contains(att) ? static_cast<float>(j->at(attribute).at(att)) : defaultV;
+						fs.insert(v);
+					}
+
+					if (fs.size() > 1)
+					{
+						std::string value = "";
+						if (ImGui::InputText("##", &value, ImGuiInputTextFlags_CharsDecimal))
+						{
+							value = std::regex_replace(value, std::regex(".+-*/"), "");
+							if (value.size() > 0ULL)
+							{
+								updateValue(att, (value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
+							}
+						}
+					}
+					else
+					{
+						float value = json.at(0)->at(attribute).contains(att) ? static_cast<float>(json.at(0)->at(attribute).at(att)) : defaultV;
+						if (ImGui::InputFloat("##", &value, 0.0f, 0.0f, format.c_str()))
+						{
+							updateValue(att, value);
+						}
+					}
+					ImGui::PopID();
+				}
+
+				ImGui::EndTable();
+			}
 		};
 }
 
@@ -4472,6 +4557,87 @@ inline JEdvDrawerFunction DrawValue<Orthographic, jedv_t_object>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			ImGui::Text(attribute.c_str());
+			using namespace Scene::CameraProjections;
+
+			std::set<std::string> projectionTypes;
+			std::set<bool> fitWindow;
+			for (auto& j : json) {
+				projectionTypes.insert(j->at("projectionType"));
+				fitWindow.insert(bool(j->at("fitWindow")));
+			}
+			if (projectionTypes.size() > 1ULL || StringToProjectionsTypes.at(*projectionTypes.begin()) != PROJ_Orthographic) return;
+
+			std::vector<std::tuple<std::string, std::string, float>> perspAtts = {
+				std::make_tuple("nearZ", "%0.5f", Orthographic::defaultNearZ),
+				std::make_tuple("farZ", "%.2f", Orthographic::defaultFarZ),
+				std::make_tuple("width", "%.0f", Orthographic::defaultWidth),
+				std::make_tuple("height", "%.0f", Orthographic::defaultHeight),
+			};
+
+			auto updateValue = [attribute, &json](std::string att, float value)
+				{
+					using namespace Scene::CameraProjections;
+					for (auto& j : json)
+					{
+						nlohmann::json patch =
+						{
+							{ attribute,
+								{
+									{ att, value }
+								}
+							}
+						};
+						j->JUpdate(patch);
+					}
+				};
+
+			std::string tableName = "tables-" + attribute + "-table";
+			if (ImGui::BeginTable(tableName.c_str(), 2, defaultTableFlags))
+			{
+				for (auto tup : perspAtts)
+				{
+					auto att = std::get<0>(tup);
+					auto format = std::get<1>(tup);
+					auto defaultV = std::get<2>(tup);
+
+					ImGui::TableNextRow();
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text(att.c_str());
+					ImGui::TableSetColumnIndex(1);
+					ImGui::PushID(att.c_str());
+
+					std::set<float> fs;
+					for (auto& j : json)
+					{
+						float v = j->at(attribute).contains(att) ? static_cast<float>(j->at(attribute).at(att)) : defaultV;
+						fs.insert(v);
+					}
+
+					if (fs.size() > 1)
+					{
+						std::string value = "";
+						if (ImGui::InputText("##", &value, ImGuiInputTextFlags_CharsDecimal))
+						{
+							value = std::regex_replace(value, std::regex(".+-*/"), "");
+							if (value.size() > 0ULL)
+							{
+								updateValue(att, (value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
+							}
+						}
+					}
+					else
+					{
+						float value = json.at(0)->at(attribute).contains(att) ? static_cast<float>(json.at(0)->at(attribute).at(att)) : defaultV;
+						if (ImGui::InputFloat("##", &value, 0.0f, 0.0f, format.c_str()))
+						{
+							updateValue(att, value);
+						}
+					}
+					ImGui::PopID();
+				}
+
+				ImGui::EndTable();
+			}
 		};
+
 }
