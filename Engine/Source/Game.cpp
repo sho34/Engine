@@ -473,13 +473,13 @@ void EditorModeCreate()
 			//resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
 			//LoadDefaultLevel();
-			LoadLevel("female");
-			CreateEditorModeBindings();
+			LoadLevel("pyramid");
+			//LoadLevel("female");
 			//LoadLevel("knight");
 			//LoadLevel("spartan");
 			//LoadLevel("family");
 			//LoadLevel("venom");
-
+			CreateEditorModeBindings();
 
 			//hdrHistogram = std::make_shared<LuminanceHistogram>(mainPass->renderToTexture[0]);
 			//hdrHistogram->UpdateLuminanceHistogramParams(mainPass->renderToTexture[0]->width, mainPass->renderToTexture[0]->height, -2.0f, 10.0f);

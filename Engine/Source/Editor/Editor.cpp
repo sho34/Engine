@@ -418,6 +418,12 @@ namespace Editor {
 
 		Editor::NonGameMode = false;
 
+		if (sceneObjectEdition.selectedNextFrame != "")
+		{
+			OpenTemplate(sceneObjectEdition.selectedNextFrame);
+			sceneObjectEdition.selectedNextFrame = "";
+		}
+
 		if (templateEdition.selectedNextFrame != "")
 		{
 			OpenTemplate(templateEdition.selectedNextFrame);
@@ -558,6 +564,11 @@ namespace Editor {
 	{
 		sceneObjectEdition.selected = { uuid };
 		OnChangeSceneObjectTab(templateEdition.detailAbleTabs.at(1));
+	}
+
+	void OpenSceneObjectOnNextFrame(std::string uuid)
+	{
+		sceneObjectEdition.selectedNextFrame = uuid;
 	}
 
 	void OnChangeSceneObjectTab(std::string newTab)

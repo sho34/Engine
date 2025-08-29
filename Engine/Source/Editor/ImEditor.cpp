@@ -347,5 +347,16 @@ namespace ImGui
 				}
 			}, std::get<0>(uuidName) != "");
 	}
+
+	void OpenSceneObject(const char* iconCode, UUIDName uuidName)
+	{
+		ImGui::DrawItemWithEnabledState([uuidName, iconCode]
+			{
+				if (ImGui::Button(iconCode))
+				{
+					Editor::OpenSceneObjectOnNextFrame(std::get<0>(uuidName));
+				}
+			}, std::get<0>(uuidName) != "");
+	}
 };
 

@@ -389,7 +389,10 @@ inline void EditorDrawVector(
 	std::vector<std::shared_ptr<JObject>>& json,
 	const char* iconCode,
 	std::function<std::vector<UUIDName>()> GetSelectableItems,
-	std::function<bool(UUIDName)> FilterItem = [](UUIDName item) {return true; }
+	std::function<std::string(std::string)> GetNameFromUUID,
+	std::function<void(const char*, UUIDName)> OpenItem = [](const char* icon, UUIDName item) {},
+	std::function<bool(unsigned int, UUIDName)> FilterItem = [](unsigned int index, UUIDName item) {return true; },
+	std::function<bool(unsigned int, unsigned int, unsigned int, UUIDName, UUIDName)> CanSwap = [](unsigned int index1, unsigned int index2, unsigned int numItems, UUIDName item1, UUIDName item2) { return true; }
 )
 {
 	auto allSame = [attribute, &json]()
@@ -506,14 +509,6 @@ inline void EditorDrawVector(
 	bool allEq = allSame();
 
 	std::vector<UUIDName> items = GetSelectableItems();
-	std::vector<UUIDName> uuidNames;
-	std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [FilterItem](UUIDName item)
-		{
-			return FilterItem(item);
-		}
-	);
-	std::vector<UUIDName> selectables = { std::make_tuple("","") };
-	selectables.insert(selectables.end(), uuidNames.begin(), uuidNames.end());
 
 	std::string tableName = "tables-" + attribute + "-table";
 	if (ImGui::BeginTable(tableName.c_str(), 2, defaultTableFlags))
@@ -539,70 +534,115 @@ inline void EditorDrawVector(
 		if (allEq)
 		{
 			unsigned int numItems = static_cast<unsigned int>(json.at(0)->at(attribute).size());
-			for (unsigned int item = 0U; item < numItems; item++)
+			auto getItemsInVector = [attribute, numItems, &json, GetNameFromUUID]
+				{
+					std::vector<UUIDName> itemsIV;
+					for (unsigned int i = 0; i < numItems; i++)
+					{
+						UUIDName uuidName;
+						std::string& uuid = std::get<0>(uuidName);
+						std::string& name = std::get<1>(uuidName);
+						uuid = json.at(0)->at(attribute).at(i);
+						if (uuid != "")
+						{
+							name = GetNameFromUUID(uuid);
+						}
+						itemsIV.push_back(uuidName);
+					}
+					return itemsIV;
+				};
+
+			std::vector<UUIDName> itemsInVector = getItemsInVector();
+
+			for (unsigned int index = 0U; index < numItems; index++)
 			{
 				ImGui::TableNextRow();
 				ImGui::TableSetColumnIndex(0);
 
-				ImGui::PushID((std::string("PlusLeft-") + std::to_string(item)).c_str());
+				//draw the plus button to append items
+				ImGui::PushID((std::string("PlusLeft-") + std::to_string(index)).c_str());
 				if (ImGui::Button(ICON_FA_PLUS))
 				{
-					append(item);
+					append(index);
 				}
 				ImGui::PopID();
 
+				//draw the minus button to delete items
 				ImGui::SameLine();
-				ImGui::PushID((std::string("DeleteLeft-") + std::to_string(item)).c_str());
+				ImGui::PushID((std::string("DeleteLeft-") + std::to_string(index)).c_str());
 				if (ImGui::Button(ICON_FA_TIMES))
 				{
-					removeIndex = item;
+					removeIndex = index;
 				}
 				ImGui::PopID();
 
+				//if there is more than a single item we enable the swap buttons
 				if (numItems > 1U)
 				{
+					bool canSwapUp = index > 0 ? CanSwap(index, index - 1, numItems, itemsInVector[index], itemsInVector[index - 1]) : false;
+					bool canSwapDown = (index < numItems - 1) ? CanSwap(index, index + 1, numItems, itemsInVector[index], itemsInVector[index + 1]) : false;
+
+					//draw the swap arrow to move something up
 					ImGui::SameLine();
-					ImGui::PushID((std::string("UpLeft-") + std::to_string(item)).c_str());
-					ImGui::DrawItemWithEnabledState([item, swap]()
+					ImGui::PushID((std::string("UpLeft-") + std::to_string(index)).c_str());
+					ImGui::DrawItemWithEnabledState([index, swap, canSwapUp]()
 						{
-							if (ImGui::Button(ICON_FA_ARROW_UP) && (item != 0))
+							if (ImGui::Button(ICON_FA_ARROW_UP) && (index != 0) && canSwapUp)
 							{
-								swap(item, item - 1);
+								swap(index, index - 1);
 							}
 						}
-					, item != 0);
+					, index != 0 && canSwapUp);
 					ImGui::PopID();
 
+					//draw the swap arrow to move something down
 					ImGui::SameLine();
-					ImGui::PushID((std::string("DownLeft-") + std::to_string(item)).c_str());
-					ImGui::DrawItemWithEnabledState([item, numItems, swap]()
+					ImGui::PushID((std::string("DownLeft-") + std::to_string(index)).c_str());
+					ImGui::DrawItemWithEnabledState([index, numItems, swap, canSwapDown]()
 						{
-							if (ImGui::Button(ICON_FA_ARROW_DOWN) && (item != (numItems - 1)))
+							if (ImGui::Button(ICON_FA_ARROW_DOWN) && (index != (numItems - 1)) && canSwapDown)
 							{
-								swap(item, item + 1);
+								swap(index, index + 1);
 							}
 						}
-					, item != (numItems - 1));
+					, index != (numItems - 1) && canSwapDown);
 					ImGui::PopID();
 				}
 
+				//move to second column where the actual list is displayed
 				ImGui::TableSetColumnIndex(1);
-				int index = FindSelectableIndex(selectables, json.at(0)->at(attribute), item);
-				UUIDName selected = index < selectables.size() ? selectables.at(index) : std::tie("", "");
 
-				ImGui::DrawItemWithEnabledState([selected, iconCode, item]()
+				//create a list of uuidnames but apply a filtering criteria
+				std::vector<UUIDName> uuidNames;
+				std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [index, FilterItem](UUIDName item)
 					{
-						ImGui::PushID((std::string("goto-selected") + std::to_string(item)).c_str());
-						ImGui::OpenTemplate(iconCode, selected);
+						return FilterItem(index, item);
+					}
+				);
+				//build the final list appending the empty tuple at the beginning
+				std::vector<UUIDName> selectables = { std::make_tuple("","") };
+				selectables.insert(selectables.end(), uuidNames.begin(), uuidNames.end());
+
+				//get the index of the selected item and get the selected uuidname from it's index
+				int selectedIndex = FindSelectableIndex(selectables, json.at(0)->at(attribute), index);
+				UUIDName selected = selectedIndex < selectables.size() ? selectables.at(selectedIndex) : std::tie("", "");
+
+				//have a goto button to go to the selected item template//FIX this we might want to go to a scene object too
+				ImGui::DrawItemWithEnabledState([selected, iconCode, index, OpenItem]()
+					{
+						ImGui::PushID((std::string("goto-selected") + std::to_string(index)).c_str());
+						//ImGui::OpenTemplate(iconCode, selected);
+						OpenItem(iconCode, selected);
 						ImGui::PopID();
 					}, std::get<0>(selected) != "");
 				ImGui::SameLine();
 
-				ImGui::PushID((std::string("selectables-") + std::to_string(item)).c_str());
-				ImGui::DrawComboSelection(selected, selectables, [setValue, item](UUIDName option)
+				//draw the actual 
+				ImGui::PushID((std::string("selectables-") + std::to_string(index)).c_str());
+				ImGui::DrawComboSelection(selected, selectables, [setValue, index](UUIDName option)
 					{
 						std::string& nuuid = std::get<0>(option);
-						setValue(item, nuuid);
+						setValue(index, nuuid);
 					}
 				);
 				ImGui::PopID();
@@ -626,6 +666,15 @@ inline void EditorDrawVector(
 		}
 		else
 		{
+			std::vector<UUIDName> uuidNames;
+			std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [FilterItem](UUIDName item)
+				{
+					return FilterItem(0, item);
+				}
+			);
+			std::vector<UUIDName> selectables = { std::make_tuple("","") };
+			selectables.insert(selectables.end(), uuidNames.begin(), uuidNames.end());
+
 			ImGui::TableSetColumnIndex(1);
 			UUIDName& selected = selectables.at(0);
 
@@ -1522,7 +1571,6 @@ inline JEdvDrawerFunction DrawValue<unsigned int, jedv_t_sound_instance_flags>()
 		};
 }
 
-
 template<>
 inline JEdvDrawerFunction DrawValue<XMFLOAT4, jedv_t_float4>()
 {
@@ -2182,7 +2230,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_te_material_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_TSHIRT, Templates::GetMaterialsUUIDsNames);
+			EditorDrawVector(attribute, json, ICON_FA_TSHIRT, Templates::GetMaterialsUUIDsNames, Templates::GetMaterialName, ImGui::OpenTemplate);
 		};
 }
 
@@ -2191,7 +2239,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_te_model3d_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_CUBE, Templates::GetModel3DsUUIDsNames);
+			EditorDrawVector(attribute, json, ICON_FA_CUBE, Templates::GetModel3DsUUIDsNames, Templates::GetModel3DName, ImGui::OpenTemplate);
 		};
 }
 
@@ -2200,10 +2248,33 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_te_renderpass_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_TV, Templates::GetRenderPasssUUIDsNames, [](UUIDName item)
+			EditorDrawVector(attribute, json, ICON_FA_TV, Templates::GetRenderPasssUUIDsNames, Templates::GetRenderPassName, ImGui::OpenTemplate,
+				[](unsigned int index, UUIDName item) //filtering
 				{
 					std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(std::get<0>(item));
-					return rp->type() == RenderPassType_RenderToTexturePass || rp->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve;
+					return rp->type() == RenderPassType_RenderToTexturePass || (rp->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve && index != 0);
+				},
+				[](unsigned int index1, unsigned int index2, unsigned int numItems, UUIDName item1, UUIDName item2) //swap
+				{
+					if (index1 > index2 && index2 == 0U) //moving up
+					{
+						std::string uuid = std::get<0>(item1);
+						if (uuid != "")
+						{
+							std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(uuid);
+							if (rp->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve) return false;
+						}
+					}
+					else if (index1 < index2 && index1 == 0U) //moving down
+					{
+						std::string uuid = std::get<0>(item2);
+						if (uuid != "")
+						{
+							std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(uuid);
+							if (rp->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve) return false;
+						}
+					}
+					return true;
 				}
 			);
 		};
@@ -2214,7 +2285,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_te_shader_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_FILE, Templates::GetShadersUUIDsNames);
+			EditorDrawVector(attribute, json, ICON_FA_FILE, Templates::GetShadersUUIDsNames, Templates::GetShaderName, ImGui::OpenTemplate);
 		};
 }
 
@@ -2223,7 +2294,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_te_sound_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_MUSIC, Templates::GetSoundsUUIDsNames);
+			EditorDrawVector(attribute, json, ICON_FA_MUSIC, Templates::GetSoundsUUIDsNames, Templates::GetSoundName, ImGui::OpenTemplate);
 		};
 }
 
@@ -2232,7 +2303,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_te_texture_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_IMAGE, Templates::GetTexturesUUIDsNames);
+			EditorDrawVector(attribute, json, ICON_FA_IMAGE, Templates::GetTexturesUUIDsNames, Templates::GetTextureName, ImGui::OpenTemplate);
 		};
 }
 
@@ -2241,7 +2312,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_so_camera_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_CAMERA, Scene::GetCamerasUUIDNames);
+			EditorDrawVector(attribute, json, ICON_FA_CAMERA, Scene::GetCamerasUUIDNames, Scene::FindNameInCameras, ImGui::OpenSceneObject);
 		};
 }
 
@@ -2250,7 +2321,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_so_light_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_LIGHTBULB, Scene::GetLightsUUIDNames);
+			EditorDrawVector(attribute, json, ICON_FA_LIGHTBULB, Scene::GetLightsUUIDNames, Scene::FindNameInLights, ImGui::OpenSceneObject);
 		};
 }
 
@@ -2259,7 +2330,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_so_renderable_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_SNOWMAN, Scene::GetRenderablesUUIDNames);
+			EditorDrawVector(attribute, json, ICON_FA_SNOWMAN, Scene::GetRenderablesUUIDNames, Scene::FindNameInRenderables, ImGui::OpenSceneObject);
 		};
 }
 
@@ -2268,7 +2339,7 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_so_soundeffect_vector>(
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_MUSIC, Scene::GetSoundEffectsUUIDNames);
+			EditorDrawVector(attribute, json, ICON_FA_MUSIC, Scene::GetSoundEffectsUUIDNames, Scene::FindNameInSoundEffects, ImGui::OpenSceneObject);
 		};
 }
 

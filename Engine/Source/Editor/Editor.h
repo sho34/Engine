@@ -25,6 +25,7 @@ namespace Editor {
 	void DrawEditor(std::shared_ptr<Camera> camera);
 	void DrawApplicationBar();
 	void OpenSceneObject(std::string uuid);
+	void OpenSceneObjectOnNextFrame(std::string uuid);
 	void OnChangeSceneObjectTab(std::string newTab);
 	void OpenTemplate(std::string uuid);
 	void OpenTemplateOnNextFrame(std::string uuid);

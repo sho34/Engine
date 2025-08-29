@@ -16,6 +16,7 @@ namespace Editor
 {
 	extern bool NonGameMode;
 	extern void OpenTemplateOnNextFrame(std::string uuid);
+	extern void OpenSceneObjectOnNextFrame(std::string uuid);
 };
 
 namespace ImGui
@@ -478,6 +479,8 @@ namespace ImGui
 	*/
 
 	void OpenTemplate(const char* iconCode, UUIDName uuidName);
+
+	void OpenSceneObject(const char* iconCode, UUIDName uuidName);
 
 }
 #endif

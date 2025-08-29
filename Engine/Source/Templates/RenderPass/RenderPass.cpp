@@ -82,7 +82,7 @@ namespace Templates
 		{
 			{ RenderPassRenderCallbackOverride_None, [](auto c,auto rpi, auto rp) { return nullptr; }},
 			{ RenderPassRenderCallbackOverride_ToneMapping, [](auto c, auto rpi, auto rp) { return std::make_shared<ToneMappingPass>(c,rpi, rp); } },
-			{ RenderPassRenderCallbackOverride_Resolve, [](auto c, auto rpi, auto rp) { return std::make_shared<ResolvePass>(c,rpi, rp); } },
+			{ RenderPassRenderCallbackOverride_Resolve, [](auto c, auto rpi, auto rp) { return rpi > 0 ? std::make_shared<ResolvePass>(c,rpi, rp) : nullptr; } },
 			{ RenderPassRenderCallbackOverride_MinMaxChain, [](auto c, auto rpi, auto rp) { return std::make_shared<MinMaxChainPass>(c,rpi, rp); } },
 			{ RenderPassRenderCallbackOverride_MinMaxChainResult, [](auto c, auto rpi, auto rp) { return std::make_shared<MinMaxChainResultPass>(c,rpi, rp); } }
 		};
