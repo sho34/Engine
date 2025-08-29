@@ -426,7 +426,8 @@ namespace Editor {
 
 		DrawApplicationBar();
 		DrawRightPanel();
-		DrawPickedObjectsGuizmo(camera, gizmoOperation, gizmoMode);
+		if (camera)
+			DrawPickedObjectsGuizmo(camera, gizmoOperation, gizmoMode);
 
 		// Rendering
 		ImGui::Render();
