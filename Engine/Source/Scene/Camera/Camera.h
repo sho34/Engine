@@ -9,12 +9,12 @@
 #include <GamePad.h>
 #include <map>
 #include <Json.h>
-#include <SimpleMath.h>
 #include <SceneObjectDecl.h>
 #include <NoMath.h>
 #include <SceneObject.h>
 #include <JExposeTypes.h>
 #include <ImEditor.h>
+#include <set>
 
 enum ProjectionsTypes {
 	PROJ_Orthographic,
@@ -90,7 +90,6 @@ namespace Scene {
 #include <JExposeDecl.h>
 #include <CameraAtt.h>
 #include <JExposeEnd.h>
-#include <set>
 
 		union {
 			CameraProjections::Perspective perspectiveProjection;

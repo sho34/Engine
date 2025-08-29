@@ -237,6 +237,7 @@ JEdvDrawerFunction DrawEnum(
 #include <Shader/ShaderInstance.h>
 #include <NoStd.h>
 #include <Renderable/Renderable.h>
+#include <Camera/Camera.h>
 #include <Lights/Lights.h>
 #include <Lights/ShadowMap.h>
 #include <Sound/SoundFX.h>
@@ -4454,5 +4455,23 @@ inline JEdvDrawerFunction DrawMap<TextureShaderUsage, std::string>() {
 			{
 				remove(removeUsage);
 			}
+		};
+}
+
+template<>
+inline JEdvDrawerFunction DrawValue<Perspective, jedv_t_object>()
+{
+	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+		{
+			ImGui::Text(attribute.c_str());
+		};
+}
+
+template<>
+inline JEdvDrawerFunction DrawValue<Orthographic, jedv_t_object>()
+{
+	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+		{
+			ImGui::Text(attribute.c_str());
 		};
 }

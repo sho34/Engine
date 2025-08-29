@@ -60,12 +60,19 @@ namespace Scene {
 			}
 		);
 
-		bool criticalFrame = meshes.size() > 0ULL || models.size() > 0ULL;
+		std::set<std::shared_ptr<Renderable>> bindToCam;
+		std::copy_if(r.begin(), r.end(), std::inserter(bindToCam, bindToCam.end()), [](auto& r)
+			{
+				return r->dirty(Renderable::Update_cameras);
+			}
+		);
+
+		bool criticalFrame = meshes.size() > 0ULL || models.size() > 0ULL || bindToCam.size() > 0ULL;
 
 		if (criticalFrame)
 		{
 			renderer->Flush();
-			renderer->RenderCriticalFrame([&meshes, &models]
+			renderer->RenderCriticalFrame([&meshes, &models, &bindToCam]
 				{
 					for (auto& r : meshes)
 					{
@@ -82,6 +89,24 @@ namespace Scene {
 						r->RebuildMeshMaterials();
 						r->BindToScene();
 						r->clean(Renderable::Update_model);
+					}
+					for (auto& r : bindToCam)
+					{
+						for (auto uuid : r->bindedCameras)
+						{
+							std::shared_ptr<Camera> cam = FindInCameras(uuid);
+							if (cam)
+								cam->UnbindRenderable(r);
+						}
+						auto camsV = r->cameras();
+						r->bindedCameras = std::set<std::string>(camsV.begin(), camsV.end());
+						for (auto uuid : r->bindedCameras)
+						{
+							std::shared_ptr<Camera> cam = FindInCameras(uuid);
+							if (cam)
+								cam->BindRenderable(r);
+						}
+						r->clean(Renderable::Update_cameras);
 					}
 				}
 			);

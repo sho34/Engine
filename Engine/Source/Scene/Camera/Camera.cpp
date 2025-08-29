@@ -5,7 +5,6 @@
 #include <Renderer.h>
 #include <nlohmann/json.hpp>
 #if defined(_EDITOR)
-#include "imgui.h"
 #include <Templates.h>
 #include <Textures/Texture.h>
 #endif
@@ -91,8 +90,8 @@ namespace Scene
 			}
 		);
 
-		std::map<std::string, std::shared_ptr<Camera>> swapCCams(Cameras.begin(), Cameras.end());
-		for (auto& pair : swapCCams)
+		std::map<std::string, std::shared_ptr<Camera>> allCams(Cameras.begin(), Cameras.end());
+		for (auto& pair : allCams)
 		{
 			auto [uuid, cam] = pair;
 			if (!cam->dirty(Camera::Update_useSwapChain)) continue;
@@ -106,6 +105,21 @@ namespace Scene
 				EraseCameraFromSwapChainCameras(cam);
 			}
 			camsRpi.insert(cam);
+		}
+
+		for (auto& pair : allCams)
+		{
+			auto [uuid, cam] = pair;
+			if (!cam->dirty(Camera::Update_mouseController)) continue;
+			cam->clean(Camera::Update_mouseController);
+			if (cam->mouseController())
+			{
+				InsertCameraIntoMouseCameras(cam);
+			}
+			else
+			{
+				EraseCameraFromMouseCameras(cam);
+			}
 		}
 
 		if (camsRpi.size() > 0ULL)

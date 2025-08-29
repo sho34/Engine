@@ -1412,6 +1412,8 @@ namespace Editor {
 		mousePicking.doPicking = false;
 		currentMouseMode = MOUSE_GAMEAREA_MODE_NONE;
 
+		if (!mousePicking.pickingPass) return;
+
 		DeviceUtils::CaptureTexture(
 			renderer->d3dDevice,
 			renderer->commandQueue,
