@@ -4,7 +4,6 @@
 #include <map>
 #include <vector>
 #include <nlohmann/json.hpp>
-//#include <imgui.h>
 #include <JTemplate.h>
 #include <TemplateDecl.h>
 #include <dxgiformat.h>

@@ -3634,20 +3634,24 @@ inline JEdvDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vector>()
 						}
 
 						ImGui::TableSetColumnIndex(1);
+						ImGui::PushID(std::string("name-" + std::to_string(index)).c_str());
 						ImGui::PushItemWidth(ImGui::GetWindowWidth());
 						if (ImGui::InputText("##", &name))
 						{
 							updateName(index, name);
 						}
 						ImGui::PopItemWidth();
+						ImGui::PopID();
 
 						ImGui::TableSetColumnIndex(2);
+						ImGui::PushID(std::string("type-" + std::to_string(index)).c_str());
 						ImGui::DrawComboSelection(type, nostd::GetKeysFromMap(StringToMaterialVariablesTypes), [index, &newType, &newTypeIndex](std::string nType)
 							{
 								newType = StringToMaterialVariablesTypes.at(nType);
 								newTypeIndex = index;
 							}
 						);
+						ImGui::PopID();
 
 						ImGui::EndTable();
 					}

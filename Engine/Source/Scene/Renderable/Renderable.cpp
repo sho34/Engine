@@ -391,17 +391,6 @@ namespace Scene {
 				materials[rp].push_back(mi);
 			}
 		}
-		/*
-		auto mm = meshMaterials();
-		for (unsigned int i = 0; i < meshes.size(); i++)
-		{
-			auto& mesh = meshes.at(i);
-			//let the camera override the material if needed(picking pass, shadowmap, or even deferred can be done this way)
-			std::string matUUID = (model3D != nullptr) ? model3D->materialUUIDs.at(i) : mm.at(i).materialUUID;
-			std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed());
-			materials[rp].push_back(mi);
-		}
-		*/
 	}
 
 	void Renderable::DestroyRenderPassMaterialsInstances(std::shared_ptr<Templates::RenderPassInstance>& rp)
