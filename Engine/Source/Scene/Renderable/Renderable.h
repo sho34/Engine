@@ -174,5 +174,6 @@ namespace Scene
 		//RENDER
 		bool renderException = false;
 		void Render(std::shared_ptr<RenderPassInstance> renderPass, std::shared_ptr<Camera> camera = nullptr);
+		void UnbindMaterialsChangesCallback();
 	};
 }

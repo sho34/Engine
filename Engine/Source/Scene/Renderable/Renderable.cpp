@@ -270,10 +270,23 @@ namespace Scene {
 
 	void Renderable::UnbindFromScene()
 	{
+		UnbindMaterialsChangesCallback();
 		Renderables.erase(uuid());
 		Animables.erase(uuid());
 		boundingBoxCompute = nullptr;
 		UnbindCameras();
+	}
+
+	void Renderable::UnbindMaterialsChangesCallback()
+	{
+		for (auto& [rp, vec0] : materials)
+		{
+			for (auto& mat : vec0)
+			{
+				std::shared_ptr<MaterialJson> matJ = GetMaterialTemplate(mat->materialUUID);
+				matJ->UnbindMaterialChangeCallback(uuid());
+			}
+		}
 	}
 
 	XMVECTOR Renderable::rotationQ()
