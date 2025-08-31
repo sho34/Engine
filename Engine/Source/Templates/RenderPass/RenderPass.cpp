@@ -179,17 +179,25 @@ namespace Templates
 		}
 	}
 
-	std::shared_ptr<MaterialInstance> RenderPassInstance::GetRenderPassMaterialInstance(std::string materialUUID, std::shared_ptr<MeshInstance> mesh, bool shadowed) const
+	std::shared_ptr<MaterialInstance> RenderPassInstance::GetRenderPassMaterialInstance(
+		std::string materialUUID,
+		std::shared_ptr<MeshInstance> mesh,
+		bool shadowed,
+		std::string bindingUUID,
+		MaterialChangeCallback materialChangeCallback,
+		MaterialChangePostCallback materialChangePostCallback
+	) const
 	{
 		VertexClass vertexClass = mesh->vertexClass;
 		std::string vertexType = VertexClassToString.at(vertexClass);
 
-		auto noOverride = [materialUUID, vertexClass, vertexType, shadowed]()
+		auto noOverride = [materialUUID, vertexClass, vertexType, shadowed, bindingUUID, materialChangeCallback, materialChangePostCallback]()
 			{
 				std::string instanceUUID = materialUUID + "-" + vertexType;
-				return GetMaterialInstance(instanceUUID, [instanceUUID, materialUUID, vertexClass, shadowed]()
+				return GetMaterialInstance(instanceUUID, [instanceUUID, materialUUID, vertexClass, shadowed, bindingUUID, materialChangeCallback, materialChangePostCallback]()
 					{
-						return std::make_shared<MaterialInstance>(instanceUUID, materialUUID, vertexClass, shadowed);
+						return std::make_shared<MaterialInstance>(instanceUUID, materialUUID, vertexClass, shadowed, TextureShaderUsageMap(),
+							bindingUUID, materialChangeCallback, materialChangePostCallback);
 					}
 				);
 			};

@@ -363,6 +363,26 @@ namespace Scene {
 
 	void Renderable::CreateRenderPassMaterialsInstances(std::shared_ptr<Templates::RenderPassInstance>& rp)
 	{
+		auto onMaterialChange = [this](std::shared_ptr<JObject> mat)
+			{
+			};
+		auto onPostMaterialChange = [this](unsigned int index, unsigned int total)
+			{
+				if (index == 0U)
+				{
+					renderer->Flush();
+					renderer->ResetCommands();
+					renderer->SetCSUDescriptorHeap();
+				}
+
+				RebuildMeshMaterials();
+
+				if (index >= (total - 1))
+				{
+					renderer->CloseCommandsAndFlush();
+				}
+			};
+
 		if (!meshMaterials().empty())
 		{
 			std::vector<MeshMaterial> rmm = meshMaterials();
@@ -377,7 +397,7 @@ namespace Scene {
 			{
 				auto& mesh = meshes.at(i);
 				std::string matUUID = mm.at(i).materialUUID;
-				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed());
+				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed(), uuid(), onMaterialChange, onPostMaterialChange);
 				materials[rp].push_back(mi);
 			}
 		}
@@ -387,7 +407,7 @@ namespace Scene {
 			{
 				auto& mesh = meshes.at(i);
 				std::string matUUID = model3D->materialUUIDs.at(i);
-				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed());
+				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed(), uuid(), onMaterialChange, onPostMaterialChange);
 				materials[rp].push_back(mi);
 			}
 		}

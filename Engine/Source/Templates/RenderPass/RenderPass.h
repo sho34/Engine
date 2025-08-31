@@ -140,7 +140,14 @@ namespace Templates
 		RenderPassInstance() {}
 		~RenderPassInstance();
 		void Pass(std::function<void()> renderCallback = [] {}, bool clearRTV = true, XMVECTORF32 clearColor = DirectX::Colors::Black) const;
-		std::shared_ptr<MaterialInstance> GetRenderPassMaterialInstance(std::string materialUUID, std::shared_ptr<MeshInstance> mesh, bool shadowed) const;
+		std::shared_ptr<MaterialInstance> GetRenderPassMaterialInstance(
+			std::string materialUUID,
+			std::shared_ptr<MeshInstance> mesh,
+			bool shadowed,
+			std::string bindingUUID = "",
+			MaterialChangeCallback materialChangeCallback = [](std::shared_ptr<JObject>) {},
+			MaterialChangePostCallback materialChangePostCallback = [](unsigned int, unsigned int) {}
+		) const;
 		void ResizeRelease() const;
 		void Resize(unsigned int width, unsigned int height) const;
 	};

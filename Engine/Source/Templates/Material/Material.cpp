@@ -35,12 +35,93 @@ namespace Templates {
 	TEMPDEF_FULL(Material);
 	TEMPDEF_REFTRACKER(Material);
 
-	MaterialInstance::MaterialInstance(const std::string instance_uuid, const std::string uuid, VertexClass vClass, bool isShadowed, TextureShaderUsageMap overrideTextures)
+	void MaterialJsonStep()
+	{
+		std::set<std::shared_ptr<MaterialJson>> mats;
+		std::transform(Materialtemplates.begin(), Materialtemplates.end(), std::inserter(mats, mats.begin()), [](auto& temps)
+			{
+				auto& matJ = std::get<1>(temps.second);
+				return matJ;
+			}
+		);
+
+		std::set<std::shared_ptr<MaterialJson>> rebuildMaterials;
+		std::copy_if(mats.begin(), mats.end(), std::inserter(rebuildMaterials, rebuildMaterials.begin()), [](auto& mat)
+			{
+				return mat->dirty(MaterialJson::Update_shader_vs) ||
+					mat->dirty(MaterialJson::Update_shader_ps) ||
+					mat->dirty(MaterialJson::Update_samplers) ||
+					mat->dirty(MaterialJson::Update_mappedValues) ||
+					mat->dirty(MaterialJson::Update_textures) ||
+					mat->dirty(MaterialJson::Update_rasterizerState) ||
+					mat->dirty(MaterialJson::Update_blendState);
+			}
+		);
+
+		if (rebuildMaterials.size() > 0ULL)
+		{
+			unsigned int total = 0U;
+			std::for_each(rebuildMaterials.begin(), rebuildMaterials.end(), [&total](std::shared_ptr<MaterialJson> mat) mutable
+				{
+					for (auto& [_, cb] : mat->bindedMaterialChangesCallbacks)
+					{
+						cb(mat);
+						total++;
+					}
+					mat->clean(MaterialJson::Update_shader_vs);
+					mat->clean(MaterialJson::Update_shader_ps);
+					mat->clean(MaterialJson::Update_samplers);
+					mat->clean(MaterialJson::Update_mappedValues);
+					mat->clean(MaterialJson::Update_textures);
+					mat->clean(MaterialJson::Update_rasterizerState);
+					mat->clean(MaterialJson::Update_blendState);
+				}
+			);
+
+			std::for_each(rebuildMaterials.begin(), rebuildMaterials.end(), [total](std::shared_ptr<MaterialJson> mat)
+				{
+					auto& postCb = mat->bindedMaterialChangesPostCallbacks;
+					std::for_each(postCb.begin(), postCb.end(), [idx = 0, total](auto pair) mutable
+						{
+							auto& lambda = pair.second;
+							lambda(idx++, total);
+						}
+					);
+				}
+			);
+		}
+	}
+
+	void MaterialJson::BindMaterialChangeCallback(std::string objectUUID, MaterialChangeCallback cb, MaterialChangePostCallback postCb)
+	{
+		bindedMaterialChangesCallbacks.insert_or_assign(objectUUID, cb);
+		bindedMaterialChangesPostCallbacks.insert_or_assign(objectUUID, postCb);
+	}
+
+	void MaterialJson::UnbindMaterialChangeCallback(std::string objectUUID)
+	{
+		bindedMaterialChangesCallbacks.erase(objectUUID);
+		bindedMaterialChangesPostCallbacks.erase(objectUUID);
+	}
+
+	MaterialInstance::MaterialInstance(
+		const std::string instance_uuid,
+		const std::string uuid,
+		VertexClass vClass,
+		bool isShadowed,
+		TextureShaderUsageMap overrideTextures,
+		std::string bindingUUID,
+		MaterialChangeCallback materialChangeCallback,
+		MaterialChangePostCallback materialChangePostCallback
+	)
 	{
 		instanceUUID = instance_uuid;
 		materialUUID = uuid;
 
 		std::shared_ptr<MaterialJson> material = GetMaterialTemplate(uuid);
+		if (bindingUUID != "") {
+			material->BindMaterialChangeCallback(bindingUUID, materialChangeCallback, materialChangePostCallback);
+		}
 
 		auto matTextures = material->textures();
 		std::transform(matTextures.begin(), matTextures.end(), std::inserter(textures, textures.end()), [](auto& pair)

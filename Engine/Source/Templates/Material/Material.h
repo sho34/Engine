@@ -56,6 +56,9 @@ inline nlohmann::json FromTextureShaderUsagePair(TextureShaderUsagePair m)
 	return j;
 }
 
+typedef std::function<void(std::shared_ptr<JObject>)> MaterialChangeCallback;
+typedef std::function<void(unsigned int, unsigned int)> MaterialChangePostCallback;
+
 namespace Templates {
 
 #include <JExposeAttOrder.h>
@@ -65,6 +68,8 @@ namespace Templates {
 #include <JExposeAttDrawersDecl.h>
 #include <MaterialAtt.h>
 #include <JExposeEnd.h>
+
+	void MaterialJsonStep();
 
 	struct MaterialJson : public JTemplate
 	{
@@ -77,6 +82,11 @@ namespace Templates {
 #include <JExposeDecl.h>
 #include <MaterialAtt.h>
 #include <JExposeEnd.h>
+
+		std::map<std::string, MaterialChangeCallback> bindedMaterialChangesCallbacks;
+		std::map<std::string, MaterialChangePostCallback> bindedMaterialChangesPostCallbacks;
+		void BindMaterialChangeCallback(std::string objectUUID, MaterialChangeCallback cb, MaterialChangePostCallback postCb = [](unsigned int, unsigned int) {});
+		void UnbindMaterialChangeCallback(std::string objectUUID);
 	};
 
 	TEMPDECL_FULL(Material);
@@ -96,7 +106,16 @@ namespace Templates {
 	struct MaterialInstance
 	{
 		MaterialInstance(const std::string uuid) { assert(!!!"do not use"); }
-		explicit MaterialInstance(const std::string instance_uuid, const std::string uuid, VertexClass vClass, bool isShadowed, TextureShaderUsageMap overrideTextures = {});
+		explicit MaterialInstance(
+			const std::string instance_uuid,
+			const std::string uuid,
+			VertexClass vClass,
+			bool isShadowed,
+			TextureShaderUsageMap overrideTextures = {},
+			std::string bindingUUID = "",
+			MaterialChangeCallback materialChangeCallback = [](std::shared_ptr<JObject>) {},
+			MaterialChangePostCallback materialChangePostCallback = [](unsigned int, unsigned int) {}
+		);
 		~MaterialInstance() { Destroy(); }
 
 		std::string materialUUID;
