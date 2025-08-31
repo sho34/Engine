@@ -1042,8 +1042,8 @@ inline void EditorDrawFilePath(
 		{
 			ImGui::OpenFile([setFilePath, defaultFolder](std::filesystem::path p)
 				{
-					std::filesystem::path abs3dmodelpath = std::filesystem::current_path().append(defaultFolder);
-					std::filesystem::path rel = std::filesystem::relative(p, abs3dmodelpath);
+					std::filesystem::path absfilepath = std::filesystem::current_path().append(defaultFolder);
+					std::filesystem::path rel = std::filesystem::relative(p, absfilepath);
 					setFilePath(rel.generic_string());
 				}, defaultFolder, filterName, filterPattern);
 		}

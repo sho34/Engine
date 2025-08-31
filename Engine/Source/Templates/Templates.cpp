@@ -15,56 +15,56 @@ namespace Templates
 		{
 			{
 				{ "name", "IBLBRDFLUT_cs" },
-				{ "path", "CSBRDFLUT"},
+				{ "path", "CSBRDFLUT.hlsl"},
 				{ "systemCreated", true },
 				{ "uuid", "bb76e846-4015-48a0-ab94-5286dd843052"},
 				{ "type", ShaderTypeToStr.at(ShaderType::COMPUTE_SHADER) }
 			},
 			{
 				{ "name","IBLPrefilteredEnvironmentMap_cs"},
-				{ "path" , "CSPreFilteredEnvironmentMap"},
+				{ "path" , "CSPreFilteredEnvironmentMap.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "6e278619-da6b-48ec-8434-53c3506e7bfd"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::COMPUTE_SHADER) }
 			},
 			{
 				{ "name", "IBLDiffuseIrradianceMap_cs" },
-				{ "path", "CSDiffuseIrradianceMap" },
+				{ "path", "CSDiffuseIrradianceMap.hlsl" },
 				{ "systemCreated", true },
 				{ "uuid", "5ebcccb5-477a-49c9-9878-9ff6453266a0" },
 				{ "type", ShaderTypeToStr.at(ShaderType::COMPUTE_SHADER) }
 			},
 			{
 				{ "name","LuminanceHistogramAverage_cs"},
-				{ "path" , "CSLuminanceHistogramAverage"},
+				{ "path" , "CSLuminanceHistogramAverage.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "1d436897-e925-415f-9209-1364005792a0"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::COMPUTE_SHADER)}
 			},
 			{
 				{ "name","LuminanceHistogram_cs"},
-				{ "path" , "CSLuminanceHistogram"},
+				{ "path" , "CSLuminanceHistogram.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "43b52d31-7040-47e7-80e6-97490550cbae"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::COMPUTE_SHADER)}
 			},
 			{
 				{ "name","BoundingBox_cs"},
-				{ "path" , "CSBoundingBox"},
+				{ "path" , "CSBoundingBox.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "c23ab559-be11-45ad-b598-1e48e5280914"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::COMPUTE_SHADER)}
 			},
 			{
 				{ "name","BoundingBox_vs" },
-				{ "path" , "BoundingBox" },
+				{ "path" , "BoundingBox.hlsl" },
 				{ "systemCreated" , true },
 				{ "uuid" , "ae7a35a5-f012-4eb6-bbe1-1f52e6203ccb" },
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER) }
 			},
 			{
 				{ "name","BoundingBox_ps" },
-				{ "path" , "BoundingBox" },
+				{ "path" , "BoundingBox.hlsl" },
 				{ "systemCreated", true },
 				{ "mappedValues",
 					{
@@ -80,14 +80,14 @@ namespace Templates
 			},
 			{
 				{ "name","BaseLighting_vs" },
-				{ "path" , "BaseLighting" },
+				{ "path" , "BaseLighting.hlsl" },
 				{ "systemCreated" , true },
 				{ "uuid" , "bc331f48-6a40-4b48-b435-8276051d6993" },
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER) }
 			},
 			{
 				{ "name","BaseLighting_ps" },
-				{ "path" , "BaseLighting" },
+				{ "path" , "BaseLighting.hlsl" },
 				{ "systemCreated" , true },
 				{ "mappedValues" ,
 					{
@@ -108,14 +108,14 @@ namespace Templates
 			},
 			{
 				{ "name","Grid_vs"},
-				{ "path" , "Grid"},
+				{ "path" , "Grid.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "5af4ba59-a09c-41ef-bc1f-13a51fc68439"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER)}
 			},
 			{
 				{ "name","Grid_ps" },
-				{ "path", "Grid" },
+				{ "path", "Grid.hlsl" },
 				{ "systemCreated" , true},
 				{ "mappedValues" , {
 					{
@@ -135,112 +135,112 @@ namespace Templates
 			},
 			{
 				{ "name","ShadowMap_vs"},
-				{ "path" , "ShadowMap"},
+				{ "path" , "ShadowMap.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "0069d1e9-45b0-4fd3-a28f-1f7508503a91"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER)}
 			},
 			{
 				{ "name","ShadowMap_ps"},
-				{ "path" , "ShadowMap"},
+				{ "path" , "ShadowMap.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "ed41913d-1a28-40ce-9c92-07549714f367"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::PIXEL_SHADER)}
 			},
 			{
 				{ "name","DepthMinMax_vs"},
-				{ "path" , "DepthMinMax"},
+				{ "path" , "DepthMinMax.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "2ad43d9e-8dec-421c-b8f2-bda3520748bd"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER)}
 			},
 			{
 				{ "name","DepthMinMax_ps"},
-				{ "path" , "DepthMinMax"},
+				{ "path" , "DepthMinMax.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "dd93a59f-a87e-4d9a-a57c-b91066e7520e"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::PIXEL_SHADER)}
 			},
 			{
 				{ "name","DepthMinMaxToRGBA_vs" },
-				{ "path" , "DepthMinMaxToRGBA" },
+				{ "path" , "DepthMinMaxToRGBA.hlsl" },
 				{ "systemCreated" , true },
 				{ "uuid" , "9815152b-84ad-45e5-8b91-0642cfde0543" },
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER) }
 			},
 			{
 				{ "name","DepthMinMaxToRGBA_ps" },
-				{ "path" , "DepthMinMaxToRGBA" },
+				{ "path" , "DepthMinMaxToRGBA.hlsl" },
 				{ "systemCreated" , true },
 				{ "uuid" , "22c13e3e-5a88-4868-a5cf-bcc65864cf6c" },
 				{ "type" , ShaderTypeToStr.at(ShaderType::PIXEL_SHADER) }
 			},
 			{
 				{ "name","DepthMinMaxToRGBASpot_vs" },
-				{ "path" , "DepthMinMaxToRGBASpot" },
+				{ "path" , "DepthMinMaxToRGBASpot.hlsl" },
 				{ "systemCreated" , true },
 				{ "uuid" , "173a942d-83e2-4d51-83cd-59016cb5be4e" },
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER) }
 			},
 			{
 				{ "name","DepthMinMaxToRGBASpot_ps" },
-				{ "path" , "DepthMinMaxToRGBASpot" },
+				{ "path" , "DepthMinMaxToRGBASpot.hlsl" },
 				{ "systemCreated" , true },
 				{ "uuid" , "438f86fd-9ef3-433f-ad7b-c1e60643cd3e" },
 				{ "type" , ShaderTypeToStr.at(ShaderType::PIXEL_SHADER) }
 			},
 			{
 				{ "name","FullScreenQuad_vs" },
-				{ "path" , "FullScreenQuad" },
+				{ "path" , "FullScreenQuad.hlsl" },
 				{ "systemCreated" , true },
 				{ "uuid" , "8e26fbd4-3a2c-4c04-a628-d2f11d474d60" },
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER) }
 			},
 			{
 				{ "name","FullScreenQuad_ps"},
-				{ "path" , "FullScreenQuad"},
+				{ "path" , "FullScreenQuad.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "9ab3d65f-be9a-49cc-87f8-bcbf1dafeac7"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::PIXEL_SHADER)}
 			},
 			{
 				{ "name","ToneMap_vs"},
-				{ "path" , "ToneMap"},
+				{ "path" , "ToneMap.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "8ee7a4d0-91f1-4264-aa56-9f82b3c38397"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER)}
 			},
 			{
 				{ "name","ToneMap_ps"},
-				{ "path" , "ToneMap"},
+				{ "path" , "ToneMap.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "75e834c4-6898-4156-af67-43abba7fc6b5"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::PIXEL_SHADER)}
 			},
 			{
 				{ "name","LoadingBar_vs"},
-				{ "path" , "LoadingBar"},
+				{ "path" , "LoadingBar.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "d0192f97-a56a-469d-b6f1-07d403ae331a"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER)}
 			},
 			{
 				{ "name","LoadingBar_ps"},
-				{ "path" , "LoadingBar"},
+				{ "path" , "LoadingBar.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "b5ef5d53-2174-4d12-b231-5e07a7f5a7f8"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::PIXEL_SHADER)}
 			},
 			{
 				{ "name","Picking_vs"},
-				{ "path" , "Picking"},
+				{ "path" , "Picking.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "79568541-34c8-4464-bec1-77debde975e0"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::VERTEX_SHADER)}
 			},
 			{
 				{ "name","Picking_ps"},
-				{ "path" , "Picking"},
+				{ "path" , "Picking.hlsl"},
 				{ "systemCreated" , true},
 				{ "uuid" , "e32c5e9c-26a5-4f2b-8d0c-5899c67f1def"},
 				{ "type" , ShaderTypeToStr.at(ShaderType::PIXEL_SHADER)}

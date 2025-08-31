@@ -34,93 +34,6 @@ namespace ShaderCompiler {
 	};
 
 	static std::mutex compileMutex;
-	//std::shared_ptr<ShaderInstance> ShaderCompiler::Compile(Source params, ShaderIncludesDependencies& dependencies)
-	//{
-		//		std::lock_guard<std::mutex> lock(compileMutex);
-		//		//read the shader
-		//
-		//		nlohmann::json json = GetShaderTemplate(params.shaderUUID);
-		//
-		//		const std::string filename = defaultShadersFolder + (json.contains("path") ? std::string(json.at("path")) : GetShaderName(params.shaderUUID)) + ".hlsl";
-		//		ShaderByteCode shaderSource = DX::ReadDataAsync(filename.c_str()).get();
-		//
-		//		//create a blob for the shader source code
-		//		ComPtr<IDxcBlobEncoding> pSource;
-		//		pUtils->CreateBlob(&shaderSource[0], (UINT32)shaderSource.size(), CP_UTF8, pSource.GetAddressOf());
-		//
-		//		//build the arguments
-		//		std::vector<LPCWSTR> arguments;
-		//		arguments.push_back(L"-E");// -E for the entry point (eg. 'main')
-		//		arguments.push_back(shaderEntryPoint[params.shaderType].c_str());
-		//		arguments.push_back(L"-T");// -T for the target profile (eg. 'ps_6_6')
-		//		arguments.push_back(shaderTarget[params.shaderType].c_str());
-		//
-		//#ifndef _DEBUG
-		//		arguments.push_back(L"-Qstrip_debug"); //remove debug info(PDB)
-		//		arguments.push_back(L"-Qstrip_reflect"); // Strip reflection data and pdbs (see later)
-		//#else
-		//		arguments.push_back(L"-Qembed_debug"); //add debug info(PDB)
-		//#endif
-		//
-		//		arguments.push_back(DXC_ARG_WARNINGS_ARE_ERRORS); //-WX
-		//#ifdef _DEBUG
-		//		arguments.push_back(DXC_ARG_DEBUG); //-Zi
-		//#endif
-		//
-		//		arguments.push_back(DXC_ARG_PACK_MATRIX_ROW_MAJOR);
-		//
-		//		std::vector<std::wstring> wdefines;
-		//		std::transform(params.defines.begin(), params.defines.end(), std::back_inserter(wdefines), [](std::string def) { return nostd::StringToWString(def); });
-		//		wdefines.push_back(shaderDefine.at(params.shaderType));
-		//
-		//		for (const std::wstring& def : wdefines) {
-		//			arguments.push_back(L"-D");
-		//			arguments.push_back(def.c_str());
-		//		}
-		//
-		//		DxcBuffer sourceBuffer{ .Ptr = pSource->GetBufferPointer(), .Size = pSource->GetBufferSize(), .Encoding = 0 };
-		//
-		//		//OutputDebugStringA(std::string("Compiling :" + nostd::WStringToString(shaderDefine.at(params.shaderType)) + filename + "\n").c_str());
-		//
-		//		//compile the shader
-		//		ComPtr<IDxcResult> pCompileResult;
-		//		dependencies[params].clear();
-		//		CustomIncludeHandler includeHandler(dependencies[params], defaultShadersFolder, pUtils);
-		//		DX::ThrowIfFailed(pCompiler->Compile(&sourceBuffer, arguments.data(), (UINT32)arguments.size(), &includeHandler, IID_PPV_ARGS(pCompileResult.GetAddressOf())));
-		//
-		//		//get the errors
-		//		ComPtr<IDxcBlobUtf8> pErrors;
-		//		pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pErrors.GetAddressOf()), nullptr);
-		//		if (pErrors && pErrors->GetStringLength() > 0) {
-		//			OutputDebugStringA(("compilation error:" + filename + "\n").c_str());
-		//			OutputDebugStringA((char*)pErrors->GetBufferPointer());
-		//			return nullptr;
-		//		}
-		//
-		//		// Get shader reflection data.
-		//		ComPtr<IDxcBlob> reflectionBlob{};
-		//		DX::ThrowIfFailed(pCompileResult->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&reflectionBlob), nullptr));
-		//		const DxcBuffer reflectionBuffer{ .Ptr = reflectionBlob->GetBufferPointer(), .Size = reflectionBlob->GetBufferSize(), .Encoding = 0, };
-		//
-		//		//create the reflection
-		//		ComPtr<ID3D12ShaderReflection> shaderReflection{};
-		//		pUtils->CreateReflection(&reflectionBuffer, IID_PPV_ARGS(&shaderReflection));
-		//
-		//		//get a description of the shader
-		//		D3D12_SHADER_DESC shaderDesc{};
-		//		shaderReflection->GetDesc(&shaderDesc);
-		//
-		//		std::shared_ptr<ShaderInstance> shaderBinary = std::make_shared<ShaderInstance>();
-		//
-		//		shaderBinary->shaderSource = params;
-		//		shaderBinary->CreateVSSemantics(shaderReflection, shaderDesc);
-		//		shaderBinary->CreateResourcesBinding(shaderReflection, shaderDesc);
-		//		shaderBinary->CreateConstantsBuffersVariables(shaderReflection, shaderDesc);
-		//		shaderBinary->CreateByteCode(pCompileResult);
-		//
-		//		return shaderBinary;
-	//}
-
 	void Compile(ShaderInstance& shaderInstance, Source params, ShaderIncludesDependencies& dependencies)
 	{
 		std::lock_guard<std::mutex> lock(compileMutex);
@@ -128,7 +41,7 @@ namespace ShaderCompiler {
 
 		std::shared_ptr<ShaderJson> json = GetShaderTemplate(params.shaderUUID);
 
-		const std::string filename = defaultShadersFolder + (!json->path().empty() ? json->path() : json->name()) + std::string(".hlsl");
+		const std::string filename = defaultShadersFolder + json->path();
 		ShaderByteCode shaderSource = DX::ReadDataAsync(filename.c_str()).get();
 
 		//create a blob for the shader source code

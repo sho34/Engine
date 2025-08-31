@@ -165,11 +165,11 @@ namespace Templates {
 						std::string output = "Modified: " + filePath.string() + "\n";
 						OutputDebugStringA(output.c_str());
 
-						if (!_stricmp(fileExtension.c_str(), ".hlsl")) {
-							PropagateChangeToShader(filePath.stem().string().c_str());
+						if (fileExtension == ".hlsl") {
+							PropagateChangeToShader(filePath.string());
 						}
-						else if (!_stricmp(fileExtension.c_str(), ".h")) {
-							PropagateChangeToShaderFromDependency(filePath.string().c_str());
+						else if (fileExtension == ".h") {
+							PropagateChangeToShaderFromDependency(filePath.string());
 						}
 
 						changesQueue.pop();
