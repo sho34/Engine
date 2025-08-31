@@ -362,7 +362,7 @@ namespace Scene {
 				std::string matUUID = mm.at(i).materialUUID;
 				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(
 					matUUID, mesh, shadowed(),
-					uuid(), [](std::shared_ptr<JObject>) {}, onPostMaterialChange);
+					uuid(), nullptr, onPostMaterialChange);
 				materials[rp].push_back(mi);
 			}
 		}
@@ -373,7 +373,7 @@ namespace Scene {
 				auto& mesh = meshes.at(i);
 				std::string matUUID = model3D->materialUUIDs.at(i);
 				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed(),
-					uuid(), [](std::shared_ptr<JObject>) {}, onPostMaterialChange);
+					uuid(), nullptr, onPostMaterialChange);
 				materials[rp].push_back(mi);
 			}
 		}

@@ -79,8 +79,6 @@ namespace Templates {
 #include <JExposeDecl.h>
 #include <MaterialAtt.h>
 #include <JExposeEnd.h>
-
-
 	};
 
 	TEMPDECL_FULL(Material);
@@ -107,8 +105,8 @@ namespace Templates {
 			bool isShadowed,
 			TextureShaderUsageMap overrideTextures = {},
 			std::string objectUUID = "",
-			JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {},
-			JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {}
+			JObjectChangeCallback cb = nullptr,
+			JObjectChangePostCallback postCb = nullptr
 		);
 		~MaterialInstance() { Destroy(); }
 

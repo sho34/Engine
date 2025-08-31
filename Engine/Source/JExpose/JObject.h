@@ -53,20 +53,44 @@ struct JObject : nlohmann::json
 	virtual void EditorPreview(size_t flags) {}
 	virtual void DestroyEditorPreview() {}
 
-	std::map<std::string, JObjectChangeCallback> bindedChangesCallbacks;
-	std::map<std::string, JObjectChangePostCallback> bindedChangesPostCallbacks;
-
-	void BindChangeCallback(std::string objectUUID = "", JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {}, JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {})
+	std::map<std::string, std::tuple<JObjectChangeCallback, JObjectChangePostCallback>> bindedChangesCallbacks;
+	void BindChangeCallback(std::string objectUUID = "", JObjectChangeCallback cb = nullptr, JObjectChangePostCallback postCb = nullptr)
 	{
-		if (objectUUID == "") return;
-		if (cb) bindedChangesCallbacks.insert_or_assign(objectUUID, cb);
-		if (postCb) bindedChangesPostCallbacks.insert_or_assign(objectUUID, postCb);
+		if (objectUUID == "" || (cb == nullptr && postCb == nullptr)) return;
+		bindedChangesCallbacks.insert_or_assign(objectUUID, std::make_tuple(cb, postCb));
 	}
-
 	void UnbindChangeCallback(std::string objectUUID)
 	{
 		if (objectUUID == "") return;
 		bindedChangesCallbacks.erase(objectUUID);
-		bindedChangesPostCallbacks.erase(objectUUID);
+	}
+	static inline void RunChangesCallback(auto JObjectContainer, auto cbComplete)
+	{
+		unsigned int total = 0U;
+		std::for_each(JObjectContainer.begin(), JObjectContainer.end(), [&total, cbComplete](auto j) mutable
+			{
+				for (auto& [_, lambdas] : j->bindedChangesCallbacks)
+				{
+					auto& lambda = std::get<0>(lambdas);
+					if (lambda)
+						lambda(j);
+					total++;
+				}
+				cbComplete(j);
+			}
+		);
+
+		unsigned int idx = 0;
+		std::for_each(JObjectContainer.begin(), JObjectContainer.end(), [&idx, total](auto j)
+			{
+				for (auto& [_, lambdas] : j->bindedChangesCallbacks)
+				{
+					auto& lambda = std::get<1>(lambdas);
+					if (lambda)
+						lambda(idx, total);
+					idx++;
+				}
+			}
+		);
 	}
 };

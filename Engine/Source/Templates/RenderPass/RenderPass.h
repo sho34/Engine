@@ -145,8 +145,8 @@ namespace Templates
 			std::shared_ptr<MeshInstance> mesh,
 			bool shadowed,
 			std::string objectUUID = "",
-			JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {},
-			JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {}
+			JObjectChangeCallback cb = nullptr,
+			JObjectChangePostCallback postCb = nullptr
 		) const;
 		void ResizeRelease() const;
 		void Resize(unsigned int width, unsigned int height) const;

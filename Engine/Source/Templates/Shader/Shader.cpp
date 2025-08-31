@@ -56,32 +56,14 @@ namespace Templates {
 			}
 		);
 
-		unsigned int total = 0U;
-		std::for_each(rebuildShaders.begin(), rebuildShaders.end(), [&total](auto& shader) mutable
-			{
-				for (auto& [_, lambda] : shader->bindedChangesCallbacks)
+		if (rebuildShaders.size() > 0ULL)
+		{
+			JObject::RunChangesCallback(rebuildShaders, [](auto shader)
 				{
-					if (lambda)
-						lambda(shader);
-					total++;
+					shader->clean(ShaderJson::Update_path);
 				}
-				shader->clean(ShaderJson::Update_path);
-			}
-		);
-
-		std::for_each(rebuildShaders.begin(), rebuildShaders.end(), [total](auto& shader)
-			{
-				auto& postCb = shader->bindedChangesPostCallbacks;
-				std::for_each(postCb.begin(), postCb.end(), [idx = 0, total](auto pair) mutable
-					{
-						auto& lambda = pair.second;
-						if (lambda)
-							lambda(idx, total);
-						idx++;
-					}
-				);
-			}
-		);
+			);
+		}
 	}
 
 	void PropagateChangeToShader(std::string shaderFile)
@@ -92,34 +74,6 @@ namespace Templates {
 			std::shared_ptr<ShaderJson> shader = GetShaderTemplate(it->second);
 			shader->flag(ShaderJson::Update_path);
 		}
-		/*
-		using namespace Shader;
-		std::vector<std::shared_ptr<ShaderInstance>> binaries;
-		for (auto it = refTracker.instances.begin(); it != refTracker.instances.end(); it++)
-		{
-			Source source = it->first;
-			std::shared_ptr<ShaderInstance> binary = it->second;
-
-			nlohmann::json json = GetShaderTemplate(source.shaderUUID);
-			std::string path = json.at("path");
-			if (shaderFile != path) continue;
-
-			using namespace ShaderCompiler;
-			std::shared_ptr<ShaderInstance> test = Compile(source, dependencies);
-			if (test == nullptr)
-			{
-				OutputDebugStringA((std::string("Error found compiling ") + source.to_string()).c_str());
-				return;
-			}
-
-			binaries.push_back(binary);
-		}
-
-		for (auto& binary : binaries)
-		{
-			binary->NotifyChanges();
-		}
-		*/
 	}
 
 	void PropagateChangeToShaderFromDependency(std::string dependency)
@@ -133,16 +87,6 @@ namespace Templates {
 
 			std::shared_ptr<ShaderJson> shader = GetShaderTemplate(src.shaderUUID);
 			shader->flag(ShaderJson::Update_path);
-			/*
-			//get the hlsl and skip if already built
-			nlohmann::json json = GetShaderTemplate(src.shaderUUID);
-			std::string shaderFile = json.at("path");
-			if (shaderFiles.contains(shaderFile)) continue;
-
-			//build
-			shaderFiles.insert(shaderFile);
-			BuildShader(shaderFile);
-			*/
 		}
 	}
 

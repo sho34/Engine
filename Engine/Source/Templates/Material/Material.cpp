@@ -60,15 +60,8 @@ namespace Templates {
 
 		if (rebuildMaterials.size() > 0ULL)
 		{
-			unsigned int total = 0U;
-			std::for_each(rebuildMaterials.begin(), rebuildMaterials.end(), [&total](std::shared_ptr<MaterialJson> mat) mutable
+			JObject::RunChangesCallback(rebuildMaterials, [](auto mat)
 				{
-					for (auto& [_, lambda] : mat->bindedChangesCallbacks)
-					{
-						if (lambda)
-							lambda(mat);
-						total++;
-					}
 					mat->clean(MaterialJson::Update_shader_vs);
 					mat->clean(MaterialJson::Update_shader_ps);
 					mat->clean(MaterialJson::Update_samplers);
@@ -76,20 +69,6 @@ namespace Templates {
 					mat->clean(MaterialJson::Update_textures);
 					mat->clean(MaterialJson::Update_rasterizerState);
 					mat->clean(MaterialJson::Update_blendState);
-				}
-			);
-
-			std::for_each(rebuildMaterials.begin(), rebuildMaterials.end(), [total](std::shared_ptr<MaterialJson> mat)
-				{
-					auto& postCb = mat->bindedChangesPostCallbacks;
-					std::for_each(postCb.begin(), postCb.end(), [idx = 0, total](auto pair) mutable
-						{
-							auto& lambda = pair.second;
-							if (lambda)
-								lambda(idx, total);
-							idx++;
-						}
-					);
 				}
 			);
 		}
@@ -110,7 +89,7 @@ namespace Templates {
 		materialUUID = uuid;
 
 		std::shared_ptr<MaterialJson> material = GetMaterialTemplate(uuid);
-		if (bindingUUID != "") {
+		if (bindingUUID != "" && (materialChangeCallback != nullptr || materialChangePostCallback != nullptr)) {
 			material->BindChangeCallback(bindingUUID, materialChangeCallback, materialChangePostCallback);
 		}
 
@@ -219,6 +198,12 @@ namespace Templates {
 	void MaterialInstance::Destroy()
 	{
 		using namespace ShaderCompiler;
+
+		std::shared_ptr<ShaderJson> vsShaderJson = GetShaderTemplate(vertexShaderUUID);
+		vsShaderJson->UnbindChangeCallback(instanceUUID);
+
+		std::shared_ptr<ShaderJson> psShaderJson = GetShaderTemplate(pixelShaderUUID);
+		psShaderJson->UnbindChangeCallback(instanceUUID);
 
 		if (RemoveShaderInstance(vertexShader->instanceUUID, vertexShader))
 		{
