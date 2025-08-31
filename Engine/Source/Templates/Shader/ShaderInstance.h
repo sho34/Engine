@@ -46,7 +46,13 @@ namespace Templates
 		ShaderByteCode byteCode;
 
 		ShaderInstance(std::string uuid) { assert(!!!"do not use"); }
-		explicit ShaderInstance(std::string instance_uuid, std::string uuid, Source params);
+		explicit ShaderInstance(
+			std::string instance_uuid,
+			std::string uuid, Source params,
+			std::string objectUUID = "",
+			JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {},
+			JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {}
+		);
 		~ShaderInstance() {}
 
 		void CreateVSSemantics(const ComPtr<ID3D12ShaderReflection>& reflection, const D3D12_SHADER_DESC& desc);

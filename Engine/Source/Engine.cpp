@@ -201,7 +201,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	//initialize the shader compiler and changes monitor
 	BuildShaderCompiler();
-	//MonitorShaderChanges(defaultShadersFolder);
+	MonitorShaderChanges(defaultShadersFolder);
 
 	//Initialize the audio system
 	InitAudio();
@@ -482,7 +482,6 @@ void AudioStep(float step)
 //RENDER
 void Render()
 {
-
 	renderer->ResetCommands();
 	renderer->SetCSUDescriptorHeap();
 

@@ -202,7 +202,6 @@ namespace ShaderCompiler {
 		shaderInstance.CreateResourcesBinding(shaderReflection, shaderDesc);
 		shaderInstance.CreateConstantsBuffersVariables(shaderReflection, shaderDesc);
 		shaderInstance.CreateByteCode(pCompileResult);
-
 	}
 
 	void BuildShaderCompiler() {

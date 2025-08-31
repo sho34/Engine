@@ -20,6 +20,7 @@ namespace Templates {
 	namespace Shader
 	{
 		ShaderIncludesDependencies dependencies;
+		std::multimap<std::string, std::string> fileNameToShaderTemplate;
 	};
 
 	ShaderJson::ShaderJson(nlohmann::json json) : JTemplate(json)
@@ -31,15 +32,67 @@ namespace Templates {
 #include <JExposeAttUpdate.h>
 #include <ShaderAtt.h>
 #include <JExposeEnd.h>
+
+		Shader::fileNameToShaderTemplate.insert({ path(),uuid() });
 	}
 
 	TEMPDEF_FULL(Shader);
 	TEMPDEF_REFTRACKER(Shader);
 
-
-	/*
-	void BuildShader(std::string shaderFile)
+	void ShaderJsonStep()
 	{
+		std::set<std::shared_ptr<ShaderJson>> shaders;
+		std::transform(Shadertemplates.begin(), Shadertemplates.end(), std::inserter(shaders, shaders.begin()), [](auto& temps)
+			{
+				auto& shaJ = std::get<1>(temps.second);
+				return shaJ;
+			}
+		);
+
+		std::set<std::shared_ptr<ShaderJson>> rebuildShaders;
+		std::copy_if(shaders.begin(), shaders.end(), std::inserter(rebuildShaders, rebuildShaders.begin()), [](auto& shader)
+			{
+				return shader->dirty(ShaderJson::Update_path);
+			}
+		);
+
+		unsigned int total = 0U;
+		std::for_each(rebuildShaders.begin(), rebuildShaders.end(), [&total](auto& shader) mutable
+			{
+				for (auto& [_, lambda] : shader->bindedChangesCallbacks)
+				{
+					if (lambda)
+						lambda(shader);
+					total++;
+				}
+				shader->clean(ShaderJson::Update_path);
+			}
+		);
+
+		std::for_each(rebuildShaders.begin(), rebuildShaders.end(), [total](auto& shader)
+			{
+				auto& postCb = shader->bindedChangesPostCallbacks;
+				std::for_each(postCb.begin(), postCb.end(), [idx = 0, total](auto pair) mutable
+					{
+						auto& lambda = pair.second;
+						if (lambda)
+							lambda(idx, total);
+						idx++;
+					}
+				);
+			}
+		);
+	}
+
+	void PropagateChangeToShader(std::string shaderFile)
+	{
+		auto range = Shader::fileNameToShaderTemplate.equal_range(shaderFile);
+		for (auto& it = range.first; it != range.second; it++)
+		{
+			std::shared_ptr<ShaderJson> shader = GetShaderTemplate(it->second);
+			shader->flag(ShaderJson::Update_path);
+		}
+		/*
 		using namespace Shader;
 		std::vector<std::shared_ptr<ShaderInstance>> binaries;
 		for (auto it = refTracker.instances.begin(); it != refTracker.instances.end(); it++)
@@ -66,11 +119,10 @@ namespace Templates {
 		{
 			binary->NotifyChanges();
 		}
+		*/
 	}
-	*/
 
-	/*
-	void BuildShaderFromDependency(std::string dependency)
+	void PropagateChangeToShaderFromDependency(std::string dependency)
 	{
 		using namespace Shader;
 		std::set<std::string> shaderFiles;
@@ -79,6 +131,9 @@ namespace Templates {
 			//if the file is not in the dependency skip
 			if (!deps.contains(dependency)) continue;
 
+			std::shared_ptr<ShaderJson> shader = GetShaderTemplate(src.shaderUUID);
+			shader->flag(ShaderJson::Update_path);
+			/*
 			//get the hlsl and skip if already built
 			nlohmann::json json = GetShaderTemplate(src.shaderUUID);
 			std::string shaderFile = json.at("path");
@@ -87,14 +142,13 @@ namespace Templates {
 			//build
 			shaderFiles.insert(shaderFile);
 			BuildShader(shaderFile);
+			*/
 		}
 	}
-	*/
 
-	/*
 	static CompilerQueue changesQueue;
-	void MonitorShaderChanges(std::string folder) {
-
+	void MonitorShaderChanges(std::string folder)
+	{
 		std::thread monitor([folder]()
 			{
 				HANDLE file = CreateFileA(folder.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
@@ -153,7 +207,7 @@ namespace Templates {
 			}
 		);
 
-		std::thread compilation([]()
+		std::thread changesPropagator([]()
 			{
 				using namespace std::chrono_literals;
 				while (TRUE)
@@ -168,10 +222,10 @@ namespace Templates {
 						OutputDebugStringA(output.c_str());
 
 						if (!_stricmp(fileExtension.c_str(), ".hlsl")) {
-							BuildShader(filePath.stem().string().c_str());
+							PropagateChangeToShader(filePath.stem().string().c_str());
 						}
 						else if (!_stricmp(fileExtension.c_str(), ".h")) {
-							BuildShaderFromDependency(filePath.string().c_str());
+							PropagateChangeToShaderFromDependency(filePath.string().c_str());
 						}
 
 						changesQueue.pop();
@@ -180,19 +234,24 @@ namespace Templates {
 				}
 			}
 		);
-
 		monitor.detach();
-		compilation.detach();
+		changesPropagator.detach();
 	}
-	*/
 
-	ShaderInstance::ShaderInstance(std::string instance_uuid, std::string uuid, Source params)
+	ShaderInstance::ShaderInstance(
+		std::string instance_uuid,
+		std::string uuid, Source params,
+		std::string bindingUUID,
+		JObjectChangeCallback shaderChangeCallback,
+		JObjectChangePostCallback shaderChangePostCallback)
 	{
 		using namespace ShaderCompiler;
 		using namespace Templates::Shader;
 
 		instanceUUID = instance_uuid;
 		shaderUUID = uuid;
+		std::shared_ptr<ShaderJson> shader = GetShaderTemplate(uuid);
+		shader->BindChangeCallback(bindingUUID, shaderChangeCallback, shaderChangePostCallback);
 
 		Compile(*this, params, dependencies);
 	}

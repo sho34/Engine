@@ -184,8 +184,8 @@ namespace Templates
 		std::shared_ptr<MeshInstance> mesh,
 		bool shadowed,
 		std::string bindingUUID,
-		MaterialChangeCallback materialChangeCallback,
-		MaterialChangePostCallback materialChangePostCallback
+		JObjectChangeCallback materialChangeCallback,
+		JObjectChangePostCallback materialChangePostCallback
 	) const
 	{
 		VertexClass vertexClass = mesh->vertexClass;

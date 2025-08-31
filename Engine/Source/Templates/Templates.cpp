@@ -779,6 +779,7 @@ namespace Templates
 
 	void TemplatesStep(DX::StepTimer& timer)
 	{
+		ShaderJsonStep();
 		TextureJsonsStep();
 		PreviewTexturesStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
 		ReloadPreviewTextures();

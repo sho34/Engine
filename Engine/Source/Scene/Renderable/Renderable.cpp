@@ -190,35 +190,6 @@ namespace Scene {
 	}
 #endif
 
-	void Renderable::CreateFromModel3D(std::string model3DUUID)
-	{
-		/*
-		std::shared_ptr<Model3DInstance> model = GetModel3DInstance(model3DUUID, json);
-
-		model3D = model;
-
-		for (unsigned int i = 0U; i < model->meshes.size(); i++)
-		{
-			meshes.push_back(model->meshes[i]);
-			meshesShadowMap.push_back(model->meshes[i]);
-			SetMeshMaterial(model->meshes[i], model->materials[i]);
-		}
-
-		if (model->animations)
-		{
-			animable = model;
-			AttachAnimation(this_ptr, model->animations);
-			animables.insert_or_assign(uuid(), this_ptr);
-			StepAnimation(0.0f);
-			boundingBoxCompute = std::make_shared<RenderableBoundingBox>(this_ptr);
-			using namespace ComputeShader;
-		}
-
-#if defined(_EDITOR)
-		BindNotifications(model3DUUID, this_ptr);
-#endif
-*/
-	}
 
 	Renderable::Renderable(nlohmann::json json) :SceneObject(json)
 	{
@@ -234,24 +205,6 @@ namespace Scene {
 #include <JExposeAttUpdate.h>
 #include <RenderableAtt.h>
 #include <JExposeEnd.h>
-
-		//create_castShadows(true);
-		//create_shadowed(true);
-		//create_hidden(false);
-		//create_ibl(false);
-		//create_meshMaterials({});
-		//create_model("");
-		//create_name("846455$NAME");
-		//create_position({ 0.0f,0.0f,0.0f });
-		//create_rotation({ 0.0f,0.0f,0.0f });
-		//create_scale({ 1.0f,1.0f,1.0f });
-		//create_skipMeshes({});
-		//create_topology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		//create_uniqueMaterialInstance(false);
-		//create_uuid("846455$UUID");
-		//create_visible(true);
-		//create_cameras({});
-		//r->create_pipelineState(nlohmann::json::object());
 
 		CreateMeshInstances();
 	}
@@ -284,7 +237,7 @@ namespace Scene {
 			for (auto& mat : vec0)
 			{
 				std::shared_ptr<MaterialJson> matJ = GetMaterialTemplate(mat->materialUUID);
-				matJ->UnbindMaterialChangeCallback(uuid());
+				matJ->UnbindChangeCallback(uuid());
 			}
 		}
 	}
@@ -376,9 +329,6 @@ namespace Scene {
 
 	void Renderable::CreateRenderPassMaterialsInstances(std::shared_ptr<Templates::RenderPassInstance>& rp)
 	{
-		auto onMaterialChange = [this](std::shared_ptr<JObject> mat)
-			{
-			};
 		auto onPostMaterialChange = [this](unsigned int index, unsigned int total)
 			{
 				if (index == 0U)
@@ -410,7 +360,9 @@ namespace Scene {
 			{
 				auto& mesh = meshes.at(i);
 				std::string matUUID = mm.at(i).materialUUID;
-				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed(), uuid(), onMaterialChange, onPostMaterialChange);
+				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(
+					matUUID, mesh, shadowed(),
+					uuid(), [](std::shared_ptr<JObject>) {}, onPostMaterialChange);
 				materials[rp].push_back(mi);
 			}
 		}
@@ -420,7 +372,8 @@ namespace Scene {
 			{
 				auto& mesh = meshes.at(i);
 				std::string matUUID = model3D->materialUUIDs.at(i);
-				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed(), uuid(), onMaterialChange, onPostMaterialChange);
+				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed(),
+					uuid(), [](std::shared_ptr<JObject>) {}, onPostMaterialChange);
 				materials[rp].push_back(mi);
 			}
 		}
@@ -829,90 +782,6 @@ namespace Scene {
 			setIBLRootDescriptorTable(material, slot);
 			setSRVRootDescriptorTable(material, slot);
 			setShadowMapsSRVDescriptorTable(material, slot);
-
-			/*
-			auto& mesh = meshes.at(i);
-			auto& material = meshMaterials.at(mesh);
-			auto& rootSignature = std::get<1>(meshHashedRootSignatures.at(mesh));
-			if (!meshHashedPipelineStates.contains(passHash) || !meshHashedPipelineStates.at(passHash).contains(mesh))
-			{
-				CreateMeshPipelineState(passHash, mesh);
-			}
-			auto& pipelineState = std::get<1>(meshHashedPipelineStates.at(passHash).at(mesh));
-
-			commandList->IASetPrimitiveTopology(topology());
-			commandList->SetGraphicsRootSignature(rootSignature);
-			commandList->SetPipelineState(pipelineState);
-			*/
-
-			/*
-			unsigned int cbvSlot = 0U;
-
-			if (meshConstantsBuffer.contains(mesh))
-			{
-				auto& constantsBuffer = meshConstantsBuffer.at(mesh);
-				for (unsigned int i = 0U; i < constantsBuffer.size(); i++) {
-					constantsBuffer[i]->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
-				}
-			}
-			*/
-
-			/*
-			if (camera && material->ShaderInstanceHasRegister([](auto& binary) { return binary->cameraCBVRegister; })) {
-				camera->cameraCbv->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
-			}
-			*/
-
-			/*
-			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightCBVRegister; })) {
-				GetLightsConstantsBuffer()->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
-			}
-			*/
-
-			/*
-			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightsShadowMapCBVRegister; })) {
-				if (SceneHasShadowMaps()) {
-					GetShadowMapConstantsBuffer()->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
-				}
-				else
-				{
-					cbvSlot++;
-				}
-			}
-			*/
-
-			/*
-			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->animationCBVRegister; })) {
-				GetAnimatedConstantsBuffer(this_ptr)->SetRootDescriptorTable(commandList, cbvSlot, renderer->backBufferIndex);
-			}
-			*/
-
-			/*
-			material->SetUAVRootDescriptorTable(commandList, cbvSlot);
-			*/
-
-			/*
-			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->iblIrradianceSRVRegister; })
-				&& material->ShaderInstanceHasRegister([](auto& binary) { return binary->iblPrefiteredEnvSRVRegister; })
-				&& material->ShaderInstanceHasRegister([](auto& binary) { return binary->iblBRDFLUTSRVRegister; })
-				)
-			{
-				camera->SetIBLRootDescriptorTables(commandList, cbvSlot);
-			}
-			*/
-
-			/*
-			material->SetSRVRootDescriptorTable(commandList, cbvSlot);
-			*/
-
-			/*
-			if (material->ShaderInstanceHasRegister([](auto& binary) { return binary->lightsShadowMapSRVRegister; })) {
-				if (SceneHasShadowMaps()) {
-					commandList->SetGraphicsRootDescriptorTable(cbvSlot, GetShadowMapGpuDescriptorHandleStart());
-				}
-				cbvSlot++;
-			}
-			*/
 
 			auto& mesh = meshes.at(i);
 			commandList->IASetVertexBuffers(0, 1, &mesh->vbvData.vertexBufferView);

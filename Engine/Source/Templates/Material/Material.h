@@ -56,9 +56,6 @@ inline nlohmann::json FromTextureShaderUsagePair(TextureShaderUsagePair m)
 	return j;
 }
 
-typedef std::function<void(std::shared_ptr<JObject>)> MaterialChangeCallback;
-typedef std::function<void(unsigned int, unsigned int)> MaterialChangePostCallback;
-
 namespace Templates {
 
 #include <JExposeAttOrder.h>
@@ -83,10 +80,7 @@ namespace Templates {
 #include <MaterialAtt.h>
 #include <JExposeEnd.h>
 
-		std::map<std::string, MaterialChangeCallback> bindedMaterialChangesCallbacks;
-		std::map<std::string, MaterialChangePostCallback> bindedMaterialChangesPostCallbacks;
-		void BindMaterialChangeCallback(std::string objectUUID, MaterialChangeCallback cb, MaterialChangePostCallback postCb = [](unsigned int, unsigned int) {});
-		void UnbindMaterialChangeCallback(std::string objectUUID);
+
 	};
 
 	TEMPDECL_FULL(Material);
@@ -112,9 +106,9 @@ namespace Templates {
 			VertexClass vClass,
 			bool isShadowed,
 			TextureShaderUsageMap overrideTextures = {},
-			std::string bindingUUID = "",
-			MaterialChangeCallback materialChangeCallback = [](std::shared_ptr<JObject>) {},
-			MaterialChangePostCallback materialChangePostCallback = [](unsigned int, unsigned int) {}
+			std::string objectUUID = "",
+			JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {},
+			JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {}
 		);
 		~MaterialInstance() { Destroy(); }
 

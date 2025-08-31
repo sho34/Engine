@@ -63,9 +63,10 @@ namespace Templates {
 			unsigned int total = 0U;
 			std::for_each(rebuildMaterials.begin(), rebuildMaterials.end(), [&total](std::shared_ptr<MaterialJson> mat) mutable
 				{
-					for (auto& [_, cb] : mat->bindedMaterialChangesCallbacks)
+					for (auto& [_, lambda] : mat->bindedChangesCallbacks)
 					{
-						cb(mat);
+						if (lambda)
+							lambda(mat);
 						total++;
 					}
 					mat->clean(MaterialJson::Update_shader_vs);
@@ -80,28 +81,18 @@ namespace Templates {
 
 			std::for_each(rebuildMaterials.begin(), rebuildMaterials.end(), [total](std::shared_ptr<MaterialJson> mat)
 				{
-					auto& postCb = mat->bindedMaterialChangesPostCallbacks;
+					auto& postCb = mat->bindedChangesPostCallbacks;
 					std::for_each(postCb.begin(), postCb.end(), [idx = 0, total](auto pair) mutable
 						{
 							auto& lambda = pair.second;
-							lambda(idx++, total);
+							if (lambda)
+								lambda(idx, total);
+							idx++;
 						}
 					);
 				}
 			);
 		}
-	}
-
-	void MaterialJson::BindMaterialChangeCallback(std::string objectUUID, MaterialChangeCallback cb, MaterialChangePostCallback postCb)
-	{
-		bindedMaterialChangesCallbacks.insert_or_assign(objectUUID, cb);
-		bindedMaterialChangesPostCallbacks.insert_or_assign(objectUUID, postCb);
-	}
-
-	void MaterialJson::UnbindMaterialChangeCallback(std::string objectUUID)
-	{
-		bindedMaterialChangesCallbacks.erase(objectUUID);
-		bindedMaterialChangesPostCallbacks.erase(objectUUID);
 	}
 
 	MaterialInstance::MaterialInstance(
@@ -111,8 +102,8 @@ namespace Templates {
 		bool isShadowed,
 		TextureShaderUsageMap overrideTextures,
 		std::string bindingUUID,
-		MaterialChangeCallback materialChangeCallback,
-		MaterialChangePostCallback materialChangePostCallback
+		JObjectChangeCallback materialChangeCallback,
+		JObjectChangePostCallback materialChangePostCallback
 	)
 	{
 		instanceUUID = instance_uuid;
@@ -120,7 +111,7 @@ namespace Templates {
 
 		std::shared_ptr<MaterialJson> material = GetMaterialTemplate(uuid);
 		if (bindingUUID != "") {
-			material->BindMaterialChangeCallback(bindingUUID, materialChangeCallback, materialChangePostCallback);
+			material->BindChangeCallback(bindingUUID, materialChangeCallback, materialChangePostCallback);
 		}
 
 		auto matTextures = material->textures();
@@ -203,14 +194,24 @@ namespace Templates {
 		Source compPS = { .shaderType = PIXEL_SHADER, .shaderUUID = pixelShaderUUID, .defines = defines };
 		std::string vertexShaderInstanceUUID = vertexShaderUUID + std::to_string(std::hash<Source>()(compVS));
 		std::string pixelShaderInstanceUUID = pixelShaderUUID + std::to_string(std::hash<Source>()(compPS));
-		vertexShader = GetShaderInstance(vertexShaderInstanceUUID, [vertexShaderInstanceUUID, compVS]
+		auto onVSShaderChange = [this](std::shared_ptr<JObject> vsShader)
 			{
-				return std::make_shared<ShaderInstance>(vertexShaderInstanceUUID, compVS.shaderUUID, compVS);
+				std::shared_ptr<MaterialJson> mat = GetMaterialTemplate(materialUUID);
+				mat->flag(MaterialJson::Update_shader_vs);
+			};
+		auto onPSShaderChange = [this](std::shared_ptr<JObject> psShader)
+			{
+				std::shared_ptr<MaterialJson> mat = GetMaterialTemplate(materialUUID);
+				mat->flag(MaterialJson::Update_shader_ps);
+			};
+		vertexShader = GetShaderInstance(vertexShaderInstanceUUID, [this, vertexShaderInstanceUUID, compVS, onVSShaderChange]
+			{
+				return std::make_shared<ShaderInstance>(vertexShaderInstanceUUID, compVS.shaderUUID, compVS, instanceUUID, onVSShaderChange);
 			}
 		);
-		pixelShader = GetShaderInstance(pixelShaderInstanceUUID, [pixelShaderInstanceUUID, compPS]
+		pixelShader = GetShaderInstance(pixelShaderInstanceUUID, [this, pixelShaderInstanceUUID, compPS, onPSShaderChange]
 			{
-				return std::make_shared<ShaderInstance>(pixelShaderInstanceUUID, compPS.shaderUUID, compPS);
+				return std::make_shared<ShaderInstance>(pixelShaderInstanceUUID, compPS.shaderUUID, compPS, instanceUUID, onPSShaderChange);
 			}
 		);
 	}

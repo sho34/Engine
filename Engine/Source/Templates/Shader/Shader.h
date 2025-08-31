@@ -25,6 +25,9 @@ namespace Templates
 #include <ShaderAtt.h>
 #include <JExposeEnd.h>
 
+	void ShaderJsonStep();
+	void MonitorShaderChanges(std::string folder);
+
 	namespace Shader
 	{
 		inline static const std::string templateName = "shaders.json";
@@ -44,7 +47,6 @@ namespace Templates
 	};
 
 	TEMPDECL_FULL(Shader);
-
 	TEMPDECL_REFTRACKER(Shader);
 }
 

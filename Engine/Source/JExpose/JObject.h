@@ -3,6 +3,11 @@
 #include <nlohmann/json.hpp>
 #include <any>
 
+struct JObject;
+
+typedef std::function<void(std::shared_ptr<JObject>)> JObjectChangeCallback;
+typedef std::function<void(unsigned int, unsigned int)> JObjectChangePostCallback;
+
 struct JObject : nlohmann::json
 {
 	virtual ~JObject() = default;
@@ -30,6 +35,11 @@ struct JObject : nlohmann::json
 		return !!(updateFlag & (1 << flag));
 	}
 
+	void flag(size_t flag)
+	{
+		updateFlag |= (1 << flag);
+	}
+
 	void clean(size_t flag)
 	{
 		updateFlag &= ~(1 << flag);
@@ -43,4 +53,20 @@ struct JObject : nlohmann::json
 	virtual void EditorPreview(size_t flags) {}
 	virtual void DestroyEditorPreview() {}
 
+	std::map<std::string, JObjectChangeCallback> bindedChangesCallbacks;
+	std::map<std::string, JObjectChangePostCallback> bindedChangesPostCallbacks;
+
+	void BindChangeCallback(std::string objectUUID = "", JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {}, JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {})
+	{
+		if (objectUUID == "") return;
+		if (cb) bindedChangesCallbacks.insert_or_assign(objectUUID, cb);
+		if (postCb) bindedChangesPostCallbacks.insert_or_assign(objectUUID, postCb);
+	}
+
+	void UnbindChangeCallback(std::string objectUUID)
+	{
+		if (objectUUID == "") return;
+		bindedChangesCallbacks.erase(objectUUID);
+		bindedChangesPostCallbacks.erase(objectUUID);
+	}
 };

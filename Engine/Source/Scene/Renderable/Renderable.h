@@ -123,7 +123,6 @@ namespace Scene
 		BoundingBox boundingBox;
 		std::shared_ptr<RenderableBoundingBox> boundingBoxCompute; //used for animables
 
-		void CreateFromModel3D(std::string model3DUUID);
 		void CreateBoundingBox();
 		BoundingBox GetBoundingBox();
 
