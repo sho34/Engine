@@ -10,7 +10,7 @@ namespace ShaderCompiler {
 
 	void BuildShaderCompiler();
 	//std::shared_ptr<ShaderInstance> Compile(Source params, ShaderIncludesDependencies& dependencies);
-	void Compile(ShaderInstance& shaderInstance, Source params, ShaderIncludesDependencies& dependencies);
+	bool Compile(ShaderInstance& shaderInstance, Source params, ShaderIncludesDependencies& dependencies);
 	void DestroyShaderCompiler();
 
 	//compiler and utils

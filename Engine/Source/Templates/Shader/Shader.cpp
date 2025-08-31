@@ -20,6 +20,18 @@ namespace Templates {
 	namespace Shader
 	{
 		ShaderIncludesDependencies dependencies;
+		std::set<Source> GetSourcesFromShaderUUID(std::string shaderUUID)
+		{
+			ShaderIncludesDependencies matchingUUIDs;
+			std::copy_if(dependencies.begin(), dependencies.end(), std::inserter(matchingUUIDs, matchingUUIDs.begin()), [shaderUUID](const auto& dep)
+				{
+					return dep.first.shaderUUID == shaderUUID;
+				}
+			);
+			std::set<Source> sources;
+			std::transform(matchingUUIDs.begin(), matchingUUIDs.end(), std::inserter(sources, sources.begin()), [](const auto& pair) { return pair.first; });
+			return sources;
+		}
 		std::multimap<std::string, std::string> fileNameToShaderTemplate;
 	};
 
@@ -66,11 +78,30 @@ namespace Templates {
 		}
 	}
 
+	bool CheckChangesCompilation(std::string uuid)
+	{
+		using namespace Shader;
+		using namespace ShaderCompiler;
+		using namespace Templates::Shader;
+
+		std::set<Source> sources = GetSourcesFromShaderUUID(uuid);
+		for (auto src : sources)
+		{
+			ShaderInstance dummy("", src.shaderUUID, src);
+			ShaderIncludesDependencies deps;
+			if (!Compile(dummy, src, deps))
+				return false;
+		}
+		return true;
+	}
+
 	void PropagateChangeToShader(std::string shaderFile)
 	{
-		auto range = Shader::fileNameToShaderTemplate.equal_range(shaderFile);
+		using namespace Shader;
+		auto range = fileNameToShaderTemplate.equal_range(shaderFile);
 		for (auto& it = range.first; it != range.second; it++)
 		{
+			if (!CheckChangesCompilation(it->second)) continue;
 			std::shared_ptr<ShaderJson> shader = GetShaderTemplate(it->second);
 			shader->flag(ShaderJson::Update_path);
 		}
@@ -79,12 +110,11 @@ namespace Templates {
 	void PropagateChangeToShaderFromDependency(std::string dependency)
 	{
 		using namespace Shader;
-		std::set<std::string> shaderFiles;
+		std::set<std::string> shadersUUIDs;
 		for (auto& [src, deps] : dependencies)
 		{
 			//if the file is not in the dependency skip
-			if (!deps.contains(dependency)) continue;
-
+			if (!deps.contains(dependency) || !CheckChangesCompilation(src.shaderUUID)) continue;
 			std::shared_ptr<ShaderJson> shader = GetShaderTemplate(src.shaderUUID);
 			shader->flag(ShaderJson::Update_path);
 		}
@@ -194,6 +224,7 @@ namespace Templates {
 
 		instanceUUID = instance_uuid;
 		shaderUUID = uuid;
+
 		std::shared_ptr<ShaderJson> shader = GetShaderTemplate(uuid);
 		shader->BindChangeCallback(bindingUUID, shaderChangeCallback, shaderChangePostCallback);
 

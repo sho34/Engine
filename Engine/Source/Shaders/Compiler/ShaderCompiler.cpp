@@ -34,7 +34,7 @@ namespace ShaderCompiler {
 	};
 
 	static std::mutex compileMutex;
-	void Compile(ShaderInstance& shaderInstance, Source params, ShaderIncludesDependencies& dependencies)
+	bool Compile(ShaderInstance& shaderInstance, Source params, ShaderIncludesDependencies& dependencies)
 	{
 		std::lock_guard<std::mutex> lock(compileMutex);
 		//read the shader
@@ -94,7 +94,7 @@ namespace ShaderCompiler {
 		if (pErrors && pErrors->GetStringLength() > 0) {
 			OutputDebugStringA(("compilation error:" + filename + "\n").c_str());
 			OutputDebugStringA((char*)pErrors->GetBufferPointer());
-			return;
+			return false;
 		}
 
 		// Get shader reflection data.
@@ -115,6 +115,7 @@ namespace ShaderCompiler {
 		shaderInstance.CreateResourcesBinding(shaderReflection, shaderDesc);
 		shaderInstance.CreateConstantsBuffersVariables(shaderReflection, shaderDesc);
 		shaderInstance.CreateByteCode(pCompileResult);
+		return true;
 	}
 
 	void BuildShaderCompiler() {
