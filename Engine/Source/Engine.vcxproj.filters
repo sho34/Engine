@@ -435,6 +435,9 @@
     <ClInclude Include="JExpose\JExposeTrackUUIDDecl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttRequired.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">

@@ -39,6 +39,11 @@
 #undef JEXPOSE_TRACK_UUID_DEF
 #endif
 
+#ifdef JEXPOSE_ATT_REQUIRED
+#undef JEXPOSE_ATT_REQUIRED
+}); }
+#endif
+
 #undef JCLASS
 #undef JEXPOSE
 #undef JEXPOSE_TRANSFORM
