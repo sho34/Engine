@@ -44,10 +44,6 @@ namespace Templates {
 	void DestroyMeshInstance(std::shared_ptr<MeshInstance>& mesh);
 
 	//EDITOR
-#if defined(_EDITOR)
-	void DrawMeshPanel(std::string& mesh, ImVec2 pos, ImVec2 size, bool pop);
-#endif
-
 };
 
 //MeshInstance to RootSignature

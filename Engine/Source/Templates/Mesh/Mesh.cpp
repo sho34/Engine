@@ -100,13 +100,6 @@ namespace Templates {
 		refTracker.RemoveRef(mesh->uuid, mesh);
 	}
 
-
-#if defined(_EDITOR)
-	void DrawMeshPanel(std::string& mesh, ImVec2 pos, ImVec2 size, bool pop)
-	{
-	}
-#endif
-
 	void MeshInstance::CreateVerticesShaderResourceView(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)
 	{
 		AllocCSUDescriptor(cpuHandle, gpuHandle);
