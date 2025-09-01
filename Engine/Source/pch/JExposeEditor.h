@@ -1077,7 +1077,7 @@ inline JEdvDrawerFunction DrawValue<std::string, jedv_t_sounds_filepath>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawFilePath(attribute, json, ICON_FA_FILE_AUDIO, defaultAssetsFolder,
+			EditorDrawFilePath(attribute, json, ICON_FA_FILE_AUDIO, defaultSoundsFolder,
 				{ "WAV files. (*.wav)", "MP3 files. (*.mp3)", "OGG files. (*.ogg)" },
 				{ "*.wav", "*.mp3", "*.ogg" }
 			);

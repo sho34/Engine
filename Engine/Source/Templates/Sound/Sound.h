@@ -15,6 +15,11 @@ using namespace DirectX;
 
 namespace Templates
 {
+	namespace Sound
+	{
+		inline static const std::string templateName = "sounds.json";
+	}
+
 #include <JExposeAttOrder.h>
 #include <SoundAtt.h>
 #include <JExposeEnd.h>
@@ -38,33 +43,20 @@ namespace Templates
 
 	TEMPDECL_FULL(Sound);
 
-#if defined(_EDITOR)
-	enum SoundPopupModal
-	{
-		SoundPopupModal_CannotDelete = 1,
-		SoundPopupModal_CreateNew = 2
-	};
-#endif
-
-	namespace Sound
-	{
-		inline static const std::string templateName = "sounds.json";
-	}
-
+	void SoundJsonStep();
 	void ReleaseSoundEffectsInstances();
 
 	//EDITOR
-#if defined(_EDITOR)
-	void CreateNewSound();
-	void DeleteSound(std::string uuid);
-	void DrawSoundsPopups();
-	void WriteSoundsJson(nlohmann::json& json);
-#endif
-
 	std::tuple<
 		std::unique_ptr<DirectX::SoundEffect>,
 		std::unique_ptr<DirectX::SoundEffectInstance>
-	> GetSoundEffectInstance(std::string uuid, unsigned int flags);
+	> GetSoundEffectInstance(
+		std::string uuid,
+		unsigned int flags,
+		std::string objectUUID = "",
+		JObjectChangeCallback cb = nullptr,
+		JObjectChangePostCallback postCb = nullptr
+	);
 
 	void DestroySoundEffectInstance(std::string uuid, std::tuple<
 		std::unique_ptr<DirectX::SoundEffect>,

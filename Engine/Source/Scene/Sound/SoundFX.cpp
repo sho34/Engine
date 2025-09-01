@@ -35,7 +35,12 @@ namespace Scene {
 
 		if (!sound().empty())
 		{
-			soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags());
+			auto OnSoundChange = [this](std::shared_ptr<JObject> sound)
+				{
+					UnbindFromScene();
+					BindToScene();
+				};
+			soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags(), uuid(), OnSoundChange);
 
 			if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D))
 			{
@@ -58,7 +63,15 @@ namespace Scene {
 
 		if (GetEffect() != nullptr)
 		{
-			DestroySoundEffectInstance(sound(), soundEffectInstance);
+			if (dirty(SoundFX::Update_sound))
+			{
+				std::string prevSoundUUID = UpdatePrevValues.at("sound");
+				DestroySoundEffectInstance(prevSoundUUID, soundEffectInstance);
+			}
+			else
+			{
+				DestroySoundEffectInstance(sound(), soundEffectInstance);
+			}
 		}
 	}
 
@@ -68,6 +81,7 @@ namespace Scene {
 		if (sfxI->GetState() == DirectX::SoundState::PLAYING) return false;
 		sfxI->SetVolume(volume());
 		sfxI->Play(loop());
+		time = 0.0f;
 		return true;
 	}
 
@@ -198,6 +212,12 @@ namespace Scene {
 		std::for_each(sfxsCreateI.begin(), sfxsCreateI.end(), [](auto& sfx)
 			{
 				sfx->BindToScene();
+			}
+		);
+
+		std::for_each(sfxs.begin(), sfxs.end(), [step](auto& sfx)
+			{
+				sfx->clear();
 			}
 		);
 	}

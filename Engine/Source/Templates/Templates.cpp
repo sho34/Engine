@@ -784,6 +784,7 @@ namespace Templates
 		PreviewTexturesStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
 		ReloadPreviewTextures();
 		MaterialJsonStep();
+		SoundJsonStep();
 		//ReloadTextureInstances();
 	}
 

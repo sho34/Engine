@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Sound.h"
 #include <map>
+#include <set>
 #include <Audio.h>
 #include <nlohmann/json.hpp>
 #include <AudioSystem.h>
@@ -26,11 +27,15 @@ namespace Templates
 		std::map<std::string, unsigned int> uuidInstanceCount;
 	};
 
-	std::tuple<
-		std::unique_ptr<DirectX::SoundEffect>,
-		std::unique_ptr<DirectX::SoundEffectInstance>
-	> GetSoundEffectInstance(std::string uuid, unsigned int flags)
+	std::tuple<std::unique_ptr<DirectX::SoundEffect>, std::unique_ptr<DirectX::SoundEffectInstance>>
+		GetSoundEffectInstance(std::string uuid, unsigned int flags,
+			std::string objectUUID, JObjectChangeCallback cb, JObjectChangePostCallback postCb)
 	{
+		if (objectUUID != "" && (cb != nullptr || postCb != nullptr))
+		{
+			std::shared_ptr<SoundJson> json = GetSoundTemplate(uuid);
+			json->BindChangeCallback(objectUUID, cb, postCb);
+		}
 		using namespace Sound;
 		if (uuidToSoundEffects.contains(uuid))
 		{
@@ -39,7 +44,7 @@ namespace Templates
 		else
 		{
 			std::shared_ptr<SoundJson> json = GetSoundTemplate(uuid);
-			std::wstring path = nostd::StringToWString(json->path());
+			std::wstring path = nostd::StringToWString(defaultSoundsFolder + json->path());
 			uuidToSoundEffects[uuid] = std::make_unique<DirectX::SoundEffect>(GetAudioEngine().get(), path.c_str());
 			uuidInstanceCount[uuid] = 1;
 		}
@@ -63,14 +68,7 @@ namespace Templates
 		}
 	}
 
-	void ReleaseSoundEffectsInstances()
-	{
-		//for (auto& [uuid, t] : sounds)
-		//{
-		//	auto& instances = std::get<3>(t);
-		//	instances.clear();
-		//}
-	}
+
 
 	SoundJson::SoundJson(nlohmann::json json) : JTemplate(json)
 	{
@@ -85,219 +83,39 @@ namespace Templates
 
 	TEMPDEF_FULL(Sound);
 
-	//EDITOR
-#if defined(_EDITOR)
-
-	void BindNotifications(std::string uuid, std::shared_ptr<Scene::SoundFX> soundEffect)
+	void SoundJsonStep()
 	{
-		//auto& instances = std::get<3>(sounds.at(uuid));
-		//instances.push_back(soundEffect);
-	}
+		std::set<std::shared_ptr<SoundJson>> sounds;
+		std::transform(Soundtemplates.begin(), Soundtemplates.end(), std::inserter(sounds, sounds.begin()), [](auto& temps)
+			{
+				auto& matJ = std::get<1>(temps.second);
+				return matJ;
+			}
+		);
 
-	void UnbindNotifications(std::string uuid, std::shared_ptr<Scene::SoundFX> soundEffect)
-	{
-		//auto& instances = std::get<3>(sounds.at(uuid));
-		//for (auto it = instances.begin(); it != instances.end(); )
-		//{
-		//	if (*it = soundEffect)
-		//	{
-		//		it = instances.erase(it);
-		//	}
-		//	else
-		//	{
-		//		it++;
-		//	}
-		//}
-	}
+		std::set<std::shared_ptr<SoundJson>> rebuildSounds;
+		std::copy_if(sounds.begin(), sounds.end(), std::inserter(rebuildSounds, rebuildSounds.begin()), [](auto& sound)
+			{
+				return sound->dirty(SoundJson::Update_path);
+			}
+		);
 
-	void DetachSoundsEffectsTemplate(std::string uuid)
-	{
-		//auto& instances = std::get<3>(sounds.at(uuid));
-		//for (auto& it : instances)
-		//{
-		//	it->DetachSoundEffectTemplate();
-		//}
-	}
-
-	void DestroySoundEffectInstances(std::string uuid)
-	{
-		//auto& instances = std::get<3>(sounds.at(uuid));
-		//for (auto& it : instances)
-		//{
-		//	it->DestroySoundEffectInstance();
-		//}
-	}
-
-	void CreateSoundEffectInstances(std::string uuid)
-	{
-		//auto& instances = std::get<3>(sounds.at(uuid));
-		//for (auto& it : instances)
-		//{
-		//	it->CreateSoundEffectInstance();
-		//}
-	}
-
-	void EraseSoundEffect(std::string uuid)
-	{
-		//sounds.erase(uuid);
-	}
-
-	void DrawSoundPanel(std::string uuid, ImVec2 pos, ImVec2 size, bool pop)
-	{
-		//std::string tableName = "sound-panel";
-		//if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoSavedSettings))
-		//{
-		//	Sound::DrawEditorInformationAttributes(uuid);
-		//	Sound::DrawEditorAssetAttributes(uuid);
-		//	ImGui::EndTable();
-		//}
-	}
-
-	void CreateNewSound()
-	{
-		//Sound::popupModalId = SoundPopupModal_CreateNew;
-		//Sound::creationJson = nlohmann::json(
-		//	{
-		//		{ "name", "" },
-		//		{ "path", "" },
-		//		{ "uuid", getUUID() }
-		//	}
-		//);
-	}
-
-	void DeleteSound(std::string uuid)
-	{
-		//nlohmann::json& json = std::get<1>(sounds.at(uuid));
-		//if (json.contains("systemCreated") && json.at("systemCreated") == true)
-		//{
-		//	Sound::popupModalId = SoundPopupModal_CannotDelete;
-		//	return;
-		//}
-		//
-		//DetachSoundsEffectsTemplate(uuid);
-		//DestroySoundEffectInstances(uuid);
-		//EraseSoundEffect(uuid);
-		//sounds.erase(uuid);
-	}
-
-	void DrawSoundsPopups()
-	{
-		//Editor::DrawOkPopup(Sound::popupModalId, SoundPopupModal_CannotDelete, "Cannot delete sound", []
-		//	{
-		//		ImGui::Text("Cannot delete a system created sound");
-		//	}
-		//);
-		//
-		//Editor::DrawCreateWindow(Sound::popupModalId, SoundPopupModal_CreateNew, "Create new sound", [](auto OnCancel)
-		//	{
-		//		nlohmann::json& json = Sound::creationJson;
-		//
-		//		ImGui::PushID("sound-name");
-		//		{
-		//			ImGui::Text("Name");
-		//			ImDrawJsonInputText(json, "name");
-		//		}
-		//		ImGui::PopID();
-		//
-		//		std::string parentFolder = defaultAssetsFolder;
-		//
-		//		ImGui::PushID("sound-path");
-		//		{
-		//			ImDrawJsonFilePicker(json, "path", parentFolder, "Sound files. (*.wav)", "*.wav");
-		//		}
-		//		ImGui::PopID();
-		//
-		//		if (ImGui::Button("Cancel")) { OnCancel(); }
-		//		ImGui::SameLine();
-		//
-		//		std::vector<std::string> soundNames = GetSoundsNames();
-		//		bool disabledCreate = json.at("path") == "" || json.at("name") == "" || std::find(soundNames.begin(), soundNames.end(), std::string(json.at("name"))) != soundNames.end();
-		//
-		//		if (disabledCreate)
-		//		{
-		//			ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-		//			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
-		//		}
-		//
-		//		if (ImGui::Button("Create"))
-		//		{
-		//			Sound::popupModalId = 0;
-		//			CreateSound(json);
-		//		}
-		//
-		//		if (disabledCreate)
-		//		{
-		//			ImGui::PopItemFlag();
-		//			ImGui::PopStyleVar();
-		//		}
-		//	}
-		//);
-	}
-
-	bool SoundsPopupIsOpen()
-	{
-		//return !!Sound::popupModalId;
-		return false;
-	}
-
-#endif
-
-	/*
-	//CREATE
-	void CreateSound(nlohmann::json json)
-	{
-		std::string uuid = json.at("uuid");
-
-		if (sounds.contains(uuid))
+		if (rebuildSounds.size() > 0ULL)
 		{
-			assert(!!!"sounds creation collision");
+			JObject::RunChangesCallback(rebuildSounds, [](auto sound)
+				{
+					sound->clean(SoundJson::Update_path);
+				}
+			);
 		}
-
-		SoundTemplate t;
-		std::string& name = std::get<0>(t);
-		name = json.at("name");
-
-		nlohmann::json& data = std::get<1>(t);
-		data = json;
-		data.erase("name");
-		data.erase("uuid");
-
-		sounds.insert_or_assign(uuid, t);
 	}
-	*/
 
-
-
-	/*
-	//READ&GET
-#if defined(_EDITOR)
-	std::vector<std::string> GetSoundsNames()
+	void ReleaseSoundEffectsInstances()
 	{
-		return GetNames(sounds);
+		//for (auto& [uuid, t] : sounds)
+		//{
+		//	auto& instances = std::get<3>(t);
+		//	instances.clear();
+		//}
 	}
-#endif
-
-	std::string GetSoundName(std::string uuid)
-	{
-		return std::get<0>(sounds.at(uuid));
-	}
-
-#if defined(_EDITOR)
-	std::vector<UUIDName> GetSoundsUUIDsNames()
-	{
-		return GetUUIDsNames(sounds);
-	}
-#endif
-
-	//UPDATE
-
-	//DESTROY
-
-
-	void ReleaseSoundTemplates()
-	{
-		sounds.clear();
-	}
-	*/
-
 }

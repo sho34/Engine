@@ -19,6 +19,7 @@ struct JObject : nlohmann::json
 	JObject(nlohmann::json json) :nlohmann::json(json) {}
 	void JUpdate(nlohmann::json p)
 	{
+		UpdatePrevValues.clear();
 		for (auto& [key, value] : p.items())
 		{
 			UpdatePrevValues.insert_or_assign(key, at(key));
