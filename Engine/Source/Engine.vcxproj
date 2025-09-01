@@ -281,7 +281,6 @@
     <ClInclude Include="JExpose\JExposeAttOrder.h" />
     <ClInclude Include="JExpose\JExposeAttFlags.h" />
     <ClInclude Include="JExpose\JExposeDecl.h" />
-    <ClInclude Include="JExpose\JExposeAttRequired.h" />
     <ClInclude Include="JExpose\JExposeTrackUUIDDecl.h" />
     <ClInclude Include="JExpose\JExposeTrackUUIDDef.h" />
     <ClInclude Include="JExpose\JExposeTypes.h" />
