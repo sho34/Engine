@@ -62,6 +62,14 @@ namespace Scene {
 #include <CameraAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttRequired.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttJsonDecl.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
+
 	struct Light;
 	struct Renderable;
 	struct Camera;

@@ -28,6 +28,10 @@ namespace Templates
 #include <TextureAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttJsonDef.h>
+#include <TextureAtt.h>
+#include <JExposeEnd.h>
+
 #if defined(_EDITOR)
 	std::shared_ptr<TextureInstance> texturePreview = nullptr;
 	std::vector<std::string> cubeTextureAxesNames = { "X+" , "X-" , "Y+" , "Y-" , "Z+" , "Z-" , };

@@ -142,6 +142,7 @@ struct RightPanelComponent
 		auto OnChangeTab,
 		auto MatchAttributes,
 		auto SendEditorPreview,
+		auto OnNew,
 		auto OnDelete
 	)
 	{
@@ -153,7 +154,18 @@ struct RightPanelComponent
 				std::vector<std::string> selectables = { "New" };
 				std::transform(menuItems.begin(), menuItems.end(), std::back_inserter(selectables), [](auto& p) { return p.second; });
 				ImGui::PushID((panelName + "-new").c_str());
-				ImGui::DrawComboSelection(selectables.at(0), selectables, [](std::string value) {}, "Add");
+				ImGui::DrawComboSelection(selectables.at(0), selectables, [OnNew, menuItems](std::string value)
+					{
+						auto getKey = [menuItems, value]
+							{
+								for (auto it : menuItems) {
+									if (it.second == value) return it.first;
+								}
+								return menuItems.begin()->first; //sorry but this hacky thing is because i didn't have better options. as it will also be captured as ""
+							};
+						if (value != "")
+							OnNew(getKey());
+					}, "Add");
 				ImGui::PopID();
 			}
 

@@ -48,6 +48,14 @@ namespace Scene
 #include <RenderableAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttRequired.h>
+#include <RenderableAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttJsonDecl.h>
+#include <RenderableAtt.h>
+#include <JExposeEnd.h>
+
 	//UPDATE
 	void RenderablesStep();
 	void CreateRenderablesCameraBinding();

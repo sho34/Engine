@@ -23,6 +23,10 @@ namespace Templates
 #include <RenderPassAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttJsonDef.h>
+#include <RenderPassAtt.h>
+#include <JExposeEnd.h>
+
 	namespace RenderPass
 	{
 		std::shared_ptr<DeviceUtils::DescriptorHeap> mainHeap;

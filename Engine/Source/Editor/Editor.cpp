@@ -734,6 +734,7 @@ namespace Editor {
 				OnChangeSceneObjectTab,
 				matchSceneObjectsAttributes,
 				[](std::string uuid) { SendEditorPreview(uuid, GetSceneObject, sceneObjectEdition.drawers); },
+				[](SceneObjectType type) { StartSceneObjectCreation(type); },
 				[](std::string uuid) { DeleteSceneObject(uuid); }
 			);
 
@@ -758,6 +759,7 @@ namespace Editor {
 				OnChangeTemplateTab,
 				matchTemplatesAttributes,
 				[](std::string uuid) { SendEditorPreview(uuid, GetTemplate, templateEdition.drawers); },
+				[](TemplateType type) { StartTemplateCreation(type); },
 				[](std::string uuid) { DeleteTemplate(uuid); }
 			);
 		}
@@ -1514,6 +1516,30 @@ namespace Editor {
 	void ResizePickingPass(unsigned int width, unsigned int height)
 	{
 		if (mousePicking.pickingPass) mousePicking.pickingPass->rendererToTexturePass->Resize(width, height);
+	}
+
+	std::vector<std::pair<std::string, JsonToEditorValueType>> sceneObjectCreationAttributes;
+	std::map<std::string, JEdvDrawerFunction> sceneObjectCreationDrawers;
+	std::vector<std::pair<std::string, bool>> sceneObjectRequiredAttributes;
+	nlohmann::json sceneObjectCreationJson;
+	void StartSceneObjectCreation(SceneObjectType type)
+	{
+		sceneObjectCreationAttributes = GetSceneObjectAttributes(type);
+		sceneObjectCreationDrawers = GetSceneObjectDrawers(type);
+		sceneObjectRequiredAttributes = GetSceneObjectRequiredAttributes(type);
+		sceneObjectCreationJson = GetSceneObjectJson(type);
+	}
+
+	std::vector<std::pair<std::string, JsonToEditorValueType>> templateCreationAttributes;
+	std::map<std::string, JEdvDrawerFunction> templateCreationDrawers;
+	std::vector<std::pair<std::string, bool>> templateRequiredAttributes;
+	nlohmann::json templateCreationJson;
+	void StartTemplateCreation(TemplateType type)
+	{
+		templateCreationAttributes = GetTemplateAttributes(type);
+		templateCreationDrawers = GetTemplateDrawers(type);
+		templateRequiredAttributes = GetTemplateRequiredAttributes(type);
+		templateCreationJson = GetTemplateJson(type);
 	}
 };
 

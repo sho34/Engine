@@ -251,6 +251,30 @@ namespace Scene
 		return GetSODrawers.at(so)();
 	}
 
+	std::vector<std::pair<std::string, bool>> GetSceneObjectRequiredAttributes(SceneObjectType so)
+	{
+		const std::map<SceneObjectType, std::function<std::vector<std::pair<std::string, bool>>()>> GetSORequiredAtts =
+		{
+			{ SO_Renderables, GetRenderableRequiredAttributes },
+			{ SO_Lights, GetLightRequiredAttributes },
+			{ SO_Cameras, GetCameraRequiredAttributes },
+			{ SO_SoundEffects, GetSoundFXRequiredAttributes }
+		};
+		return GetSORequiredAtts.at(so)();
+	}
+
+	nlohmann::json GetSceneObjectJson(SceneObjectType so)
+	{
+		const std::map<SceneObjectType, std::function<nlohmann::json()>> GetSOJson =
+		{
+			{ SO_Renderables, CreateRenderableJson },
+			{ SO_Lights, CreateLightJson },
+			{ SO_Cameras, CreateCameraJson },
+			{ SO_SoundEffects, CreateSoundFXJson }
+		};
+		return GetSOJson.at(so)();
+	}
+
 	bool SceneObjectPopupIsOpen(SceneObjectType so)
 	{
 		const std::map<SceneObjectType, std::function<bool()>> SOPopupIsOpen = {

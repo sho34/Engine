@@ -21,6 +21,10 @@ namespace Templates
 #include <SoundAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttJsonDef.h>
+#include <SoundAtt.h>
+#include <JExposeEnd.h>
+
 	namespace Sound
 	{
 		std::map<std::string, std::unique_ptr<DirectX::SoundEffect>> uuidToSoundEffects;

@@ -22,6 +22,14 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttRequired.h>
+#include <SoundFXAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttJsonDecl.h>
+#include <SoundFXAtt.h>
+#include <JExposeEnd.h>
+
 	struct SoundFX : SceneObject
 	{
 		SCENEOBJECT_DECL(SoundFX);

@@ -21,6 +21,10 @@ namespace Templates {
 #include <MaterialAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttJsonDef.h>
+#include <MaterialAtt.h>
+#include <JExposeEnd.h>
+
 	MaterialJson::MaterialJson(nlohmann::json json) : JTemplate(json)
 	{
 #include <JExposeInit.h>

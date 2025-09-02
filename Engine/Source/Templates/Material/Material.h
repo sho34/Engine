@@ -66,6 +66,14 @@ namespace Templates {
 #include <MaterialAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttRequired.h>
+#include <MaterialAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttJsonDecl.h>
+#include <MaterialAtt.h>
+#include <JExposeEnd.h>
+
 	void MaterialJsonStep();
 
 	struct MaterialJson : public JTemplate

@@ -39,6 +39,10 @@ namespace Scene {
 #include <RenderableAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttJsonDef.h>
+#include <RenderableAtt.h>
+#include <JExposeEnd.h>
+
 	//UPDATE
 	void RenderablesStep()
 	{

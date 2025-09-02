@@ -25,6 +25,14 @@ namespace Templates
 #include <ShaderAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttRequired.h>
+#include <ShaderAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttJsonDecl.h>
+#include <ShaderAtt.h>
+#include <JExposeEnd.h>
+
 	void ShaderJsonStep();
 	void MonitorShaderChanges(std::string folder);
 

@@ -47,37 +47,6 @@ inline const std::map<SceneObjectType, const char* > SceneObjectsTypePanelMenuIt
 
 using namespace Scene::Level;
 
-/*
-template<typename T>
-std::vector<UUIDName> GetSceneObjectsUUIDsNames(std::map<std::string, std::shared_ptr<T>>& objects)
-{
-	std::map<std::string, std::shared_ptr<T>> objs;
-	std::copy_if(objects.begin(), objects.end(), std::inserter(objs, objs.end()), [](const auto& pair)
-		{
-			return !pair.second->hidden();
-		}
-	);
-
-	std::vector<UUIDName> uuidNames;
-
-	std::transform(objs.begin(), objs.end(), std::back_inserter(uuidNames), [](const auto& pair)
-		{
-			UUIDName uuidName;
-
-			std::string& uuid = std::get<0>(uuidName);
-			uuid = pair.first;
-
-			std::string& name = std::get<1>(uuidName);
-			name = pair.second->name();
-
-			return uuidName;
-		}
-	);
-
-	return uuidNames;
-}
-*/
-
 inline bool NameCollideWithSceneObjects(auto map, nlohmann::json& json)
 {
 	std::string name = json.at("name");
@@ -113,6 +82,8 @@ namespace Scene
 	std::string GetSceneObjectUUID(std::string name);
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetSceneObjectAttributes(SceneObjectType so);
 	std::map<std::string, JEdvDrawerFunction> GetSceneObjectDrawers(SceneObjectType so);
+	std::vector<std::pair<std::string, bool>> GetSceneObjectRequiredAttributes(SceneObjectType so);
+	nlohmann::json GetSceneObjectJson(SceneObjectType so);
 
 	void CreateSceneObject(SceneObjectType so);
 	void DeleteSceneObject(SceneObjectType so, std::string uuid);

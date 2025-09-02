@@ -29,6 +29,10 @@ namespace Templates
 #include <Model3DAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttJsonDef.h>
+#include <Model3DAtt.h>
+#include <JExposeEnd.h>
+
 	Model3DJson::Model3DJson(nlohmann::json json) : JTemplate(json)
 	{
 #include <JExposeInit.h>

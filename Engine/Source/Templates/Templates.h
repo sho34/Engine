@@ -113,20 +113,6 @@ namespace Templates {
 		std::shared_ptr<J> jT = std::make_shared<J>(json);
 
 		templates.insert_or_assign(uuid, std::make_tuple(json.at("name"), jT));
-
-		/*
-		T t;
-
-		std::string& name = std::get<0>(t);
-		name = json.at("name");
-
-		nlohmann::json& data = std::get<1>(t);
-		data = json;
-		//data.erase("name");
-		//data.erase("uuid");
-
-		templates.insert_or_assign(uuid, t);
-		*/
 	}
 
 	inline std::string GetName(std::string uuid, auto getTemplates)
@@ -204,6 +190,8 @@ namespace Templates {
 	TemplateType GetTemplateType(std::string uuid);
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetTemplateAttributes(TemplateType t);
 	std::map<std::string, JEdvDrawerFunction> GetTemplateDrawers(TemplateType t);
+	std::vector<std::pair<std::string, bool>> GetTemplateRequiredAttributes(TemplateType t);
+	nlohmann::json GetTemplateJson(TemplateType t);
 
 	std::string GetTemplateName(TemplateType t, std::string uuid);
 	void CreateTemplate(TemplateType t);

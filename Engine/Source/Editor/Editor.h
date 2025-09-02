@@ -4,6 +4,7 @@
 #include <Camera/Camera.h>
 #include <Renderable/Renderable.h>
 #include <JObject.h>
+#include <Templates.h>
 
 #if defined(_EDITOR)
 
@@ -69,9 +70,9 @@ namespace Editor {
 	void ReleasePickingPassResources();
 	void ResizePickingPass(unsigned int width, unsigned int height);
 
-	//GIZMO INTERACTION
-
-	//CAMERA INTERACTION
+	//Creation
+	void StartSceneObjectCreation(SceneObjectType type);
+	void StartTemplateCreation(TemplateType type);
 
 }
 #endif

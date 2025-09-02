@@ -22,6 +22,8 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace Scene
 {
+	static inline std::string defaultCamUUID = "br0ken-camuuid";
+
 #include <JExposeAttDrawersDef.h>
 #include <CameraAtt.h>
 #include <JExposeEnd.h>
@@ -30,10 +32,12 @@ namespace Scene
 #include <CameraAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttJsonDef.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
+
 	using namespace DeviceUtils;
 	using namespace DirectX;
-
-	static inline std::string defaultCamUUID = "br0ken-camuuid";
 
 	Camera::Camera(nlohmann::json json) :SceneObject(json)
 	{

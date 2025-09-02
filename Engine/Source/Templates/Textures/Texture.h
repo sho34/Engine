@@ -22,6 +22,14 @@ namespace Templates
 #include <TextureAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttRequired.h>
+#include <TextureAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttJsonDecl.h>
+#include <TextureAtt.h>
+#include <JExposeEnd.h>
+
 	void TextureJsonsStep();
 
 	struct TextureInstance;

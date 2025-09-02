@@ -882,6 +882,34 @@ namespace Templates
 		return GetTDrawers.at(t)();
 	}
 
+	std::vector<std::pair<std::string, bool>> GetTemplateRequiredAttributes(TemplateType t)
+	{
+		const std::map<TemplateType, std::function<std::vector<std::pair<std::string, bool>>()>> GetTRequiredAtts =
+		{
+			{ T_Materials, GetMaterialRequiredAttributes },
+			{ T_Models3D, GetModel3DRequiredAttributes },
+			{ T_Shaders, GetShaderRequiredAttributes },
+			{ T_Sounds, GetSoundRequiredAttributes },
+			{ T_Textures, GetTextureRequiredAttributes },
+			{ T_RenderPasses, GetRenderPassRequiredAttributes }
+		};
+		return GetTRequiredAtts.at(t)();
+	}
+
+	nlohmann::json GetTemplateJson(TemplateType t)
+	{
+		const std::map<TemplateType, std::function<nlohmann::json()>> GetTJson =
+		{
+			{ T_Materials, CreateMaterialJson },
+			{ T_Models3D, CreateModel3DJson },
+			{ T_Shaders, CreateShaderJson },
+			{ T_Sounds, CreateSoundJson },
+			{ T_Textures, CreateTextureJson },
+			{ T_RenderPasses, CreateRenderPassJson }
+		};
+		return GetTJson.at(t)();
+	}
+
 	void DrawTemplatesPopups(TemplateType t)
 	{
 		const std::map<TemplateType, std::function<void()>> DrawTPopups = {

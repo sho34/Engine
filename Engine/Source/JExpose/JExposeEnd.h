@@ -1,3 +1,11 @@
+#ifdef JEXPOSE_ATT_JSON_DECL
+#undef JEXPOSE_ATT_JSON_DECL
+#endif
+
+#ifdef JEXPOSE_ATT_JSON_DEF
+#undef JEXPOSE_ATT_JSON_DEF
+return created; }
+#endif
 
 #ifdef JEXPOSE_ATT_DECL
 #undef JEXPOSE_ATT_DECL

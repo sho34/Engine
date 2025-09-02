@@ -276,6 +276,8 @@
     </ClInclude>
     <ClInclude Include="Editor\RightPanelComponent.h" />
     <ClInclude Include="JExpose\JExposeAttDrawersDef.h" />
+    <ClInclude Include="JExpose\JExposeAttJsonDecl.h" />
+    <ClInclude Include="JExpose\JExposeAttJsonDef.h" />
     <ClInclude Include="JExpose\JExposeAttUpdate.h" />
     <ClInclude Include="JExpose\JExpose.h" />
     <ClInclude Include="JExpose\JExposeAttOrder.h" />

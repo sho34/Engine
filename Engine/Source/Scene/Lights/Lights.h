@@ -144,6 +144,14 @@ namespace Scene {
 #include <LightsAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttRequired.h>
+#include <LightsAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttJsonDecl.h>
+#include <LightsAtt.h>
+#include <JExposeEnd.h>
+
 	struct Light : SceneObject
 	{
 		SCENEOBJECT_DECL(Light);
