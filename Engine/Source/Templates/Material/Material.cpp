@@ -200,10 +200,12 @@ namespace Templates {
 		using namespace ShaderCompiler;
 
 		std::shared_ptr<ShaderJson> vsShaderJson = GetShaderTemplate(vertexShaderUUID);
-		vsShaderJson->UnbindChangeCallback(instanceUUID);
+		if (vsShaderJson)
+			vsShaderJson->UnbindChangeCallback(instanceUUID);
 
 		std::shared_ptr<ShaderJson> psShaderJson = GetShaderTemplate(pixelShaderUUID);
-		psShaderJson->UnbindChangeCallback(instanceUUID);
+		if (psShaderJson)
+			psShaderJson->UnbindChangeCallback(instanceUUID);
 
 		if (RemoveShaderInstance(vertexShader->instanceUUID, vertexShader))
 		{
@@ -377,5 +379,6 @@ namespace Templates {
 
 	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& materialInstance)
 	{
+		RemoveMaterialInstance(materialInstance->materialUUID, materialInstance);
 	}
 }

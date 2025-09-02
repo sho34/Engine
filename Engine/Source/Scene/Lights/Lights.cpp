@@ -70,7 +70,7 @@ namespace Scene {
 
 	void Light::Destroy()
 	{
-
+		DestroyEditorPreview();
 	}
 
 	XMMATRIX Light::world()

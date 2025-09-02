@@ -44,7 +44,8 @@ namespace Editor {
 
 	bool initialized = false;
 	bool maximized = true;
-	bool dragDrop = false;
+	bool mouseClicked = false;
+	bool clickedInDragArea = false;
 	int lastMouseX;
 	int lastMouseY;
 
@@ -52,8 +53,8 @@ namespace Editor {
 
 	float titleBH = static_cast<float>(ApplicationBarBottom);
 	float panW = static_cast<float>(RightPanelWidth);
-	ImGuiWindowFlags panFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-		ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+	ImGuiWindowFlags panFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+		ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
 	bool NonGameMode = false;
 	bool lockedGameAreaInput = false;
 
@@ -337,6 +338,15 @@ namespace Editor {
 	void DestroyEditor() {
 		initialized = false;
 
+		for (auto& uuid : sceneObjectEdition.editables)
+		{
+			SendEditorDestroyPreview(uuid, GetSceneObject);
+		}
+		for (auto& uuid : templateEdition.editables)
+		{
+			SendEditorDestroyPreview(uuid, GetTemplate);
+		}
+
 		sceneObjectEdition.Destroy();
 		templateEdition.Destroy();
 
@@ -366,37 +376,36 @@ namespace Editor {
 				);
 			};
 
-		if (mouseState.leftButton) {
-
-			if (inDragBounds() && !dragDrop) {
-				dragDrop = true;
-			}
-
-			if (dragDrop) {
-				INT diffMouseX = mouseState.x - lastMouseX;
-				INT diffMouseY = mouseState.y - lastMouseY;
-
-				RECT currentRect;
-				GetWindowRect(hWnd, &currentRect);
-
-				INT newX = currentRect.left + diffMouseX;
-				INT newY = currentRect.top + diffMouseY;
-
-				SetWindowPos(hWnd, nullptr, newX, newY, 0, 0, SWP_NOSIZE);
-
-				lastMouseX = mouseState.x - diffMouseX;
-				lastMouseY = mouseState.y - diffMouseY;
-			}
-			else {
+		if (mouseState.leftButton && !mouseClicked)
+		{
+			mouseClicked = true;
+			if (inDragBounds())
+			{
+				clickedInDragArea = true;
 				lastMouseX = mouseState.x;
 				lastMouseY = mouseState.y;
 			}
-
 		}
-		else {
-			dragDrop = false;
-			lastMouseX = mouseState.x;
-			lastMouseY = mouseState.y;
+		else if (mouseState.leftButton && clickedInDragArea)
+		{
+			INT diffMouseX = mouseState.x - lastMouseX;
+			INT diffMouseY = mouseState.y - lastMouseY;
+
+			RECT currentRect;
+			GetWindowRect(hWnd, &currentRect);
+
+			INT newX = currentRect.left + diffMouseX;
+			INT newY = currentRect.top + diffMouseY;
+
+			SetWindowPos(hWnd, nullptr, newX, newY, 0, 0, SWP_NOSIZE);
+
+			lastMouseX = mouseState.x - diffMouseX;
+			lastMouseY = mouseState.y - diffMouseY;
+		}
+		else if (!mouseState.leftButton)
+		{
+			mouseClicked = false;
+			clickedInDragArea = false;
 		}
 	}
 
@@ -527,12 +536,6 @@ namespace Editor {
 					}
 					else
 					{
-						HWND desktopHwnd = GetDesktopWindow();
-						//RECT desktopRect;
-						//GetClientRect(desktopHwnd, &desktopRect);
-						//int winWidth = desktopRect.right;
-						//int winHeight = desktopRect.bottom - 40;
-						//SetWindowPos(hWnd, HWND_TOP, 0, 0, winWidth, winHeight, 0);
 						RECT desktopRect = GetMaximizedAreaSize();
 						SetWindowPos(hWnd, HWND_TOP, 0, 0, desktopRect.right - desktopRect.left, desktopRect.bottom - desktopRect.top, 0);
 					}
@@ -653,12 +656,10 @@ namespace Editor {
 		}
 	}
 
+	float separatorFactor = 0.0f;
+	const float panelMinHeight = 47.0f;
+
 	void DrawRightPanel() {
-
-		const ImGuiViewport* viewport = ImGui::GetMainViewport();
-
-		ImVec2 panPos = ImVec2(viewport->Size.x - panW, titleBH);
-		ImVec2 panSize = ImVec2(panW, viewport->Size.y - titleBH + 10.0f);
 
 		auto getSceneObjects = []()
 			{
@@ -713,14 +714,20 @@ namespace Editor {
 				);
 			};
 
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImVec2 panPos = ImVec2(viewport->WorkSize.x - panW, viewport->WorkPos.y);
+		ImVec2 panSize = ImVec2(panW, viewport->WorkSize.y);
+
 		ImGui::SetNextWindowPos(panPos);
 		ImGui::SetNextWindowSize(panSize);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Right panel", (bool*)1, panFlags);
 		{
+			float halfY = panSize.y * 0.5f;
+
+			float soPanelH = max(halfY * (1.0f - separatorFactor) - 2.5f, panelMinHeight);
 			ImVec2 soPos = ImVec2(panPos.x, panPos.y);
-			ImVec2 soSize = ImVec2(panSize.x, panSize.y * 0.5f);
-			ImVec2 tempPos = ImVec2(panPos.x, panSize.y + 20.0f);
-			ImVec2 tempSize = ImVec2(panSize.x, panSize.y * 0.5f - 20.0f);
+			ImVec2 soSize = ImVec2(panSize.x, soPanelH);
 
 			sceneObjectEdition.DrawPanel(soPos, soSize, SceneObjectsTypePanelMenuItems,
 				getSceneObjects, GetSceneObject,
@@ -730,7 +737,23 @@ namespace Editor {
 				[](std::string uuid) { DeleteSceneObject(uuid); }
 			);
 
-			templateEdition.DrawPanel(tempPos, tempSize, TemplateTypePanelMenuItems,
+			ImGui::Button("DragableSeparator", ImVec2(-1, 5));
+			if (ImGui::IsItemActive())
+			{
+				float deltaY = ImGui::GetMouseDragDelta().y;
+				separatorFactor -= deltaY / halfY;
+				float hi = 1.0f - panelMinHeight / halfY;
+				float low = -1.0f + panelMinHeight / halfY;
+				if (separatorFactor < hi && separatorFactor > low)
+					ImGui::ResetMouseDragDelta(); // Reset delta for continuous dragging
+				separatorFactor = std::clamp(separatorFactor, low, hi);
+			}
+
+			float tePanelH = max(panSize.y - soPanelH - 5.0f, panelMinHeight);
+			ImVec2 tePos = ImVec2(panPos.x, soSize.y + 5.0f);
+			ImVec2 teSize = ImVec2(panSize.x, tePanelH);
+
+			templateEdition.DrawPanel(tePos, teSize, TemplateTypePanelMenuItems,
 				getTemplates, GetTemplate,
 				OnChangeTemplateTab,
 				matchTemplatesAttributes,
@@ -739,6 +762,7 @@ namespace Editor {
 			);
 		}
 		ImGui::End();
+		ImGui::PopStyleVar();
 	}
 
 	void MarkScenePanelAssetsAsDirty()

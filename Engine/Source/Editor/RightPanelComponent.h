@@ -145,40 +145,44 @@ struct RightPanelComponent
 		auto OnDelete
 	)
 	{
-		DrawTabs(OnChangeTab);
-		if (selectedTab == detailAbleTabs.at(0))
+		ImGui::BeginChild((panelName + "panel").c_str(), size, ImGuiChildFlags_None);
 		{
-			std::vector<std::string> selectables = { "New" };
-			std::transform(menuItems.begin(), menuItems.end(), std::back_inserter(selectables), [](auto& p) { return p.second; });
-			ImGui::PushID((panelName + "-new").c_str());
-			ImGui::DrawComboSelection(selectables.at(0), selectables, [](std::string value) {}, "Add");
-			ImGui::PopID();
-		}
-
-		float padH = 50.0f;
-		ImVec2 scrollableSize = ImVec2(size.x, size.y - padH);
-		if (ImGui::BeginChild((panelName + "panel").c_str(), scrollableSize, ImGuiChildFlags_AlwaysUseWindowPadding))
-		{
-			std::string uuidToPick = ""; //why this, why here, i don't recall?
-
+			DrawTabs(OnChangeTab);
 			if (selectedTab == detailAbleTabs.at(0))
 			{
-				DrawAssetsTree(GetObjects, GetPanelObject,
-					[&uuidToPick, this, MatchAttributes, SendEditorPreview](auto toPick)
-					{
-						uuidToPick = toPick;
-						selected.insert(uuidToPick);
-						editables.clear();
-						editables.insert(uuidToPick);
-						selectedTab = detailAbleTabs.at(1);
-						MatchAttributes();
-						SendEditorPreview(uuidToPick);
-					}, OnDelete, "");
+				std::vector<std::string> selectables = { "New" };
+				std::transform(menuItems.begin(), menuItems.end(), std::back_inserter(selectables), [](auto& p) { return p.second; });
+				ImGui::PushID((panelName + "-new").c_str());
+				ImGui::DrawComboSelection(selectables.at(0), selectables, [](std::string value) {}, "Add");
+				ImGui::PopID();
 			}
-			else
+
+			float padH = 57.0f;
+			ImVec2 scrollableSize = ImVec2(size.x, size.y - padH);
+			if (ImGui::BeginChild((panelName + "panel").c_str(), scrollableSize, ImGuiChildFlags_AlwaysUseWindowPadding))
 			{
-				DrawAttributes();
+				std::string uuidToPick = ""; //why this, why here, i don't recall?
+
+				if (selectedTab == detailAbleTabs.at(0))
+				{
+					DrawAssetsTree(GetObjects, GetPanelObject,
+						[&uuidToPick, this, MatchAttributes, SendEditorPreview](auto toPick)
+						{
+							uuidToPick = toPick;
+							selected.insert(uuidToPick);
+							editables.clear();
+							editables.insert(uuidToPick);
+							selectedTab = detailAbleTabs.at(1);
+							MatchAttributes();
+							SendEditorPreview(uuidToPick);
+						}, OnDelete, "");
+				}
+				else
+				{
+					DrawAttributes();
+				}
 			}
+			ImGui::EndChild();
 		}
 		ImGui::EndChild();
 	}
