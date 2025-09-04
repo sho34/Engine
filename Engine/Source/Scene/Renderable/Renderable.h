@@ -56,6 +56,10 @@ namespace Scene
 #include <RenderableAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDecl.h>
+#include <RenderableAtt.h>
+#include <JExposeEnd.h>
+
 	//UPDATE
 	void RenderablesStep();
 	void CreateRenderablesCameraBinding();
@@ -91,7 +95,6 @@ namespace Scene
 		std::shared_ptr<Model3DInstance> model3D = nullptr;
 
 		//meshes
-		//std::set<unsigned int> skipMeshes;
 		RenderableMeshes meshes;
 		RenderableMaterials materials;
 		RenderableConstantsBuffer constantsBuffers;

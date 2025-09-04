@@ -132,6 +132,17 @@ namespace ImGui
 		ImGui::Image(textureId, ImVec2((float)currentRegionAvail.x, sizeY));
 	}
 
+	bool DrawJsonCheckBox(nlohmann::json& json, const std::string attribute)
+	{
+		bool value = json.at(attribute);
+		if (ImGui::Checkbox("##", &value))
+		{
+			json[attribute] = value;
+			return true;
+		}
+		return false;
+	}
+
 	bool DrawFromFloat(nlohmann::json& json, const std::string attribute, std::string label)
 	{
 		float value = json.at(attribute);

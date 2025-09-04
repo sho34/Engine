@@ -1,6 +1,6 @@
 JCLASS(Renderable)
-JEXPOSE(std::string, uuid, "846455$UUID", jedv_t_hidden, 0, false)
-JEXPOSE(std::string, name, "846455$NAME", jedv_t_string, 0, true)
+JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
+JEXPOSE(std::string, name, ("renderable." + std::to_string(GetNumRenderables())), jedv_t_string, 0, true)
 JEXPOSE(bool, castShadows, true, jedv_t_boolean, 0, false)
 JEXPOSE(bool, shadowed, true, jedv_t_boolean, 0, false)
 JEXPOSE(bool, hidden, false, jedv_t_boolean, 0, false)

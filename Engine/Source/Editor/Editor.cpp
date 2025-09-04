@@ -137,6 +137,9 @@ namespace Editor {
 	ImGuizmo::OPERATION gizmoOperation(ImGuizmo::TRANSLATE);
 	ImGuizmo::MODE gizmoMode(ImGuizmo::WORLD);
 
+	CreatorModal<SceneObjectType> sceneObjectModal;
+	CreatorModal<TemplateType> templateModal;
+
 	void InitEditor()
 	{
 		initialized = true;
@@ -443,6 +446,9 @@ namespace Editor {
 		DrawRightPanel();
 		if (camera)
 			DrawPickedObjectsGuizmo(camera, gizmoOperation, gizmoMode);
+
+		sceneObjectModal.DrawCreationPopup();
+		templateModal.DrawCreationPopup();
 
 		// Rendering
 		ImGui::Render();
@@ -1184,6 +1190,7 @@ namespace Editor {
 		boundingBox->WriteConstantsBuffer(renderer->backBufferIndex);
 	}
 
+	/*
 	void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent)
 	{
 		if (flag == cmpFlag)
@@ -1210,6 +1217,7 @@ namespace Editor {
 			}
 		}
 	}
+	*/
 
 	//MOUSE PROCESSING
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse)
@@ -1228,6 +1236,8 @@ namespace Editor {
 
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera)
 	{
+		if (sceneObjectModal.creating || templateModal.creating) return;
+
 		DirectX::Mouse::State state = mouse->GetState();
 
 		if (!MouseIsInGameArea(mouse) && state.leftButton)
@@ -1239,7 +1249,7 @@ namespace Editor {
 			lockedGameAreaInput = false;
 		}
 
-		if (AnyTemplatePopupOpen() || AnySceneObjectPopupOpen() || NonGameMode || lockedGameAreaInput)
+		if (NonGameMode || lockedGameAreaInput)
 			return;
 
 		auto resetMouseProcessing = []()
@@ -1518,28 +1528,24 @@ namespace Editor {
 		if (mousePicking.pickingPass) mousePicking.pickingPass->rendererToTexturePass->Resize(width, height);
 	}
 
-	std::vector<std::pair<std::string, JsonToEditorValueType>> sceneObjectCreationAttributes;
-	std::map<std::string, JEdvDrawerFunction> sceneObjectCreationDrawers;
-	std::vector<std::pair<std::string, bool>> sceneObjectRequiredAttributes;
-	nlohmann::json sceneObjectCreationJson;
 	void StartSceneObjectCreation(SceneObjectType type)
 	{
-		sceneObjectCreationAttributes = GetSceneObjectAttributes(type);
-		sceneObjectCreationDrawers = GetSceneObjectDrawers(type);
-		sceneObjectRequiredAttributes = GetSceneObjectRequiredAttributes(type);
-		sceneObjectCreationJson = GetSceneObjectJson(type);
+		sceneObjectModal.json = GetSceneObjectJson(type);
+		sceneObjectModal.atts = GetSceneObjectRequiredAttributes(type);
+		sceneObjectModal.drawers = GetSceneObjectCreatorDrawers(type);
+		sceneObjectModal.type = type;
+		sceneObjectModal.creating = true;
+		sceneObjectModal.onCreate = CreateSceneObject;
 	}
 
-	std::vector<std::pair<std::string, JsonToEditorValueType>> templateCreationAttributes;
-	std::map<std::string, JEdvDrawerFunction> templateCreationDrawers;
-	std::vector<std::pair<std::string, bool>> templateRequiredAttributes;
-	nlohmann::json templateCreationJson;
 	void StartTemplateCreation(TemplateType type)
 	{
-		templateCreationAttributes = GetTemplateAttributes(type);
-		templateCreationDrawers = GetTemplateDrawers(type);
-		templateRequiredAttributes = GetTemplateRequiredAttributes(type);
-		templateCreationJson = GetTemplateJson(type);
+		templateModal.json = GetTemplateJson(type);
+		templateModal.atts = GetTemplateRequiredAttributes(type);
+		templateModal.drawers = GetTemplateCreatorDrawers(type);
+		templateModal.type = type;
+		templateModal.creating = true;
+		templateModal.onCreate = CreateTemplate;
 	}
 };
 

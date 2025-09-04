@@ -30,6 +30,10 @@ namespace Templates
 #include <TextureAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDecl.h>
+#include <TextureAtt.h>
+#include <JExposeEnd.h>
+
 	void TextureJsonsStep();
 
 	struct TextureInstance;

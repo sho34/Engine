@@ -43,6 +43,10 @@ namespace Scene {
 #include <RenderableAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDef.h>
+#include <RenderableAtt.h>
+#include <JExposeEnd.h>
+
 	//UPDATE
 	void RenderablesStep()
 	{
@@ -67,7 +71,28 @@ namespace Scene {
 		std::set<std::shared_ptr<Renderable>> bindToCam;
 		std::copy_if(r.begin(), r.end(), std::inserter(bindToCam, bindToCam.end()), [](auto& r)
 			{
-				return r->dirty(Renderable::Update_cameras);
+				if (r->dirty(Renderable::Update_cameras))
+				{
+					if (r->UpdatePrevValues.contains("cameras"))
+					{
+						nlohmann::json prevCams = r->UpdatePrevValues.at("cameras");
+						std::set<std::string> prevCamUUIDs;
+						for (auto& cam : prevCams) {
+							if (cam != "") prevCamUUIDs.insert(cam);
+						}
+						std::vector<std::string> currCams = r->cameras();
+						std::set<std::string> currCamUUIDs;
+						for (auto& cam : currCams) {
+							if (cam != "") currCamUUIDs.insert(cam);
+						}
+						bool isDifferent = prevCamUUIDs != currCamUUIDs;
+						if (!isDifferent)
+							r->clean(Renderable::Update_cameras);
+						return isDifferent;
+					}
+					return true;
+				}
+				return false;
 			}
 		);
 
@@ -96,20 +121,50 @@ namespace Scene {
 					}
 					for (auto& r : bindToCam)
 					{
-						for (auto uuid : r->bindedCameras)
+						std::set<std::string> currCamsUUIDs;
+						std::vector<std::string> cameras = r->cameras();
+						for (auto& cam : cameras) {
+							if (cam != "") currCamsUUIDs.insert(cam);
+						}
+
+						std::set<std::string> prevCamsUUIDs;
+						if (r->UpdatePrevValues.contains("cameras"))
+						{
+							nlohmann::json prevCams = r->UpdatePrevValues.at("cameras");
+							for (auto& cam : prevCams) {
+								if (cam != "") prevCamsUUIDs.insert(cam);
+							}
+						}
+
+						//get cams present in the current set, but not present in the last set(this means adding cams)
+						std::set<std::string> addCams;
+						std::set_difference(
+							currCamsUUIDs.begin(), currCamsUUIDs.end(),
+							prevCamsUUIDs.begin(), prevCamsUUIDs.end(),
+							std::inserter(addCams, addCams.begin())
+						);
+
+						//get cams present in the previous set, but not present in the current set(this means deleting cams)
+						std::set<std::string> delCams;
+						std::set_difference(
+							prevCamsUUIDs.begin(), prevCamsUUIDs.end(),
+							currCamsUUIDs.begin(), currCamsUUIDs.end(),
+							std::inserter(delCams, delCams.begin())
+						);
+
+						//remove the camera from the renderable's binded camera set
+						for (auto& uuid : delCams)
 						{
 							std::shared_ptr<Camera> cam = FindInCameras(uuid);
-							if (cam)
-								cam->UnbindRenderable(r);
+							cam->UnbindRenderable(r);
 						}
-						auto camsV = r->cameras();
-						r->bindedCameras = std::set<std::string>(camsV.begin(), camsV.end());
-						for (auto uuid : r->bindedCameras)
+						//add the camera to the renderable's binded camera set
+						for (auto& uuid : addCams)
 						{
 							std::shared_ptr<Camera> cam = FindInCameras(uuid);
-							if (cam)
-								cam->BindRenderable(r);
+							cam->BindRenderable(r);
 						}
+
 						r->clean(Renderable::Update_cameras);
 					}
 				}
@@ -194,14 +249,8 @@ namespace Scene {
 	}
 #endif
 
-
 	Renderable::Renderable(nlohmann::json json) :SceneObject(json)
 	{
-		using namespace Animation;
-		using namespace Templates;
-
-		assert(!name().empty() && !uuid().empty());
-
 #include <JExposeInit.h>
 #include <RenderableAtt.h>
 #include <JExposeEnd.h>
@@ -267,7 +316,8 @@ namespace Scene {
 
 	void Renderable::UnbindCameras()
 	{
-		for (auto uuid : bindedCameras)
+		std::set<std::string> cams = bindedCameras;
+		for (auto uuid : cams)
 		{
 			std::shared_ptr<Camera> cam = FindInCameras(uuid);
 			if (!cam) continue;

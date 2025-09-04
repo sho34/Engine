@@ -398,3 +398,4 @@ FodyWeavers.xsd
 *.sln.iml
 /Engine/Target/imgui.ini
 /Engine/Target/WinPixEventRuntime.dll
+*.map

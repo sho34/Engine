@@ -152,6 +152,10 @@ namespace Scene {
 #include <LightsAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDecl.h>
+#include <LightsAtt.h>
+#include <JExposeEnd.h>
+
 	struct Light : SceneObject
 	{
 		SCENEOBJECT_DECL(Light);

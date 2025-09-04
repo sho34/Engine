@@ -25,6 +25,10 @@ namespace Templates {
 #include <MaterialAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDef.h>
+#include <MaterialAtt.h>
+#include <JExposeEnd.h>
+
 	MaterialJson::MaterialJson(nlohmann::json json) : JTemplate(json)
 	{
 #include <JExposeInit.h>
@@ -383,6 +387,6 @@ namespace Templates {
 
 	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& materialInstance)
 	{
-		RemoveMaterialInstance(materialInstance->materialUUID, materialInstance);
+		RemoveMaterialInstance(materialInstance->instanceUUID, materialInstance);
 	}
 }

@@ -105,6 +105,9 @@ namespace Scene::Level {
 		using namespace Effects;
 		using namespace Animation;
 
+		//Destroy the cameras(this will destroy the cameras and the render passes)
+		DestroyCameras();
+
 		//Destroy the effects
 		EffectsDestroy();
 
@@ -122,8 +125,7 @@ namespace Scene::Level {
 		//Destroy the lights(this will destroy the lights and it's cbvs)
 		DestroyLights();
 
-		//Destroy the cameras(this will destroy the cameras and the render passes)
-		DestroyCameras();
+
 
 	}
 }

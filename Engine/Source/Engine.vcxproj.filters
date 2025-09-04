@@ -438,6 +438,18 @@
     <ClInclude Include="JExpose\JExposeAttRequired.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttCreatorDrawersDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttCreatorDrawersDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttJsonDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeAttJsonDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">

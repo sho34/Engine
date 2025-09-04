@@ -49,7 +49,16 @@ return created; }
 
 #ifdef JEXPOSE_ATT_REQUIRED
 #undef JEXPOSE_ATT_REQUIRED
-}); }
+return requiredAtts; }
+#endif
+
+#ifdef JEXPOSE_ATT_CREATOR_DRAWERS_DECL
+#undef JEXPOSE_ATT_CREATOR_DRAWERS_DECL
+#endif
+
+#ifdef JEXPOSE_ATT_CREATOR_DRAWERS_DEF
+return creatorDrawers; }
+#undef JEXPOSE_ATT_CREATOR_DRAWERS_DEF
 #endif
 
 #undef JCLASS

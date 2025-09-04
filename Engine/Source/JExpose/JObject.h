@@ -1,7 +1,9 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+#include <functional>
 #include <any>
+#include <map>
 
 struct JObject;
 

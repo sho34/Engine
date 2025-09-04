@@ -21,6 +21,10 @@ namespace Templates {
 #include <ShaderAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDef.h>
+#include <ShaderAtt.h>
+#include <JExposeEnd.h>
+
 	namespace Shader
 	{
 		ShaderIncludesDependencies dependencies;

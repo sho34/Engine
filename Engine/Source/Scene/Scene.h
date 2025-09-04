@@ -70,10 +70,6 @@ namespace Scene
 	void RenderSceneCameras();
 
 #if defined(_EDITOR)
-	bool AnySceneObjectPopupOpen();
-	void DrawSceneObjectsPopups(SceneObjectType so);
-	bool SceneObjectPopupIsOpen(SceneObjectType so);
-
 	std::shared_ptr<SceneObject> GetSceneObject(std::string uuid);
 	std::map<SceneObjectType, std::vector<UUIDName>> GetSceneObjects();
 	std::vector<UUIDName> GetSceneObjects(SceneObjectType so);
@@ -82,10 +78,11 @@ namespace Scene
 	std::string GetSceneObjectUUID(std::string name);
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetSceneObjectAttributes(SceneObjectType so);
 	std::map<std::string, JEdvDrawerFunction> GetSceneObjectDrawers(SceneObjectType so);
-	std::vector<std::pair<std::string, bool>> GetSceneObjectRequiredAttributes(SceneObjectType so);
+	std::vector<std::string> GetSceneObjectRequiredAttributes(SceneObjectType so);
 	nlohmann::json GetSceneObjectJson(SceneObjectType so);
+	std::map<std::string, JEdvCreatorDrawerFunction> GetSceneObjectCreatorDrawers(SceneObjectType so);
 
-	void CreateSceneObject(SceneObjectType so);
+	void CreateSceneObject(SceneObjectType so, nlohmann::json json);
 	void DeleteSceneObject(SceneObjectType so, std::string uuid);
 	void DeleteSceneObject(std::string uuid);
 #endif

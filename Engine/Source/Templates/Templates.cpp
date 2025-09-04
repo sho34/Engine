@@ -789,16 +789,6 @@ namespace Templates
 	}
 
 #if defined(_EDITOR)
-	bool AnyTemplatePopupOpen()
-	{
-		for (auto& [type, _] : TemplateTypeToString)
-		{
-			if (TemplatesPopupIsOpen(type)) return true;
-		}
-
-		return false;
-	}
-
 	const std::map<TemplateType, std::function<std::vector<UUIDName>()>> GetT =
 	{
 		{ T_Materials, SortUUIDNameByName(GetMaterialsUUIDsNames) },
@@ -882,9 +872,9 @@ namespace Templates
 		return GetTDrawers.at(t)();
 	}
 
-	std::vector<std::pair<std::string, bool>> GetTemplateRequiredAttributes(TemplateType t)
+	std::vector<std::string> GetTemplateRequiredAttributes(TemplateType t)
 	{
-		const std::map<TemplateType, std::function<std::vector<std::pair<std::string, bool>>()>> GetTRequiredAtts =
+		const std::map<TemplateType, std::function<std::vector<std::string>()>> GetTRequiredAtts =
 		{
 			{ T_Materials, GetMaterialRequiredAttributes },
 			{ T_Models3D, GetModel3DRequiredAttributes },
@@ -910,30 +900,18 @@ namespace Templates
 		return GetTJson.at(t)();
 	}
 
-	void DrawTemplatesPopups(TemplateType t)
+	std::map<std::string, JEdvCreatorDrawerFunction> GetTemplateCreatorDrawers(TemplateType t)
 	{
-		const std::map<TemplateType, std::function<void()>> DrawTPopups = {
-			{ T_Materials, [] {}},
-			{ T_Models3D, [] {} },
-			{ T_Shaders, [] {} },
-			{ T_Sounds, [] {} },
-			{ T_Textures, [] {} },
-			{ T_RenderPasses, [] {} },
+		const std::map<TemplateType, std::function<std::map<std::string, JEdvCreatorDrawerFunction>()>> GetTDrawers =
+		{
+			{ T_Materials, GetMaterialCreatorDrawers },
+			{ T_Models3D, GetModel3DCreatorDrawers },
+			{ T_Shaders, GetShaderCreatorDrawers },
+			{ T_Sounds, GetSoundCreatorDrawers },
+			{ T_Textures, GetTextureCreatorDrawers },
+			{ T_RenderPasses, GetRenderPassCreatorDrawers }
 		};
-		DrawTPopups.at(t)();
-	}
-
-	bool TemplatesPopupIsOpen(TemplateType t)
-	{
-		const std::map<TemplateType, std::function<bool()>> TPopupIsOpen = {
-			{ T_Materials, [] {return false; } },
-			{ T_Models3D, [] {return false; } },
-			{ T_Shaders, [] {return false; } },
-			{ T_Sounds, [] {return false; } },
-			{ T_Textures, [] {return false; } },
-			{ T_RenderPasses, [] {return false; } },
-		};
-		return TPopupIsOpen.at(t)();
+		return GetTDrawers.at(t)();
 	}
 
 	std::string GetTemplateName(TemplateType t, std::string uuid)
@@ -949,18 +927,18 @@ namespace Templates
 		return GetTName.at(t)(uuid);
 	}
 
-	void CreateTemplate(TemplateType t)
+	void CreateTemplate(TemplateType t, nlohmann::json json)
 	{
-		const std::map<TemplateType, std::function<void()>> CreateT =
+		const std::map<TemplateType, std::function<void(nlohmann::json json)>> CreateT =
 		{
-			{ T_Materials, [] {}},
-			{ T_Models3D, [] {} },
-			{ T_Shaders, [] {} },
-			{ T_Sounds, [] {} },
-			{ T_Textures, [] {} },
-			{ T_RenderPasses, [] {} },
+			{ T_Materials, [](nlohmann::json json) {}},
+			{ T_Models3D, [](nlohmann::json json) {} },
+			{ T_Shaders, [](nlohmann::json json) {} },
+			{ T_Sounds, [](nlohmann::json json) {} },
+			{ T_Textures, [](nlohmann::json json) {} },
+			{ T_RenderPasses, [](nlohmann::json json) {} },
 		};
-		CreateT.at(t)();
+		CreateT.at(t)(json);
 	}
 
 	void DeleteTemplate(TemplateType t, std::string uuid)

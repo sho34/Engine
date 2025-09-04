@@ -188,14 +188,7 @@ namespace ImGui
 		return ret;
 	}
 
-	/*
-	inline bool drawFromCheckBox(nlohmann::json& json, const std::string attribute, std::string label = "")
-	{
-		bool value = json.at(attribute);
-		if (ImGui::Checkbox(label.c_str(), &value)) { json[attribute] = value; return true; }
-		return false;
-	}
-	*/
+	bool DrawJsonCheckBox(nlohmann::json& json, const std::string attribute);
 
 	bool DrawFromFloat(nlohmann::json& json, const std::string attribute, std::string label = "");
 

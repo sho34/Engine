@@ -9,7 +9,7 @@
 
 #define TEMPDEF_GET(TemplateName) std::shared_ptr<TemplateName##Json> Get##TemplateName##Template(std::string uuid)\
 {\
-		return std::get<1>(Get##TemplateName##Templates().at(uuid));\
+	return TemplateName##templates.contains(uuid)?std::get<1>(Get##TemplateName##Templates().at(uuid)):nullptr;\
 }
 
 #define TEMPDEF_GETUUIDNAMES(TemplateName) std::vector<UUIDName> Get##TemplateName##sUUIDsNames()\

@@ -163,6 +163,7 @@
       <LanguageStandard_C>Default</LanguageStandard_C>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -171,6 +172,12 @@
       <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Debug;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Debug;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/native/lib/x64/Debug;../../SDKs/imgui/x64/Debug;../../SDKs/imguizmo/x64/Debug;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/Debug;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ForceFileOutput>
       </ForceFileOutput>
+      <GenerateMapFile>true</GenerateMapFile>
+      <MapFileName>$(OutDir)$(TargetName).map</MapFileName>
+      <MapExports>true</MapExports>
+      <AssemblyDebug>
+      </AssemblyDebug>
+      <UseDynamicDebugging>false</UseDynamicDebugging>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
@@ -275,6 +282,8 @@
       </ExcludedFromBuild>
     </ClInclude>
     <ClInclude Include="Editor\RightPanelComponent.h" />
+    <ClInclude Include="JExpose\JExposeAttCreatorDrawersDecl.h" />
+    <ClInclude Include="JExpose\JExposeAttCreatorDrawersDef.h" />
     <ClInclude Include="JExpose\JExposeAttDrawersDef.h" />
     <ClInclude Include="JExpose\JExposeAttJsonDecl.h" />
     <ClInclude Include="JExpose\JExposeAttJsonDef.h" />

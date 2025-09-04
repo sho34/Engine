@@ -10,6 +10,40 @@
 
 using namespace Scene;
 
+template<typename T>
+struct CreatorModal {
+	bool creating = false;
+	T type;
+	nlohmann::json json;
+	std::vector<std::string> atts;
+	std::map<std::string, JEdvCreatorDrawerFunction> drawers;
+	std::function<void(T type, nlohmann::json)> onCreate;
+	void DrawCreationPopup()
+	{
+		if (!creating) return;
+
+		ImGui::OpenPopup("createPopup");
+		if (ImGui::BeginPopupModal("createPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			for (auto& att : atts)
+			{
+				if (drawers.at(att)) drawers.at(att)(att, json);
+			}
+			if (ImGui::Button("Crear"))
+			{
+				onCreate(type, json);
+				creating = false;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancelar"))
+			{
+				creating = false;
+			}
+			ImGui::EndPopup();
+		}
+	}
+};
+
 namespace Editor {
 
 	static const LONG ApplicationBarBottom = 19L;
@@ -52,8 +86,8 @@ namespace Editor {
 	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera);
 	void DestroyRenderableBoundingBox();
 	void WriteRenderableBoundingBoxConstantsBuffer();
-	void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent);
-	void DrawCreateWindow(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void(std::function<void()>)> drawContent);
+	//void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent);
+	//void DrawCreateWindow(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void(std::function<void()>)> drawContent);
 
 	//MOUSE PROCESSING
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);

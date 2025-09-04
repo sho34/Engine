@@ -30,6 +30,10 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDecl.h>
+#include <SoundFXAtt.h>
+#include <JExposeEnd.h>
+
 	struct SoundFX : SceneObject
 	{
 		SCENEOBJECT_DECL(SoundFX);

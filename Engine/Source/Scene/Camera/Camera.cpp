@@ -22,8 +22,6 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace Scene
 {
-	static inline std::string defaultCamUUID = "br0ken-camuuid";
-
 #include <JExposeAttDrawersDef.h>
 #include <CameraAtt.h>
 #include <JExposeEnd.h>
@@ -33,6 +31,10 @@ namespace Scene
 #include <JExposeEnd.h>
 
 #include <JExposeAttJsonDef.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
+
+#include <JExposeAttCreatorDrawersDef.h>
 #include <CameraAtt.h>
 #include <JExposeEnd.h>
 
@@ -48,13 +50,6 @@ namespace Scene
 #include <JExposeAttUpdate.h>
 #include <CameraAtt.h>
 #include <JExposeEnd.h>
-
-		UpdateProjection();
-
-		if (!light().empty())
-		{
-			lightCam = FindInLights(light());
-		}
 	}
 
 	void CamerasStep()
@@ -182,7 +177,8 @@ namespace Scene
 		auto cams = Cameras;
 		for (auto& [_, cam] : cams)
 		{
-			DestroyCamera(cam);
+			if (cam->light().empty())
+				DestroyCamera(cam);
 		}
 		Cameras.clear();
 		WindowCameras.clear();
@@ -434,6 +430,11 @@ namespace Scene
 			InsertCameraIntoMouseCameras(this_ptr);
 		}
 
+		if (!light().empty()) {
+			lightCam = FindInLights(light());
+		}
+
+		UpdateProjection();
 		CreateIBLTexturesInstances();
 		CreateConstantsBuffer();
 		CreateRenderPasses();
@@ -451,6 +452,7 @@ namespace Scene
 
 	void Camera::UnbindFromScene()
 	{
+		lightCam = nullptr;
 		EraseCameraFromCameras(this_ptr);
 		EraseCameraFromWindowCameras(this_ptr);
 		EraseCameraFromMouseCameras(this_ptr);
@@ -470,7 +472,13 @@ namespace Scene
 
 	void Camera::UnbindRenderable(std::shared_ptr<Renderable> renderable)
 	{
-		if (renderables.contains(renderable)) renderables.erase(renderable);
+		if (!renderables.contains(renderable)) return;
+		renderables.erase(renderable);
+		renderable->bindedCameras.erase(uuid());
+		renderable->DestroyMaterialsInstances(this_ptr);
+		renderable->DestroyConstantsBuffersInstances(this_ptr);
+		renderable->DestroyRootSignatures(this_ptr);
+		renderable->DestroyPipelineStates(this_ptr);
 	}
 
 	void Camera::Render()

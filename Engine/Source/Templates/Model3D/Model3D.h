@@ -33,6 +33,10 @@ namespace Templates
 #include <Model3DAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDecl.h>
+#include <Model3DAtt.h>
+#include <JExposeEnd.h>
+
 	struct Model3DJson : public JTemplate
 	{
 		TEMPLATE_DECL(Model3D);

@@ -180,21 +180,18 @@ namespace Templates {
 	void TemplatesStep(DX::StepTimer& timer);
 
 #if defined(_EDITOR)
-	bool AnyTemplatePopupOpen();
-	void DrawTemplatesPopups(TemplateType t);
-	bool TemplatesPopupIsOpen(TemplateType t);
-
 	std::shared_ptr<JObject> GetTemplate(std::string uuid);
 	std::map<TemplateType, std::vector<UUIDName>> GetTemplates();
 	std::vector<UUIDName> GetTemplates(TemplateType t);
 	TemplateType GetTemplateType(std::string uuid);
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetTemplateAttributes(TemplateType t);
 	std::map<std::string, JEdvDrawerFunction> GetTemplateDrawers(TemplateType t);
-	std::vector<std::pair<std::string, bool>> GetTemplateRequiredAttributes(TemplateType t);
+	std::vector<std::string> GetTemplateRequiredAttributes(TemplateType t);
 	nlohmann::json GetTemplateJson(TemplateType t);
+	std::map<std::string, JEdvCreatorDrawerFunction> GetTemplateCreatorDrawers(TemplateType t);
 
 	std::string GetTemplateName(TemplateType t, std::string uuid);
-	void CreateTemplate(TemplateType t);
+	void CreateTemplate(TemplateType t, nlohmann::json json);
 	void DeleteTemplate(TemplateType t, std::string uuid);
 	void DeleteTemplate(std::string uuid);
 

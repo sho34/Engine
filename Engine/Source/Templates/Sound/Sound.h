@@ -36,6 +36,10 @@ namespace Templates
 #include <SoundAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDecl.h>
+#include <SoundAtt.h>
+#include <JExposeEnd.h>
+
 	struct SoundJson : JTemplate
 	{
 		TEMPLATE_DECL(Sound);

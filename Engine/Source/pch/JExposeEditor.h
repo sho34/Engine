@@ -2312,7 +2312,18 @@ inline JEdvDrawerFunction DrawVector<std::string, jedv_t_so_camera_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_CAMERA, Scene::GetCamerasUUIDNames, Scene::FindNameInCameras, ImGui::OpenSceneObject);
+			EditorDrawVector(attribute, json, ICON_FA_CAMERA, Scene::GetCamerasUUIDNames, Scene::FindNameInCameras, ImGui::OpenSceneObject, [&json, attribute](unsigned int index, UUIDName item) //filtering
+				{
+					std::string uuid = std::get<0>(item);
+					std::shared_ptr<JObject> j0 = json.at(0);
+					if (j0->at(attribute).at(index) == uuid) return true;
+					for (unsigned int i = 0; i < j0->at(attribute).size(); i++)
+					{
+						if (j0->at(attribute).at(i) == uuid) return false;
+					}
+					return true;
+				}
+			);
 		};
 }
 
@@ -4715,4 +4726,72 @@ inline JEdvDrawerFunction DrawValue<Orthographic, jedv_t_object>()
 			}
 		};
 
+}
+
+template<typename T, JsonToEditorValueType J>
+JEdvCreatorDrawerFunction DrawCreatorValue() { return nullptr; }
+
+template<typename T, JsonToEditorValueType J>
+JEdvCreatorDrawerFunction DrawCreatorVector() { return nullptr; }
+
+template<typename Ta, typename Tb>
+JEdvCreatorDrawerFunction DrawCreatorMap() { return nullptr; }
+
+template<typename E, JsonToEditorValueType J>
+JEdvCreatorDrawerFunction DrawCreatorEnum(
+	std::map<E, std::string>& EtoS,
+	std::map<std::string, E>& StoE
+) {
+	if (J == jedv_t_hidden) return nullptr;
+	return [&EtoS, &StoE](std::string attribute, nlohmann::json& json)
+		{
+			auto update = [attribute, &json](auto value)
+				{
+					nlohmann::json patch = { {attribute,value} };
+					json.merge_patch(patch);
+				};
+
+			std::string selected = json.at(attribute);
+			std::vector<std::string> options;
+			std::transform(StoE.begin(), StoE.end(), std::back_inserter(options), [](auto& p) { return p.first; });
+
+			ImGui::PushID(attribute.c_str());
+			{
+				ImGui::Text(attribute.c_str());
+				ImGui::DrawComboSelection(selected, options, [update](std::string newOption)
+					{
+						update(newOption);
+					}
+				);
+			}
+			ImGui::PopID();
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_string>()
+{
+	return[](std::string attribute, nlohmann::json& json)
+		{
+			ImGui::PushID(attribute.c_str());
+			{
+				ImGui::Text(attribute.c_str());
+				ImGui::DrawJsonInputText(json, attribute);
+			}
+			ImGui::PopID();
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<bool, jedv_t_boolean>()
+{
+	return[](std::string attribute, nlohmann::json& json)
+		{
+			ImGui::PushID(attribute.c_str());
+			{
+				ImGui::Text(attribute.c_str());
+				ImGui::DrawJsonCheckBox(json, attribute);
+			}
+			ImGui::PopID();
+		};
 }

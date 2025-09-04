@@ -30,6 +30,10 @@ namespace Scene {
 #include <LightsAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDef.h>
+#include <LightsAtt.h>
+#include <JExposeEnd.h>
+
 	using namespace DeviceUtils;
 
 	static std::shared_ptr<ConstantsBuffer> lightsCbv = nullptr; //CBV for lights pool

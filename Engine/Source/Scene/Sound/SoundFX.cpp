@@ -22,6 +22,10 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDef.h>
+#include <SoundFXAtt.h>
+#include <JExposeEnd.h>
+
 	SoundFX::SoundFX(nlohmann::json json) : SceneObject(json)
 	{
 #include <JExposeInit.h>

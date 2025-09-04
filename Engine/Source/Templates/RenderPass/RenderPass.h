@@ -105,6 +105,10 @@ namespace Templates
 #include <RenderPassAtt.h>
 #include <JExposeEnd.h>
 
+#include <JExposeAttCreatorDrawersDecl.h>
+#include <RenderPassAtt.h>
+#include <JExposeEnd.h>
+
 	struct RenderPassJson : public JTemplate
 	{
 		TEMPLATE_DECL(RenderPass);

@@ -9,6 +9,9 @@
 #include <Effects.h>
 #include <StepTimer.h>
 #include <JExposeTypes.h>
+#if defined(_EDITOR)
+#include <Editor.h>
+#endif
 
 extern std::shared_ptr<Renderer> renderer;
 void AnimableStep(double elapsedSeconds);
@@ -116,24 +119,25 @@ namespace Scene
 	void RenderSceneCameras()
 	{
 		auto cameras = GetCameras();
-		for (auto& cam : cameras)
+
+		auto newIt = std::remove_if(cameras.begin(), cameras.end(), [](std::shared_ptr<Camera> cam) { return !!cam->lightCam; });
+		cameras.erase(newIt, cameras.end());
+
+		std::vector<std::shared_ptr<Camera>> nonSwapChainCams;
+		std::copy_if(cameras.begin(), cameras.end(), std::back_inserter(nonSwapChainCams), [](std::shared_ptr<Camera> cam) {return !cam->useSwapChain(); });
+
+		for (auto& cam : nonSwapChainCams)
 		{
-			if (!cam->lightCam)
-				cam->Render();
+			cam->Render();
+		}
+
+		if (GetNumSwapChainCameras() > 0ULL)
+		{
+			GetSwapChainCameras().at(0)->Render();
 		}
 	}
 
 #if defined(_EDITOR)
-	bool AnySceneObjectPopupOpen()
-	{
-		for (auto& [type, _] : SceneObjectTypeToString)
-		{
-			if (SceneObjectPopupIsOpen(type)) return true;
-		}
-
-		return false;
-	}
-
 	const std::map<SceneObjectType, std::function<std::vector<UUIDName>()>> GetSO =
 	{
 		{ SO_Renderables, GetRenderablesUUIDNames },
@@ -144,10 +148,7 @@ namespace Scene
 
 	std::shared_ptr<SceneObject> GetSceneObject(std::string uuid)
 	{
-		const std::map<
-			SceneObjectType,
-			std::function<std::shared_ptr<SceneObject>(std::string)>
-		> GetSharedPtrSO =
+		const std::map<SceneObjectType, std::function<std::shared_ptr<SceneObject>(std::string)>> GetSharedPtrSO =
 		{
 			{ SO_Renderables, [](std::string uuid) { std::shared_ptr<SceneObject> o = FindInRenderables(uuid); return o; } },
 			{ SO_Lights, [](std::string uuid) { std::shared_ptr<SceneObject> o = FindInLights(uuid); return o; } },
@@ -172,18 +173,6 @@ namespace Scene
 	std::vector<UUIDName> GetSceneObjects(SceneObjectType so)
 	{
 		return GetSO.at(so)();
-	}
-
-	void DrawSceneObjectsPopups(SceneObjectType so)
-	{
-		const std::map<SceneObjectType, std::function<void()>> DrawSOPopups =
-		{
-			{ SO_Renderables, [] {} },
-			{ SO_Lights, [] {}},
-			{ SO_Cameras, [] {} },
-			{ SO_SoundEffects, [] {}}
-		};
-		DrawSOPopups.at(so)();
 	}
 
 	SceneObjectType GetSceneObjectType(std::string uuid)
@@ -251,9 +240,9 @@ namespace Scene
 		return GetSODrawers.at(so)();
 	}
 
-	std::vector<std::pair<std::string, bool>> GetSceneObjectRequiredAttributes(SceneObjectType so)
+	std::vector<std::string> GetSceneObjectRequiredAttributes(SceneObjectType so)
 	{
-		const std::map<SceneObjectType, std::function<std::vector<std::pair<std::string, bool>>()>> GetSORequiredAtts =
+		const std::map<SceneObjectType, std::function<std::vector<std::string>()>> GetSORequiredAtts =
 		{
 			{ SO_Renderables, GetRenderableRequiredAttributes },
 			{ SO_Lights, GetLightRequiredAttributes },
@@ -275,27 +264,38 @@ namespace Scene
 		return GetSOJson.at(so)();
 	}
 
-	bool SceneObjectPopupIsOpen(SceneObjectType so)
+	std::map<std::string, JEdvCreatorDrawerFunction> GetSceneObjectCreatorDrawers(SceneObjectType so)
 	{
-		const std::map<SceneObjectType, std::function<bool()>> SOPopupIsOpen = {
-			{ SO_Renderables, [] {return false; }},
-			{ SO_Lights, [] {return false; }},
-			{ SO_Cameras, [] {return false; }},
-			{ SO_SoundEffects, [] {return false; }}
+		const std::map<SceneObjectType, std::function<std::map<std::string, JEdvCreatorDrawerFunction>()>> GetSODrawers =
+		{
+			{ SO_Renderables, GetRenderableCreatorDrawers },
+			{ SO_Lights, GetLightCreatorDrawers },
+			{ SO_Cameras, GetCameraCreatorDrawers },
+			{ SO_SoundEffects, GetSoundFXCreatorDrawers }
 		};
-		return SOPopupIsOpen.at(so)();
+		return GetSODrawers.at(so)();
 	}
 
-	void CreateSceneObject(SceneObjectType so)
+	template<typename X>
+	void CreateAndBind(nlohmann::json J)
 	{
-		const std::map<SceneObjectType, std::function<void()>> CreateSO =
+		std::shared_ptr<X> o = std::make_shared<X>(J);
+		o->uuid(getUUID());
+		o->this_ptr = o;
+		o->BindToScene();
+		Editor::MarkScenePanelAssetsAsDirty();
+	}
+
+	void CreateSceneObject(SceneObjectType so, nlohmann::json json)
+	{
+		const std::map<SceneObjectType, std::function<void(nlohmann::json json)>> CreateSO =
 		{
-			{ SO_Renderables, [] {} },
-			{ SO_Lights, [] {}},
-			{ SO_Cameras, [] {} },
-			{ SO_SoundEffects, [] {}}
+			{ SO_Renderables, [](nlohmann::json json) { CreateAndBind<Renderable>(json); }},
+			{ SO_Lights, [](nlohmann::json json) { CreateAndBind<Light>(json); }},
+			{ SO_Cameras, [](nlohmann::json json) { CreateAndBind<Camera>(json); } },
+			{ SO_SoundEffects, [](nlohmann::json json) { CreateAndBind<SoundFX>(json); }}
 		};
-		CreateSO.at(so)();
+		CreateSO.at(so)(json);
 	}
 
 	void DeleteSceneObject(SceneObjectType so, std::string uuid)
