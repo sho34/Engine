@@ -1,8 +1,5 @@
 #pragma once
 
-#if defined(_EDITOR)
-#include <imgui.h>
-#endif
 #include <vector>
 #include <UUID.h>
 #include <string>
@@ -72,10 +69,6 @@ inline static void SortUUIDByName(std::vector<UUIDName>& uuidNames)
 		}
 	);
 }
-
-inline auto selectTemplate(std::string from, std::string& to) { to = from; }
-inline auto getX(std::string s) { return s; }
-inline auto deSelectTemplate(std::string& s) { s = ""; }
 
 #endif
 

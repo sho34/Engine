@@ -1781,6 +1781,17 @@ inline JEdvDrawerFunction DrawValue<std::string, jedv_t_string>()
 		};
 }
 
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_so_camera_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_so_light_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_so_renderable_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_so_soundeffect_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_te_material_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_te_model3d_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_te_renderpass_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_te_shader_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_te_sound_name>() { return DrawValue<std::string, jedv_t_string>(); }
+template<> inline JEdvDrawerFunction DrawValue<std::string, jedv_t_te_texture_name>() { return DrawValue<std::string, jedv_t_string>(); }
+
 inline void DrawResourceSelection(
 	std::string attribute,
 	std::vector<std::shared_ptr<JObject>>& json,
@@ -4782,6 +4793,17 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_string>()
 		};
 }
 
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_camera_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_light_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_renderable_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_soundeffect_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_material_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_model3d_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_renderpass_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_shader_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_sound_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_texture_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
+
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<bool, jedv_t_boolean>()
 {
@@ -4791,6 +4813,118 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<bool, jedv_t_boolean>()
 			{
 				ImGui::Text(attribute.c_str());
 				ImGui::DrawJsonCheckBox(json, attribute);
+			}
+			ImGui::PopID();
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorVector<MeshMaterial, jedv_t_vector>()
+{
+	return [](std::string attribute, nlohmann::json& json)
+		{
+			unsigned int size = static_cast<unsigned int>(json.at("meshMaterials").size());
+			bool hasModel = json.contains("model") && json.at("model") != "";
+
+			std::vector<UUIDName> selectablesMeshes = { std::make_tuple("","") };
+			std::vector<UUIDName> selectablesMaterials = { std::make_tuple("","") };
+			std::vector<UUIDName> meshesUUIDs = Templates::GetMeshesUUIDsNames();
+			std::vector<UUIDName> materialsUUIDs = Templates::GetMaterialsUUIDsNames();
+
+			selectablesMeshes.insert(selectablesMeshes.end(), meshesUUIDs.begin(), meshesUUIDs.end());
+			selectablesMaterials.insert(selectablesMaterials.end(), materialsUUIDs.begin(), materialsUUIDs.end());
+
+			auto clearMeshMaterial = [&json]
+				{
+					json.at("meshMaterials").clear();
+				};
+			auto eraseModel = [&json]
+				{
+					json.erase("model");
+				};
+			auto setMesh = [&json, eraseModel](unsigned int index, std::string uuid)
+				{
+					json.at("meshMaterials").at(index)["mesh"] = uuid;
+					if (json.contains("model")) json.erase("model");
+					eraseModel();
+				};
+			auto setMaterial = [&json, eraseModel](unsigned int index, std::string uuid)
+				{
+					json.at("meshMaterials").at(index)["material"] = uuid;
+					if (json.contains("model")) json.erase("model");
+					eraseModel();
+				};
+			auto setModel = [&json, clearMeshMaterial](std::string uuid)
+				{
+					json["model"] = uuid;
+					clearMeshMaterial();
+				};
+			auto drawRow = [setMesh, setMaterial, meshesUUIDs, materialsUUIDs, selectablesMeshes, selectablesMaterials, &json](unsigned int index)
+				{
+					std::string mesh = json.at("meshMaterials").at(index).at("mesh");
+					std::string material = json.at("meshMaterials").at(index).at("material");
+					std::string meshName = mesh.empty() ? "" : Templates::GetMeshName(mesh);
+					std::string materialName = material.empty() ? "" : Templates::GetMaterialName(material);
+
+					UUIDName meshUN = std::make_tuple(mesh, meshName);
+					UUIDName matUN = std::make_tuple(material, materialName);
+
+					ImGui::PushID((std::string("mesh-") + std::to_string(index)).c_str());
+					ImGui::DrawComboSelection(meshUN, meshesUUIDs, [index, setMesh](UUIDName option)
+						{
+							std::string& nuuid = std::get<0>(option);
+							setMesh(index, nuuid);
+						}
+					);
+					ImGui::PopID();
+
+					ImGui::SameLine();
+					ImGui::PushID((std::string("material-") + std::to_string(index)).c_str());
+					ImGui::DrawComboSelection(matUN, materialsUUIDs, [index, setMaterial](UUIDName option)
+						{
+							std::string& nuuid = std::get<0>(option);
+							setMaterial(index, nuuid);
+						}
+					);
+					ImGui::PopID();
+
+				};
+			ImGui::PushID(attribute.c_str());
+			{
+				ImGui::Text(attribute.c_str());
+				for (unsigned int i = 0; i < size; i++)
+				{
+					drawRow(i);
+				}
+
+				if (ImGui::Button(ICON_FA_PLUS, ImVec2(ImGui::GetContentRegionAvail().x, 20.0f)))
+				{
+					json.at("meshMaterials").push_back({
+							{ "mesh", "" },
+							{ "material", "" },
+						}
+						);
+				}
+
+				ImGui::Text("model");
+				std::vector<UUIDName> selectablesModels = { std::make_tuple("","") };
+				std::vector<UUIDName> model3DsUUIDs = Templates::GetModel3DsUUIDsNames();
+				selectablesModels.insert(selectablesModels.end(), model3DsUUIDs.begin(), model3DsUUIDs.end());
+
+				std::string model = json.contains("model") ? json.at("model") : "";
+				std::string modelName = model.empty() ? "" : Templates::GetModel3DName(model);
+
+				UUIDName modelUN = std::make_tuple(model, modelName);
+
+				ImGui::PushID(std::string("model").c_str());
+				ImGui::DrawComboSelection(modelUN, model3DsUUIDs, [setModel](UUIDName option)
+					{
+						std::string& nuuid = std::get<0>(option);
+						setModel(nuuid);
+					}
+				);
+				ImGui::PopID();
+
 			}
 			ImGui::PopID();
 		};

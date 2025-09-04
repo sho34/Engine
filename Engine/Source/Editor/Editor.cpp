@@ -1418,11 +1418,17 @@ namespace Editor {
 	{
 		for (auto& r : GetRenderables())
 		{
-			r->CreateRenderPassMaterialsInstances(mousePicking.pickingPass);
-			r->CreateRenderPassConstantsBuffersInstances(mousePicking.pickingPass);
-			r->CreateRenderPassRootSignatures(mousePicking.pickingPass);
-			r->CreateRenderPassPipelineStates(mousePicking.pickingPass);
+			BindRenderableToPickingPass(r);
 		}
+	}
+
+	void BindRenderableToPickingPass(std::shared_ptr<Renderable> r)
+	{
+		std::shared_ptr<RenderPassInstance>& pass = mousePicking.pickingPass;
+		r->CreateRenderPassMaterialsInstances(pass);
+		r->CreateRenderPassConstantsBuffersInstances(pass);
+		r->CreateRenderPassRootSignatures(pass);
+		r->CreateRenderPassPipelineStates(pass);
 	}
 
 	void RenderPickingPass(std::shared_ptr<Camera> camera)

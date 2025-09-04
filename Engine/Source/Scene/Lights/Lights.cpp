@@ -59,6 +59,7 @@ namespace Scene {
 		Lights.insert_or_assign(uuid(), this_ptr);
 		if (hasShadowMaps())
 		{
+			ShadowMapLights.insert_or_assign(uuid(), this_ptr);
 			CreateShadowMap();
 			BindRenderablesToShadowMapCamera();
 		}
@@ -67,6 +68,7 @@ namespace Scene {
 	void Light::UnbindFromScene()
 	{
 		Lights.erase(uuid());
+		ShadowMapLights.erase(uuid());
 
 		if (!hasShadowMaps()) return;
 

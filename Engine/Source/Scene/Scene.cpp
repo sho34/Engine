@@ -277,20 +277,32 @@ namespace Scene
 	}
 
 	template<typename X>
-	void CreateAndBind(nlohmann::json J)
+	std::shared_ptr<X> CreateAndBind(nlohmann::json J)
 	{
 		std::shared_ptr<X> o = std::make_shared<X>(J);
 		o->uuid(getUUID());
 		o->this_ptr = o;
 		o->BindToScene();
 		Editor::MarkScenePanelAssetsAsDirty();
+		return o;
 	}
 
 	void CreateSceneObject(SceneObjectType so, nlohmann::json json)
 	{
 		const std::map<SceneObjectType, std::function<void(nlohmann::json json)>> CreateSO =
 		{
-			{ SO_Renderables, [](nlohmann::json json) { CreateAndBind<Renderable>(json); }},
+			{ SO_Renderables, [](nlohmann::json json) {
+				std::shared_ptr<Renderable> r = CreateAndBind<Renderable>(json);
+				Editor::BindRenderableToPickingPass(r);
+				if (!r->castShadows()) return;
+				auto lights = GetShadowMapLights();
+				for (auto& light : lights) {
+					for (auto& cam : light->shadowMapCameras)
+					{
+						cam->BindRenderable(r);
+					}
+				}
+			}},
 			{ SO_Lights, [](nlohmann::json json) { CreateAndBind<Light>(json); }},
 			{ SO_Cameras, [](nlohmann::json json) { CreateAndBind<Camera>(json); } },
 			{ SO_SoundEffects, [](nlohmann::json json) { CreateAndBind<SoundFX>(json); }}

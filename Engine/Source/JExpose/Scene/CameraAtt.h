@@ -1,7 +1,7 @@
 JCLASS(Camera)
 JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
 JEXPOSE(bool, hidden, false, jedv_t_boolean, 1, false)
-JEXPOSE(std::string, name, ("cam." + std::to_string(GetNumCameras())), jedv_t_string, 0, true)
+JEXPOSE(std::string, name, ("cam." + std::to_string(GetNumCameras())), jedv_t_so_camera_name, 0, true)
 JEXPOSE(bool, fitWindow, true, jedv_t_boolean, 1, true)
 JEXPOSE_TRANSFORM(XMFLOAT3, position, ToXMFLOAT3, FromXMFLOAT3, XMFLOAT3(0.0f, 0.0f, 0.0f), jedv_t_float3, 0, false)
 JEXPOSE_TRANSFORM(XMFLOAT3, rotation, ToXMFLOAT3, FromXMFLOAT3, XMFLOAT3(0.0f, 0.0f, 0.0f), jedv_t_float3_angle, 0, false)
