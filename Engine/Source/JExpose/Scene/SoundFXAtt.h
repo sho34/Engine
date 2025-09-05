@@ -1,4 +1,5 @@
 JCLASS(SoundFX)
+JTYPE(SceneObjectType, SO_SoundEffects)
 JEXPOSE(std::string, uuid, "", jedv_t_string, 0, false)
 JEXPOSE(std::string, name, ("soundFX." + std::to_string(GetNumSoundEffects())), jedv_t_string, 0, true)
 JEXPOSE(std::string, sound, "", jedv_t_te_sound, 1, true)

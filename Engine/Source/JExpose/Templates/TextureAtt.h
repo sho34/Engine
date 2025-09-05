@@ -1,4 +1,5 @@
 JCLASS(Texture)
+JTYPE(TemplateType, T_Textures)
 JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
 JEXPOSE(std::string, name, "", jedv_t_hidden, 0, true)
 JEXPOSE_ENUM(DXGI_FORMAT, format, DXGI_FORMAT_R8G8B8A8_UNORM_SRGB, jedv_t_hidden, 1, false)

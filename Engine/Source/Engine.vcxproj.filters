@@ -450,6 +450,9 @@
     <ClInclude Include="JExpose\JExposeAttJsonDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pch\Binder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -651,6 +654,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Editor\RightPanelComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene\SceneObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

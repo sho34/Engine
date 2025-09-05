@@ -1,4 +1,5 @@
 JCLASS(Light)
+JTYPE(SceneObjectType, SO_Lights)
 JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
 JEXPOSE(bool, hidden, false, jedv_t_hidden, 0, false)
 JEXPOSE(std::string, name, ("light." + std::to_string(GetNumLights())), jedv_t_hidden, 0, true)

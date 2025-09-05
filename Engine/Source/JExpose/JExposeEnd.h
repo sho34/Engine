@@ -62,6 +62,7 @@ return creatorDrawers; }
 #endif
 
 #undef JCLASS
+#undef JTYPE
 #undef JEXPOSE
 #undef JEXPOSE_TRANSFORM
 #undef JEXPOSE_ENUM

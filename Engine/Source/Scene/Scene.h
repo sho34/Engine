@@ -6,44 +6,11 @@
 #include <string>
 #include <vector>
 #include <UUID.h>
-#if defined(_EDITOR)
-#include <IconsFontAwesome5.h>
-#endif
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <SceneObject.h>
 #include <JExposeTypes.h>
-
-enum SceneObjectType {
-	SO_None,
-	SO_Renderables,
-	SO_Lights,
-	SO_Cameras,
-	SO_SoundEffects
-};
-
-inline const std::map<SceneObjectType, std::string> SceneObjectTypeToString = {
-	{ SO_Renderables, "Renderables" },
-	{ SO_Lights,	"Lights" },
-	{ SO_Cameras, "Cameras" },
-	{ SO_SoundEffects, "SoundEffects" }
-};
-
-inline const std::map<std::string, SceneObjectType> StringToSceneObjectType = {
-	{ "Renderables", SO_Renderables },
-	{ "Lights", SO_Lights },
-	{ "Cameras", SO_Cameras },
-	{ "SoundEffects", SO_SoundEffects }
-};
-
-#if defined(_EDITOR)
-inline const std::map<SceneObjectType, const char* > SceneObjectsTypePanelMenuItems = {
-	{ SO_Renderables, ICON_FA_SNOWMAN "Renderables" },
-	{ SO_Lights, ICON_FA_LIGHTBULB "Lights" },
-	{ SO_Cameras, ICON_FA_CAMERA "Cameras" },
-	{ SO_SoundEffects, ICON_FA_MUSIC "SoundEffects" }
-};
-#endif
+#include <Binder.h>
 
 using namespace Scene::Level;
 

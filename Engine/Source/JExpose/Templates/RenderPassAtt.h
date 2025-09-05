@@ -1,4 +1,5 @@
 JCLASS(RenderPass)
+JTYPE(TemplateType, T_RenderPasses)
 JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
 JEXPOSE(std::string, name, "", jedv_t_string, 0, true)
 JEXPOSE_ENUM(RenderPassType, type, RenderPassType_RenderToTexturePass, jedv_t_enum, 1, true)

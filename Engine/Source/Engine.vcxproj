@@ -297,6 +297,7 @@
     <ClInclude Include="JExpose\JExposeTrackUUIDDef.h" />
     <ClInclude Include="JExpose\JExposeTypes.h" />
     <ClInclude Include="JExpose\JObject.h" />
+    <ClInclude Include="pch\Binder.h" />
     <ClInclude Include="pch\JExposeEditor.h" />
     <ClInclude Include="JExpose\JExposeEnd.h" />
     <ClInclude Include="JExpose\JExposeInit.h" />
@@ -568,6 +569,7 @@
     <ClCompile Include="Editor\DefaultLevel.cpp" />
     <ClCompile Include="Editor\ImEditor.cpp" />
     <ClCompile Include="Editor\RightPanelComponent.cpp" />
+    <ClCompile Include="Scene\SceneObject.cpp" />
     <ClCompile Include="Templates\RenderPass\Override\MinMaxChainPass.cpp" />
     <ClCompile Include="Templates\RenderPass\Override\MinMaxChainResultPass.cpp" />
     <ClCompile Include="Templates\RenderPass\Override\OverridePass.cpp" />

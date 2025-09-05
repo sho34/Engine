@@ -1,4 +1,5 @@
 JCLASS(Sound)
+JTYPE(TemplateType, T_Sounds)
 JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
 JEXPOSE(std::string, name, "", jedv_t_string, 0, true)
 JEXPOSE(std::string, path, "", jedv_t_sounds_filepath, 1, true)
