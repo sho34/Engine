@@ -133,27 +133,27 @@ namespace Scene {
 	};
 
 #include <JExposeTrackUUIDDecl.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeAttOrder.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeAttDrawersDecl.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeAttRequired.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeAttJsonDecl.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeAttCreatorDrawersDecl.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 	struct Light : SceneObject
@@ -161,11 +161,11 @@ namespace Scene {
 		SCENEOBJECT_DECL(Light);
 
 #include <JExposeAttFlags.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeDecl.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 		void Destroy();
@@ -184,7 +184,10 @@ namespace Scene {
 		std::vector<std::shared_ptr<Scene::Camera>> shadowMapCameras;
 
 		//CREATE
+		virtual void Initialize();
 		void CreateShadowMap();
+		void BindRenderablesToShadowMapCamera();
+		void UnbindRenderablesFromShadowMapCameras();
 		nlohmann::json CreateDirectionalShadowMapCameraJson();
 		void CreateDirectionalLightShadowMap();
 		nlohmann::json CreateSpotShadowMapCameraJson();
@@ -202,7 +205,6 @@ namespace Scene {
 		void DestroyShadowMapMinMaxChain();
 		void RenderShadowMapMinMaxChain();
 #endif
-		void BindRenderablesToShadowMapCamera();
 
 		//UPDATE
 		void UpdateShadowMapCameraProperties();
@@ -236,7 +238,6 @@ namespace Scene {
 
 	//DELETE
 	void DestroyLightsResources();
-	void DestroyLight(std::shared_ptr<Light>& light);
 	void DestroyLights();
 	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex);
 	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex);

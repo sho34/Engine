@@ -293,8 +293,11 @@
     <ClInclude Include="JExpose\JExposeAttFlags.h" />
     <ClInclude Include="JExpose\JExposeDecl.h" />
     <ClInclude Include="JExpose\JExposeAttRequired.h" />
+    <ClInclude Include="JExpose\JExposeTrackUUIDClear.h" />
     <ClInclude Include="JExpose\JExposeTrackUUIDDecl.h" />
     <ClInclude Include="JExpose\JExposeTrackUUIDDef.h" />
+    <ClInclude Include="JExpose\JExposeTrackUUIDErase.h" />
+    <ClInclude Include="JExpose\JExposeTrackUUIDInsert.h" />
     <ClInclude Include="JExpose\JExposeTypes.h" />
     <ClInclude Include="JExpose\JObject.h" />
     <ClInclude Include="pch\Binder.h" />
@@ -303,7 +306,7 @@
     <ClInclude Include="JExpose\JExposeInit.h" />
     <ClInclude Include="JExpose\JExposeAttDrawersDecl.h" />
     <ClInclude Include="JExpose\Scene\CameraAtt.h" />
-    <ClInclude Include="JExpose\Scene\LightsAtt.h" />
+    <ClInclude Include="JExpose\Scene\LightAtt.h" />
     <ClInclude Include="JExpose\Scene\RenderableAtt.h" />
     <ClInclude Include="Scene\SceneObject.h" />
     <ClInclude Include="JExpose\Scene\SoundFXAtt.h" />

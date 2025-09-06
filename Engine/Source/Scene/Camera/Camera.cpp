@@ -162,26 +162,17 @@ namespace Scene
 		}
 	}
 
-	void DestroyCamera(std::shared_ptr<Camera>& camera)
-	{
-		if (camera == nullptr) return;
-		DEBUG_PTR_COUNT_JSON(camera);
-
-		camera->UnbindFromScene();
-		camera->this_ptr = nullptr;
-		camera = nullptr;
-	}
-
 	void DestroyCameras()
 	{
 		auto cams = Cameras;
 		for (auto& [_, cam] : cams)
 		{
 			if (cam->light().empty())
-				DestroyCamera(cam);
+				SafeDeleteSceneObject(cam);
 		}
-		Cameras.clear();
-		WindowCameras.clear();
+#include <JExposeTrackUUIDClear.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
 	}
 
 #if defined(_EDITOR)
@@ -417,18 +408,11 @@ namespace Scene
 		}
 	}
 
-	void Camera::BindToScene()
+	void Camera::Initialize()
 	{
-		InsertCameraIntoCameras(this_ptr);
-		if (fitWindow()) {
-			InsertCameraIntoWindowCameras(this_ptr);
-		}
-		if (useSwapChain()) {
-			InsertCameraIntoSwapChainCameras(this_ptr);
-		}
-		if (mouseController()) {
-			InsertCameraIntoMouseCameras(this_ptr);
-		}
+#include <JExposeTrackUUIDInsert.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
 
 		if (!light().empty()) {
 			lightCam = FindInLights(light());
@@ -440,45 +424,66 @@ namespace Scene
 		CreateRenderPasses();
 	}
 
-	void Camera::BindRenderable(std::shared_ptr<Renderable> renderable)
+	void Camera::Bind(std::shared_ptr<SceneObject> sceneObject)
 	{
-		renderables.insert(renderable);
-		renderable->bindedCameras.insert(uuid());
-		renderable->CreateMaterialsInstances(this_ptr);
-		renderable->CreateConstantsBuffersInstances(this_ptr);
-		renderable->CreateRootSignatures(this_ptr);
-		renderable->CreatePipelineStates(this_ptr);
+		switch (sceneObject->JType())
+		{
+		case SO_Renderables:
+		{
+			std::shared_ptr<Renderable> r = std::dynamic_pointer_cast<Renderable>(sceneObject);
+			BindRenderable(r);
+		}
+		break;
+		}
+	}
+
+	void Camera::Unbind(std::shared_ptr<SceneObject> sceneObject)
+	{
+		switch (sceneObject->JType())
+		{
+		case SO_Renderables:
+		{
+			std::shared_ptr<Renderable> r = std::dynamic_pointer_cast<Renderable>(sceneObject);
+			UnbindRenderable(r);
+		}
+		break;
+		}
+	}
+
+	void Camera::BindToScene()
+	{
+
+	}
+
+	void Camera::BindRenderable(std::shared_ptr<Renderable> r)
+	{
+		renderables.insert(r);
+		r->CreateMaterialsInstances(this_ptr);
+		r->CreateConstantsBuffersInstances(this_ptr);
+		r->CreateRootSignatures(this_ptr);
+		r->CreatePipelineStates(this_ptr);
 	}
 
 	void Camera::UnbindFromScene()
 	{
+#include <JExposeTrackUUIDErase.h>
+#include <CameraAtt.h>
+#include <JExposeEnd.h>
+
 		lightCam = nullptr;
-		EraseCameraFromCameras(this_ptr);
-		EraseCameraFromWindowCameras(this_ptr);
-		EraseCameraFromMouseCameras(this_ptr);
-		EraseCameraFromSwapChainCameras(this_ptr);
-		for (auto& renderable : renderables)
-		{
-			renderable->bindedCameras.erase(uuid());
-			renderable->DestroyMaterialsInstances(this_ptr);
-			renderable->DestroyConstantsBuffersInstances(this_ptr);
-			renderable->DestroyRootSignatures(this_ptr);
-			renderable->DestroyPipelineStates(this_ptr);
-		}
-		renderables.clear();
+		Scene::UnbindFromScene(this_ptr);
 		DestroyRenderPasses();
 		DestroyConstantsBuffer(cameraCbv);
 	}
 
-	void Camera::UnbindRenderable(std::shared_ptr<Renderable> renderable)
+	void Camera::UnbindRenderable(std::shared_ptr<Renderable> r)
 	{
-		if (!renderables.contains(renderable)) return;
-		renderables.erase(renderable);
-		renderable->bindedCameras.erase(uuid());
-		renderable->DestroyMaterialsInstances(this_ptr);
-		renderable->DestroyConstantsBuffersInstances(this_ptr);
-		renderable->DestroyRootSignatures(this_ptr);
-		renderable->DestroyPipelineStates(this_ptr);
+		if (!renderables.contains(r)) return;
+		renderables.erase(r);
+		r->DestroyMaterialsInstances(this_ptr);
+		r->DestroyConstantsBuffersInstances(this_ptr);
+		r->DestroyRootSignatures(this_ptr);
+		r->DestroyPipelineStates(this_ptr);
 	}
 
 	void Camera::Render()

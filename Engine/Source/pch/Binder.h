@@ -14,37 +14,52 @@ struct Binder {
 		soB->Bind(soA);
 	}
 
-	void erase(std::shared_ptr<SceneObject> S)
+	void erase(std::shared_ptr<SceneObject> soA)
 	{
-		/*
-		-sacamos el listado de objetos asociados al SceneObject(S) y los guardamos en un set(ST)
-		-eliminamos SceneObject(S) de binding
-		-recorremos el set(ST) llamando a S->Unbind(ST#)
-		-recorremos el set(ST) llamando a ST(#)->Unbind(SceneObject(S))
-		-recorremos el set(ST) y eliminamos binding{ ST(#),SceneObject(S) }
-		*/
+		std::set<std::shared_ptr<SceneObject>> soBs;
+		auto rangeA = binding.equal_range(soA);
+		for (auto it = rangeA.first; it != rangeA.second; it++)
+		{
+			soBs.insert(it->second);
+		}
+		binding.erase(soA);
+		for (auto soB : soBs)
+		{
+			auto rangeB = binding.equal_range(soB);
+			for (auto it = rangeB.first; it != rangeB.second; )
+			{
+				if (it->second == soA)
+				{
+					it = binding.erase(it);
+					soA->Unbind(soB);
+					soB->Unbind(soA);
+				}
+				else
+					it++;
+			}
+		}
 	}
 
-	/*
-	void insert(const std::string& s, int i) {
-		forward_map[s] = i;
-		reverse_map[i] = s;
+	void erase(std::shared_ptr<SceneObject> soA, std::shared_ptr<SceneObject> soB)
+	{
+		soA->Unbind(soB);
+		soB->Unbind(soA);
+		auto rangeA = binding.equal_range(soA);
+		for (auto it = rangeA.first; it != rangeA.second; )
+		{
+			if (it->second == soB)
+				it = binding.erase(it);
+			else
+				it++;
+		}
+		auto rangeB = binding.equal_range(soB);
+		for (auto it = rangeB.first; it != rangeB.second; )
+		{
+			if (it->second == soA)
+				it = binding.erase(it);
+			else
+				it++;
+		}
 	}
-	*/
+
 };
-
-/*
-#define BINDER(A,B)\
-std::map<std::string,std::string> A##BindedTo##B;\
-std::function<void()> Bind(std::shared_ptr<A> a, std::shared_ptr<B> b)\
-{\
-	std::string uuidA = a->uuid(); \
-	std::string uuidB = b->uuid(); \
-	a->Bind(b); \
-	A##BindedTo##B.insert_or_assign(uuidA, uuidB); \
-	return[a, b] {\
-		a->Unbind(b);\
-		A##BindedTo##B.erase(uuidA); \
-	}; \
-}\
-*/

@@ -21,5 +21,6 @@ JEXPOSE_ENUM(D3D_PRIMITIVE_TOPOLOGY, topology, D3D_PRIMITIVE_TOPOLOGY_TRIANGLELI
 JEXPOSE(bool, uniqueMaterialInstance, false, jedv_t_boolean, 1, false)
 JEXPOSE(bool, visible, true, jedv_t_boolean, 0, false)
 JEXPOSE_VECTOR(std::string, cameras, {}, jedv_t_so_camera_vector, 1, true)
-JTRACKUUID(Renderable, Renderables, 0)
-JTRACKUUID(Renderable, Animables, 0)
+JTRACKUUID(Renderable, Renderables, 0, true)
+JTRACKUUID(Renderable, Animables, 0, animable)
+JTRACKUUID(Renderable, ShadowCasts, 0, castShadows())

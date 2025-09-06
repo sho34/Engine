@@ -102,6 +102,7 @@ namespace Scene {
 
 		std::shared_ptr<Camera> cam = std::make_shared<Camera>(CreateDirectionalShadowMapCameraJson());
 		cam->this_ptr = cam;
+		cam->Initialize();
 		cam->BindToScene();
 		XMVECTOR camPos = XMVectorScale(XMVector3Normalize(cam->forward()), -dirDist());
 		cam->position(*(XMFLOAT3*)camPos.m128_f32);
@@ -144,6 +145,7 @@ namespace Scene {
 
 		std::shared_ptr<Camera> cam = std::make_shared<Camera>(CreateSpotShadowMapCameraJson());
 		cam->this_ptr = cam;
+		cam->Initialize();
 		cam->BindToScene();
 		shadowMapCameras.push_back(cam);
 		UpdateShadowMapCameraProperties();
@@ -185,6 +187,7 @@ namespace Scene {
 		{
 			std::shared_ptr<Camera> cam = std::make_shared<Camera>(CreatePointShadowMapCameraJson(i));
 			cam->this_ptr = cam;
+			cam->Initialize();
 			cam->BindToScene();
 			shadowMapCameras.push_back(cam);
 		}
@@ -552,12 +555,22 @@ namespace Scene {
 
 	void Light::BindRenderablesToShadowMapCamera()
 	{
-		for (auto& r : GetRenderables())
+		for (auto& r : GetShadowCasts())
 		{
-			if (!r->castShadows()) continue;
 			for (auto& cam : shadowMapCameras)
 			{
-				cam->BindRenderable(r);
+				Scene::BindToScene(cam, r);
+			}
+		}
+	}
+
+	void Light::UnbindRenderablesFromShadowMapCameras()
+	{
+		for (auto& r : GetShadowCasts())
+		{
+			for (auto& cam : shadowMapCameras)
+			{
+				Scene::UnbindFromScene(cam, r);
 			}
 		}
 	}
@@ -712,7 +725,7 @@ namespace Scene {
 	{
 		for (auto& cam : shadowMapCameras)
 		{
-			DestroyCamera(cam);
+			SafeDeleteSceneObject(cam);
 		}
 		shadowMapCameras.clear();
 	}

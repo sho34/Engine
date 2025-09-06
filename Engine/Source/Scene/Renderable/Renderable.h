@@ -62,13 +62,11 @@ namespace Scene
 
 	//UPDATE
 	void RenderablesStep();
-	void CreateRenderablesCameraBinding();
 	void DestroyRenderablesCameraBinding();
 	void RunBoundingBoxComputeShaders();
 	void RunBoundingBoxComputeShadersSolution();
 
 	//DELETE
-	void DestroyRenderable(std::shared_ptr<Renderable>& renderable);
 	void DestroyRenderables();
 
 	//EDITOR
@@ -101,8 +99,15 @@ namespace Scene
 		RenderableRootSignatures rootSignatures;
 		RenderablePipelineStates pipelineStates;
 
-		std::set<std::string> bindedCameras;
+		std::set<std::shared_ptr<Camera>> bindedCameras;
+		virtual void Initialize();
+		virtual void Bind(std::shared_ptr<SceneObject> sceneObject);
+		virtual void Unbind(std::shared_ptr<SceneObject> sceneObject);
+		void BindCameras();
+		void BindCamera(std::shared_ptr<Camera>& cam);
 		void UnbindCameras();
+		void UnbindCamera(std::shared_ptr<Camera>& cam);
+		void BindShadowMapCameras();
 		void CreateMeshInstances();
 		std::vector<std::shared_ptr<RenderPassInstance>> GetCameraRenderPasses(std::shared_ptr<Camera> cam);
 		void CreateMaterialsInstances(std::shared_ptr<Camera> cam);

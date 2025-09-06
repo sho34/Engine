@@ -56,9 +56,7 @@ namespace Scene::Level {
 		{
 			std::for_each(j.at(type).begin(), j.at(type).end(), [](nlohmann::json& json)
 				{
-					std::shared_ptr<T> o = std::make_shared<T>(json);
-					o->this_ptr = o;
-					o->BindToScene();
+					CreateSceneObjectFromJson<T>(json);
 				}
 			);
 		}
@@ -72,7 +70,6 @@ namespace Scene::Level {
 		LoadSceneObjects<Camera>(DefaultLevel::GetDefaultLevelCameras(), "cameras");
 		LoadSceneObjects<Light>(DefaultLevel::GetDefaultLevelLights(), "lights");
 		LoadSceneObjects<SoundFX>(DefaultLevel::GetDefaultLevelSounds(), "sounds");
-		CreateRenderablesCameraBinding();
 	}
 #endif
 
@@ -90,7 +87,6 @@ namespace Scene::Level {
 		LoadSceneObjects<Camera>(data, "cameras");
 		LoadSceneObjects<Light>(data, "lights");
 		LoadSceneObjects<SoundFX>(data, "sounds");
-		CreateRenderablesCameraBinding();
 
 		file.close();
 #if defined(_EDITOR)
@@ -104,6 +100,9 @@ namespace Scene::Level {
 		using namespace Scene;
 		using namespace Effects;
 		using namespace Animation;
+
+		//Destroy the lights(this will destroy the lights and it's cbvs)
+		DestroyLights();
 
 		//Destroy the cameras(this will destroy the cameras and the render passes)
 		DestroyCameras();
@@ -122,10 +121,5 @@ namespace Scene::Level {
 
 		//Destroy the shadowmaps(this will destroy the shadow map cameras and render to textures of the shadowmaps)
 		DestroyShadowMaps();
-		//Destroy the lights(this will destroy the lights and it's cbvs)
-		DestroyLights();
-
-
-
 	}
 }

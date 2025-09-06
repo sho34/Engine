@@ -156,13 +156,13 @@ namespace Scene {
 						for (auto& uuid : delCams)
 						{
 							std::shared_ptr<Camera> cam = FindInCameras(uuid);
-							cam->UnbindRenderable(r);
+							Scene::UnbindFromScene(r, cam);
 						}
 						//add the camera to the renderable's binded camera set
 						for (auto& uuid : addCams)
 						{
 							std::shared_ptr<Camera> cam = FindInCameras(uuid);
-							cam->BindRenderable(r);
+							Scene::BindToScene(r, cam);
 						}
 
 						r->clean(Renderable::Update_cameras);
@@ -201,25 +201,16 @@ namespace Scene {
 	}
 
 	//DESTROY
-	void DestroyRenderable(std::shared_ptr<Renderable>& renderable)
-	{
-		if (renderable == nullptr) return;
-		DEBUG_PTR_COUNT_JSON(renderable);
-
-		renderable->UnbindFromScene();
-		renderable->this_ptr = nullptr;
-		renderable = nullptr;
-	}
-
 	void DestroyRenderables()
 	{
 		auto tmp = Renderables;
 		for (auto& [_, r] : tmp)
 		{
-			DestroyRenderable(r);
+			SafeDeleteSceneObject(r);
 		}
-		Animables.clear();
-		Renderables.clear();
+#include <JExposeTrackUUIDClear.h>
+#include <RenderableAtt.h>
+#include <JExposeEnd.h>
 	}
 
 	//EDITOR
@@ -259,28 +250,99 @@ namespace Scene {
 #include <RenderableAtt.h>
 #include <JExposeEnd.h>
 
-		CreateMeshInstances();
 	}
 
-	void Renderable::BindToScene()
+	void Renderable::Initialize()
 	{
-		Renderables.insert_or_assign(uuid(), this_ptr);
+		CreateMeshInstances(); //why here, this is a special case, as Animables depends of animables which is created in this function
+
+#include <JExposeTrackUUIDInsert.h>
+#include <RenderableAtt.h>
+#include <JExposeEnd.h>
+
 		if (animable)
 		{
 			AttachAnimation(this_ptr, model3D->animations);
-			Animables.insert_or_assign(uuid(), this_ptr);
 			StepAnimation(0.0f);
 			boundingBoxCompute = std::make_shared<RenderableBoundingBox>(this_ptr);
 		}
 	}
 
+	void Renderable::Bind(std::shared_ptr<SceneObject> sceneObject)
+	{
+		switch (sceneObject->JType())
+		{
+		case SO_Cameras:
+		{
+			std::shared_ptr<Camera> c = std::dynamic_pointer_cast<Camera>(sceneObject);
+			bindedCameras.insert(c);
+		}
+		break;
+		}
+	}
+	void Renderable::Unbind(std::shared_ptr<SceneObject> sceneObject)
+	{
+		switch (sceneObject->JType())
+		{
+		case SO_Cameras:
+		{
+			std::shared_ptr<Camera> c = std::dynamic_pointer_cast<Camera>(sceneObject);
+			bindedCameras.erase(c);
+		}
+		break;
+		}
+	}
+
+	void Renderable::BindToScene()
+	{
+		BindCameras();
+	}
+
+	void Renderable::BindCameras()
+	{
+		auto cams = cameras();
+		for (auto& uuid : cams) {
+			std::shared_ptr<Camera> cam = FindInCameras(uuid);
+			assert(cam != nullptr);
+			BindCamera(cam);
+		}
+	}
+
+	void Renderable::BindCamera(std::shared_ptr<Camera>& cam)
+	{
+		Scene::BindToScene(this_ptr, cam);
+	}
+
 	void Renderable::UnbindFromScene()
 	{
+#include <JExposeTrackUUIDErase.h>
+#include <RenderableAtt.h>
+#include <JExposeEnd.h>
+
 		UnbindMaterialsChangesCallback();
-		Renderables.erase(uuid());
-		Animables.erase(uuid());
+		Scene::UnbindFromScene(this_ptr);
 		boundingBoxCompute = nullptr;
-		UnbindCameras();
+	}
+
+	void Renderable::UnbindCameras()
+	{
+	}
+
+	void Renderable::UnbindCamera(std::shared_ptr<Camera>& cam)
+	{
+
+	}
+
+	void Renderable::BindShadowMapCameras()
+	{
+		if (!castShadows()) return;
+		auto lights = GetShadowMapLights();
+		for (auto& light : lights) {
+			for (auto& cam : light->shadowMapCameras)
+			{
+				BindCamera(cam);
+			}
+		}
 	}
 
 	void Renderable::UnbindMaterialsChangesCallback()
@@ -314,16 +376,6 @@ namespace Scene {
 		return XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
 	}
 
-	void Renderable::UnbindCameras()
-	{
-		std::set<std::string> cams = bindedCameras;
-		for (auto uuid : cams)
-		{
-			std::shared_ptr<Camera> cam = FindInCameras(uuid);
-			if (!cam) continue;
-			cam->UnbindRenderable(this_ptr);
-		}
-	}
 
 	void Renderable::CreateMeshInstances()
 	{
@@ -593,9 +645,8 @@ namespace Scene {
 		try
 		{
 			CreateMeshInstances();
-			for (std::string camUUID : bindedCameras)
+			for (auto& cam : bindedCameras)
 			{
-				std::shared_ptr<Camera> cam = FindInCameras(camUUID);
 				CreateMaterialsInstances(cam);
 				CreateConstantsBuffersInstances(cam);
 				CreateRootSignatures(cam);

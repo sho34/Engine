@@ -387,7 +387,7 @@
     <ClInclude Include="JExpose\Templates\SoundAtt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\Scene\LightsAtt.h">
+    <ClInclude Include="JExpose\Scene\LightAtt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch\JExposeEditor.h">
@@ -451,6 +451,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch\Binder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeTrackUUIDInsert.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeTrackUUIDClear.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\JExposeTrackUUIDErase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

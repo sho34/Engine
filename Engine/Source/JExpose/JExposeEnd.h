@@ -47,6 +47,18 @@ return created; }
 #undef JEXPOSE_TRACK_UUID_DEF
 #endif
 
+#ifdef JEXPOSE_TRACK_UUID_INSERT
+#undef JEXPOSE_TRACK_UUID_INSERT
+#endif
+
+#ifdef JEXPOSE_TRACK_UUID_ERASE
+#undef JEXPOSE_TRACK_UUID_ERASE
+#endif
+
+#ifdef JEXPOSE_TRACK_UUID_CLEAR
+#undef JEXPOSE_TRACK_UUID_CLEAR
+#endif
+
 #ifdef JEXPOSE_ATT_REQUIRED
 #undef JEXPOSE_ATT_REQUIRED
 return requiredAtts; }

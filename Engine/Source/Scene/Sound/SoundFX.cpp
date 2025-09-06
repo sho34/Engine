@@ -37,9 +37,11 @@ namespace Scene {
 #include <JExposeEnd.h>
 	}
 
-	void SoundFX::BindToScene()
+	void SoundFX::Initialize()
 	{
-		SoundEffects.insert_or_assign(uuid(), this_ptr);
+#include <JExposeTrackUUIDInsert.h>
+#include <SoundFXAtt.h>
+#include <JExposeEnd.h>
 
 		if (!sound().empty())
 		{
@@ -49,25 +51,27 @@ namespace Scene {
 					BindToScene();
 				};
 			soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags(), uuid(), OnSoundChange);
+		}
+	}
 
-			if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D))
-			{
-				audioEmitter.SetPosition(position());
-				audioEmitter.SetOrientationFromQuaternion(rotationQ());
-				Sound3DEffects.insert_or_assign(uuid(), this_ptr);
-			}
-
-			if (autoPlay())
-			{
-				Play();
-			}
+	void SoundFX::BindToScene()
+	{
+		if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D))
+		{
+			audioEmitter.SetPosition(position());
+			audioEmitter.SetOrientationFromQuaternion(rotationQ());
+		}
+		if (std::get<0>(soundEffectInstance) != nullptr && autoPlay())
+		{
+			Play();
 		}
 	}
 
 	void SoundFX::UnbindFromScene()
 	{
-		SoundEffects.erase(uuid());
-		Sound3DEffects.erase(uuid());
+#include <JExposeTrackUUIDErase.h>
+#include <SoundFXAtt.h>
+#include <JExposeEnd.h>
 
 		if (GetEffect() != nullptr)
 		{
@@ -243,24 +247,15 @@ namespace Scene {
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 
-	void DestroySoundEffect(std::shared_ptr<SoundFX>& sfx)
-	{
-		if (sfx == nullptr) return;
-		DEBUG_PTR_COUNT_JSON(sfx);
-
-		sfx->UnbindFromScene();
-		sfx->this_ptr = nullptr;
-		sfx = nullptr;
-	}
-
 	void DestroySoundEffects()
 	{
 		auto tmp = SoundEffects;
 		for (auto& [_, sfx] : tmp) {
-			DestroySoundEffect(sfx);
+			SafeDeleteSceneObject(sfx);
 		}
 
-		SoundEffects.clear();
-		Sound3DEffects.clear();
+#include <JExposeTrackUUIDClear.h>
+#include <SoundFXAtt.h>
+#include <JExposeEnd.h>
 	}
 }

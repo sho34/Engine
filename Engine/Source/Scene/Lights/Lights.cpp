@@ -19,19 +19,19 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace Scene {
 #include <JExposeAttDrawersDef.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeTrackUUIDDef.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeAttJsonDef.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeAttCreatorDrawersDef.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 	using namespace DeviceUtils;
@@ -46,29 +46,36 @@ namespace Scene {
 	Light::Light(nlohmann::json json) : SceneObject(json)
 	{
 #include <JExposeInit.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
 
 #include <JExposeAttUpdate.h>
-#include <LightsAtt.h>
+#include <LightAtt.h>
 #include <JExposeEnd.h>
+	}
+
+	void Light::Initialize()
+	{
+#include <JExposeTrackUUIDInsert.h>
+#include <LightAtt.h>
+#include <JExposeEnd.h>
+
+		if (hasShadowMaps())
+		{
+			CreateShadowMap();
+		}
 	}
 
 	void Light::BindToScene()
 	{
-		Lights.insert_or_assign(uuid(), this_ptr);
-		if (hasShadowMaps())
-		{
-			ShadowMapLights.insert_or_assign(uuid(), this_ptr);
-			CreateShadowMap();
-			BindRenderablesToShadowMapCamera();
-		}
+		BindRenderablesToShadowMapCamera();
 	}
 
 	void Light::UnbindFromScene()
 	{
-		Lights.erase(uuid());
-		ShadowMapLights.erase(uuid());
+#include <JExposeTrackUUIDErase.h>
+#include <LightAtt.h>
+#include <JExposeEnd.h>
 
 		if (!hasShadowMaps()) return;
 
@@ -198,6 +205,7 @@ namespace Scene {
 				{
 					for (auto& l : lightsToDestroyShadowMaps)
 					{
+						l->UnbindRenderablesFromShadowMapCameras();
 						l->DestroyShadowMapMinMaxChain();
 						l->DestroyShadowMap();
 					}
@@ -290,24 +298,16 @@ namespace Scene {
 		DestroyConstantsBuffer(lightsCbv);
 	}
 
-	void DestroyLight(std::shared_ptr<Light>& light)
-	{
-		if (light == nullptr) return;
-		DEBUG_PTR_COUNT_JSON(light);
-
-		light->UnbindFromScene();
-		light->this_ptr = nullptr;
-		light = nullptr;
-	}
-
 	void DestroyLights()
 	{
 		auto tmp = Lights;
 		for (auto& [_, l] : tmp)
 		{
-			DestroyLight(l);
+			SafeDeleteSceneObject(l);
 		}
-		Lights.clear();
+#include <JExposeTrackUUIDClear.h>
+#include <LightAtt.h>
+#include <JExposeEnd.h>
 	}
 
 	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex)
@@ -318,20 +318,7 @@ namespace Scene {
 	}
 
 	//EDITOR
-
 #if defined(_EDITOR)
-	//static void ReplaceLightsJsonAttributes(nlohmann::json& dst, nlohmann::json src, nlohmann::json attributesToAdd, nlohmann::json attributesToDelete)
-	//{
-	//	for (auto it = attributesToDelete.begin(); it != attributesToDelete.end(); it++)
-	//	{
-	//		dst.erase(it.key());
-	//	}
-	//	for (auto it = attributesToAdd.begin(); it != attributesToAdd.end(); it++)
-	//	{
-	//		dst[it.key()] = src[it.key()];
-	//	}
-	//}
-
 	static std::map<LightType, nlohmann::json> defaultShadowMapParameters = {
 		{ LT_Directional, {{ "shadowMapWidth",1024}, {"shadowMapHeight",1024}, {"viewWidth", 32.0f}, {"viewHeight",32.0f},{"nearZ",0.01f}, {"farZ",1000.0f}}},
 		{ LT_Spot, {{ "shadowMapWidth",1024}, {"shadowMapHeight",1024}, {"viewWidth", 32.0f}, {"viewHeight",32.0f},{"nearZ",0.01f}, {"farZ",100.0f}} },
@@ -341,11 +328,6 @@ namespace Scene {
 	static std::vector<std::string> shadowMapJsonAttributes = {
 		"shadowMapWidth", "shadowMapHeight", "viewWidth", "viewHeight", "nearZ", "farZ",
 	};
-
-	bool GetLightPopupIsOpen()
-	{
-		return false;
-	}
 
 	void WriteLightsJson(nlohmann::json& json)
 	{

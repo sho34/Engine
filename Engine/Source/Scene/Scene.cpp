@@ -19,6 +19,61 @@ void AudioStep(float step);
 
 namespace Scene
 {
+	Binder binder;
+
+	std::set<std::shared_ptr<SceneObject>> sceneObjects;
+	std::map<std::shared_ptr<SceneObject>, SceneObjectType> sceneObjectType;
+	std::map<std::string, std::shared_ptr<SceneObject>> sceneObjectFromUUID;
+	std::multimap<SceneObjectType, std::shared_ptr<SceneObject>> sceneObjectsByType;
+
+	void BindSceneObjects()
+	{
+		std::for_each(sceneObjects.begin(), sceneObjects.end(), [](std::shared_ptr<SceneObject> so)
+			{
+				so->BindToScene();
+			}
+		);
+	}
+
+	void AddSceneObject(std::shared_ptr<SceneObject> sceneObject)
+	{
+		sceneObjects.insert(sceneObject);
+		sceneObjectType.insert_or_assign(sceneObject, sceneObject->JType());
+		sceneObjectFromUUID.insert_or_assign(sceneObject->at("uuid"), sceneObject);
+		sceneObjectsByType.insert({ sceneObject->JType(), sceneObject });
+	}
+
+	void DeleteSceneObject(std::shared_ptr<SceneObject> sceneObject)
+	{
+		sceneObjects.erase(sceneObject);
+		sceneObjectType.erase(sceneObject);
+		sceneObjectFromUUID.erase(sceneObject->at("uuid"));
+		auto range = sceneObjectsByType.equal_range(sceneObject->JType());
+		for (auto it = range.first; it != range.second; )
+		{
+			if (it->second != sceneObject) {
+				it++; continue;
+			}
+			sceneObjectsByType.erase(it);
+			break;
+		}
+	}
+
+	void BindToScene(std::shared_ptr<SceneObject> soA, std::shared_ptr<SceneObject> soB)
+	{
+		binder.insert(soA, soB);
+	}
+
+	void UnbindFromScene(std::shared_ptr<SceneObject> soA)
+	{
+		binder.erase(soA);
+	}
+
+	void UnbindFromScene(std::shared_ptr<SceneObject> soA, std::shared_ptr<SceneObject> soB)
+	{
+		binder.erase(soA, soB);
+	}
+
 	void SceneObjectsStep(DX::StepTimer& timer)
 	{
 		using namespace Effects;
@@ -28,26 +83,6 @@ namespace Scene
 		LightsStep();
 		AudioStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
 		CamerasStep();
-	}
-
-	void CreateRenderablesCameraBinding()
-	{
-		std::vector<std::shared_ptr<Renderable>> renderablesToBind = GetRenderables();
-		std::for_each(renderablesToBind.begin(), renderablesToBind.end(), [](std::shared_ptr<Renderable> r)
-			{
-				auto cams = r->cameras();
-				std::for_each(cams.begin(), cams.end(), [r](std::string uuid)
-					{
-						if (r->bindedCameras.contains(uuid)) return;
-
-						auto cam = FindInCameras(uuid);
-						if (!cam) return;
-
-						cam->BindRenderable(r);
-					}
-				);
-			}
-		);
 	}
 
 	void WriteConstantsBuffers()
@@ -138,33 +173,20 @@ namespace Scene
 	}
 
 #if defined(_EDITOR)
-	const std::map<SceneObjectType, std::function<std::vector<UUIDName>()>> GetSO =
-	{
-		{ SO_Renderables, GetRenderablesUUIDNames },
-		{ SO_Lights, GetLightsUUIDNames },
-		{ SO_Cameras, GetCamerasUUIDNames },
-		{ SO_SoundEffects, GetSoundEffectsUUIDNames }
-	};
 
 	std::shared_ptr<SceneObject> GetSceneObject(std::string uuid)
 	{
-		const std::map<SceneObjectType, std::function<std::shared_ptr<SceneObject>(std::string)>> GetSharedPtrSO =
-		{
-			{ SO_Renderables, [](std::string uuid) { std::shared_ptr<SceneObject> o = FindInRenderables(uuid); return o; } },
-			{ SO_Lights, [](std::string uuid) { std::shared_ptr<SceneObject> o = FindInLights(uuid); return o; } },
-			{ SO_Cameras, [](std::string uuid) { std::shared_ptr<SceneObject> o = FindInCameras(uuid); return o; } },
-			{ SO_SoundEffects, [](std::string uuid) { std::shared_ptr<SceneObject> o = FindInSoundEffects(uuid); return o; } }
-		};
-
-		return GetSharedPtrSO.at(GetSceneObjectType(uuid))(uuid); //kill me please this is slow as hell
+		return sceneObjectFromUUID.at(uuid);
 	}
 
 	std::map<SceneObjectType, std::vector<UUIDName>> GetSceneObjects()
 	{
+		auto SOTypes = { SO_Renderables, SO_Lights, SO_Cameras, SO_SoundEffects };
+
 		std::map<SceneObjectType, std::vector<UUIDName>> sceneObjects;
-		for (auto& [type, cb] : GetSO)
+		for (auto type : SOTypes)
 		{
-			auto append = cb();
+			auto append = GetSceneObjects(type);
 			nostd::AppendToVector(sceneObjects[type], append);
 		}
 		return sceneObjects;
@@ -172,48 +194,21 @@ namespace Scene
 
 	std::vector<UUIDName> GetSceneObjects(SceneObjectType so)
 	{
-		return GetSO.at(so)();
+		std::vector<UUIDName> uuidNames;
+		auto range = sceneObjectsByType.equal_range(so);
+		for (auto it = range.first; it != range.second; it++) {
+			if (it->second->at("hidden") == true) continue;
+			std::string uuid = it->second->at("uuid");
+			std::string name = it->second->at("name");
+			uuidNames.push_back(std::make_tuple(uuid, name));
+		}
+		return uuidNames;
 	}
 
 	SceneObjectType GetSceneObjectType(std::string uuid)
 	{
-		for (auto& [type, cb] : GetSO)
-		{
-			auto objects = cb();
-			for (auto& uuidname : objects)
-			{
-				std::string uuidSO = std::get<0>(uuidname);
-				if (uuid == uuidSO) return type;
-			}
-		}
-		return SO_None;
-	}
-
-	std::string GetSceneObjectName(SceneObjectType so, std::string uuid)
-	{
-		const std::map<SceneObjectType, std::function<std::string(std::string)>> GetSOName =
-		{
-			{ SO_Renderables, FindNameInRenderables },
-			{ SO_Lights, FindNameInLights },
-			{ SO_Cameras, FindNameInCameras },
-			{ SO_SoundEffects, FindNameInSoundEffects }
-		};
-		return GetSOName.at(so)(uuid);
-	}
-
-	std::string GetSceneObjectUUID(std::string name)
-	{
-		for (auto& [type, cb] : GetSO)
-		{
-			auto objects = cb();
-			for (auto uuidname : objects)
-			{
-				std::string uuid = std::get<0>(uuidname);
-				std::string nameSO = std::get<1>(uuidname);
-				if (name == nameSO) return uuid;
-			}
-		}
-		return "";
+		std::shared_ptr<SceneObject> so = sceneObjectFromUUID.at(uuid);
+		return sceneObjectType.at(so);
 	}
 
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetSceneObjectAttributes(SceneObjectType so)
@@ -276,12 +271,12 @@ namespace Scene
 		return GetSODrawers.at(so)();
 	}
 
-	template<typename X>
-	std::shared_ptr<X> CreateAndBind(nlohmann::json J)
+	template<typename S>
+	std::shared_ptr<S> CreateAndBind(nlohmann::json& json)
 	{
-		std::shared_ptr<X> o = std::make_shared<X>(J);
-		o->uuid(getUUID());
-		o->this_ptr = o;
+		nlohmann::json patch = { {"uuid",getUUID()} };
+		json.merge_patch(patch);
+		std::shared_ptr<S> o = CreateSceneObjectFromJson<S>(json);
 		o->BindToScene();
 		Editor::MarkScenePanelAssetsAsDirty();
 		return o;
@@ -294,14 +289,7 @@ namespace Scene
 			{ SO_Renderables, [](nlohmann::json json) {
 				std::shared_ptr<Renderable> r = CreateAndBind<Renderable>(json);
 				Editor::BindRenderableToPickingPass(r);
-				if (!r->castShadows()) return;
-				auto lights = GetShadowMapLights();
-				for (auto& light : lights) {
-					for (auto& cam : light->shadowMapCameras)
-					{
-						cam->BindRenderable(r);
-					}
-				}
+				r->BindShadowMapCameras();
 			}},
 			{ SO_Lights, [](nlohmann::json json) { CreateAndBind<Light>(json); }},
 			{ SO_Cameras, [](nlohmann::json json) { CreateAndBind<Camera>(json); } },

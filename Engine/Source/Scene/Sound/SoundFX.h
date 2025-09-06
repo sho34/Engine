@@ -46,6 +46,7 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JExposeEnd.h>
 
+		virtual void Initialize();
 		void Destroy();
 
 		XMVECTOR rotationQ();

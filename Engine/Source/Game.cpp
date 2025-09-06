@@ -472,13 +472,14 @@ void EditorModeCreate()
 			//mainPass = CreateMainPass();
 			//resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
-			//LoadDefaultLevel();
-			LoadLevel("pyramid");
+			LoadDefaultLevel();
+			//LoadLevel("pyramid");
 			//LoadLevel("female");
 			//LoadLevel("knight");
 			//LoadLevel("spartan");
 			//LoadLevel("family");
 			//LoadLevel("venom");
+			BindSceneObjects();
 			CreateEditorModeBindings();
 
 			//hdrHistogram = std::make_shared<LuminanceHistogram>(mainPass->renderToTexture[0]);
@@ -699,7 +700,7 @@ void EditorModePostRender()
 
 				if (!RenderableBoundingBoxExists())
 				{
-					CreateRenderableBoundingBox(GetSwapChainCameras().at(0));
+					CreateRenderableBoundingBox(GetMouseCameras().at(0));
 				}
 			}
 		);

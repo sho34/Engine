@@ -84,7 +84,6 @@ namespace Scene {
 	inline static const std::string CameraConstantBufferName = "camera";
 
 	void CamerasStep();
-	void DestroyCamera(std::shared_ptr<Camera>& camera);
 	void DestroyCameras();
 
 #if defined(_EDITOR)
@@ -131,6 +130,9 @@ namespace Scene {
 		void UpdateProjection();
 
 		std::set<std::shared_ptr<Renderable>> renderables;
+		virtual void Initialize();
+		virtual void Bind(std::shared_ptr<SceneObject> sceneObject);
+		virtual void Unbind(std::shared_ptr<SceneObject> sceneObject);
 		void BindRenderable(std::shared_ptr<Renderable> renderable);
 		void UnbindRenderable(std::shared_ptr<Renderable> renderable);
 

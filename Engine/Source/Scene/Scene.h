@@ -14,24 +14,42 @@
 
 using namespace Scene::Level;
 
-inline bool NameCollideWithSceneObjects(auto map, nlohmann::json& json)
-{
-	std::string name = json.at("name");
-	return map.end() != std::find_if(map.begin(), map.end(), [name](auto pair)
-		{
-			return pair.second->name() == name;
-		}
-	);
-}
-
 namespace DX { class StepTimer; }
 
 namespace Scene
 {
 	struct Camera;
 
+	template<typename S>
+	std::shared_ptr<S> CreateSceneObjectFromJson(nlohmann::json& j)
+	{
+		std::shared_ptr<S> r = std::make_shared<S>(j);
+		r->this_ptr = r;
+		r->Initialize();
+		AddSceneObject(r);
+		return r;
+	}
+
+	void BindSceneObjects();
+
+	void AddSceneObject(std::shared_ptr<SceneObject> sceneObject);
+	template<typename S>
+	void SafeDeleteSceneObject(std::shared_ptr<S>& sceneObject)
+	{
+		if (sceneObject == nullptr) return;
+		DEBUG_PTR_COUNT_JSON(sceneObject);
+
+		DeleteSceneObject(sceneObject);
+		sceneObject->UnbindFromScene();
+		sceneObject->this_ptr = nullptr;
+		sceneObject = nullptr;
+	}
+	void DeleteSceneObject(std::shared_ptr<SceneObject> sceneObject);
+
+	void BindToScene(std::shared_ptr<SceneObject> soA, std::shared_ptr<SceneObject> soB);
+	void UnbindFromScene(std::shared_ptr<SceneObject> soA);
+	void UnbindFromScene(std::shared_ptr<SceneObject> soA, std::shared_ptr<SceneObject> soB);
 	void SceneObjectsStep(DX::StepTimer& timer);
-	void CreateRenderablesCameraBinding();
 	void WriteConstantsBuffers();
 	void RenderSceneShadowMaps();
 	void RenderSceneCameras();
@@ -41,8 +59,6 @@ namespace Scene
 	std::map<SceneObjectType, std::vector<UUIDName>> GetSceneObjects();
 	std::vector<UUIDName> GetSceneObjects(SceneObjectType so);
 	SceneObjectType GetSceneObjectType(std::string uuid);
-	std::string GetSceneObjectName(SceneObjectType so, std::string uuid);
-	std::string GetSceneObjectUUID(std::string name);
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetSceneObjectAttributes(SceneObjectType so);
 	std::map<std::string, JEdvDrawerFunction> GetSceneObjectDrawers(SceneObjectType so);
 	std::vector<std::string> GetSceneObjectRequiredAttributes(SceneObjectType so);
