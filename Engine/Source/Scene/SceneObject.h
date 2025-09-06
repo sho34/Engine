@@ -43,6 +43,7 @@ namespace Scene
 	struct SceneObject : JObject
 	{
 		SceneObject(nlohmann::json json) :JObject(json) {}
+		virtual void Initialize() {};
 		virtual void BindToScene() {};
 		virtual void UnbindFromScene() {};
 		virtual XMVECTOR rotationQ() { return XMQuaternionIdentity(); }
