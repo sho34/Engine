@@ -206,40 +206,37 @@ namespace Editor {
 
 	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera)
 	{
-		boundingBox = std::make_shared<Renderable>(
-			nlohmann::json(
-				{
-					{ "meshMaterials",
+		nlohmann::json jbox = nlohmann::json(
+			{
+				{ "meshMaterials",
+					{
 						{
-							{
-								{ "material", "2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc"},
-								{ "mesh", "30f15e68-db42-46fa-b846-b2647a0ac9b9" }
-							}
+							{ "material", "2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc"},
+							{ "mesh", "30f15e68-db42-46fa-b846-b2647a0ac9b9" }
 						}
-					},
-					{ "castShadows", false },
-					{ "shadowed", false },
-					{ "name" , "EditorBoundingBox" },
-					{ "uuid" , "797b3a2b-6854-47ab-8e07-1974055e490d" },
-					{ "position" , { 0.0f, 0.0f, 0.0f} },
-					{ "topology", "LINELIST"},
-					{ "rotation" , { 0.0, 0.0, 0.0 } },
-					{ "scale" , { 1.0f, 1.0f, 1.0f } },
-					{ "skipMeshes" , {}},
-					{ "visible" , false},
-					{ "hidden" , true},
-					{ "camera", { camera->uuid() }}
-				}
-			)
+					}
+				},
+				{ "castShadows", false },
+				{ "shadowed", false },
+				{ "name" , "EditorBoundingBox" },
+				{ "uuid" , "797b3a2b-6854-47ab-8e07-1974055e490d" },
+				{ "position" , { 0.0f, 0.0f, 0.0f} },
+				{ "topology", "LINELIST"},
+				{ "rotation" , { 0.0, 0.0, 0.0 } },
+				{ "scale" , { 1.0f, 1.0f, 1.0f } },
+				{ "skipMeshes" , {}},
+				{ "visible" , false},
+				{ "hidden" , true},
+				{ "cameras", { camera->uuid() }}
+			}
 		);
-		boundingBox->this_ptr = boundingBox;
+		boundingBox = CreateSceneObjectFromJson<Renderable>(jbox);
 		boundingBox->BindToScene();
-		camera->BindRenderable(boundingBox);
 	}
 
 	void DestroyRenderableBoundingBox()
 	{
-		DestroyRenderable(boundingBox);
+		SafeDeleteSceneObject(boundingBox);
 	}
 
 	void ImGuiImplRenderInit()
@@ -354,7 +351,8 @@ namespace Editor {
 		templateEdition.Destroy();
 
 		mousePicking.pickedObjects.clear();
-		DestroyRenderable(boundingBox);
+		DestroyPickingPass();
+		DestroyRenderableBoundingBox();
 
 		// Cleanup
 		ImGui_ImplDX12_Shutdown();
@@ -794,6 +792,8 @@ namespace Editor {
 
 		auto translateObjects = [](XMVECTOR translation)
 			{
+				XMVECTOR len = XMVector3Length(translation);
+				if (len.m128_f32[0] < g_XMEpsilon.f[0]) return;
 				for (auto& o : mousePicking.pickedObjects)
 				{
 					if (!o->contains("position")) continue;
@@ -1404,6 +1404,8 @@ namespace Editor {
 
 	void DestroyPickingPass()
 	{
+		UnbindPickingRenderables();
+
 		if (mousePicking.pickingPass) {
 			DestroyRenderPassInstance(mousePicking.pickingPass);
 		}
@@ -1429,6 +1431,23 @@ namespace Editor {
 		r->CreateRenderPassConstantsBuffersInstances(pass);
 		r->CreateRenderPassRootSignatures(pass);
 		r->CreateRenderPassPipelineStates(pass);
+	}
+
+	void UnbindPickingRenderables()
+	{
+		for (auto& r : GetRenderables())
+		{
+			UnbindRenderableFromPickingPass(r);
+		}
+	}
+
+	void UnbindRenderableFromPickingPass(std::shared_ptr<Renderable> r)
+	{
+		std::shared_ptr<RenderPassInstance>& pass = mousePicking.pickingPass;
+		r->DestroyRenderPassMaterialsInstances(pass);
+		r->DestroyRenderPassConstantsBuffersInstances(pass);
+		r->DestroyRenderPassRootSignatures(pass);
+		r->DestroyRenderPassPipelineStates(pass);
 	}
 
 	void RenderPickingPass(std::shared_ptr<Camera> camera)

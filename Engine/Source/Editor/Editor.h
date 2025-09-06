@@ -99,6 +99,8 @@ namespace Editor {
 	void DestroyPickingPass();
 	void BindPickingRenderables();
 	void BindRenderableToPickingPass(std::shared_ptr<Renderable> r);
+	void UnbindPickingRenderables();
+	void UnbindRenderableFromPickingPass(std::shared_ptr<Renderable> r);
 	void RenderPickingPass(std::shared_ptr<Camera> cam);
 	void PickFromScene();
 	void PickSceneObject(unsigned int pickedObjectId);
