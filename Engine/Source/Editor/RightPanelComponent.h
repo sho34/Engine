@@ -5,7 +5,7 @@
 #include <NoStd.h>
 #include <unordered_map>
 #include <map>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 struct RightPanelComponent
 {
@@ -21,7 +21,7 @@ struct RightPanelComponent
 	std::set<std::string> selected;
 	std::set<std::string> editables;
 	nostd::VectorSet<std::string> drawersOrder;
-	std::unordered_map<std::string, JEdvDrawerFunction> drawers;
+	std::unordered_map<std::string, JEdvEditorDrawerFunction> drawers;
 	std::map<std::string, std::any> assets;
 	std::map<std::string, std::string> assetsNames;
 	std::map<std::string, std::shared_ptr<JObject>> assetsJsons;
@@ -244,7 +244,7 @@ struct RightPanelComponent
 
 		//now construct the callbacks using the orders
 		drawers.clear();
-		std::map<Type, std::map<std::string, JEdvDrawerFunction>> typeDrawers;
+		std::map<Type, std::map<std::string, JEdvEditorDrawerFunction>> typeDrawers;
 		for (auto& type : objectTypes)
 		{
 			typeDrawers.insert_or_assign(type, GetDrawers(type));

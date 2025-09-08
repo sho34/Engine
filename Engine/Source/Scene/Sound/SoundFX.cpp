@@ -10,38 +10,42 @@
 using namespace Templates;
 namespace Scene {
 
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeTrackUUIDDef.h>
+#include <TrackUUID/JDef.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <SoundFXAtt.h>
+#include <JEnd.h>
 
 	SoundFX::SoundFX(nlohmann::json json) : SceneObject(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	void SoundFX::Initialize()
 	{
-#include <JExposeTrackUUIDInsert.h>
+#include <TrackUUID/JInsert.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		if (!sound().empty())
 		{
@@ -69,9 +73,9 @@ namespace Scene {
 
 	void SoundFX::UnbindFromScene()
 	{
-#include <JExposeTrackUUIDErase.h>
+#include <TrackUUID/JErase.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		if (GetEffect() != nullptr)
 		{
@@ -254,8 +258,8 @@ namespace Scene {
 			SafeDeleteSceneObject(sfx);
 		}
 
-#include <JExposeTrackUUIDClear.h>
+#include <TrackUUID/JClear.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 }

@@ -6,8 +6,6 @@
 #include <JObject.h>
 #include <Templates.h>
 
-#if defined(_EDITOR)
-
 using namespace Scene;
 
 template<typename T>
@@ -17,6 +15,7 @@ struct CreatorModal {
 	nlohmann::json json;
 	std::vector<std::string> atts;
 	std::map<std::string, JEdvCreatorDrawerFunction> drawers;
+	std::map<std::string, JEdvCreatorValidatorFunction> validators;
 	std::function<void(T type, nlohmann::json)> onCreate;
 	void DrawCreationPopup()
 	{
@@ -29,13 +28,21 @@ struct CreatorModal {
 			{
 				if (drawers.at(att)) drawers.at(att)(att, json);
 			}
-			if (ImGui::Button("Crear"))
+			bool valid = true;
+			for (auto& att : atts)
 			{
-				onCreate(type, json);
-				creating = false;
+				if (validators.at(att)) valid &= validators.at(att)(att, json);
 			}
+			ImGui::DrawItemWithEnabledState([this]
+				{
+					if (ImGui::Button("Create"))
+					{
+						onCreate(type, json);
+						creating = false;
+					}
+				}, valid);
 			ImGui::SameLine();
-			if (ImGui::Button("Cancelar"))
+			if (ImGui::Button("Cancel"))
 			{
 				creating = false;
 			}
@@ -72,7 +79,12 @@ namespace Editor {
 	void MarkTemplatesPanelAssetsAsDirty();
 	void DestroyEditorSceneObjectsReferences();
 
-	void DrawPickedObjectsGuizmo(std::shared_ptr<Camera> camera, ImGuizmo::OPERATION& gizmoOperation, ImGuizmo::MODE& gizmoMode);
+	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera);
+	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(XMFLOAT4X4, XMFLOAT4X4)> interaction = [](XMFLOAT4X4, XMFLOAT4X4) {});
+	void DrawRenderableGizmo(std::shared_ptr<Camera> camera);
+	void DrawPickedLightGizmo(std::shared_ptr<Camera> camera);
+	void DrawCameraGizmo(std::shared_ptr<Camera> camera);
+	void DrawSoundEffectGizmo(std::shared_ptr<Camera> camera);
 
 	void OpenLevelFile();
 
@@ -81,13 +93,16 @@ namespace Editor {
 	void SaveTemplates();
 
 	void SelectSceneObject(std::string uuid);
+	void DeselectSceneObject(std::string uuid);
+	void SelectRenderable(std::string uuid);
+	void SelectLight(std::string uuid);
+	void SelectCamera(std::string uuid);
+	void SelectSoundEffect(std::string uuid);
 
 	bool RenderableBoundingBoxExists();
 	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera);
 	void DestroyRenderableBoundingBox();
 	void WriteRenderableBoundingBoxConstantsBuffer();
-	//void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent);
-	//void DrawCreateWindow(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void(std::function<void()>)> drawContent);
 
 	//MOUSE PROCESSING
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);
@@ -112,4 +127,3 @@ namespace Editor {
 	void StartTemplateCreation(TemplateType type);
 
 }
-#endif

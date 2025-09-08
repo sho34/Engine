@@ -19,17 +19,21 @@ using namespace Scene;
 
 namespace Templates
 {
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <RenderPassAtt.h>
+#include <JEnd.h>
 
 	namespace RenderPass
 	{
@@ -68,13 +72,13 @@ namespace Templates
 
 	RenderPassJson::RenderPassJson(nlohmann::json json) : JTemplate(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	TEMPDEF_FULL(RenderPass);

@@ -5,6 +5,7 @@
 #include "../DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
 #include "../../Common/d3dx12.h"
 #include <map>
+#include <pix3.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -125,7 +126,7 @@ namespace DeviceUtils {
 
 	void RenderToTexturePass::EndRenderPass()
 	{
-		auto commandList = renderer->commandList;
+		auto& commandList = renderer->commandList;
 
 		//transition the texture resources from render target to pixel shader resource
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;

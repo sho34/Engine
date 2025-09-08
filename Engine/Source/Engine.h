@@ -43,7 +43,6 @@ void AppStep();
 void GameInputStep();
 void AnimableStep(double elapsedSeconds);
 void AudioStep(float step);
-void CameraStep();
 
 //RENDER
 void Render();

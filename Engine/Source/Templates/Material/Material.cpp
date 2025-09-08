@@ -17,27 +17,31 @@
 
 namespace Templates {
 
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <MaterialAtt.h>
+#include <JEnd.h>
 
 	MaterialJson::MaterialJson(nlohmann::json json) : JTemplate(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	TEMPDEF_FULL(Material);

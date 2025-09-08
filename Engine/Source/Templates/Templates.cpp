@@ -248,6 +248,8 @@ namespace Templates
 		}
 	);
 
+	nlohmann::json systemSounds = nlohmann::json::array({});
+
 	nlohmann::json systemMaterials = nlohmann::json::array(
 		{
 			{
@@ -690,9 +692,32 @@ namespace Templates
 		}
 	);
 
+	nlohmann::json systemTextures = nlohmann::json::array(
+		{
+			{
+				{ "format", "R8G8B8A8_UNORM" },
+				{ "height", 256 },
+				{ "images" , {
+					"Assets/gizmos/light-bulb.png"
+				}},
+				{ "mipLevels", 11 },
+				{ "name", "Assets/gizmos/light-bulb.png" },
+				{ "numFrames", 1 },
+				{ "type", "2D" },
+				{ "uuid", "fed123fa-e248-47cd-9662-20f73285ad0e" },
+				{ "width", 256 }
+			}
+		}
+	);
+
 	nlohmann::json& GetSystemShaders()
 	{
 		return systemShaders;
+	}
+
+	nlohmann::json& GetSystemSounds()
+	{
+		return systemSounds;
 	}
 
 	nlohmann::json& GetSystemMaterials()
@@ -703,6 +728,11 @@ namespace Templates
 	nlohmann::json& GetSystemRenderPasses()
 	{
 		return systemRenderPasses;
+	}
+
+	nlohmann::json& GetSystemTextures()
+	{
+		return systemTextures;
 	}
 
 #if defined(_EDITOR)
@@ -858,9 +888,9 @@ namespace Templates
 		return GetTAtts.at(t)();
 	}
 
-	std::map<std::string, JEdvDrawerFunction> GetTemplateDrawers(TemplateType t)
+	std::map<std::string, JEdvEditorDrawerFunction> GetTemplateDrawers(TemplateType t)
 	{
-		const std::map<TemplateType, std::function<std::map<std::string, JEdvDrawerFunction>()>> GetTDrawers =
+		const std::map<TemplateType, std::function<std::map<std::string, JEdvEditorDrawerFunction>()>> GetTDrawers =
 		{
 			{ T_Materials, GetMaterialDrawers },
 			{ T_Models3D, GetModel3DDrawers },
@@ -912,6 +942,20 @@ namespace Templates
 			{ T_RenderPasses, GetRenderPassCreatorDrawers }
 		};
 		return GetTDrawers.at(t)();
+	}
+
+	std::map<std::string, JEdvCreatorValidatorFunction> GetTemplateValidators(TemplateType t)
+	{
+		const std::map<TemplateType, std::function<std::map<std::string, JEdvCreatorValidatorFunction>()>> GetTValidator =
+		{
+			{ T_Materials, GetMaterialCreatorValidator },
+			{ T_Models3D, GetModel3DCreatorValidator },
+			{ T_Shaders, GetShaderCreatorValidator },
+			{ T_Sounds, GetSoundCreatorValidator },
+			{ T_Textures, GetTextureCreatorValidator },
+			{ T_RenderPasses, GetRenderPassCreatorValidator }
+		};
+		return GetTValidator.at(t)();
 	}
 
 	std::string GetTemplateName(TemplateType t, std::string uuid)

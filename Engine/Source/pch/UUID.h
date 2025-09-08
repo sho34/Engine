@@ -31,3 +31,26 @@ inline int FindSelectableIndex(auto selectables, nlohmann::json& json, auto att)
 		}
 	) - selectables.begin());
 }
+
+inline std::function<std::vector<UUIDName>()> SortUUIDNameByName(std::function<std::vector<UUIDName>()> getUUIDNames)
+{
+	return [getUUIDNames]()
+		{
+			std::vector<UUIDName> uuidNames = getUUIDNames();
+			std::sort(uuidNames.begin(), uuidNames.end(), [](UUIDName a, UUIDName b)
+				{
+					return std::get<1>(a) < std::get<1>(b);
+				}
+			);
+			return uuidNames;
+		};
+};
+
+inline void SortUUIDByName(std::vector<UUIDName>& uuidNames)
+{
+	std::sort(uuidNames.begin(), uuidNames.end(), [](UUIDName a, UUIDName b)
+		{
+			return std::get<1>(a) < std::get<1>(b);
+		}
+	);
+}

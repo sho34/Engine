@@ -351,13 +351,13 @@
     <ClInclude Include="JExpose\JExpose.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeDecl.h">
+    <ClInclude Include="JExpose\Attributes\JDecl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeEnd.h">
+    <ClInclude Include="JExpose\JEnd.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeInit.h">
+    <ClInclude Include="JExpose\Attributes\JInit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="JExpose\Templates\ShaderAtt.h">
@@ -393,13 +393,13 @@
     <ClInclude Include="pch\JExposeEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttOrder.h">
+    <ClInclude Include="JExpose\Attributes\JOrder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttFlags.h">
+    <ClInclude Include="JExpose\Attributes\JFlags.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttDrawersDecl.h">
+    <ClInclude Include="JExpose\Editor\JDrawersDecl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Templates\JTemplate.h">
@@ -411,13 +411,13 @@
     <ClInclude Include="JExpose\JObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttUpdate.h">
+    <ClInclude Include="JExpose\Attributes\JUpdate.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeTypes.h">
+    <ClInclude Include="JExpose\JTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttDrawersDef.h">
+    <ClInclude Include="JExpose\Editor\JDrawersDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Templates\RenderPass\Override\MinMaxChainPass.h">
@@ -429,37 +429,67 @@
     <ClInclude Include="Editor\RightPanelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeTrackUUIDDef.h">
+    <ClInclude Include="JExpose\TrackUUID\JDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeTrackUUIDDecl.h">
+    <ClInclude Include="JExpose\TrackUUID\JDecl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttRequired.h">
+    <ClInclude Include="JExpose\Creator\JRequired.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttCreatorDrawersDecl.h">
+    <ClInclude Include="JExpose\Creator\JDrawersDecl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttCreatorDrawersDef.h">
+    <ClInclude Include="JExpose\Creator\JDrawersDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttJsonDecl.h">
+    <ClInclude Include="JExpose\Creator\JJsonDecl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeAttJsonDef.h">
+    <ClInclude Include="JExpose\Creator\JJsonDef.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch\Binder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeTrackUUIDInsert.h">
+    <ClInclude Include="JExpose\TrackUUID\JInsert.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeTrackUUIDClear.h">
+    <ClInclude Include="JExpose\TrackUUID\JClear.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="JExpose\JExposeTrackUUIDErase.h">
+    <ClInclude Include="JExpose\TrackUUID\JErase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Creator\JValidatorDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Creator\JValidatorDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Attributes\JExpose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\TrackUUID\JExpose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Editor\JExpose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Creator\JExpose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Functions\JEdvEditorDrawer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Functions\JEdvCreatorDrawer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Functions\JEdvCreatorValidator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\MousePicking.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -666,6 +696,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Scene\SceneObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\MousePicking.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

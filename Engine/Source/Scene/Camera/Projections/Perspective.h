@@ -2,8 +2,6 @@
 
 #include <DirectXMath.h>
 
-using namespace DirectX;
-
 namespace Scene::CameraProjections {
 
 	struct Perspective {

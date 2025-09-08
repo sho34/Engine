@@ -4,7 +4,7 @@
 #include "Projections/Orthographic.h"
 #include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include <Keyboard.h>
-#include <SimpleMath.h>
+#include <DirectXMath.h>
 #include <Mouse.h>
 #include <GamePad.h>
 #include <map>
@@ -12,7 +12,7 @@
 #include <SceneObjectDecl.h>
 #include <NoMath.h>
 #include <SceneObject.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 #include <ImEditor.h>
 #include <set>
 
@@ -50,29 +50,33 @@ namespace DeviceUtils { struct RenderToTexturePass; };
 using namespace Scene::CameraProjections;
 
 namespace Scene {
-#include <JExposeTrackUUIDDecl.h>
+#include <TrackUUID/JDecl.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
 
 	struct Light;
 	struct Renderable;
@@ -94,13 +98,13 @@ namespace Scene {
 	{
 		SCENEOBJECT_DECL(Camera);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		union {
 			CameraProjections::Perspective perspectiveProjection;

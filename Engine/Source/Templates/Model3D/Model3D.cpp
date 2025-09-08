@@ -25,27 +25,31 @@ using namespace Templates;
 
 namespace Templates
 {
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <Model3DAtt.h>
+#include <JEnd.h>
 
 	Model3DJson::Model3DJson(nlohmann::json json) : JTemplate(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	TEMPDEF_FULL(Model3D);

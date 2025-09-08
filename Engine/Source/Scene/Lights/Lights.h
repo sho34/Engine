@@ -7,7 +7,7 @@
 #include <SceneObjectDecl.h>
 #include <Json.h>
 #include <SceneObject.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 //let's explain a little bit here
 // 1.- One CVB of MaxLights Descriptors is created to write the data used
@@ -132,41 +132,45 @@ namespace Scene {
 		LightAttributes lights[MaxLights];
 	};
 
-#include <JExposeTrackUUIDDecl.h>
+#include <TrackUUID/JDecl.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <LightAtt.h>
+#include <JEnd.h>
 
 	struct Light : SceneObject
 	{
 		SCENEOBJECT_DECL(Light);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		void Destroy();
 
@@ -202,6 +206,7 @@ namespace Scene {
 		std::vector<std::shared_ptr<RenderPassInstance>> shadowMapMinMaxChainRenderPass;
 		std::shared_ptr<RenderPassInstance> shadowMapMinMaxChainResultRenderPass;
 		void CreateShadowMapMinMaxChain();
+		bool destroySMChain = false;
 		void DestroyShadowMapMinMaxChain();
 		void RenderShadowMapMinMaxChain();
 #endif

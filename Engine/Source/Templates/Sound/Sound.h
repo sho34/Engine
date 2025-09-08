@@ -9,7 +9,7 @@
 #include <JTemplate.h>
 #include <Templates.h>
 #include <TemplateDecl.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 using namespace DirectX;
 
@@ -20,37 +20,41 @@ namespace Templates
 		inline static const std::string templateName = "sounds.json";
 	}
 
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <SoundAtt.h>
+#include <JEnd.h>
 
 	struct SoundJson : JTemplate
 	{
 		TEMPLATE_DECL(Sound);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	};
 
 	TEMPDECL_FULL(Sound);

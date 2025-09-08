@@ -1,4 +1,8 @@
 #pragma once
+#include <vector>
+#include <set>
+#include <regex>
+#include <fstream>
 
 namespace nostd {
 
@@ -20,6 +24,15 @@ namespace nostd {
 		size_t size() const { return theSet.size(); }
 		void clear() { theSet.clear(); theVector.clear(); }
 		void erase_back() { T last = theVector.back(); theVector.pop_back(); theSet.erase(last); }
+		void erase(T value)
+		{
+			auto it = std::find(theVector.begin(), theVector.end(), value);
+			if (it != theVector.end())
+			{
+				theVector.erase(it);
+				theSet.erase(value);
+			}
+		}
 	private:
 		std::vector<T> theVector;
 		std::set<T>    theSet;

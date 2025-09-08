@@ -15,7 +15,7 @@
 #include <SceneObjectDecl.h>
 #include <NoMath.h>
 #include <SceneObject.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 namespace Scene { struct Camera; struct Light; };
 namespace ComputeShader { struct RenderableBoundingBox; };
@@ -36,29 +36,33 @@ static nlohmann::json defaultPickingShaderAttributes = { { "uniqueMaterialInstan
 
 namespace Scene
 {
-#include <JExposeTrackUUIDDecl.h>
+#include <TrackUUID/JDecl.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <RenderableAtt.h>
+#include <JEnd.h>
 
 	//UPDATE
 	void RenderablesStep();
@@ -78,13 +82,13 @@ namespace Scene
 	{
 		SCENEOBJECT_DECL(Renderable);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		XMVECTOR rotationQ();
 		XMMATRIX world();

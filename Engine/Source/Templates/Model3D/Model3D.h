@@ -10,44 +10,48 @@
 #include <Animated.h>
 #include <DirectXCollision.h>
 #include <JTemplate.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 namespace Animation { struct Animated; };
 namespace Templates { struct TextureJson; struct MaterialJson; };
 
 namespace Templates
 {
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <Model3DAtt.h>
+#include <JEnd.h>
 
 	struct Model3DJson : public JTemplate
 	{
 		TEMPLATE_DECL(Model3D);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <Model3DAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	};
 
 	TEMPDECL_FULL(Model3D);

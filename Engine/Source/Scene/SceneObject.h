@@ -1,11 +1,13 @@
 #pragma once
 
+#include <map>
 #include <JObject.h>
 #include <nlohmann/json.hpp>
 #include <ImGuizmo.h>
 #if defined(_EDITOR)
 #include <IconsFontAwesome5.h>
 #endif
+#include <DirectXMath.h>
 
 enum SceneObjectType {
 	SO_None,

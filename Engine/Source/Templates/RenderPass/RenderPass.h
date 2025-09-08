@@ -12,7 +12,7 @@
 #include <RenderPass/SwapChainPass.h>
 #include <RenderPass/RenderToTexturePass.h>
 #include <Mesh/Mesh.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 namespace Scene { struct Camera; };
 struct OverridePass;
@@ -89,37 +89,41 @@ inline static std::map<std::string, RenderPassRenderCallbackOverride> StringToRe
 
 namespace Templates
 {
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <RenderPassAtt.h>
+#include <JEnd.h>
 
 	struct RenderPassJson : public JTemplate
 	{
 		TEMPLATE_DECL(RenderPass);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <RenderPassAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	};
 
 	TEMPDECL_FULL(RenderPass);

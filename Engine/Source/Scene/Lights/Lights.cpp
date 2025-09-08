@@ -17,22 +17,34 @@
 
 extern std::shared_ptr<Renderer> renderer;
 
+#if defined(_EDITOR)
+namespace Editor
+{
+	void SelectSceneObject(std::string uuid);
+	void DeselectSceneObject(std::string uuid);
+}
+#endif
+
 namespace Scene {
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeTrackUUIDDef.h>
+#include <TrackUUID/JDef.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <LightAtt.h>
+#include <JEnd.h>
 
 	using namespace DeviceUtils;
 
@@ -45,20 +57,20 @@ namespace Scene {
 
 	Light::Light(nlohmann::json json) : SceneObject(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	void Light::Initialize()
 	{
-#include <JExposeTrackUUIDInsert.h>
+#include <TrackUUID/JInsert.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		if (hasShadowMaps())
 		{
@@ -73,9 +85,9 @@ namespace Scene {
 
 	void Light::UnbindFromScene()
 	{
-#include <JExposeTrackUUIDErase.h>
+#include <TrackUUID/JErase.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		if (!hasShadowMaps()) return;
 
@@ -126,6 +138,7 @@ namespace Scene {
 		std::set<std::shared_ptr<Light>> lightsToCreateShadowMaps;
 		std::set<std::shared_ptr<Light>> lightsToUpdateCamAttributes;
 		std::set<std::shared_ptr<Light>> lightsToUpdateTransformation;
+		std::set<std::shared_ptr<Light>> lightsToDestroySMChain;
 
 		std::set<Light::Light_UpdateFlags> smCamAttributes =
 		{
@@ -168,6 +181,13 @@ namespace Scene {
 				l->clean(Light::Update_hasShadowMaps);
 			}
 
+			//if destroying SMChain
+			if (l->destroySMChain)
+			{
+				lightsToDestroySMChain.insert(l);
+				l->destroySMChain = false;
+			}
+
 			//if resizing
 			if (l->dirty(Light::Update_shadowMapWidth) || l->dirty(Light::Update_shadowMapHeight))
 			{
@@ -193,14 +213,15 @@ namespace Scene {
 			}
 		}
 
-		bool criticalFrame = !!lightsToDestroyShadowMaps.size() || !!lightsToCreateShadowMaps.size();
+		bool criticalFrame = !!lightsToDestroyShadowMaps.size() || !!lightsToCreateShadowMaps.size() || !!lightsToDestroySMChain.size();
 
 		if (criticalFrame)
 		{
 			renderer->Flush();
 			renderer->RenderCriticalFrame([
 				&lightsToDestroyShadowMaps,
-				&lightsToCreateShadowMaps
+				&lightsToCreateShadowMaps,
+				&lightsToDestroySMChain
 			]
 				{
 					for (auto& l : lightsToDestroyShadowMaps)
@@ -214,6 +235,10 @@ namespace Scene {
 						l->CreateShadowMap();
 						l->CreateShadowMapMinMaxChain();
 						l->BindRenderablesToShadowMapCamera();
+					}
+					for (auto& l : lightsToDestroySMChain)
+					{
+						l->DestroyShadowMapMinMaxChain();
 					}
 				}
 			);
@@ -305,9 +330,9 @@ namespace Scene {
 		{
 			SafeDeleteSceneObject(l);
 		}
-#include <JExposeTrackUUIDClear.h>
+#include <TrackUUID/JClear.h>
 #include <LightAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex)
@@ -348,6 +373,37 @@ namespace Scene {
 
 #endif
 
+#if defined(_EDITOR)
+	void Light::EditorPreview(size_t flags)
+	{
+		if (flags & (1 << Light::Update_hasShadowMaps))
+		{
+			if (hasShadowMaps())
+				CreateShadowMapMinMaxChain();
+		}
+		switch (lightType())
+		{
+		case LT_Directional:
+		{
+			Editor::SelectSceneObject(uuid());
+		}
+		break;
+		}
+	}
+
+	void Light::DestroyEditorPreview()
+	{
+		destroySMChain = true;
+		switch (lightType())
+		{
+		case LT_Directional:
+		{
+			Editor::DeselectSceneObject(uuid());
+		}
+		break;
+		}
+	}
+
 	void Light::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
 		if (lightType() == LT_Ambient || lightType() == LT_Directional)
@@ -362,4 +418,5 @@ namespace Scene {
 		bbox->scale(XMFLOAT3({ 0.5f, 0.5f, 0.5f }));
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
+#endif
 }

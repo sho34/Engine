@@ -8,31 +8,35 @@
 #include <JTemplate.h>
 #include <TemplateDecl.h>
 #include <Json.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 enum TextureType;
 
 namespace Templates
 {
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <TextureAtt.h>
+#include <JEnd.h>
 
 	void TextureJsonsStep();
 
@@ -41,13 +45,13 @@ namespace Templates
 	{
 		TEMPLATE_DECL(Texture);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 #if defined(_EDITOR)
 		virtual void EditorPreview(size_t flags);

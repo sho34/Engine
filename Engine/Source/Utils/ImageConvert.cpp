@@ -3,6 +3,10 @@
 #include "Utils.h"
 #include <DirectXTex.h>
 #include <texdiag.h>
+#include <Command.h>
+#include <regex>
+#include <DXTypes.h>
+#include <NoStd.h>
 
 namespace Utils
 {

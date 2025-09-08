@@ -8,6 +8,8 @@
 #include "DeviceUtils/PipelineState/PipelineState.h"
 #include "DeviceUtils/RenderTarget/RenderTarget.h"
 #include "DeviceUtils/RenderToTexture/RenderToTexture.h"
+#include <dxgidebug.h>
+#include <winerror.h>
 
 using namespace DeviceUtils;
 
@@ -165,18 +167,18 @@ void Renderer::Resize(unsigned int width, unsigned int height) {
 	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
 }
 
-void Renderer::ResetCommands() {
+void Renderer::ResetCommands() const {
 	auto commandAllocator = commandAllocators[backBufferIndex];
 	commandAllocator->Reset();
 	commandList->Reset(commandAllocator, nullptr);
 }
 
-void Renderer::SetCSUDescriptorHeap() {
+void Renderer::SetCSUDescriptorHeap() const {
 	ID3D12DescriptorHeap* ppHeaps[] = { GetCSUDescriptorHeap() };
 	commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 }
 
-void Renderer::ExecuteCommands()
+void Renderer::ExecuteCommands() const
 {
 	DX::ThrowIfFailed(commandList->Close());
 	ID3D12CommandList* const commandLists[] = { commandList };

@@ -1,4 +1,5 @@
 #pragma once
+#include <TemplateFlags.h>
 
 inline void UpdateSystemCreatedFromJson(unsigned int& flags, nlohmann::json object) {
 	flags |= (object.contains("systemCreated") and object["systemCreated"] != "") ? TemplateFlags::SystemCreated : TemplateFlags::None;

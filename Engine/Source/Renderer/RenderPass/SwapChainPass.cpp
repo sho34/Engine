@@ -5,6 +5,7 @@
 #include <DeviceUtils/RenderTarget/RenderTarget.h>
 #include <DeviceUtils/DescriptorHeap/DescriptorHeap.h>
 #include <NoStd.h>
+#include <pix3.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -89,9 +90,9 @@ namespace DeviceUtils
 	void SwapChainPass::CopyFromRenderToTexture(const std::shared_ptr<RenderToTexture>& renderToTexture)
 	{
 		unsigned int backbufferIndex = renderer->backBufferIndex;
-		auto commandList = renderer->commandList;
-		auto backbuffer = renderTargets[backbufferIndex];
-		auto rtt = renderToTexture->renderToTexture;
+		auto& commandList = renderer->commandList;
+		auto& backbuffer = renderTargets[backbufferIndex];
+		auto& rtt = renderToTexture->renderToTexture;
 
 		std::vector<CD3DX12_RESOURCE_BARRIER> hold = {
 			CD3DX12_RESOURCE_BARRIER::Transition(backbuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COPY_DEST),
@@ -113,8 +114,8 @@ namespace DeviceUtils
 	void SwapChainPass::EndRenderPass()
 	{
 		unsigned int backBufferIndex = renderer->backBufferIndex;
-		auto backBuffer = renderTargets[backBufferIndex];
-		auto commandList = renderer->commandList;
+		auto& backBuffer = renderTargets[backBufferIndex];
+		auto& commandList = renderer->commandList;
 		CD3DX12_RESOURCE_BARRIER barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
 		commandList->ResourceBarrier(1, &barrier);
 

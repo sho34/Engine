@@ -22,34 +22,38 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace Scene
 {
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeTrackUUIDDef.h>
+#include <TrackUUID/JDef.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
 
 	using namespace DeviceUtils;
 	using namespace DirectX;
 
 	Camera::Camera(nlohmann::json json) :SceneObject(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	void CamerasStep()
@@ -170,9 +174,9 @@ namespace Scene
 			if (cam->light().empty())
 				SafeDeleteSceneObject(cam);
 		}
-#include <JExposeTrackUUIDClear.h>
+#include <TrackUUID/JClear.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 #if defined(_EDITOR)
@@ -410,9 +414,9 @@ namespace Scene
 
 	void Camera::Initialize()
 	{
-#include <JExposeTrackUUIDInsert.h>
+#include <TrackUUID/JInsert.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		if (!light().empty()) {
 			lightCam = FindInLights(light());
@@ -466,9 +470,9 @@ namespace Scene
 
 	void Camera::UnbindFromScene()
 	{
-#include <JExposeTrackUUIDErase.h>
+#include <TrackUUID/JErase.h>
 #include <CameraAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		lightCam = nullptr;
 		Scene::UnbindFromScene(this_ptr);

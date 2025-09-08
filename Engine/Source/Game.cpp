@@ -26,6 +26,7 @@ using namespace Editor;
 #endif
 #include <RenderPass/RenderPass.h>
 #include <Renderable/Renderable.h>
+#include <Level.h>
 
 using namespace Scene;
 using namespace DeviceUtils;
@@ -469,6 +470,8 @@ void EditorModeCreate()
 {
 	renderer->RenderCriticalFrame([]
 		{
+			using namespace Scene::Level;
+
 			//mainPass = CreateMainPass();
 			//resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 

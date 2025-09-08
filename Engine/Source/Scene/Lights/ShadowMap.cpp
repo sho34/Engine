@@ -331,20 +331,6 @@ namespace Scene {
 	}
 
 #if defined(_EDITOR)
-	void Light::EditorPreview(size_t flags)
-	{
-		if (flags & (1 << Light::Update_hasShadowMaps))
-		{
-			if (hasShadowMaps())
-				CreateShadowMapMinMaxChain();
-		}
-	}
-
-	void Light::DestroyEditorPreview()
-	{
-		DestroyShadowMapMinMaxChain();
-	}
-
 	void Light::CreateShadowMapMinMaxChain()
 	{
 		//pick the gpu handles for the final shadowmap and copies for the min/max chain initial calculation

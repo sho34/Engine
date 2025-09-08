@@ -1,35 +1,32 @@
 #include "pch.h"
 #include "Engine.h"
 #include "Game.h"
-//#include <Effects.h>
 #include <Lights/Lights.h>
 #include <RenderPass/RenderPass.h>
 #include <Mesh/Mesh.h>
 #include <Model3D/Model3D.h>
 #include <Sound/Sound.h>
 #include <Textures/Texture.h>
+#include <Level.h>
 
 using namespace Templates::RenderPass;
 using namespace Scene;
 using namespace ShaderCompiler;
-//using namespace Effects;
 
 #define MAX_LOADSTRING 100
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 HWND hWnd;                                      // Window hWnd
-RECT hWndRect;																	// Window Rect (this can change so if you change the size of the window please rewrite this value)
-HWND desktopHwnd;																// Desktop hWnd (how do you enumerate desktops with this?)
-RECT desktopRect;																// Desktop Rect								
+RECT hWndRect;									// Window Rect (this can change so if you change the size of the window please rewrite this value)
+HWND desktopHwnd;								// Desktop hWnd (how do you enumerate desktops with this?)
+RECT desktopRect;								// Desktop Rect								
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
 bool appDone = false;
 bool inSizeMove = false;
 bool resizeWindow = false;
 bool minimized = false;
-//unsigned int resizeWidth = 0;
-//unsigned int resizeHeight = 0;
 bool inFullScreen = false;
 #if defined(_EDITOR)
 bool editorPlayMode = false;
@@ -84,7 +81,6 @@ void ResetWindowStyle(bool fullscreen)
 	}
 	else
 	{
-		//SetWindowLongPtr(hWnd, GWL_STYLE, /*WS_POPUP |*/ WS_OVERLAPPEDWINDOW);
 		SetWindowLongPtr(hWnd, GWL_STYLE, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
 		SetWindowLongPtr(hWnd, GWL_EXSTYLE, WS_EX_TOPMOST);
 
@@ -112,7 +108,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	GetClientRect(desktopHwnd, &desktopRect);
 
 	// Initialize global strings
-	//LoadStringW(hInstance, IDS_APP_TITLE, gameAppTitle.c_str(), MAX_LOADSTRING);
 	LoadStringW(hInstance, IDC_WINDOWSPROJECT2, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
@@ -159,7 +154,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 	wcex.hIcon = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_WINDOWSPROJECT2));
 	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
 	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	//wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_WINDOWSPROJECT2);
 	wcex.lpszClassName = szWindowClass;
 	wcex.hIconSm = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
@@ -184,7 +178,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	if (!hWnd) return FALSE;
 
 	ResetWindowStyle(inFullScreen);
-	//ShowWindow(hWnd, nCmdShow);
 
 	UpdateWindow(hWnd);
 
@@ -240,8 +233,10 @@ void CreateSystemTemplates() {
 	using namespace Templates;
 
 	Templates::LoadTemplates(Templates::GetSystemShaders(), Templates::CreateShader);
+	Templates::LoadTemplates(Templates::GetSystemSounds(), Templates::CreateSound);
 	Templates::LoadTemplates(Templates::GetSystemMaterials(), Templates::CreateMaterial);
 	Templates::LoadTemplates(Templates::GetSystemRenderPasses(), Templates::CreateRenderPass);
+	Templates::LoadTemplates(Templates::GetSystemTextures(), Templates::CreateTexture);
 
 	CreatePrimitiveMeshTemplate("d41e5c29-49bb-4f2c-aa2b-da781fbac512", "floor");
 	CreatePrimitiveMeshTemplate("d8bfdef4-55f9-4f6e-b4a8-20915eb854d6", "utahteapot");
@@ -336,7 +331,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		{
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hWnd, &ps);
-			// TODO: Add any drawing code that uses hdc here...
 			EndPaint(hWnd, &ps);
 		}
 	}
@@ -358,8 +352,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (renderer) {
 			GetWindowRect(hWnd, &hWndRect);
 			resizeWindow = true;
-			//resizeWidth = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
-			//resizeHeight = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
 		}
 	}
 	break;
@@ -368,19 +360,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (renderer)
 		{
 			resizeWindow = true;
-			//resizeWidth = LOWORD(lParam);
-			//resizeHeight = HIWORD(lParam);
-			//if (resizeHeight == 0U && resizeWidth == 0U)
 			minimized = (LOWORD(lParam) == 0U && HIWORD(lParam) == 0U);
-			/*
-			if (resizeHeight == 0U && resizeWidth == 0U)
-			{
-				minimized = true;
-			}
-			else
-			{
-				minimized = false;
-			}*/
 		}
 	}
 	break;
@@ -501,7 +481,6 @@ void ResizeWindow()
 	renderer->Flush();
 
 	Templates::RenderPass::ResizeRelease();
-	//WindowResizeReleaseResources();
 
 	GetWindowRect(hWnd, &hWndRect);
 
@@ -514,12 +493,13 @@ void ResizeWindow()
 	}
 
 	Templates::RenderPass::Resize(HWNDWIDTH, HWNDHEIGHT);
-	//WindowResize(resizeWidth, resizeHeight);
 }
 
 //DESTROY
 void DestroyInstance()
 {
+	using namespace Scene::Level;
+
 	if (destroyed) return;
 	renderer->Flush();
 

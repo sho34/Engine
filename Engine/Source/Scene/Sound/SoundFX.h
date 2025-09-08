@@ -3,48 +3,52 @@
 #include <SceneObjectDecl.h>
 #include <Json.h>
 #include <SceneObject.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 namespace Scene { struct Renderable; };
 
 namespace Scene {
 	struct SoundFX;
 
-#include <JExposeTrackUUIDDecl.h>
+#include <TrackUUID/JDecl.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <SoundFXAtt.h>
+#include <JEnd.h>
 
 	struct SoundFX : SceneObject
 	{
 		SCENEOBJECT_DECL(SoundFX);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <SoundFXAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		virtual void Initialize();
 		void Destroy();
@@ -66,7 +70,7 @@ namespace Scene {
 		float Duration() { return (GetEffect()->GetSampleDurationMS() / 1000.0f); }
 		float time = 0.0f;
 		void Step(float step);
-		float Time() { return time; }
+		float Time() const { return time; }
 
 		//3D
 		AudioEmitter audioEmitter;
@@ -76,7 +80,6 @@ namespace Scene {
 	};
 
 	//DESTROY
-	void DestroySoundEffect(std::shared_ptr<SoundFX>& sfx);
 	void DestroySoundEffects();
 
 #if defined(_EDITOR)

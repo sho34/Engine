@@ -15,7 +15,7 @@
 #include <Textures/Texture.h>
 #include <ShaderMaterials.h>
 #include <JTemplate.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 
 namespace Templates
 {
@@ -58,25 +58,29 @@ inline nlohmann::json FromTextureShaderUsagePair(TextureShaderUsagePair m)
 
 namespace Templates {
 
-#include <JExposeAttOrder.h>
+#include <Attributes/JOrder.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttDrawersDecl.h>
+#include <Editor/JDrawersDecl.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttRequired.h>
+#include <Creator/JRequired.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDecl.h>
+#include <Creator/JJsonDecl.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDecl.h>
+#include <Creator/JDrawersDecl.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDecl.h>
+#include <MaterialAtt.h>
+#include <JEnd.h>
 
 	void MaterialJsonStep();
 
@@ -84,13 +88,13 @@ namespace Templates {
 	{
 		TEMPLATE_DECL(Material);
 
-#include <JExposeAttFlags.h>
+#include <Attributes/JFlags.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeDecl.h>
+#include <Attributes/JDecl.h>
 #include <MaterialAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	};
 
 	TEMPDECL_FULL(Material);

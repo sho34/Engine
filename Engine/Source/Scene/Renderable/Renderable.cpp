@@ -31,21 +31,25 @@
 extern std::shared_ptr<Renderer> renderer;
 
 namespace Scene {
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeTrackUUIDDef.h>
+#include <TrackUUID/JDef.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <RenderableAtt.h>
+#include <JEnd.h>
 
 	//UPDATE
 	void RenderablesStep()
@@ -208,9 +212,9 @@ namespace Scene {
 		{
 			SafeDeleteSceneObject(r);
 		}
-#include <JExposeTrackUUIDClear.h>
+#include <TrackUUID/JClear.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	//EDITOR
@@ -242,13 +246,13 @@ namespace Scene {
 
 	Renderable::Renderable(nlohmann::json json) :SceneObject(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 	}
 
@@ -256,9 +260,9 @@ namespace Scene {
 	{
 		CreateMeshInstances(); //why here, this is a special case, as Animables depends of animables which is created in this function
 
-#include <JExposeTrackUUIDInsert.h>
+#include <TrackUUID/JInsert.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		if (animable)
 		{
@@ -315,9 +319,9 @@ namespace Scene {
 
 	void Renderable::UnbindFromScene()
 	{
-#include <JExposeTrackUUIDErase.h>
+#include <TrackUUID/JErase.h>
 #include <RenderableAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		UnbindMaterialsChangesCallback();
 		Scene::UnbindFromScene(this_ptr);

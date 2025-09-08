@@ -13,17 +13,21 @@
 
 namespace Templates {
 
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <ShaderAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <ShaderAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <ShaderAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <ShaderAtt.h>
+#include <JEnd.h>
 
 	namespace Shader
 	{
@@ -45,13 +49,13 @@ namespace Templates {
 
 	ShaderJson::ShaderJson(nlohmann::json json) : JTemplate(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <ShaderAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <ShaderAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
 		Shader::fileNameToShaderTemplate.insert({ path(),uuid() });
 	}

@@ -8,7 +8,7 @@
 #include <Renderer.h>
 #include <Effects.h>
 #include <StepTimer.h>
-#include <JExposeTypes.h>
+#include <JTypes.h>
 #if defined(_EDITOR)
 #include <Editor.h>
 #endif
@@ -223,9 +223,9 @@ namespace Scene
 		return GetSOAtts.at(so)();
 	}
 
-	std::map<std::string, JEdvDrawerFunction> GetSceneObjectDrawers(SceneObjectType so)
+	std::map<std::string, JEdvEditorDrawerFunction> GetSceneObjectDrawers(SceneObjectType so)
 	{
-		const std::map<SceneObjectType, std::function<std::map<std::string, JEdvDrawerFunction>()>> GetSODrawers =
+		const std::map<SceneObjectType, std::function<std::map<std::string, JEdvEditorDrawerFunction>()>> GetSODrawers =
 		{
 			{ SO_Renderables, GetRenderableDrawers },
 			{ SO_Lights, GetLightDrawers },
@@ -269,6 +269,18 @@ namespace Scene
 			{ SO_SoundEffects, GetSoundFXCreatorDrawers }
 		};
 		return GetSODrawers.at(so)();
+	}
+
+	std::map<std::string, JEdvCreatorValidatorFunction> GetSceneObjectValidators(SceneObjectType so)
+	{
+		const std::map<SceneObjectType, std::function<std::map<std::string, JEdvCreatorValidatorFunction>()>> GetSOValidators =
+		{
+			{ SO_Renderables, GetRenderableCreatorValidator },
+			{ SO_Lights, GetLightCreatorValidator },
+			{ SO_Cameras, GetCameraCreatorValidator },
+			{ SO_SoundEffects, GetSoundFXCreatorValidator }
+		};
+		return GetSOValidators.at(so)();
 	}
 
 	template<typename S>

@@ -1,25 +1,20 @@
 #pragma once
 
-#include "Level.h"
 #include <Application.h>
-#include <map>
 #include <string>
 #include <vector>
-#include <UUID.h>
+#include <map>
 #include <memory>
 #include <nlohmann/json.hpp>
-#include <SceneObject.h>
-#include <JExposeTypes.h>
+#include <UUID.h>
+#include <JTypes.h>
 #include <Binder.h>
-
-using namespace Scene::Level;
+#include <SceneObject.h>
 
 namespace DX { class StepTimer; }
 
 namespace Scene
 {
-	struct Camera;
-
 	template<typename S>
 	std::shared_ptr<S> CreateSceneObjectFromJson(nlohmann::json& j)
 	{
@@ -60,10 +55,11 @@ namespace Scene
 	std::vector<UUIDName> GetSceneObjects(SceneObjectType so);
 	SceneObjectType GetSceneObjectType(std::string uuid);
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetSceneObjectAttributes(SceneObjectType so);
-	std::map<std::string, JEdvDrawerFunction> GetSceneObjectDrawers(SceneObjectType so);
+	std::map<std::string, JEdvEditorDrawerFunction> GetSceneObjectDrawers(SceneObjectType so);
 	std::vector<std::string> GetSceneObjectRequiredAttributes(SceneObjectType so);
 	nlohmann::json GetSceneObjectJson(SceneObjectType so);
 	std::map<std::string, JEdvCreatorDrawerFunction> GetSceneObjectCreatorDrawers(SceneObjectType so);
+	std::map<std::string, JEdvCreatorValidatorFunction> GetSceneObjectValidators(SceneObjectType so);
 
 	void CreateSceneObject(SceneObjectType so, nlohmann::json json);
 	void DeleteSceneObject(SceneObjectType so, std::string uuid);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <RenderPass/RenderPass.h>
+#include <dxgi1_6.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -49,11 +50,11 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 	//UPDATE
 	void UpdateViewportPerspective();
 	void Resize(unsigned int width, unsigned int height);
-	void ResetCommands();
-	void SetCSUDescriptorHeap();
+	void ResetCommands() const;
+	void SetCSUDescriptorHeap() const;
 	void CloseCommandsAndFlush();
 	void RenderCriticalFrame(std::function<void()> callback = []() {});
-	void ExecuteCommands();
+	void ExecuteCommands() const;
 	void Present();
 	void Flush();
 

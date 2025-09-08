@@ -281,30 +281,40 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Editor\MousePicking.h" />
     <ClInclude Include="Editor\RightPanelComponent.h" />
-    <ClInclude Include="JExpose\JExposeAttCreatorDrawersDecl.h" />
-    <ClInclude Include="JExpose\JExposeAttCreatorDrawersDef.h" />
-    <ClInclude Include="JExpose\JExposeAttDrawersDef.h" />
-    <ClInclude Include="JExpose\JExposeAttJsonDecl.h" />
-    <ClInclude Include="JExpose\JExposeAttJsonDef.h" />
-    <ClInclude Include="JExpose\JExposeAttUpdate.h" />
+    <ClInclude Include="JExpose\Attributes\JExpose.h" />
+    <ClInclude Include="JExpose\Creator\JDrawersDecl.h" />
+    <ClInclude Include="JExpose\Creator\JDrawersDef.h" />
+    <ClInclude Include="JExpose\Creator\JExpose.h" />
+    <ClInclude Include="JExpose\Creator\JValidatorDecl.h" />
+    <ClInclude Include="JExpose\Creator\JValidatorDef.h" />
+    <ClInclude Include="JExpose\Editor\JDrawersDef.h" />
+    <ClInclude Include="JExpose\Creator\JJsonDecl.h" />
+    <ClInclude Include="JExpose\Creator\JJsonDef.h" />
+    <ClInclude Include="JExpose\Attributes\JUpdate.h" />
+    <ClInclude Include="JExpose\Editor\JExpose.h" />
+    <ClInclude Include="JExpose\Functions\JEdvCreatorDrawer.h" />
+    <ClInclude Include="JExpose\Functions\JEdvCreatorValidator.h" />
+    <ClInclude Include="JExpose\Functions\JEdvEditorDrawer.h" />
     <ClInclude Include="JExpose\JExpose.h" />
-    <ClInclude Include="JExpose\JExposeAttOrder.h" />
-    <ClInclude Include="JExpose\JExposeAttFlags.h" />
-    <ClInclude Include="JExpose\JExposeDecl.h" />
-    <ClInclude Include="JExpose\JExposeAttRequired.h" />
-    <ClInclude Include="JExpose\JExposeTrackUUIDClear.h" />
-    <ClInclude Include="JExpose\JExposeTrackUUIDDecl.h" />
-    <ClInclude Include="JExpose\JExposeTrackUUIDDef.h" />
-    <ClInclude Include="JExpose\JExposeTrackUUIDErase.h" />
-    <ClInclude Include="JExpose\JExposeTrackUUIDInsert.h" />
-    <ClInclude Include="JExpose\JExposeTypes.h" />
+    <ClInclude Include="JExpose\Attributes\JOrder.h" />
+    <ClInclude Include="JExpose\Attributes\JFlags.h" />
+    <ClInclude Include="JExpose\Attributes\JDecl.h" />
+    <ClInclude Include="JExpose\Creator\JRequired.h" />
+    <ClInclude Include="JExpose\TrackUUID\JClear.h" />
+    <ClInclude Include="JExpose\TrackUUID\JDecl.h" />
+    <ClInclude Include="JExpose\TrackUUID\JDef.h" />
+    <ClInclude Include="JExpose\TrackUUID\JErase.h" />
+    <ClInclude Include="JExpose\TrackUUID\JExpose.h" />
+    <ClInclude Include="JExpose\TrackUUID\JInsert.h" />
+    <ClInclude Include="JExpose\JTypes.h" />
     <ClInclude Include="JExpose\JObject.h" />
     <ClInclude Include="pch\Binder.h" />
     <ClInclude Include="pch\JExposeEditor.h" />
-    <ClInclude Include="JExpose\JExposeEnd.h" />
-    <ClInclude Include="JExpose\JExposeInit.h" />
-    <ClInclude Include="JExpose\JExposeAttDrawersDecl.h" />
+    <ClInclude Include="JExpose\JEnd.h" />
+    <ClInclude Include="JExpose\Attributes\JInit.h" />
+    <ClInclude Include="JExpose\Editor\JDrawersDecl.h" />
     <ClInclude Include="JExpose\Scene\CameraAtt.h" />
     <ClInclude Include="JExpose\Scene\LightAtt.h" />
     <ClInclude Include="JExpose\Scene\RenderableAtt.h" />
@@ -571,6 +581,7 @@
     </ClCompile>
     <ClCompile Include="Editor\DefaultLevel.cpp" />
     <ClCompile Include="Editor\ImEditor.cpp" />
+    <ClCompile Include="Editor\MousePicking.cpp" />
     <ClCompile Include="Editor\RightPanelComponent.cpp" />
     <ClCompile Include="Scene\SceneObject.cpp" />
     <ClCompile Include="Templates\RenderPass\Override\MinMaxChainPass.cpp" />

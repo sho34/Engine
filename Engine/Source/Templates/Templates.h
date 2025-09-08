@@ -8,37 +8,13 @@
 #include <StepTimer.h>
 #include <JTemplate.h>
 
-#if defined(_EDITOR)
-inline static std::function<std::vector<UUIDName>()> SortUUIDNameByName(std::function<std::vector<UUIDName>()> getUUIDNames)
-{
-	return [getUUIDNames]()
-		{
-			std::vector<UUIDName> uuidNames = getUUIDNames();
-			std::sort(uuidNames.begin(), uuidNames.end(), [](UUIDName a, UUIDName b)
-				{
-					return std::get<1>(a) < std::get<1>(b);
-				}
-			);
-			return uuidNames;
-		};
-};
-
-inline static void SortUUIDByName(std::vector<UUIDName>& uuidNames)
-{
-	std::sort(uuidNames.begin(), uuidNames.end(), [](UUIDName a, UUIDName b)
-		{
-			return std::get<1>(a) < std::get<1>(b);
-		}
-	);
-}
-
-#endif
-
 namespace Templates {
 
 	nlohmann::json& GetSystemShaders();
+	nlohmann::json& GetSystemSounds();
 	nlohmann::json& GetSystemMaterials();
 	nlohmann::json& GetSystemRenderPasses();
+	nlohmann::json& GetSystemTextures();
 
 #if defined(_EDITOR)
 	void SaveTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json&)> writer);
@@ -140,10 +116,11 @@ namespace Templates {
 	std::vector<UUIDName> GetTemplates(TemplateType t);
 	TemplateType GetTemplateType(std::string uuid);
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetTemplateAttributes(TemplateType t);
-	std::map<std::string, JEdvDrawerFunction> GetTemplateDrawers(TemplateType t);
+	std::map<std::string, JEdvEditorDrawerFunction> GetTemplateDrawers(TemplateType t);
 	std::vector<std::string> GetTemplateRequiredAttributes(TemplateType t);
 	nlohmann::json GetTemplateJson(TemplateType t);
 	std::map<std::string, JEdvCreatorDrawerFunction> GetTemplateCreatorDrawers(TemplateType t);
+	std::map<std::string, JEdvCreatorValidatorFunction> GetTemplateValidators(TemplateType t);
 
 	std::string GetTemplateName(TemplateType t, std::string uuid);
 	void CreateTemplate(TemplateType t, nlohmann::json json);

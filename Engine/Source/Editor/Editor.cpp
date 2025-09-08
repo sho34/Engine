@@ -1,6 +1,6 @@
 #include "pch.h"
 
-#if defined(_EDITOR)
+#include <atlbase.h>
 #include <JExposeEditor.h>
 #include <Editor.h>
 #include <Mouse.h>
@@ -24,6 +24,10 @@
 #include <IconsFontAwesome5.h>
 #include <functional>
 #include <RightPanelComponent.h>
+#include <Level.h>
+#include <Mouse.h>
+#include <Keyboard.h>
+#include <MousePicking.h>
 
 extern HWND hWnd;
 extern RECT hWndRect;
@@ -33,7 +37,6 @@ extern std::shared_ptr<Renderer> renderer;
 extern std::string gameAppTitle;
 extern bool inSizeMove;
 extern RECT GetMaximizedAreaSize();
-//extern std::filesystem::path levelToLoad;
 
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -71,47 +74,7 @@ namespace Editor {
 		MOUSE_GAMEAREA_MODE_CAMERA
 	};
 	MouseGameAreaMode currentMouseMode = MOUSE_GAMEAREA_MODE_NONE;
-
-	struct
-	{
-		std::shared_ptr<RenderPassInstance> pickingPass;
-		CComPtr<ID3D12Resource> pickingCpuBuffer;
-		unsigned int pickingX = 0U;
-		unsigned int pickingY = 0U;
-		bool doPicking = false;
-		nostd::VectorSet<std::shared_ptr<SceneObject>> pickedObjects;
-		void Reset()
-		{
-			pickingX = 0U;
-			pickingY = 0U;
-			doPicking = false;
-		}
-		void StartPicking(DirectX::Mouse::State state)
-		{
-			pickingX = state.x;
-			pickingY = state.y;
-			doPicking = false;
-		}
-		bool CanPick(DirectX::Mouse::State state) const
-		{
-			/*
-			std::string str = "button:" + std::string((!state.leftButton) ? "true" : "false") + " " +
-				"state.x:" + std::to_string(state.x) + " " + "pickingX:" + std::to_string(pickingX) + " " +
-				"state.y:" + std::to_string(state.y) + " " + "pickingY:" + std::to_string(pickingY) + " " +
-				"\n";
-			OutputDebugStringA(str.c_str());
-			*/
-			return (!state.leftButton && state.x == pickingX && state.y == pickingY);
-		}
-		void Pick()
-		{
-			doPicking = true;
-		}
-		bool MouseMoved(DirectX::Mouse::State state) const
-		{
-			return (state.leftButton && (state.x != pickingX || state.y != pickingY));
-		}
-	} mousePicking;
+	MousePicking mousePicking;
 
 	struct
 	{
@@ -443,7 +406,7 @@ namespace Editor {
 		DrawApplicationBar();
 		DrawRightPanel();
 		if (camera)
-			DrawPickedObjectsGuizmo(camera, gizmoOperation, gizmoMode);
+			DrawPickedObjectsGizmo(camera);
 
 		sceneObjectModal.DrawCreationPopup();
 		templateModal.DrawCreationPopup();
@@ -786,10 +749,57 @@ namespace Editor {
 		sceneObjectEdition.Destroy();
 	}
 
-	void DrawPickedObjectsGuizmo(std::shared_ptr<Camera> camera, ImGuizmo::OPERATION& gizmoOperation, ImGuizmo::MODE& gizmoMode)
+	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera)
 	{
 		if (mousePicking.pickedObjects.size() == 0ULL) return;
 
+		switch (mousePicking.pickedType)
+		{
+		case SO_Renderables:
+		{
+			DrawRenderableGizmo(camera);
+		}
+		break;
+		case SO_Lights:
+		{
+			DrawPickedLightGizmo(camera);
+		}
+		break;
+		case SO_Cameras:
+		{
+			DrawCameraGizmo(camera);
+		}
+		break;
+		case SO_SoundEffects:
+		{
+			DrawSoundEffectGizmo(camera);
+		}
+		break;
+		}
+	}
+
+	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(XMFLOAT4X4 view, XMFLOAT4X4 proj)> interaction)
+	{
+		ImGuizmo::BeginFrame();
+		ImGuizmo::SetOrthographic(false);
+		ImGuizmo::AllowAxisFlip(false);
+
+		ImGuiIO& io = ImGui::GetIO();
+		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+		ImGuizmo::SetID(0);
+
+		XMFLOAT4X4 view;
+		XMFLOAT4X4 proj;
+		XMStoreFloat4x4(&view, camera->view());
+		XMStoreFloat4x4(&proj, camera->perspectiveProjection.projectionMatrix);
+
+		interaction(view, proj);
+	}
+
+	void DrawRenderableGizmo(std::shared_ptr<Camera> camera)
+	{
+		/*
 		auto translateObjects = [](XMVECTOR translation)
 			{
 				XMVECTOR len = XMVector3Length(translation);
@@ -806,6 +816,8 @@ namespace Editor {
 					o->JUpdate(patch);
 				}
 			};
+		*/
+		/*
 		auto rotateObjects = [](XMFLOAT4X4 transformation)
 			{
 				XMFLOAT3 p0 = ToXMFLOAT3((*mousePicking.pickedObjects.begin())->at("position"));
@@ -845,6 +857,8 @@ namespace Editor {
 					}
 				}
 			};
+		*/
+		/*
 		auto scaleObjects = [](XMVECTOR XMscale, XMFLOAT4X4 transformation)
 			{
 				XMFLOAT3 p0 = ToXMFLOAT3((*mousePicking.pickedObjects.begin())->at("position"));
@@ -882,7 +896,9 @@ namespace Editor {
 					}
 				}
 			};
+		*/
 
+		/*
 		ImGuizmo::BeginFrame();
 		ImGuizmo::SetOrthographic(false);
 		ImGuizmo::AllowAxisFlip(false);
@@ -941,6 +957,47 @@ namespace Editor {
 			//newScale.z *= XMscale.m128_f32[2];
 			//scale(newScale);
 		}
+		*/
+	}
+
+	void DrawPickedLightGizmo(std::shared_ptr<Camera> camera)
+	{
+		std::shared_ptr<Light> light = std::dynamic_pointer_cast<Light>((*mousePicking.pickedObjects.begin()));
+		switch (light->lightType())
+		{
+		case LT_Directional:
+		{
+			BeginGizmoInteraction(camera, [&camera, light](XMFLOAT4X4 view, XMFLOAT4X4 proj)
+				{
+					XMMATRIX world = camera->world();
+					XMVECTOR forward = XMVectorScale(camera->forward(), 10.0f);
+					XMMATRIX forwardM = XMMatrixTranslationFromVector(forward);
+					world = XMMatrixMultiply(world, forwardM);
+					XMFLOAT4X4 w;
+					XMStoreFloat4x4(&w, world);
+
+					XMFLOAT4X4 delta;
+					ImGuizmo::Manipulate(*view.m, *proj.m, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, *w.m, *delta.m, NULL, NULL, NULL);
+
+					XMFLOAT3 delRotation = DX::GetPitchYawRoll(delta);
+					XMFLOAT3 curRotation = light->rotation();
+					curRotation.x += delRotation.x;
+					curRotation.y += delRotation.y;
+					curRotation.z += delRotation.z;
+
+					nlohmann::json patch = { { "rotation", FromXMFLOAT3(curRotation) } };
+					light->JUpdate(patch);
+				}
+			);
+		}
+		break;
+		}
+	}
+	void DrawCameraGizmo(std::shared_ptr<Camera> camera)
+	{
+	}
+	void DrawSoundEffectGizmo(std::shared_ptr<Camera> camera)
+	{
 	}
 
 	void OpenLevelFile()
@@ -952,13 +1009,6 @@ namespace Editor {
 				std::filesystem::path jsonFilePath = path;
 				jsonFilePath.replace_extension(".json");
 				SetLevelToLoad(jsonFilePath.generic_string());
-				//levelToLoad = jsonFilePath;
-				/*
-				soTab = SceneObjectType::SO_Renderables;
-				selSO = "";
-				tempTab = TemplateType::T_Materials;
-				selTemp = "";
-				*/
 			},
 			defaultLevelsFolder);
 	}
@@ -1114,6 +1164,33 @@ namespace Editor {
 
 	void SelectSceneObject(std::string uuid)
 	{
+		std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
+
+		switch (so->JType())
+		{
+		case SO_Renderables:
+		{
+			SelectRenderable(uuid);
+		}
+		break;
+		case SO_Lights:
+		{
+			SelectLight(uuid);
+		}
+		break;
+		case SO_Cameras:
+		{
+			SelectCamera(uuid);
+		}
+		break;
+		case SO_SoundEffects:
+		{
+			SelectSoundEffect(uuid);
+		}
+		break;
+		}
+
+		/*
 		std::map<std::tuple<bool, bool>, std::function<void()>> actions =
 		{
 			{ std::make_tuple(false,false), [] //no shift, selecting nothing
@@ -1159,6 +1236,45 @@ namespace Editor {
 		};
 
 		actions.at(std::make_tuple(keyboard->GetState().LeftShift, uuid != ""))();
+		*/
+	}
+
+	void DeselectSceneObject(std::string uuid)
+	{
+		if (sceneObjectEdition.selected.contains(uuid))
+		{
+			std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
+			mousePicking.pickedObjects.erase(so);
+			sceneObjectEdition.selected.erase(uuid);
+		}
+	}
+
+	void SelectRenderable(std::string uuid)
+	{
+	}
+
+	void SelectLight(std::string uuid)
+	{
+		//selecting light, only pick the light
+		mousePicking.pickedObjects.clear();
+		sceneObjectEdition.selected.clear();
+
+		//insert the SceneObject(Light) and the uuid to the lists
+		mousePicking.pickedObjects.insert(FindInLights(uuid));
+		mousePicking.pickedType = SO_Lights;
+		sceneObjectEdition.selected.insert(uuid);
+
+		//set mode to rotate
+		gizmoOperation = ImGuizmo::ROTATE;
+		gizmoMode = ImGuizmo::WORLD;
+	}
+
+	void SelectCamera(std::string uuid)
+	{
+	}
+
+	void SelectSoundEffect(std::string uuid)
+	{
 	}
 
 	void WriteRenderableBoundingBoxConstantsBuffer()
@@ -1558,6 +1674,7 @@ namespace Editor {
 		sceneObjectModal.json = GetSceneObjectJson(type);
 		sceneObjectModal.atts = GetSceneObjectRequiredAttributes(type);
 		sceneObjectModal.drawers = GetSceneObjectCreatorDrawers(type);
+		sceneObjectModal.validators = GetSceneObjectValidators(type);
 		sceneObjectModal.type = type;
 		sceneObjectModal.creating = true;
 		sceneObjectModal.onCreate = CreateSceneObject;
@@ -1568,10 +1685,10 @@ namespace Editor {
 		templateModal.json = GetTemplateJson(type);
 		templateModal.atts = GetTemplateRequiredAttributes(type);
 		templateModal.drawers = GetTemplateCreatorDrawers(type);
+		templateModal.validators = GetTemplateValidators(type);
 		templateModal.type = type;
 		templateModal.creating = true;
 		templateModal.onCreate = CreateTemplate;
 	}
 };
 
-#endif

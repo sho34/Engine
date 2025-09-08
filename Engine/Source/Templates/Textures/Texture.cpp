@@ -24,17 +24,21 @@ namespace Editor {
 
 namespace Templates
 {
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <TextureAtt.h>
+#include <JEnd.h>
 
 #if defined(_EDITOR)
 	std::shared_ptr<TextureInstance> texturePreview = nullptr;
@@ -60,13 +64,13 @@ namespace Templates
 
 	TextureJson::TextureJson(nlohmann::json json) : JTemplate(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <TextureAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 #include <NoMath.h>
 	}
 

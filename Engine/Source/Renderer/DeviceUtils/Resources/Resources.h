@@ -6,7 +6,6 @@
 #include <DirectXHelper.h>
 
 using namespace Microsoft::WRL;
-using namespace DirectX;
 
 namespace DeviceUtils
 {

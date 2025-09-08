@@ -1,7 +1,7 @@
 #pragma once
+#include <d3d12.h>
 
 using namespace Microsoft::WRL;
-using namespace DirectX;
 
 namespace DeviceUtils
 {

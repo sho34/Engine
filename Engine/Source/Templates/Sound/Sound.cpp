@@ -17,17 +17,21 @@ using namespace DirectX;
 
 namespace Templates
 {
-#include <JExposeAttDrawersDef.h>
+#include <Editor/JDrawersDef.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttJsonDef.h>
+#include <Creator/JJsonDef.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttCreatorDrawersDef.h>
+#include <Creator/JDrawersDef.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
+
+#include <Creator/JValidatorDef.h>
+#include <SoundAtt.h>
+#include <JEnd.h>
 
 	namespace Sound
 	{
@@ -80,13 +84,13 @@ namespace Templates
 
 	SoundJson::SoundJson(nlohmann::json json) : JTemplate(json)
 	{
-#include <JExposeInit.h>
+#include <Attributes/JInit.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 
-#include <JExposeAttUpdate.h>
+#include <Attributes/JUpdate.h>
 #include <SoundAtt.h>
-#include <JExposeEnd.h>
+#include <JEnd.h>
 	}
 
 	TEMPDEF_FULL(Sound);

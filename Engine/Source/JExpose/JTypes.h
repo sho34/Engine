@@ -82,6 +82,8 @@ enum JsonToEditorValueType
 	jedv_t_te_texture_vector,
 };
 
-typedef std::function<void(std::string attribute, std::vector<std::shared_ptr<JObject>>& json)> JEdvDrawerFunction;
+typedef std::function<void(std::string attribute, std::vector<std::shared_ptr<JObject>>& json)> JEdvEditorDrawerFunction;
 
 typedef std::function<void(std::string attribute, nlohmann::json& json)> JEdvCreatorDrawerFunction;
+
+typedef std::function<bool(std::string attribute, nlohmann::json& json)> JEdvCreatorValidatorFunction;
