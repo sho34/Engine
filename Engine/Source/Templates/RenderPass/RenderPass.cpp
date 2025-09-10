@@ -195,6 +195,7 @@ namespace Templates
 		std::string materialUUID,
 		std::shared_ptr<MeshInstance> mesh,
 		bool shadowed,
+		std::vector<PassMaterialOverride> passMaterialOverride,
 		std::string bindingUUID,
 		JObjectChangeCallback materialChangeCallback,
 		JObjectChangePostCallback materialChangePostCallback
@@ -231,9 +232,17 @@ namespace Templates
 				);
 			};
 
-		auto pickingOverride = [vertexClass, vertexType]
+		auto pickingOverride = [this, &passMaterialOverride, vertexClass, vertexType]
 			{
 				std::string pickMaterialUUID = FindMaterialUUIDByName("Picking");
+				for (auto& pmo : passMaterialOverride)
+				{
+					if (pmo.renderPass == this->renderPassUUID)
+					{
+						pickMaterialUUID = pmo.material;
+						break;
+					}
+				}
 				std::string instanceUUID = pickMaterialUUID + "-" + vertexType;
 				return GetMaterialInstance(instanceUUID, [instanceUUID, pickMaterialUUID, vertexClass]()
 					{

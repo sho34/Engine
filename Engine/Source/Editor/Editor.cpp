@@ -11,7 +11,7 @@
 #include <DeviceUtils/Resources/Resources.h>
 #include <Renderable/Renderable.h>
 #include <Camera/Camera.h>
-#include <Lights/Lights.h>
+#include <Light/Light.h>
 #include <Sound/SoundFX.h>
 #include <Templates.h>
 #include <Sound/Sound.h>
@@ -1164,6 +1164,14 @@ namespace Editor {
 
 	void SelectSceneObject(std::string uuid)
 	{
+		if (uuid == "")
+		{
+			return;
+		}
+
+		std::shared_ptr<Renderable> r = FindInRenderables(uuid);
+		r->OnPick();
+		/*
 		std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
 
 		switch (so->JType())
@@ -1189,6 +1197,7 @@ namespace Editor {
 		}
 		break;
 		}
+		*/
 
 		/*
 		std::map<std::tuple<bool, bool>, std::function<void()>> actions =
@@ -1241,14 +1250,60 @@ namespace Editor {
 
 	void DeselectSceneObject(std::string uuid)
 	{
+		/*
 		if (sceneObjectEdition.selected.contains(uuid))
 		{
 			std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
 			mousePicking.pickedObjects.erase(so);
 			sceneObjectEdition.selected.erase(uuid);
 		}
+		*/
 	}
 
+	void SelectRenderable(std::shared_ptr<Renderable> renderable)
+	{
+		ToggleSceneObjectFromSelection(renderable);
+	}
+
+	void SelectLight(std::shared_ptr<Light> light)
+	{
+		ToggleSceneObjectFromSelection(light);
+	}
+
+	void SelectCamera(std::shared_ptr<Camera> camera)
+	{
+	}
+
+	void SelectSoundEffect(std::shared_ptr<SoundFX> soundEffect)
+	{
+		ToggleSceneObjectFromSelection(soundEffect);
+	}
+
+	void ToggleSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject)
+	{
+		std::string uuid = sceneObject->at("uuid");
+		if (!sceneObjectEdition.selected.contains(uuid))
+		{
+			InsertSceneObjectToSelection(sceneObject);
+		}
+		else
+		{
+			EraseSceneObjectFromSelection(sceneObject);
+		}
+	}
+
+	void InsertSceneObjectToSelection(std::shared_ptr<SceneObject> sceneObject)
+	{
+		std::string uuid = sceneObject->at("uuid");
+		sceneObjectEdition.selected.insert(uuid);
+	}
+	void EraseSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject)
+	{
+		std::string uuid = sceneObject->at("uuid");
+		sceneObjectEdition.selected.erase(uuid);
+	}
+
+	/*
 	void SelectRenderable(std::string uuid)
 	{
 	}
@@ -1276,6 +1331,7 @@ namespace Editor {
 	void SelectSoundEffect(std::string uuid)
 	{
 	}
+	*/
 
 	void WriteRenderableBoundingBoxConstantsBuffer()
 	{
@@ -1305,35 +1361,6 @@ namespace Editor {
 		boundingBox->position(bb.Center);
 		boundingBox->WriteConstantsBuffer(renderer->backBufferIndex);
 	}
-
-	/*
-	void DrawOkPopup(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void()> drawContent)
-	{
-		if (flag == cmpFlag)
-		{
-			ImGui::OpenPopup(popupId.c_str());
-			if (ImGui::BeginPopupModal(popupId.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-			{
-				drawContent();
-				if (ImGui::Button("Ok")) { flag = 0U; }
-				ImGui::EndPopup();
-			}
-		}
-	}
-
-	void DrawCreateWindow(unsigned int& flag, unsigned int cmpFlag, std::string popupId, std::function<void(std::function<void()>)> drawContent)
-	{
-		if (flag == cmpFlag)
-		{
-			ImGui::OpenPopup(popupId.c_str());
-			if (ImGui::BeginPopupModal(popupId.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-			{
-				drawContent([&flag] {flag = 0U; });
-				ImGui::EndPopup();
-			}
-		}
-	}
-	*/
 
 	//MOUSE PROCESSING
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse)
@@ -1380,8 +1407,6 @@ namespace Editor {
 			resetMouseProcessing();
 			return;
 		}
-
-
 
 		if (ImGuizmo::IsOver())
 		{
@@ -1568,7 +1593,7 @@ namespace Editor {
 
 	void RenderPickingPass(std::shared_ptr<Camera> camera)
 	{
-		if (!camera || !mousePicking.doPicking) return;
+		if (!camera || !mousePicking.doPicking || !mousePicking.pickingPass) return;
 
 #if defined(_DEVELOPMENT)
 		PIXBeginEvent(renderer->commandList.p, 0, L"Scene Picker");
@@ -1580,7 +1605,7 @@ namespace Editor {
 				unsigned int objectId = 1U;
 				for (auto& r : GetRenderables())
 				{
-					OutputDebugStringA(("RenderPickingPass:" + r->name() + ":" + std::to_string(objectId) + "\n").c_str());
+					//OutputDebugStringA(("RenderPickingPass:" + r->name() + ":" + std::to_string(objectId) + "\n").c_str());
 					if (!r->visible() || boundingBox == r) continue;
 
 					r->WriteConstantsBuffer("objectId", objectId, backBufferIndex);
@@ -1646,12 +1671,11 @@ namespace Editor {
 		unsigned int objectId = 1U;
 		for (auto& r : GetRenderables())
 		{
-			OutputDebugStringA(("PickSceneObject:" + r->name() + ":" + std::to_string(objectId) + "\n").c_str());
-
 			if (!r->visible()) continue;
 
 			if (pickedObjectId == objectId)
 			{
+				//OutputDebugStringA(("PickSceneObject:" + r->name() + ":" + std::to_string(objectId) + "\n").c_str());
 				SelectSceneObject(r->uuid());
 				break;
 			}

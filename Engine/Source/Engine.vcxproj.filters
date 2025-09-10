@@ -153,7 +153,7 @@
     <ClInclude Include="Scene\Camera\Projections\Orthographic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Lights\Lights.h">
+    <ClInclude Include="Scene\Light\Light.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Templates\Model3D\Model3D.h">
@@ -207,7 +207,7 @@
     <ClInclude Include="Renderer\RenderPass\RenderToTexturePass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Scene\Lights\ShadowMap.h">
+    <ClInclude Include="Scene\Light\ShadowMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Primitives\BoxLines.h">
@@ -492,6 +492,9 @@
     <ClInclude Include="Editor\MousePicking.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Templates\RenderPass\PassMaterialOverride.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -551,7 +554,7 @@
     <ClCompile Include="Scene\Camera\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Lights\Lights.cpp">
+    <ClCompile Include="Scene\Light\Light.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Templates\Model3D\Model3D.cpp">
@@ -590,7 +593,7 @@
     <ClCompile Include="Renderer\RenderPass\RenderToTexturePass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Scene\Lights\ShadowMap.cpp">
+    <ClCompile Include="Scene\Light\ShadowMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Shaders\Compiler\CustomIncludeHandler.cpp">

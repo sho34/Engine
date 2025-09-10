@@ -4,7 +4,7 @@
 #include <Scene.h>
 #include <Camera/Camera.h>
 #include <Renderable/Renderable.h>
-#include <Lights/Lights.h>
+#include <Light/Light.h>
 #include <Sound/SoundFX.h>
 //audio
 #include <AudioSystem.h>

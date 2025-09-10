@@ -9,8 +9,8 @@
 #include <NoStd.h>
 #include <Renderable/Renderable.h>
 #include <Camera/Camera.h>
-#include <Lights/Lights.h>
-#include <Lights/ShadowMap.h>
+#include <Light/Light.h>
+#include <Light/ShadowMap.h>
 #include <Sound/SoundFX.h>
 
 namespace Templates

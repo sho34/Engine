@@ -10,7 +10,7 @@ JEXPOSE_TRANSFORM(XMFLOAT3, color, ToXMFLOAT3, FromXMFLOAT3, XMFLOAT3(1.0f, 1.0f
 JEXPOSE(float, brightness, 1.0f, jedv_t_hidden, 1, false)
 JEXPOSE_TRANSFORM(XMFLOAT3, attenuation, ToXMFLOAT3, FromXMFLOAT3, XMFLOAT3(0.0f, 0.01f, 0.02f), jedv_t_hidden, 1, false)
 JEXPOSE(float, coneAngle, 45.0f, jedv_t_hidden, 1, false)
-JEXPOSE(bool, hasShadowMaps, false, jedv_t_hidden, 1, false)
+JEXPOSE(bool, hasShadowMaps, false, jedv_t_hidden, 1, true)
 JEXPOSE(float, dirDist, 30.0f, jedv_t_hidden, 1, false)
 JEXPOSE(unsigned int, shadowMapWidth, 1024, jedv_t_hidden, 1, false)
 JEXPOSE(unsigned int, shadowMapHeight, 1024, jedv_t_hidden, 1, false)

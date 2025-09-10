@@ -8,7 +8,7 @@
 #include <Application.h>
 #include <TemplateDef.h>
 #include <Camera/Camera.h>
-#include <Lights/Lights.h>
+#include <Light/Light.h>
 #include <ShaderCompiler.h>
 
 namespace Templates {

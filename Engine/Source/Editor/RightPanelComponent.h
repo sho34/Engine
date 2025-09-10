@@ -25,6 +25,7 @@ struct RightPanelComponent
 	std::map<std::string, std::any> assets;
 	std::map<std::string, std::string> assetsNames;
 	std::map<std::string, std::shared_ptr<JObject>> assetsJsons;
+	std::map<std::string, std::function<bool(std::shared_ptr<JObject>)>> assetsConditioner;
 
 	void Destroy();
 
@@ -36,70 +37,104 @@ struct RightPanelComponent
 
 	void DrawAssetTreeNodes(std::map<std::string, std::any>& dump, std::string path, auto OnPick, auto OnDelete)
 	{
-		for (auto it = dump.begin(); it != dump.end(); it++)
-		{
-			std::map<std::string, std::any>& child = std::any_cast<std::map<std::string, std::any>&>(it->second);
-			std::string p = path + (path.empty() ? "" : "/") + it->first;
-
-			if (child.empty())
+		std::map<std::string, std::any> nodes;
+		std::copy_if(dump.begin(), dump.end(), std::inserter(nodes, nodes.begin()), [](auto& pair)
 			{
-				std::string uuid = it->first;
-				ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.15f));
-				{
-					ImGui::PushID((std::string("select-") + uuid).c_str());
-					{
-						bool checked = selected.contains(uuid);
-						if (ImGui::Checkbox("##", &checked))
-						{
-							if (checked)
-							{
-								selected.insert(uuid);
-							}
-							else
-							{
-								selected.erase(uuid);
-							}
-						}
-					}
-					ImGui::PopID();
-					ImGui::SameLine();
-					ImGui::PushID((std::string("delete-") + uuid).c_str());
-					{
-						if (ImGui::Button(ICON_FA_TIMES, ImVec2(16.0f, 16.0f)))
-						{
-							OnDelete(uuid);
-						}
-					}
-					ImGui::PopID();
-				}
-				ImGui::PopStyleVar();
+				std::map<std::string, std::any>& child = std::any_cast<std::map<std::string, std::any>&>(pair.second);
+				return !child.empty();
+			}
+		);
 
-				ImGui::SameLine();
-				std::string name = assetsNames.at(uuid);
-				std::string nodeID = "node-" + it->first;
-				ImGui::PushID(nodeID.c_str());
+		for (auto& [first, second] : nodes)
+		{
+			std::map<std::string, std::any>& child = std::any_cast<std::map<std::string, std::any>&>(second);
+			std::string p = path + (path.empty() ? "" : "/") + first;
+			if (HasSelectedChildren(child, p))
+				ImGui::SetNextItemOpen(true);
+			if (ImGui::TreeNodeEx(first.c_str()))
+			{
+				DrawAssetTreeNodes(child, p, OnPick, OnDelete);
+				ImGui::TreePop();
+			}
+		}
+
+		std::map<std::string, std::any> leafs;
+		std::vector<std::string> orderedLeafs;
+		std::copy_if(dump.begin(), dump.end(), std::inserter(leafs, leafs.begin()), [](auto& pair)
+			{
+				std::map<std::string, std::any>& child = std::any_cast<std::map<std::string, std::any>&>(pair.second);
+				return child.empty();
+			}
+		);
+		std::transform(leafs.begin(), leafs.end(), std::back_inserter(orderedLeafs), [](auto& pair) { return pair.first; });
+		std::sort(orderedLeafs.begin(), orderedLeafs.end(), [this](std::string uuidA, std::string uuidB)
+			{
+				std::shared_ptr<JObject> assetA = assetsJsons.at(uuidA);
+				std::shared_ptr<JObject> assetB = assetsJsons.at(uuidB);
+				return assetA->at("name") < assetB->at("name");
+			}
+		);
+
+		for (std::string uuid : orderedLeafs)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, ImVec2(0.5f, 0.15f));
+			{
+				ImGui::PushID((std::string("select-") + uuid).c_str());
 				{
-					if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf))
+					bool checked = selected.contains(uuid);
+					std::shared_ptr<JObject> asset = assetsJsons.at(uuid);
+					bool enabled = true;
+					for (auto& [_, cond] : assetsConditioner)
 					{
-						if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiPopupFlags_MouseButtonLeft))
+						enabled &= cond(asset);
+						if (!enabled) break;
+					}
+					ImGui::DrawItemWithEnabledState([this, uuid, &checked]
 						{
-							OnPick(uuid);
-						}
-						ImGui::TreePop();
+							if (ImGui::Checkbox("##", &checked))
+							{
+								if (checked)
+								{
+									selected.insert(uuid);
+									assetsConditioner.insert_or_assign(uuid, assetsJsons.at(uuid)->GetAssetsConditioner());
+								}
+								else
+								{
+									selected.erase(uuid);
+									assetsConditioner.erase(uuid);
+								}
+							}
+						}, checked || enabled
+					);
+				}
+				ImGui::PopID();
+				ImGui::SameLine();
+				ImGui::PushID((std::string("delete-") + uuid).c_str());
+				{
+					if (ImGui::Button(ICON_FA_TIMES, ImVec2(16.0f, 16.0f)))
+					{
+						OnDelete(uuid);
 					}
 				}
 				ImGui::PopID();
 			}
-			else
+			ImGui::PopStyleVar();
+
+			ImGui::SameLine();
+			std::string name = assetsNames.at(uuid);
+			std::string nodeID = "node-" + uuid;
+			ImGui::PushID(nodeID.c_str());
 			{
-				if (HasSelectedChildren(child, p))
-					ImGui::SetNextItemOpen(true);
-				if (ImGui::TreeNodeEx(it->first.c_str()))
+				if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf))
 				{
-					DrawAssetTreeNodes(child, p, OnPick, OnDelete);
+					if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiPopupFlags_MouseButtonLeft))
+					{
+						OnPick(uuid);
+					}
 					ImGui::TreePop();
 				}
 			}
+			ImGui::PopID();
 		}
 	}
 

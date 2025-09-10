@@ -6,6 +6,16 @@
 #include <AudioSystem.h>
 #include <Renderable/Renderable.h>
 #include <Sound/Sound.h>
+#include <Renderer.h>
+
+extern std::shared_ptr<Renderer> renderer;
+
+#if defined(_EDITOR)
+namespace Editor
+{
+	extern void SelectSoundEffect(std::shared_ptr<SoundFX> soundEffect);
+}
+#endif
 
 using namespace Templates;
 namespace Scene {
@@ -47,6 +57,26 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
+		//if (!sound().empty())
+		//{
+		//	auto OnSoundChange = [this](std::shared_ptr<JObject> sound)
+		//		{
+		//			UnbindFromScene();
+		//			BindToScene();
+		//		};
+		//	soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags(), uuid(), OnSoundChange);
+		//}
+#if defined(_EDITOR)
+		CreateSoundFXBillboard();
+#endif
+	}
+
+	void SoundFX::BindToScene()
+	{
+#include <TrackUUID/JInsert.h>
+#include <SoundFXAtt.h>
+#include <JEnd.h>
+
 		if (!sound().empty())
 		{
 			auto OnSoundChange = [this](std::shared_ptr<JObject> sound)
@@ -56,10 +86,6 @@ namespace Scene {
 				};
 			soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags(), uuid(), OnSoundChange);
 		}
-	}
-
-	void SoundFX::BindToScene()
-	{
 		if (nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D))
 		{
 			audioEmitter.SetPosition(position());
@@ -69,6 +95,9 @@ namespace Scene {
 		{
 			Play();
 		}
+#if defined(_EDITOR)
+		BindSoundFXBillboardToScene();
+#endif
 	}
 
 	void SoundFX::UnbindFromScene()
@@ -199,6 +228,9 @@ namespace Scene {
 		std::for_each(sfxs.begin(), sfxs.end(), [step](auto& sfx)
 			{
 				sfx->Step(step);
+#if defined(_EDITOR)
+				sfx->UpdateSoundFXBillboard();
+#endif
 			}
 		);
 
@@ -244,12 +276,74 @@ namespace Scene {
 		GetInstance()->Apply3D(GetAudioListener(), audioEmitter, false);
 	}
 
+#if defined(_EDITOR)
+
 	void SoundFX::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
 		bbox->position(position());
 		bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
+
+	void SoundFX::CreateSoundFXBillboard()
+	{
+		if (!(instanceFlags() & SoundEffectInstance_Use3D)) return;
+
+		nlohmann::json jbillboard = nlohmann::json(
+			{
+				{ "meshMaterials",
+					{
+						{
+							{ "material", FindMaterialUUIDByName("SoundEffect") },
+							{ "mesh", "7dec1229-075f-4599-95e1-9ccfad0d48b1" }
+						}
+					}
+				},
+				{ "castShadows", false },
+				{ "shadowed", false },
+				{ "name" , uuid() + "-billboard" },
+				{ "uuid" , getUUID() },
+				{ "position" , { 0.0f, 0.0f, 0.0f} },
+				{ "topology", "TRIANGLELIST"},
+				{ "rotation" , { 0.0, 0.0, 0.0 } },
+				{ "scale" , { 1.0f, 1.0f, 1.0f } },
+				{ "skipMeshes" , {}},
+				{ "visible" , true},
+				{ "hidden" , true},
+				{ "cameras", { GetMouseCameras().at(0)->uuid()}},
+				{ "passMaterialOverrides",
+					{
+						{
+							{ "meshIndex", 0 },
+							{ "renderPass", FindRenderPassUUIDByName("PickingPass") },
+							{ "material", FindMaterialUUIDByName("SoundEffectPicking") }
+						}
+					}
+				}
+			}
+		);
+		soundFXBillboard = CreateSceneObjectFromJson<Renderable>(jbillboard);
+		soundFXBillboard->OnPick = [this] {Editor::SelectSoundEffect(this_ptr); };
+	}
+
+	void SoundFX::BindSoundFXBillboardToScene()
+	{
+		if (!soundFXBillboard) return;
+		soundFXBillboard->BindToScene();
+	}
+
+	void SoundFX::DestroySoundFXBillboard()
+	{
+	}
+
+	void SoundFX::UpdateSoundFXBillboard()
+	{
+		if (!soundFXBillboard) return;
+		soundFXBillboard->position(position());
+		XMFLOAT3 baseColor = { 1.0f,1.0f,1.0f };
+		soundFXBillboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
+	}
+#endif
 
 	void DestroySoundEffects()
 	{

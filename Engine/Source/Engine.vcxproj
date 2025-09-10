@@ -336,6 +336,7 @@
     <ClInclude Include="Templates\Material\BlendDesc.h" />
     <ClInclude Include="Templates\Material\MeshMaterial.h" />
     <ClInclude Include="Templates\Material\RasterizerDesc.h" />
+    <ClInclude Include="Templates\RenderPass\PassMaterialOverride.h" />
     <ClInclude Include="Templates\RenderPass\RenderPass.h" />
     <ClInclude Include="Shaders\Compute\IBL\BRDFLUT.h" />
     <ClInclude Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.h" />
@@ -430,7 +431,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Scene\Lights\ShadowMap.h">
+    <ClInclude Include="Scene\Light\ShadowMap.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
@@ -450,7 +451,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Scene\Lights\Lights.h">
+    <ClInclude Include="Scene\Light\Light.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
@@ -646,7 +647,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Scene\Lights\ShadowMap.cpp">
+    <ClCompile Include="Scene\Light\ShadowMap.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
@@ -659,7 +660,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="Scene\Lights\Lights.cpp">
+    <ClCompile Include="Scene\Light\Light.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>

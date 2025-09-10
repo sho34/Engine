@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Engine.h"
 #include "Game.h"
-#include <Lights/Lights.h>
+#include <Light/Light.h>
 #include <RenderPass/RenderPass.h>
 #include <Mesh/Mesh.h>
 #include <Model3D/Model3D.h>

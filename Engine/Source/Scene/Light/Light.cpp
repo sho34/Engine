@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Lights.h"
+#include "Light.h"
 #include <Camera/Camera.h>
 #include <d3dx12.h>
 #include <DirectXHelper.h>
@@ -20,8 +20,9 @@ extern std::shared_ptr<Renderer> renderer;
 #if defined(_EDITOR)
 namespace Editor
 {
-	void SelectSceneObject(std::string uuid);
-	void DeselectSceneObject(std::string uuid);
+	//void SelectSceneObject(std::string uuid);
+	//void DeselectSceneObject(std::string uuid);
+	extern void SelectLight(std::shared_ptr<Light> light);
 }
 #endif
 
@@ -76,11 +77,22 @@ namespace Scene {
 		{
 			CreateShadowMap();
 		}
+#if defined(_EDITOR)
+		CreateLightBillboard();
+#endif
 	}
 
 	void Light::BindToScene()
 	{
+#include <TrackUUID/JInsert.h>
+#include <LightAtt.h>
+#include <JEnd.h>
+
 		BindRenderablesToShadowMapCamera();
+
+#if defined(_EDITOR)
+		BindLightBillboardToScene();
+#endif
 	}
 
 	void Light::UnbindFromScene()
@@ -152,6 +164,8 @@ namespace Scene {
 
 		for (auto& [uuid, l] : Lights)
 		{
+			l->UpdateLightBillboard();
+
 			//if the light type changed
 			if (l->dirty(Light::Update_lightType))
 			{
@@ -384,8 +398,10 @@ namespace Scene {
 		switch (lightType())
 		{
 		case LT_Directional:
+		case LT_Spot:
+		case LT_Point:
 		{
-			Editor::SelectSceneObject(uuid());
+			//Editor::SelectSceneObject(uuid());
 		}
 		break;
 		}
@@ -398,7 +414,7 @@ namespace Scene {
 		{
 		case LT_Directional:
 		{
-			Editor::DeselectSceneObject(uuid());
+			//Editor::DeselectSceneObject(uuid());
 		}
 		break;
 		}
@@ -417,6 +433,66 @@ namespace Scene {
 
 		bbox->scale(XMFLOAT3({ 0.5f, 0.5f, 0.5f }));
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
+	}
+
+	void Light::CreateLightBillboard()
+	{
+		if (lightType() == LT_Ambient) return;
+
+		nlohmann::json jbillboard = nlohmann::json(
+			{
+				{ "meshMaterials",
+					{
+						{
+							{ "material", FindMaterialUUIDByName("LightBulb") },
+							{ "mesh", "7dec1229-075f-4599-95e1-9ccfad0d48b1" }
+						}
+					}
+				},
+				{ "castShadows", false },
+				{ "shadowed", false },
+				{ "name" , uuid() + "-billboard" },
+				{ "uuid" , getUUID() },
+				{ "position" , { 0.0f, 0.0f, 0.0f} },
+				{ "topology", "TRIANGLELIST"},
+				{ "rotation" , { 0.0, 0.0, 0.0 } },
+				{ "scale" , { 1.0f, 1.0f, 1.0f } },
+				{ "skipMeshes" , {}},
+				{ "visible" , true},
+				{ "hidden" , true},
+				{ "cameras", { GetMouseCameras().at(0)->uuid()}},
+				{ "passMaterialOverrides",
+					{
+						{
+							{ "meshIndex", 0 },
+							{ "renderPass", FindRenderPassUUIDByName("PickingPass") },
+							{ "material", FindMaterialUUIDByName("LightBulbPicking") }
+						}
+					}
+				}
+			}
+		);
+		lightBillboard = CreateSceneObjectFromJson<Renderable>(jbillboard);
+		lightBillboard->OnPick = [this] {Editor::SelectLight(this_ptr); };
+	}
+
+	void Light::DestroyLightBillboard()
+	{
+	}
+
+	void Light::UpdateLightBillboard()
+	{
+		if (!lightBillboard) return;
+		lightBillboard->position(position());
+		XMFLOAT3 baseColor = color();
+		lightBillboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
+	}
+
+	void Light::BindLightBillboardToScene()
+	{
+		if (lightType() == LT_Ambient) return;
+
+		lightBillboard->BindToScene();
 	}
 #endif
 }

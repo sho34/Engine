@@ -355,10 +355,15 @@ inline JEdvCreatorDrawerFunction DrawCreatorEnum<LightType, jedv_t_lighttype>(
 		{
 			DrawCreatorValue<std::string, jedv_t_so_light_name>()("name", json);
 
-			auto update = [attribute, &json](auto value)
+			auto update = [attribute, &json, &StoE](auto value)
 				{
 					nlohmann::json patch = { {attribute,value} };
 					json.merge_patch(patch);
+					if (StoE.at(json.at(attribute)) == LT_Ambient)
+					{
+						nlohmann::json patchSM = { {"hasShadowMaps",false} };
+						json.merge_patch(patchSM);
+					}
 				};
 			std::string selected = json.at(attribute);
 			std::vector<std::string> options;
@@ -390,6 +395,21 @@ inline JEdvCreatorDrawerFunction DrawCreatorEnum<LightType, jedv_t_lighttype>(
 				}
 			}
 			ImGui::PopID();
+
+			if (StoE.at(selected) != LT_Ambient)
+			{
+				ImGui::PushID("hasShadowMaps");
+				{
+					ImGui::Text("hasShadowMaps");
+					bool value = json.at("hasShadowMaps");
+					if (ImGui::Checkbox("##", &value))
+					{
+						nlohmann::json patchSM = { {"hasShadowMaps",value} };
+						json.merge_patch(patchSM);
+					}
+				}
+				ImGui::PopID();
+			}
 		};
 }
 

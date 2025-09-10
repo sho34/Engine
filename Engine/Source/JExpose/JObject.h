@@ -53,6 +53,8 @@ struct JObject : nlohmann::json
 		updateFlag = 0ULL;
 	}
 
+	virtual std::function<bool(std::shared_ptr<JObject>)> GetAssetsConditioner() { return [](std::shared_ptr<JObject>) { return true; }; }
+
 	virtual void EditorPreview(size_t flags) {}
 	virtual void DestroyEditorPreview() {}
 

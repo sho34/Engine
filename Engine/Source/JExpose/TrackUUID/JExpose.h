@@ -89,7 +89,7 @@
 	std::string FindNameIn##NAME(std::string uuid) { return NAME.at(uuid)->name(); }\
 	void Insert##CLASS##Into##NAME(std::shared_ptr<CLASS> v)\
 	{\
-		if(LIMIT>0)\
+		if(LIMIT>0 && !NAME.contains(v->uuid()))\
 		assert(NAME.size()<LIMIT);\
 		NAME.insert_or_assign(v->uuid(), v);\
 	}\

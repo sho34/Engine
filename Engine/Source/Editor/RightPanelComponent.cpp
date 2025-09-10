@@ -14,6 +14,7 @@ RightPanelComponent::RightPanelComponent(std::string panel, std::vector<std::str
 void RightPanelComponent::Destroy()
 {
 	assetsJsons.clear();
+	assetsConditioner.clear();
 }
 
 void RightPanelComponent::DrawAttributes()

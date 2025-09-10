@@ -703,7 +703,7 @@ void EditorModePostRender()
 
 				if (!RenderableBoundingBoxExists())
 				{
-					CreateRenderableBoundingBox(GetMouseCameras().at(0));
+					//CreateRenderableBoundingBox(GetMouseCameras().at(0));
 				}
 			}
 		);

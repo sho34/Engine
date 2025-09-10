@@ -13,6 +13,7 @@
 #include <RenderPass/RenderToTexturePass.h>
 #include <Mesh/Mesh.h>
 #include <JTypes.h>
+#include "PassMaterialOverride.h"
 
 namespace Scene { struct Camera; };
 struct OverridePass;
@@ -160,6 +161,7 @@ namespace Templates
 			std::string materialUUID,
 			std::shared_ptr<MeshInstance> mesh,
 			bool shadowed,
+			std::vector<PassMaterialOverride> passMaterialOverride,
 			std::string objectUUID = "",
 			JObjectChangeCallback cb = nullptr,
 			JObjectChangePostCallback postCb = nullptr

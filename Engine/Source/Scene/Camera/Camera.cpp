@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Camera.h"
 #include <Scene.h>
-#include <Lights/Lights.h>
+#include <Light/Light.h>
 #include <Renderer.h>
 #include <nlohmann/json.hpp>
 #if defined(_EDITOR)
@@ -456,7 +456,9 @@ namespace Scene
 
 	void Camera::BindToScene()
 	{
-
+#include <TrackUUID/JInsert.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
 	}
 
 	void Camera::BindRenderable(std::shared_ptr<Renderable> r)
@@ -552,11 +554,15 @@ namespace Scene
 
 		atts.viewProjection = XMMatrixMultiply(view(), projection());
 
-		XMVECTOR pos = positionV();
-		XMVECTOR fw = forward();
+		XMVECTOR camPos = positionV();
+		XMVECTOR camFw = forward();
+		XMVECTOR camUp = up();
+		XMVECTOR camRight = right();
 
-		atts.eyePosition = *(XMFLOAT4*)pos.m128_f32;
-		atts.eyeForward = *(XMFLOAT4*)fw.m128_f32;
+		atts.eyePosition = *(XMFLOAT4*)camPos.m128_f32;
+		atts.eyeForward = *(XMFLOAT4*)camFw.m128_f32;
+		atts.eyeUp = *(XMFLOAT4*)camUp.m128_f32;
+		atts.eyeRight = *(XMFLOAT4*)camRight.m128_f32;
 		atts.white = white();
 
 		if (iblTextures.contains(TextureShaderUsage_IBLPreFilteredEnvironment))

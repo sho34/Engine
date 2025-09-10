@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "LightOscilation.h"
-#include <Lights/Lights.h>
+#include <Light/Light.h>
 
 namespace Effects {
 

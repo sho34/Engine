@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Lights.h"
+#include "Light.h"
 #include <Camera/Camera.h>
 #include <d3dx12.h>
 #include <DirectXHelper.h>
@@ -536,6 +536,28 @@ namespace Scene {
 			rpi->Pass();
 		}
 		shadowMapMinMaxChainResultRenderPass->Pass();
+	}
+
+	std::function<bool(std::shared_ptr<JObject>)> Light::GetAssetsConditioner()
+	{
+		return [this](std::shared_ptr<JObject> j)
+			{
+				std::shared_ptr<SceneObject> so = std::dynamic_pointer_cast<SceneObject>(j);
+				switch (so->JType())
+				{
+				case SO_Lights:
+				{
+					std::set<std::tuple<LightType, LightType>> compatibility = {
+						std::make_tuple(LightType::LT_Spot,LightType::LT_Point),
+						std::make_tuple(LightType::LT_Point,LightType::LT_Spot)
+					};
+					std::shared_ptr<Light> l = std::dynamic_pointer_cast<Light>(so);
+					return compatibility.contains(std::make_tuple(l->lightType(), lightType()));
+				}
+				break;
+				}
+				return true;
+			};
 	}
 #endif
 

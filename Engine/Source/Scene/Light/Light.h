@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ppltasks.h>
 #include <Renderable/Renderable.h>
 #include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include "ShadowMap.h"
@@ -8,6 +7,8 @@
 #include <Json.h>
 #include <SceneObject.h>
 #include <JTypes.h>
+#include <ShaderMaterials.h>
+#include <DirectXMath.h>
 
 //let's explain a little bit here
 // 1.- One CVB of MaxLights Descriptors is created to write the data used
@@ -209,6 +210,14 @@ namespace Scene {
 		bool destroySMChain = false;
 		void DestroyShadowMapMinMaxChain();
 		void RenderShadowMapMinMaxChain();
+
+		virtual std::function<bool(std::shared_ptr<JObject>)> GetAssetsConditioner();
+
+		std::shared_ptr<Scene::Renderable> lightBillboard;
+		void CreateLightBillboard();
+		void BindLightBillboardToScene();
+		void DestroyLightBillboard();
+		void UpdateLightBillboard();
 #endif
 
 		//UPDATE

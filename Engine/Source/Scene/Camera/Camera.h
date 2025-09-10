@@ -40,6 +40,8 @@ struct CameraAttributes {
 	XMMATRIX viewProjection;
 	XMFLOAT4 eyePosition;
 	XMFLOAT4 eyeForward;
+	XMFLOAT4 eyeUp;
+	XMFLOAT4 eyeRight;
 	float white;
 	float IBLNumEnvLevels;
 };

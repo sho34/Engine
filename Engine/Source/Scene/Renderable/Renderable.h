@@ -9,6 +9,7 @@
 #include <Material/Material.h>
 #include <Material/MeshMaterial.h>
 #include <RenderPass/RenderPass.h>
+#include <RenderPass/PassMaterialOverride.h>
 #include <Animated.h>
 #include <DeviceUtils/PipelineState/PipelineState.h>
 #include <Json.h>
@@ -151,6 +152,7 @@ namespace Scene
 
 		//UPDATE
 #if defined(_EDITOR)
+		std::function<void()> OnPick;
 		void ReloadModel3D();
 #endif
 		void WriteMaterialVariablesToConstantsBufferSpace(std::shared_ptr<MaterialInstance>& material, std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int cbvFrameIndex);

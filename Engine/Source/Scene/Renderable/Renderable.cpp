@@ -5,7 +5,7 @@
 #include "Renderable.h"
 #include <Scene.h>
 #include <Camera/Camera.h>
-#include <Lights/Lights.h>
+#include <Light/Light.h>
 #include <d3dx12.h>
 #include <DirectXHelper.h>
 #include <Model3D/Model3D.h>
@@ -29,6 +29,13 @@
 #include <Json.h>
 
 extern std::shared_ptr<Renderer> renderer;
+
+#if defined(_EDITOR)
+namespace Editor
+{
+	extern void SelectRenderable(std::shared_ptr<Renderable> renderable);
+};
+#endif
 
 namespace Scene {
 #include <Editor/JDrawersDef.h>
@@ -270,6 +277,9 @@ namespace Scene {
 			StepAnimation(0.0f);
 			boundingBoxCompute = std::make_shared<RenderableBoundingBox>(this_ptr);
 		}
+#if defined(_EDITOR)
+		OnPick = [this] { Editor::SelectRenderable(this_ptr); };
+#endif
 	}
 
 	void Renderable::Bind(std::shared_ptr<SceneObject> sceneObject)
@@ -299,6 +309,10 @@ namespace Scene {
 
 	void Renderable::BindToScene()
 	{
+#include <TrackUUID/JInsert.h>
+#include <RenderableAtt.h>
+#include <JEnd.h>
+
 		BindCameras();
 	}
 
@@ -456,6 +470,8 @@ namespace Scene {
 				}
 			};
 
+		std::vector<PassMaterialOverride> pmo = passMaterialOverrides();
+
 		if (!meshMaterials().empty())
 		{
 			std::vector<MeshMaterial> rmm = meshMaterials();
@@ -468,11 +484,17 @@ namespace Scene {
 
 			for (unsigned i = 0; i < mm.size(); i++)
 			{
+				std::vector<PassMaterialOverride> mpmo;
+				std::copy_if(pmo.begin(), pmo.end(), std::back_inserter(mpmo), [i](PassMaterialOverride& o)
+					{
+						return o.meshIndex == i;
+					}
+				);
 				auto& mesh = meshes.at(i);
 				std::string matUUID = mm.at(i).materialUUID;
 				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(
 					matUUID, mesh, shadowed(),
-					uuid(), nullptr, onPostMaterialChange);
+					mpmo, uuid(), nullptr, onPostMaterialChange);
 				materials[rp].push_back(mi);
 			}
 		}
@@ -480,10 +502,16 @@ namespace Scene {
 		{
 			for (unsigned int i = 0; i < meshes.size(); i++)
 			{
+				std::vector<PassMaterialOverride> mpmo;
+				std::copy_if(pmo.begin(), pmo.end(), std::back_inserter(mpmo), [i](PassMaterialOverride& o)
+					{
+						return o.meshIndex == i;
+					}
+				);
 				auto& mesh = meshes.at(i);
 				std::string matUUID = model3D->materialUUIDs.at(i);
 				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(matUUID, mesh, shadowed(),
-					uuid(), nullptr, onPostMaterialChange);
+					mpmo, uuid(), nullptr, onPostMaterialChange);
 				materials[rp].push_back(mi);
 			}
 		}

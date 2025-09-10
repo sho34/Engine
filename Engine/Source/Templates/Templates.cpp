@@ -259,7 +259,7 @@ namespace Templates
 				{ "systemCreated" , true},
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -281,7 +281,7 @@ namespace Templates
 				{ "systemCreated" , true},
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -320,7 +320,7 @@ namespace Templates
 				{ "systemCreated" , true },
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -360,7 +360,7 @@ namespace Templates
 				{ "systemCreated" , true },
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -401,7 +401,7 @@ namespace Templates
 				{ "twoSided" , true},
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -442,7 +442,7 @@ namespace Templates
 				{ "twoSided" , true},
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -483,7 +483,7 @@ namespace Templates
 				{ "twoSided" , true },
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -523,7 +523,7 @@ namespace Templates
 				{ "systemCreated" , true},
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -539,11 +539,11 @@ namespace Templates
 				{ "uuid" , "8e98708c-fe2e-4123-b1f0-5b80fabd1888"}
 			},
 			{
-			{ "name","ToneMap"},
-			{ "shader_vs" , "8ee7a4d0-91f1-4264-aa56-9f82b3c38397"},
-			{ "shader_ps" , "75e834c4-6898-4156-af67-43abba7fc6b5"},
-			{ "systemCreated" , true},
-			{ "rasterizerState",
+				{ "name","ToneMap"},
+				{ "shader_vs" , "8ee7a4d0-91f1-4264-aa56-9f82b3c38397"},
+				{ "shader_ps" , "75e834c4-6898-4156-af67-43abba7fc6b5"},
+				{ "systemCreated" , true},
+				{ "rasterizerState",
 					{
 						{	"FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
@@ -558,16 +558,16 @@ namespace Templates
 						{ "ConservativeRaster", "OFF" }
 					}
 				},
-			{ "uuid" , "8291ba82-165d-464b-be15-d9fa6d7b9a7c"}
-		},
+				{ "uuid" , "8291ba82-165d-464b-be15-d9fa6d7b9a7c"}
+			},
 			{
-			{ "name","LoadingBar"},
-			{ "shader_vs" , "d0192f97-a56a-469d-b6f1-07d403ae331a"},
-			{ "shader_ps" , "b5ef5d53-2174-4d12-b231-5e07a7f5a7f8"},
-			{ "systemCreated" , true},
-			{ "rasterizerState",
+				{ "name","LoadingBar"},
+				{ "shader_vs" , "d0192f97-a56a-469d-b6f1-07d403ae331a"},
+				{ "shader_ps" , "b5ef5d53-2174-4d12-b231-5e07a7f5a7f8"},
+				{ "systemCreated" , true},
+				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -580,8 +580,8 @@ namespace Templates
 						{ "ConservativeRaster", "OFF" }
 					}
 				},
-			{ "uuid" , "28c4d879-6d21-408f-acbb-120f9fdc05b0"}
-		},
+				{ "uuid" , "28c4d879-6d21-408f-acbb-120f9fdc05b0"}
+			},
 			{
 				{ "name","Picking"},
 				{ "shader_vs" , "79568541-34c8-4464-bec1-77debde975e0"},
@@ -590,7 +590,7 @@ namespace Templates
 				{ "uuid" , "1896d918-4e47-49a6-950b-3135ab020a0b"},
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -695,17 +695,43 @@ namespace Templates
 	nlohmann::json systemTextures = nlohmann::json::array(
 		{
 			{
-				{ "format", "R8G8B8A8_UNORM" },
+				{ "format", "B8G8R8A8_UNORM_SRGB" },
 				{ "height", 256 },
 				{ "images" , {
 					"Assets/gizmos/light-bulb.png"
 				}},
-				{ "mipLevels", 11 },
+				{ "mipLevels", 8 },
 				{ "name", "Assets/gizmos/light-bulb.png" },
 				{ "numFrames", 1 },
 				{ "type", "2D" },
 				{ "uuid", "fed123fa-e248-47cd-9662-20f73285ad0e" },
 				{ "width", 256 }
+			},
+			{
+				{ "format", "B8G8R8A8_UNORM_SRGB" },
+				{ "height", 64 },
+				{ "images" , {
+					"Assets/gizmos/soundspeaker.png"
+				}},
+				{ "mipLevels", 6 },
+				{ "name", "Assets/gizmos/soundspeaker.png" },
+				{ "numFrames", 1 },
+				{ "type", "2D" },
+				{ "uuid", "5e3cba75-a495-44d8-ba5b-2b888f812a2b" },
+				{ "width", 64 }
+			},
+			{
+				{ "format", "B8G8R8A8_UNORM_SRGB" },
+				{ "height", 64 },
+				{ "images" , {
+					"Assets/gizmos/camera.png"
+				}},
+				{ "mipLevels", 6 },
+				{ "name", "Assets/gizmos/camera.png" },
+				{ "numFrames", 1 },
+				{ "type", "2D" },
+				{ "uuid", "2c207f54-9cdc-4c7e-a70a-60b373f2de79" },
+				{ "width", 64 }
 			}
 		}
 	);

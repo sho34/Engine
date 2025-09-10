@@ -1,7 +1,7 @@
 #include "pch.h"
 #include <Scene.h>
-#include <Lights/Lights.h>
-#include <Lights/ShadowMap.h>
+#include <Light/Light.h>
+#include <Light/ShadowMap.h>
 #include <Renderable/Renderable.h>
 #include <Camera/Camera.h>
 #include <Sound/SoundFX.h>
@@ -303,7 +303,13 @@ namespace Scene
 				Editor::BindRenderableToPickingPass(r);
 				r->BindShadowMapCameras();
 			}},
-			{ SO_Lights, [](nlohmann::json json) { CreateAndBind<Light>(json); }},
+			{ SO_Lights, [](nlohmann::json json) {
+				std::shared_ptr<Light> l = CreateAndBind<Light>(json);
+				if (l->lightBillboard)
+				{
+					Editor::BindRenderableToPickingPass(l->lightBillboard);
+				}
+			}},
 			{ SO_Cameras, [](nlohmann::json json) { CreateAndBind<Camera>(json); } },
 			{ SO_SoundEffects, [](nlohmann::json json) { CreateAndBind<SoundFX>(json); }}
 		};

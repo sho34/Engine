@@ -8,10 +8,37 @@ struct Binder {
 
 	void insert(std::shared_ptr<SceneObject> soA, std::shared_ptr<SceneObject> soB)
 	{
-		binding.insert({ soA,soB });
-		binding.insert({ soB,soA });
-		soA->Bind(soB);
-		soB->Bind(soA);
+		bool AtoB = false;
+		auto rangeAtoB = binding.equal_range(soA);
+		for (auto it = rangeAtoB.first; it != rangeAtoB.second; it++)
+		{
+			if (it->second == soB)
+			{
+				AtoB = true;
+				break;
+			}
+		}
+		if (!AtoB)
+		{
+			binding.insert({ soA,soB });
+			soA->Bind(soB);
+		}
+
+		bool BtoA = false;
+		auto rangeBtoA = binding.equal_range(soB);
+		for (auto it = rangeBtoA.first; it != rangeBtoA.second; it++)
+		{
+			if (it->second == soA)
+			{
+				BtoA = true;
+				break;
+			}
+		}
+		if (!BtoA)
+		{
+			binding.insert({ soB,soA });
+			soB->Bind(soA);
+		}
 	}
 
 	void erase(std::shared_ptr<SceneObject> soA)

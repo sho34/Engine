@@ -76,7 +76,15 @@ namespace Scene {
 		AudioEmitter audioEmitter;
 		void UpdateEmmiter();
 
+#if defined(_EDITOR)
 		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
+
+		std::shared_ptr<Scene::Renderable> soundFXBillboard;
+		void CreateSoundFXBillboard();
+		void BindSoundFXBillboardToScene();
+		void DestroySoundFXBillboard();
+		void UpdateSoundFXBillboard();
+#endif
 	};
 
 	//DESTROY

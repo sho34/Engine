@@ -1,10 +1,30 @@
 #pragma once
 #include <Scene.h>
 #include <wrl.h>
-#include <Camera/Camera.h>
-#include <Renderable/Renderable.h>
+//#include <Camera/Camera.h>
+//#include <Renderable/Renderable.h>
+//#include <Sound/SoundFX.h>
+//#include <Light/Light.h>
 #include <JObject.h>
 #include <Templates.h>
+
+enum SceneObjectType;
+enum TemplateType;
+
+namespace Scene
+{
+	struct SceneObject;
+	struct SoundFX;
+	struct Camera;
+	struct Renderable;
+	struct Light;
+};
+
+namespace DirectX
+{
+	class Mouse;
+	struct XMFLOAT4X4;
+};
 
 using namespace Scene;
 
@@ -80,7 +100,7 @@ namespace Editor {
 	void DestroyEditorSceneObjectsReferences();
 
 	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera);
-	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(XMFLOAT4X4, XMFLOAT4X4)> interaction = [](XMFLOAT4X4, XMFLOAT4X4) {});
+	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4)> interaction = [](DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4) {});
 	void DrawRenderableGizmo(std::shared_ptr<Camera> camera);
 	void DrawPickedLightGizmo(std::shared_ptr<Camera> camera);
 	void DrawCameraGizmo(std::shared_ptr<Camera> camera);
@@ -94,10 +114,13 @@ namespace Editor {
 
 	void SelectSceneObject(std::string uuid);
 	void DeselectSceneObject(std::string uuid);
-	void SelectRenderable(std::string uuid);
-	void SelectLight(std::string uuid);
-	void SelectCamera(std::string uuid);
-	void SelectSoundEffect(std::string uuid);
+	void SelectRenderable(std::shared_ptr<Renderable> renderable);
+	void SelectLight(std::shared_ptr<Light> light);
+	void SelectCamera(std::shared_ptr<Camera> camera);
+	void SelectSoundEffect(std::shared_ptr<SoundFX> soundEffect);
+	void ToggleSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject);
+	void InsertSceneObjectToSelection(std::shared_ptr<SceneObject> sceneObject);
+	void EraseSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject);
 
 	bool RenderableBoundingBoxExists();
 	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera);
@@ -116,7 +139,7 @@ namespace Editor {
 	void BindRenderableToPickingPass(std::shared_ptr<Renderable> r);
 	void UnbindPickingRenderables();
 	void UnbindRenderableFromPickingPass(std::shared_ptr<Renderable> r);
-	void RenderPickingPass(std::shared_ptr<Camera> cam);
+	void RenderPickingPass(std::shared_ptr<Camera> camera);
 	void PickFromScene();
 	void PickSceneObject(unsigned int pickedObjectId);
 	void ReleasePickingPassResources();
