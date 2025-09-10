@@ -25,8 +25,6 @@ enum JsonToEditorValueType
 	jedv_t_model3d_filepath,
 	jedv_t_shaders_filepath,
 	jedv_t_sounds_filepath,
-	jedv_t_sound_instance_pos,
-	jedv_t_sound_instance_rotation,
 	jedv_t_sound_instance_flags,
 	jedv_t_filepath_vector,
 	jedv_t_filepath_vector_image,

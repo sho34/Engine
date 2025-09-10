@@ -1295,25 +1295,6 @@ inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_float3>()
 }
 
 template<>
-inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_sound_instance_pos>()
-{
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
-		{
-			std::vector<std::shared_ptr<JObject>> filtered;
-			std::copy_if(json.begin(), json.end(), std::back_inserter(filtered), [](auto& j)
-				{
-					unsigned int flags = j->at("instanceFlags");
-					return !!(flags & SoundEffectInstance_Use3D);
-				}
-			);
-			if (!filtered.empty())
-			{
-				EditorDrawFloatArray(attribute, filtered, { "x","y","z" });
-			}
-		};
-}
-
-template<>
 inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_sound_instance_flags>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
@@ -1550,25 +1531,6 @@ inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_float3_angle>()
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
 			EditorDrawFloatAngleArray(attribute, json, { "pitch","yaw","roll" });
-		};
-}
-
-template<>
-inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_sound_instance_rotation>()
-{
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
-		{
-			std::vector<std::shared_ptr<JObject>> filtered;
-			std::copy_if(json.begin(), json.end(), std::back_inserter(filtered), [](auto& j)
-				{
-					unsigned int flags = j->at("instanceFlags");
-					return !!(flags & SoundEffectInstance_Use3D);
-				}
-			);
-			if (!filtered.empty())
-			{
-				EditorDrawFloatAngleArray(attribute, filtered, { "pitch","yaw","roll" });
-			}
 		};
 }
 
