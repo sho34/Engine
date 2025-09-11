@@ -310,8 +310,20 @@ namespace Scene
 					Editor::BindRenderableToPickingPass(l->lightBillboard);
 				}
 			}},
-			{ SO_Cameras, [](nlohmann::json json) { CreateAndBind<Camera>(json); } },
-			{ SO_SoundEffects, [](nlohmann::json json) { CreateAndBind<SoundFX>(json); }}
+			{ SO_Cameras, [](nlohmann::json json) {
+				std::shared_ptr<Camera> c = CreateAndBind<Camera>(json);
+				if (c->cameraBillboard)
+				{
+					Editor::BindRenderableToPickingPass(c->cameraBillboard);
+				}
+			} },
+			{ SO_SoundEffects, [](nlohmann::json json) {
+				std::shared_ptr<SoundFX> s = CreateAndBind<SoundFX>(json);
+				if (s->soundFXBillboard)
+				{
+					Editor::BindRenderableToPickingPass(s->soundFXBillboard);
+				}
+			}}
 		};
 		CreateSO.at(so)(json);
 	}

@@ -20,8 +20,6 @@ extern std::shared_ptr<Renderer> renderer;
 #if defined(_EDITOR)
 namespace Editor
 {
-	//void SelectSceneObject(std::string uuid);
-	//void DeselectSceneObject(std::string uuid);
 	extern void SelectLight(std::shared_ptr<Light> light);
 }
 #endif
@@ -493,6 +491,11 @@ namespace Scene {
 		if (lightType() == LT_Ambient) return;
 
 		lightBillboard->BindToScene();
+	}
+
+	BoundingBox Light::GetBoundingBox()
+	{
+		return BoundingBox(position(), { 0.1f,0.1f,0.1f });
 	}
 #endif
 }

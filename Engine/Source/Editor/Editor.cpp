@@ -162,45 +162,7 @@ namespace Editor {
 		SetupImGuiStyle();
 	}
 
-	bool RenderableBoundingBoxExists()
-	{
-		return boundingBox != nullptr;
-	}
 
-	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera)
-	{
-		nlohmann::json jbox = nlohmann::json(
-			{
-				{ "meshMaterials",
-					{
-						{
-							{ "material", "2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc"},
-							{ "mesh", "30f15e68-db42-46fa-b846-b2647a0ac9b9" }
-						}
-					}
-				},
-				{ "castShadows", false },
-				{ "shadowed", false },
-				{ "name" , "EditorBoundingBox" },
-				{ "uuid" , "797b3a2b-6854-47ab-8e07-1974055e490d" },
-				{ "position" , { 0.0f, 0.0f, 0.0f} },
-				{ "topology", "LINELIST"},
-				{ "rotation" , { 0.0, 0.0, 0.0 } },
-				{ "scale" , { 1.0f, 1.0f, 1.0f } },
-				{ "skipMeshes" , {}},
-				{ "visible" , false},
-				{ "hidden" , true},
-				{ "cameras", { camera->uuid() }}
-			}
-		);
-		boundingBox = CreateSceneObjectFromJson<Renderable>(jbox);
-		boundingBox->BindToScene();
-	}
-
-	void DestroyRenderableBoundingBox()
-	{
-		SafeDeleteSceneObject(boundingBox);
-	}
 
 	void ImGuiImplRenderInit()
 	{
@@ -309,6 +271,8 @@ namespace Editor {
 		{
 			SendEditorDestroyPreview(uuid, GetTemplate);
 		}
+
+		ClearSceneObjectsSelection();
 
 		sceneObjectEdition.Destroy();
 		templateEdition.Destroy();
@@ -700,6 +664,7 @@ namespace Editor {
 				getSceneObjects, GetSceneObject,
 				OnChangeSceneObjectTab,
 				matchSceneObjectsAttributes,
+				[](std::string uuid, bool selected) { SetSceneObjectSelection(uuid, selected); },
 				[](std::string uuid) { SendEditorPreview(uuid, GetSceneObject, sceneObjectEdition.drawers); },
 				[](SceneObjectType type) { StartSceneObjectCreation(type); },
 				[](std::string uuid) { DeleteSceneObject(uuid); }
@@ -725,6 +690,7 @@ namespace Editor {
 				getTemplates, GetTemplate,
 				OnChangeTemplateTab,
 				matchTemplatesAttributes,
+				[](std::string uuid, bool selected) {},
 				[](std::string uuid) { SendEditorPreview(uuid, GetTemplate, templateEdition.drawers); },
 				[](TemplateType type) { StartTemplateCreation(type); },
 				[](std::string uuid) { DeleteTemplate(uuid); }
@@ -1162,42 +1128,18 @@ namespace Editor {
 		Templates::SaveTemplates(defaultTemplatesFolder, Texture::templateName, WriteTexturesJson);
 	}
 
+	//SceneObject Selection
+	std::map<std::string, std::shared_ptr<SceneObject>> selectedSceneObjectsMap;
+	std::set<std::shared_ptr<SceneObject>> selectedSceneObjects;
 	void SelectSceneObject(std::string uuid)
 	{
-		if (uuid == "")
+		if (uuid == "" || (boundingBox && boundingBox->uuid() == uuid))
 		{
 			return;
 		}
 
 		std::shared_ptr<Renderable> r = FindInRenderables(uuid);
 		r->OnPick();
-		/*
-		std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
-
-		switch (so->JType())
-		{
-		case SO_Renderables:
-		{
-			SelectRenderable(uuid);
-		}
-		break;
-		case SO_Lights:
-		{
-			SelectLight(uuid);
-		}
-		break;
-		case SO_Cameras:
-		{
-			SelectCamera(uuid);
-		}
-		break;
-		case SO_SoundEffects:
-		{
-			SelectSoundEffect(uuid);
-		}
-		break;
-		}
-		*/
 
 		/*
 		std::map<std::tuple<bool, bool>, std::function<void()>> actions =
@@ -1248,18 +1190,6 @@ namespace Editor {
 		*/
 	}
 
-	void DeselectSceneObject(std::string uuid)
-	{
-		/*
-		if (sceneObjectEdition.selected.contains(uuid))
-		{
-			std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
-			mousePicking.pickedObjects.erase(so);
-			sceneObjectEdition.selected.erase(uuid);
-		}
-		*/
-	}
-
 	void SelectRenderable(std::shared_ptr<Renderable> renderable)
 	{
 		ToggleSceneObjectFromSelection(renderable);
@@ -1272,6 +1202,7 @@ namespace Editor {
 
 	void SelectCamera(std::shared_ptr<Camera> camera)
 	{
+		ToggleSceneObjectFromSelection(camera);
 	}
 
 	void SelectSoundEffect(std::shared_ptr<SoundFX> soundEffect)
@@ -1292,77 +1223,117 @@ namespace Editor {
 		}
 	}
 
+	void SetSceneObjectSelection(std::string uuid, bool selected)
+	{
+		std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
+		if (selected)
+		{
+			selectedSceneObjectsMap.insert_or_assign(uuid, so);
+			selectedSceneObjects.insert(so);
+		}
+		else
+		{
+			selectedSceneObjectsMap.erase(uuid);
+			selectedSceneObjects.erase(so);
+		}
+	}
+
 	void InsertSceneObjectToSelection(std::shared_ptr<SceneObject> sceneObject)
 	{
 		std::string uuid = sceneObject->at("uuid");
 		sceneObjectEdition.selected.insert(uuid);
+		SetSceneObjectSelection(uuid, true);
 	}
+
 	void EraseSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject)
 	{
 		std::string uuid = sceneObject->at("uuid");
 		sceneObjectEdition.selected.erase(uuid);
+		SetSceneObjectSelection(uuid, false);
 	}
 
-	/*
-	void SelectRenderable(std::string uuid)
+	void ClearSceneObjectsSelection()
 	{
+		selectedSceneObjectsMap.clear();
+		selectedSceneObjects.clear();
 	}
 
-	void SelectLight(std::string uuid)
+	//BoundingBox
+	bool RenderableBoundingBoxExists()
 	{
-		//selecting light, only pick the light
-		mousePicking.pickedObjects.clear();
-		sceneObjectEdition.selected.clear();
-
-		//insert the SceneObject(Light) and the uuid to the lists
-		mousePicking.pickedObjects.insert(FindInLights(uuid));
-		mousePicking.pickedType = SO_Lights;
-		sceneObjectEdition.selected.insert(uuid);
-
-		//set mode to rotate
-		gizmoOperation = ImGuizmo::ROTATE;
-		gizmoMode = ImGuizmo::WORLD;
+		return boundingBox != nullptr;
 	}
 
-	void SelectCamera(std::string uuid)
+	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera)
 	{
+		nlohmann::json jbox = nlohmann::json(
+			{
+				{ "meshMaterials",
+					{
+						{
+							{ "material", "2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc"},
+							{ "mesh", "30f15e68-db42-46fa-b846-b2647a0ac9b9" }
+						}
+					}
+				},
+				{ "castShadows", false },
+				{ "shadowed", false },
+				{ "name" , "EditorBoundingBox" },
+				{ "uuid" , "797b3a2b-6854-47ab-8e07-1974055e490d" },
+				{ "position" , { 0.0f, 0.0f, 0.0f} },
+				{ "topology", "LINELIST"},
+				{ "rotation" , { 0.0, 0.0, 0.0 } },
+				{ "scale" , { 1.0f, 1.0f, 1.0f } },
+				{ "skipMeshes" , {}},
+				{ "visible" , false},
+				{ "hidden" , true},
+				{ "cameras", { camera->uuid() }}
+			}
+		);
+		boundingBox = CreateSceneObjectFromJson<Renderable>(jbox);
+		boundingBox->BindToScene();
 	}
 
-	void SelectSoundEffect(std::string uuid)
+	void DestroyRenderableBoundingBox()
 	{
+		SafeDeleteSceneObject(boundingBox);
 	}
-	*/
 
-	void WriteRenderableBoundingBoxConstantsBuffer()
+	void UpdateBoundingBox()
 	{
-		if (mousePicking.pickedObjects.empty())
+		std::set<std::shared_ptr<SceneObject>>& objects = selectedSceneObjects;
+		if (objects.size() == 0ULL)
 		{
 			boundingBox->visible(false);
 			return;
 		}
-		boundingBox->visible(true);
+
+		//OutputDebugStringA("UpdateBoundingBox\n");
 		BoundingBox bb;
-		bool first = true;
-		for (auto& o : mousePicking.pickedObjects)
+		bool bbfirst = true;
+		for (auto& so : objects)
 		{
-			if (first)
+			//OutputDebugStringA(std::string(std::string(so->at("name")) + "\n").c_str());
+			if (bbfirst)
 			{
-				bb = o->GetBoundingBox();
-				first = false;
+				bb = so->GetBoundingBox();
+				bbfirst = false;
 			}
 			else
 			{
-				BoundingBox bm;
-				bb.CreateMerged(bm, bb, o->GetBoundingBox());
-				bb = bm;
+				BoundingBox sobb = so->GetBoundingBox();
+				BoundingBox mbb;
+				bb.CreateMerged(mbb, sobb, bb);
+				bb = mbb;
 			}
 		}
+		boundingBox->visible(true);
 		boundingBox->scale(bb.Extents);
 		boundingBox->position(bb.Center);
 		boundingBox->WriteConstantsBuffer(renderer->backBufferIndex);
 	}
 
-	//MOUSE PROCESSING
+	//Mouse Processing
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse)
 	{
 		const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -1532,12 +1503,12 @@ namespace Editor {
 		}
 	}
 
+	//SceneObject Picking
 	bool PickingPassExists()
 	{
 		return mousePicking.pickingPass != nullptr;
 	}
 
-	//OBJECT PICKING
 	void CreatePickingPass()
 	{
 		mousePicking.pickingPass = GetRenderPassInstance(nullptr, 0, FindRenderPassUUIDByName("PickingPass"), HWNDWIDTH, HWNDHEIGHT);
@@ -1671,7 +1642,7 @@ namespace Editor {
 		unsigned int objectId = 1U;
 		for (auto& r : GetRenderables())
 		{
-			if (!r->visible()) continue;
+			if (!r->visible() || r == boundingBox) continue;
 
 			if (pickedObjectId == objectId)
 			{
@@ -1693,6 +1664,7 @@ namespace Editor {
 		if (mousePicking.pickingPass) mousePicking.pickingPass->rendererToTexturePass->Resize(width, height);
 	}
 
+	//JObjects Creation
 	void StartSceneObjectCreation(SceneObjectType type)
 	{
 		sceneObjectModal.json = GetSceneObjectJson(type);

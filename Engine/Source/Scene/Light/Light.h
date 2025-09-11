@@ -218,6 +218,7 @@ namespace Scene {
 		void BindLightBillboardToScene();
 		void DestroyLightBillboard();
 		void UpdateLightBillboard();
+		BoundingBox GetBoundingBox();
 #endif
 
 		//UPDATE

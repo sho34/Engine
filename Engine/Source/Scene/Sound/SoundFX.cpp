@@ -343,6 +343,11 @@ namespace Scene {
 		XMFLOAT3 baseColor = { 1.0f,1.0f,1.0f };
 		soundFXBillboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
 	}
+
+	BoundingBox SoundFX::GetBoundingBox()
+	{
+		return BoundingBox(position(), { 0.1f,0.1f,0.1f });
+	}
 #endif
 
 	void DestroySoundEffects()

@@ -107,31 +107,33 @@ namespace Editor {
 	void DrawSoundEffectGizmo(std::shared_ptr<Camera> camera);
 
 	void OpenLevelFile();
-
 	void SaveLevelToFile(std::string levelFileName);
 	void SaveLevelAs();
 	void SaveTemplates();
 
+	//SceneObject Selection
 	void SelectSceneObject(std::string uuid);
-	void DeselectSceneObject(std::string uuid);
 	void SelectRenderable(std::shared_ptr<Renderable> renderable);
 	void SelectLight(std::shared_ptr<Light> light);
 	void SelectCamera(std::shared_ptr<Camera> camera);
 	void SelectSoundEffect(std::shared_ptr<SoundFX> soundEffect);
 	void ToggleSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject);
+	void SetSceneObjectSelection(std::string uuid, bool selected);
 	void InsertSceneObjectToSelection(std::shared_ptr<SceneObject> sceneObject);
 	void EraseSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject);
+	void ClearSceneObjectsSelection();
 
+	//BoundingBox
 	bool RenderableBoundingBoxExists();
 	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera);
 	void DestroyRenderableBoundingBox();
-	void WriteRenderableBoundingBoxConstantsBuffer();
+	void UpdateBoundingBox();
 
-	//MOUSE PROCESSING
+	//Mouse Processing
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera);
 
-	//OBJECT PICKING
+	//SceneObject Picking
 	bool PickingPassExists();
 	void CreatePickingPass();
 	void DestroyPickingPass();
@@ -145,8 +147,7 @@ namespace Editor {
 	void ReleasePickingPassResources();
 	void ResizePickingPass(unsigned int width, unsigned int height);
 
-	//Creation
+	//JObjects Creation
 	void StartSceneObjectCreation(SceneObjectType type);
 	void StartTemplateCreation(TemplateType type);
-
 }

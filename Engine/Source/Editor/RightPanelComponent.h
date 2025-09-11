@@ -35,7 +35,7 @@ struct RightPanelComponent
 
 	bool HasSelectedChildren(std::map<std::string, std::any>& dump, std::string path);
 
-	void DrawAssetTreeNodes(std::map<std::string, std::any>& dump, std::string path, auto OnPick, auto OnDelete)
+	void DrawAssetTreeNodes(std::map<std::string, std::any>& dump, std::string path, auto OnSelect, auto OnOpen, auto OnDelete)
 	{
 		std::map<std::string, std::any> nodes;
 		std::copy_if(dump.begin(), dump.end(), std::inserter(nodes, nodes.begin()), [](auto& pair)
@@ -53,7 +53,7 @@ struct RightPanelComponent
 				ImGui::SetNextItemOpen(true);
 			if (ImGui::TreeNodeEx(first.c_str()))
 			{
-				DrawAssetTreeNodes(child, p, OnPick, OnDelete);
+				DrawAssetTreeNodes(child, p, OnSelect, OnOpen, OnDelete);
 				ImGui::TreePop();
 			}
 		}
@@ -89,7 +89,7 @@ struct RightPanelComponent
 						enabled &= cond(asset);
 						if (!enabled) break;
 					}
-					ImGui::DrawItemWithEnabledState([this, uuid, &checked]
+					ImGui::DrawItemWithEnabledState([this, uuid, &checked, OnSelect]
 						{
 							if (ImGui::Checkbox("##", &checked))
 							{
@@ -103,6 +103,7 @@ struct RightPanelComponent
 									selected.erase(uuid);
 									assetsConditioner.erase(uuid);
 								}
+								OnSelect(uuid, checked);
 							}
 						}, checked || enabled
 					);
@@ -129,7 +130,7 @@ struct RightPanelComponent
 				{
 					if (ImGui::IsItemClicked() && ImGui::IsMouseDoubleClicked(ImGuiPopupFlags_MouseButtonLeft))
 					{
-						OnPick(uuid);
+						OnOpen(uuid);
 					}
 					ImGui::TreePop();
 				}
@@ -138,7 +139,7 @@ struct RightPanelComponent
 		}
 	}
 
-	void DrawAssetsTree(auto GetObjects, auto GetPanelObject, auto OnPick, auto OnDelete, std::string ignorePrefix)
+	void DrawAssetsTree(auto GetObjects, auto GetPanelObject, auto OnSelect, auto OnOpen, auto OnDelete, std::string ignorePrefix)
 	{
 		if (assets.empty() || dirtyAssetsTree)
 		{
@@ -165,7 +166,7 @@ struct RightPanelComponent
 			dirtyAssetsTree = false;
 		}
 
-		DrawAssetTreeNodes(assets, "", OnPick, OnDelete);
+		DrawAssetTreeNodes(assets, "", OnSelect, OnOpen, OnDelete);
 	}
 
 	void DrawTabs(std::function<void(std::string)> onChangeTab);
@@ -176,7 +177,8 @@ struct RightPanelComponent
 		auto GetPanelObject,
 		auto OnChangeTab,
 		auto MatchAttributes,
-		auto SendEditorPreview,
+		auto OnSelect,
+		auto OnOpen,
 		auto OnNew,
 		auto OnDelete
 	)
@@ -213,7 +215,11 @@ struct RightPanelComponent
 				if (selectedTab == detailAbleTabs.at(0))
 				{
 					DrawAssetsTree(GetObjects, GetPanelObject,
-						[&uuidToPick, this, MatchAttributes, SendEditorPreview](auto toPick)
+						[OnSelect](auto selectedUUID, bool selected)
+						{
+							OnSelect(selectedUUID, selected);
+						},
+						[&uuidToPick, this, MatchAttributes, OnOpen](auto toPick)
 						{
 							uuidToPick = toPick;
 							selected.insert(uuidToPick);
@@ -221,7 +227,7 @@ struct RightPanelComponent
 							editables.insert(uuidToPick);
 							selectedTab = detailAbleTabs.at(1);
 							MatchAttributes();
-							SendEditorPreview(uuidToPick);
+							OnOpen(uuidToPick);
 						}, OnDelete, "");
 				}
 				else

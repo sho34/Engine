@@ -577,7 +577,7 @@ void EditorModeStep()
 
 	if (RenderableBoundingBoxExists())
 	{
-		WriteRenderableBoundingBoxConstantsBuffer();
+		UpdateBoundingBox();
 	}
 
 	if (GetNumMouseCameras() > 0ULL)
@@ -703,7 +703,7 @@ void EditorModePostRender()
 
 				if (!RenderableBoundingBoxExists())
 				{
-					//CreateRenderableBoundingBox(GetMouseCameras().at(0));
+					CreateRenderableBoundingBox(GetMouseCameras().at(0));
 				}
 			}
 		);

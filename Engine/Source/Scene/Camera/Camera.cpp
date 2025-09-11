@@ -20,6 +20,12 @@ using namespace DeviceUtils;
 extern RECT hWndRect;
 extern std::shared_ptr<Renderer> renderer;
 
+#if defined(_EDITOR)
+namespace Editor
+{
+	extern void SelectCamera(std::shared_ptr<Camera> camera);
+}
+#endif
 namespace Scene
 {
 #include <Editor/JDrawersDef.h>
@@ -72,6 +78,9 @@ namespace Scene
 		for (auto& pair : allCams)
 		{
 			auto [uuid, cam] = pair;
+#if defined(_EDITOR)
+			cam->UpdateCameraBillboard();
+#endif
 			if (!cam->dirty(Camera::Update_useSwapChain)) continue;
 			cam->clean(Camera::Update_useSwapChain);
 			if (cam->useSwapChain())
@@ -426,6 +435,10 @@ namespace Scene
 		CreateIBLTexturesInstances();
 		CreateConstantsBuffer();
 		CreateRenderPasses();
+#if defined(_EDITOR)
+		if (!lightCam)
+			CreateCameraBillboard();
+#endif
 	}
 
 	void Camera::Bind(std::shared_ptr<SceneObject> sceneObject)
@@ -439,6 +452,9 @@ namespace Scene
 		}
 		break;
 		}
+#if defined(_EDITOR)
+		BindCameraBillboardToScene();
+#endif
 	}
 
 	void Camera::Unbind(std::shared_ptr<SceneObject> sceneObject)
@@ -459,6 +475,10 @@ namespace Scene
 #include <TrackUUID/JInsert.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
+
+#if defined(_EDITOR)
+		BindCameraBillboardToScene();
+#endif
 	}
 
 	void Camera::BindRenderable(std::shared_ptr<Renderable> r)
@@ -735,6 +755,14 @@ namespace Scene
 		UpdateLightPosition();
 	}
 
+	void Camera::SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
+	{
+		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLIrradiance)->gpuHandle);
+		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->gpuHandle);
+		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLBRDFLUT)->gpuHandle);
+	}
+
+#if defined(_EDITOR)
 	void Camera::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
 	{
 		//bbox->position(json.at("position"));
@@ -742,10 +770,68 @@ namespace Scene
 		//bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 
-	void Camera::SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
+	void Camera::CreateCameraBillboard()
 	{
-		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLIrradiance)->gpuHandle);
-		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->gpuHandle);
-		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLBRDFLUT)->gpuHandle);
+		if (this_ptr == GetMouseCameras().at(0)) return;
+		nlohmann::json jbillboard = nlohmann::json(
+			{
+				{ "meshMaterials",
+					{
+						{
+							{ "material", FindMaterialUUIDByName("Camera") },
+							{ "mesh", "7dec1229-075f-4599-95e1-9ccfad0d48b1" }
+						}
+					}
+				},
+				{ "castShadows", false },
+				{ "shadowed", false },
+				{ "name" , uuid() + "-billboard" },
+				{ "uuid" , getUUID() },
+				{ "position" , { 0.0f, 0.0f, 0.0f} },
+				{ "topology", "TRIANGLELIST"},
+				{ "rotation" , { 0.0, 0.0, 0.0 } },
+				{ "scale" , { 1.0f, 1.0f, 1.0f } },
+				{ "skipMeshes" , {}},
+				{ "visible" , true},
+				{ "hidden" , true},
+				{ "cameras", { GetMouseCameras().at(0)->uuid()}},
+				{ "passMaterialOverrides",
+					{
+						{
+							{ "meshIndex", 0 },
+							{ "renderPass", FindRenderPassUUIDByName("PickingPass") },
+							{ "material", FindMaterialUUIDByName("CameraPicking") }
+						}
+					}
+				}
+			}
+		);
+		cameraBillboard = CreateSceneObjectFromJson<Renderable>(jbillboard);
+		cameraBillboard->OnPick = [this] {Editor::SelectCamera(this_ptr); };
 	}
+
+	void Camera::BindCameraBillboardToScene()
+	{
+		if (!cameraBillboard) return;
+		cameraBillboard->BindToScene();
+	}
+
+	void Camera::DestroyCameraBillboard()
+	{
+	}
+
+	void Camera::UpdateCameraBillboard()
+	{
+		if (!cameraBillboard) return;
+		cameraBillboard->position(position());
+		XMFLOAT3 baseColor = { 1.0f,1.0f,1.0f };
+		cameraBillboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
+	}
+
+	BoundingBox Camera::GetBoundingBox()
+	{
+		return BoundingBox(position(), { 0.1f,0.1f,0.1f });
+	}
+
+#endif
 }

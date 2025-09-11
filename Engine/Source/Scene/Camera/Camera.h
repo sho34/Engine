@@ -170,8 +170,18 @@ namespace Scene {
 		void MoveLeft(float step);
 		void MoveRight(float step);
 
-		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
 		void SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
+
+#if defined(_EDITOR)
+		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
+
+		std::shared_ptr<Scene::Renderable> cameraBillboard;
+		void CreateCameraBillboard();
+		void BindCameraBillboardToScene();
+		void DestroyCameraBillboard();
+		void UpdateCameraBillboard();
+		BoundingBox GetBoundingBox();
+#endif
 	};
 
 };

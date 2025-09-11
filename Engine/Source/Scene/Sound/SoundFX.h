@@ -84,6 +84,7 @@ namespace Scene {
 		void BindSoundFXBillboardToScene();
 		void DestroySoundFXBillboard();
 		void UpdateSoundFXBillboard();
+		BoundingBox GetBoundingBox();
 #endif
 	};
 
