@@ -34,6 +34,8 @@ extern std::shared_ptr<Renderer> renderer;
 namespace Editor
 {
 	extern void SelectRenderable(std::shared_ptr<Renderable> renderable);
+	extern void BindRenderableToPickingPass(std::shared_ptr<Renderable> r);
+	extern void UnbindRenderableFromPickingPass(std::shared_ptr<Renderable> r);
 };
 #endif
 
@@ -656,6 +658,7 @@ namespace Scene {
 	void Renderable::RebuildMeshMaterials()
 	{
 		renderException = false;
+		Editor::UnbindRenderableFromPickingPass(this_ptr);
 		Destroy();
 		try
 		{
@@ -667,6 +670,7 @@ namespace Scene {
 				CreateRootSignatures(cam);
 				CreatePipelineStates(cam);
 			}
+			Editor::BindRenderableToPickingPass(this_ptr);
 		}
 		catch (...)
 		{

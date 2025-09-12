@@ -4028,12 +4028,16 @@ inline JEdvEditorDrawerFunction DrawValue<BlendDesc, jedv_t_object>()
 						//j->at(attribute).at("RenderTarget").at(index).at(key) = value;
 					};
 				};
-			auto rtDrawFromCheckBox = [rtValueEqual, rtUpdate, attribute, &json](unsigned int index, std::string key)
+			auto rtDrawFromCheckBox = [rtValueEqual, rtUpdate, attribute, &json](unsigned int index, std::string key, std::vector<std::string> toggleKeys = {})
 				{
 					bool value = (rtValueEqual(index, key)) ? (!!static_cast<int>(json[0]->at(attribute).at("RenderTarget").at(index).at(key))) : false;
 					if (ImGui::Checkbox("##", &value))
 					{
 						rtUpdate(index, key, value);
+						for (auto tkey : toggleKeys)
+						{
+							rtUpdate(index, tkey, !value);
+						}
 					}
 				};
 			auto rtDrawComboSelection = [rtValueEqual, rtUpdate, attribute, &json](unsigned int index, std::string key, std::vector<std::string> options)
@@ -4138,7 +4142,7 @@ inline JEdvEditorDrawerFunction DrawValue<BlendDesc, jedv_t_object>()
 							ImGui::Text("BlendEnable");
 							ImGui::TableSetColumnIndex(1);
 							ImGui::PushID("BlendEnable");
-							rtDrawFromCheckBox(i, "BlendEnable");
+							rtDrawFromCheckBox(i, "BlendEnable", { "LogicOpEnable" });
 							ImGui::PopID();
 
 							ImGui::TableNextRow();
@@ -4146,7 +4150,7 @@ inline JEdvEditorDrawerFunction DrawValue<BlendDesc, jedv_t_object>()
 							ImGui::Text("LogicOpEnable");
 							ImGui::TableSetColumnIndex(1);
 							ImGui::PushID("LogicOpEnable");
-							rtDrawFromCheckBox(i, "LogicOpEnable");
+							rtDrawFromCheckBox(i, "LogicOpEnable", { "BlendEnable" });
 							ImGui::PopID();
 
 							ImGui::TableNextRow();
