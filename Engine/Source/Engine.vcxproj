@@ -294,6 +294,7 @@
     <ClInclude Include="JExpose\Creator\JJsonDef.h" />
     <ClInclude Include="JExpose\Attributes\JUpdate.h" />
     <ClInclude Include="JExpose\Editor\JExpose.h" />
+    <ClInclude Include="JExpose\Editor\JSaveFile.h" />
     <ClInclude Include="JExpose\Functions\JEdvCreatorDrawer.h" />
     <ClInclude Include="JExpose\Functions\JEdvCreatorValidator.h" />
     <ClInclude Include="JExpose\Functions\JEdvEditorDrawer.h" />

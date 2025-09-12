@@ -1,4 +1,4 @@
-JCLASS(Renderable)
+JCLASS(Renderable, GetRenderables)
 JTYPE(SceneObjectType, SO_Renderables)
 JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
 JEXPOSE(std::string, name, ("renderable." + std::to_string(GetNumRenderables())), jedv_t_so_renderable_name, 0, true)

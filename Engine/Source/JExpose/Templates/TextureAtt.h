@@ -1,4 +1,4 @@
-JCLASS(Texture)
+JCLASS(Texture, _)
 JTYPE(TemplateType, T_Textures)
 JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
 JEXPOSE(std::string, name, "", jedv_t_hidden, 0, true)

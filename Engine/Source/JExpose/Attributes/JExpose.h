@@ -1,6 +1,6 @@
 #if defined(JEXPOSE_ATT_DECL)
 
-#define JCLASS(CLASS)
+#define JCLASS(CLASS,GETJOBJECTS)
 
 #define JTYPE(TYPE,VALUE) virtual TYPE JType() { return VALUE; }
 
@@ -257,7 +257,7 @@
 
 #if defined(JEXPOSE_ATT_INIT)
 
-#define JCLASS(CLASS)
+#define JCLASS(CLASS,GETJOBJECTS)
 #define JTYPE(TYPE,VALUE)
 #define JEXPOSE(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE) create_##ATT(INITIAL);
 #define JEXPOSE_TRANSFORM(TYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE) create_##ATT(INITIAL);
@@ -272,7 +272,7 @@
 
 #if defined(JEXPOSE_ATT_ORDER)
 
-#define JCLASS(CLASS) static std::vector<std::pair<std::string,JsonToEditorValueType>> Get##CLASS##Attributes()\
+#define JCLASS(CLASS,GETJOBJECTS) static std::vector<std::pair<std::string,JsonToEditorValueType>> Get##CLASS##Attributes()\
 {\
 	return std::vector<std::pair<std::string,JsonToEditorValueType>>({
 #define JTYPE(TYPE,VALUE)
@@ -289,7 +289,7 @@
 
 #if defined(JEXPOSE_ATT_FLAGS)
 
-#define JCLASS(CLASS) enum CLASS##_UpdateFlags\
+#define JCLASS(CLASS,GETJOBJECTS) enum CLASS##_UpdateFlags\
 {
 #define JTYPE(TYPE,VALUE)
 #define JEXPOSE(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE) Update_##ATT,
@@ -305,7 +305,7 @@
 
 #if defined(JEXPOSE_ATT_UPDATE)
 
-#define JCLASS(CLASS) UpdateFlagsMap=\
+#define JCLASS(CLASS,GETJOBJECTS) UpdateFlagsMap=\
 {
 #define JTYPE(TYPE,VALUE)
 #define JEXPOSE(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE) { #ATT, std::make_tuple(1 << Update_##ATT, !!UPDATEMASK) },

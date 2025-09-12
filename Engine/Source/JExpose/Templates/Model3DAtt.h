@@ -1,4 +1,4 @@
-JCLASS(Model3D)
+JCLASS(Model3D, _)
 JTYPE(TemplateType, T_Models3D)
 JEXPOSE(std::string, uuid, "", jedv_t_hidden, 0, false)
 JEXPOSE(std::string, name, "", jedv_t_string, 0, true)

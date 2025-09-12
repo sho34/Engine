@@ -44,6 +44,8 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 namespace Editor {
 
 	std::string currentLevelName = defaultLevelName;
+	bool levelModified = false;
+	bool defaultLevel = true;
 
 	bool initialized = false;
 	bool maximized = true;
@@ -103,6 +105,7 @@ namespace Editor {
 	CreatorModal<SceneObjectType> sceneObjectModal;
 	CreatorModal<TemplateType> templateModal;
 
+	//Editor LifeCycle
 	void InitEditor()
 	{
 		initialized = true;
@@ -161,8 +164,6 @@ namespace Editor {
 		ImGuiImplRenderInit();
 		SetupImGuiStyle();
 	}
-
-
 
 	void ImGuiImplRenderInit()
 	{
@@ -291,52 +292,7 @@ namespace Editor {
 		return ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam);
 	}
 
-	void HandleApplicationDragTitleBar(RECT& dragRect)
-	{
-		auto mouseState = mouse->GetState();
-
-		auto inDragBounds = [&dragRect, &mouseState]() {
-			return (
-				mouseState.y < dragRect.bottom &&
-				mouseState.y > dragRect.top &&
-				mouseState.x < dragRect.right &&
-				mouseState.x > dragRect.left
-				);
-			};
-
-		if (mouseState.leftButton && !mouseClicked)
-		{
-			mouseClicked = true;
-			if (inDragBounds())
-			{
-				clickedInDragArea = true;
-				lastMouseX = mouseState.x;
-				lastMouseY = mouseState.y;
-			}
-		}
-		else if (mouseState.leftButton && clickedInDragArea)
-		{
-			INT diffMouseX = mouseState.x - lastMouseX;
-			INT diffMouseY = mouseState.y - lastMouseY;
-
-			RECT currentRect;
-			GetWindowRect(hWnd, &currentRect);
-
-			INT newX = currentRect.left + diffMouseX;
-			INT newY = currentRect.top + diffMouseY;
-
-			SetWindowPos(hWnd, nullptr, newX, newY, 0, 0, SWP_NOSIZE);
-
-			lastMouseX = mouseState.x - diffMouseX;
-			lastMouseY = mouseState.y - diffMouseY;
-		}
-		else if (!mouseState.leftButton)
-		{
-			mouseClicked = false;
-			clickedInDragArea = false;
-		}
-	}
-
+	//Editor Drawing
 	void DrawEditor(std::shared_ptr<Camera> camera) {
 
 		if (inSizeMove) return;
@@ -454,7 +410,25 @@ namespace Editor {
 					.x = viewport->WorkSize.x - 1.0f * 19.0f,
 					.onClick = []()
 				{
-					PostMessageA(hWnd,WM_QUIT,0,0);
+					if (!Editor::levelModified || Editor::defaultLevel)
+					{
+						PostMessageA(hWnd,WM_QUIT,0,0);
+					}
+					else
+					{
+						int response = MessageBoxA(hWnd,"The level has been modified, do you wish to Save your work before leaving?","Save before leaving?",MB_ICONWARNING | MB_YESNOCANCEL);
+						switch (response) {
+						case IDYES:
+						{
+							Editor::SaveLevelToFile(Editor::currentLevelName);
+						}
+						case IDNO:
+						{
+							PostMessageA(hWnd, WM_QUIT, 0, 0);
+						}
+						break;
+						}
+					}
 				}},
 				{
 					.label = ICON_FA_WINDOW_MAXIMIZE,
@@ -494,102 +468,218 @@ namespace Editor {
 		HandleApplicationDragTitleBar(dragRect);
 	}
 
-	void OpenSceneObject(std::string uuid)
+	void HandleApplicationDragTitleBar(RECT& dragRect)
 	{
-		sceneObjectEdition.selected = { uuid };
-		OnChangeSceneObjectTab(templateEdition.detailAbleTabs.at(1));
-	}
+		auto mouseState = mouse->GetState();
 
-	void OpenSceneObjectOnNextFrame(std::string uuid)
-	{
-		sceneObjectEdition.selectedNextFrame = uuid;
-	}
+		auto inDragBounds = [&dragRect, &mouseState]() {
+			return (
+				mouseState.y < dragRect.bottom &&
+				mouseState.y > dragRect.top &&
+				mouseState.x < dragRect.right &&
+				mouseState.x > dragRect.left
+				);
+			};
 
-	void OnChangeSceneObjectTab(std::string newTab)
-	{
-		sceneObjectEdition.selectedTab = newTab;
-		sceneObjectEdition.editables = sceneObjectEdition.selected;
-		if (newTab == sceneObjectEdition.detailAbleTabs.at(1))
+		if (mouseState.leftButton && !mouseClicked)
 		{
-			sceneObjectEdition.CreateEditableAttributesToMatch<SceneObjectType>(
-				GetSceneObjectType,
-				GetSceneObject,
-				GetSceneObjectAttributes,
-				GetSceneObjectDrawers
-			);
-			for (auto& uuid : sceneObjectEdition.editables)
+			mouseClicked = true;
+			if (inDragBounds())
 			{
-				SendEditorPreview(uuid, GetSceneObject, sceneObjectEdition.drawers);
+				clickedInDragArea = true;
+				lastMouseX = mouseState.x;
+				lastMouseY = mouseState.y;
 			}
 		}
-		else
+		else if (mouseState.leftButton && clickedInDragArea)
 		{
-			for (auto& uuid : sceneObjectEdition.editables)
+			INT diffMouseX = mouseState.x - lastMouseX;
+			INT diffMouseY = mouseState.y - lastMouseY;
+
+			RECT currentRect;
+			GetWindowRect(hWnd, &currentRect);
+
+			INT newX = currentRect.left + diffMouseX;
+			INT newY = currentRect.top + diffMouseY;
+
+			SetWindowPos(hWnd, nullptr, newX, newY, 0, 0, SWP_NOSIZE);
+
+			lastMouseX = mouseState.x - diffMouseX;
+			lastMouseY = mouseState.y - diffMouseY;
+		}
+		else if (!mouseState.leftButton)
+		{
+			mouseClicked = false;
+			clickedInDragArea = false;
+		}
+	}
+
+	void OpenLevelFile()
+	{
+		using namespace Scene::Level;
+
+		ImGui::OpenFile([](std::filesystem::path path)
 			{
-				SendEditorDestroyPreview(uuid, GetSceneObject);
-			}
-		}
+				std::filesystem::path jsonFilePath = path;
+				jsonFilePath.replace_extension(".json");
+				SetLevelToLoad(jsonFilePath.generic_string());
+			},
+			defaultLevelsFolder);
 	}
 
-	void OpenTemplate(std::string uuid)
+	void SaveLevelAs()
 	{
-		templateEdition.selected = { uuid };
-		OnChangeTemplateTab(templateEdition.detailAbleTabs.at(1));
-	}
-
-	void OpenTemplateOnNextFrame(std::string uuid)
-	{
-		templateEdition.selectedNextFrame = uuid;
-	}
-
-	void SendEditorPreview(std::string uuid, auto GetJObject, auto drawers)
-	{
-		size_t flags = 0;
-		std::shared_ptr<JObject> j = GetJObject(uuid);
-		for (auto& [attribute, _] : drawers)
-		{
-			auto& tp = j->UpdateFlagsMap.at(attribute);
-			if (!std::get<1>(tp)) continue;
-			flags |= std::get<0>(tp);
-		}
-		j->EditorPreview(flags);
-	}
-
-	void SendEditorDestroyPreview(std::string uuid, auto GetJObject)
-	{
-		std::shared_ptr<JObject> j = GetJObject(uuid);
-		j->DestroyEditorPreview();
-	}
-
-	void OnChangeTemplateTab(std::string newTab)
-	{
-		templateEdition.selectedTab = newTab;
-		templateEdition.editables = templateEdition.selected;
-		if (newTab == templateEdition.detailAbleTabs.at(1))
-		{
-			templateEdition.CreateEditableAttributesToMatch<TemplateType>(
-				GetTemplateType,
-				GetTemplate,
-				GetTemplateAttributes,
-				GetTemplateDrawers
-			);
-			for (auto& uuid : templateEdition.editables)
+		std::thread saveAs([]()
 			{
-				SendEditorPreview(uuid, GetTemplate, templateEdition.drawers);
+				//first create the directory if needed
+				std::filesystem::path directory(nostd::StringToWString(defaultLevelsFolder));
+				std::filesystem::create_directory(directory);
+
+				std::wstring path = L"";
+				COMDLG_FILTERSPEC filters[] = { {.pszName = L"JSON files. (*.json)", .pszSpec = L"*.json" } };
+				std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
+				if (!SaveFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
+				if (path.empty()) return;
+
+				std::filesystem::path jsonFilePath = path;
+				jsonFilePath.replace_extension(".json");
+
+				SaveLevelToFile(nostd::WStringToString(jsonFilePath.filename()));
 			}
-		}
-		else
+		);
+		saveAs.detach();
+	}
+
+	bool SaveFileDialog(std::wstring& path, std::wstring defaultDirectory, std::wstring defaultFileName, std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo)
+	{
+		IFileSaveDialog* p_file_save = nullptr;
+		bool are_all_operation_success = false;
+		while (!are_all_operation_success)
 		{
-			for (auto& uuid : templateEdition.editables)
+			HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL,
+				IID_IFileSaveDialog, reinterpret_cast<void**>(&p_file_save));
+			if (FAILED(hr))
+				break;
+
+			if (!pFilterInfo)
 			{
-				SendEditorDestroyPreview(uuid, GetTemplate);
+				COMDLG_FILTERSPEC save_filter[1];
+				save_filter[0].pszName = L"All files";
+				save_filter[0].pszSpec = L"*.*";
+				hr = p_file_save->SetFileTypes(1, save_filter);
+				if (FAILED(hr))
+					break;
+				hr = p_file_save->SetFileTypeIndex(1);
+				if (FAILED(hr))
+					break;
 			}
+			else
+			{
+				hr = p_file_save->SetFileTypes(pFilterInfo->second, pFilterInfo->first);
+				if (FAILED(hr))
+					break;
+				hr = p_file_save->SetFileTypeIndex(1);
+				if (FAILED(hr))
+					break;
+			}
+
+			if (!defaultDirectory.empty()) {
+				IShellItem* pCurFolder = NULL;
+				hr = SHCreateItemFromParsingName(defaultDirectory.c_str(), NULL, IID_PPV_ARGS(&pCurFolder));
+				if (FAILED(hr))
+					break;
+				p_file_save->SetFolder(pCurFolder);
+				pCurFolder->Release();
+			}
+
+			if (!defaultFileName.empty())
+			{
+				hr = p_file_save->SetFileName(defaultFileName.c_str());
+				if (FAILED(hr))
+					break;
+			}
+
+			hr = p_file_save->Show(NULL);
+			if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) // No item was selected.
+			{
+				are_all_operation_success = true;
+				break;
+			}
+			else if (FAILED(hr))
+				break;
+
+			IShellItem* p_item;
+			hr = p_file_save->GetResult(&p_item);
+			if (FAILED(hr))
+				break;
+
+			PWSTR item_path;
+			hr = p_item->GetDisplayName(SIGDN_FILESYSPATH, &item_path);
+			if (FAILED(hr))
+				break;
+			path = item_path;
+			CoTaskMemFree(item_path);
+			p_item->Release();
+
+			are_all_operation_success = true;
 		}
+
+		if (p_file_save)
+			p_file_save->Release();
+		return are_all_operation_success;
+	}
+
+	void SaveLevelToFile(std::string levelFileName)
+	{
+		using namespace nlohmann;
+
+		nlohmann::json level;
+
+		level["renderables"] = json::array();
+		level["lights"] = json::array();
+		level["cameras"] = json::array();
+		level["sounds"] = json::array();
+
+		WriteRenderablesJson(level["renderables"]);
+		WriteLightsJson(level["lights"]);
+		WriteCamerasJson(level["cameras"]);
+		WriteSoundEffectsJson(level["sounds"]);
+
+		std::string levelString = level.dump(4);
+
+		const std::string levelsRootFolder = "Levels/";
+		const std::string filename = levelsRootFolder + levelFileName;
+
+		//first create the directory if needed
+		std::filesystem::path directory(levelsRootFolder);
+		std::filesystem::create_directory(directory);
+
+		//then create the json level file
+		std::filesystem::path path(filename);
+		path.replace_extension(".json");
+		std::string pathStr = path.generic_string();
+		std::ofstream file;
+		file.open(pathStr);
+		file.write(levelString.c_str(), levelString.size());
+		file.close();
+
+		currentLevelName = levelFileName;
+		defaultLevel = false;
+		levelModified = false;
+	}
+
+	void SaveTemplates()
+	{
+		using namespace Templates;
+		Templates::SaveTemplates(defaultTemplatesFolder, Shader::templateName, WriteShadersJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, Material::templateName, WriteMaterialsJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, Model3D::templateName, WriteModel3DsJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, Sound::templateName, WriteSoundsJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, Texture::templateName, WriteTexturesJson);
 	}
 
 	float separatorFactor = 0.0f;
 	const float panelMinHeight = 47.0f;
-
 	void DrawRightPanel() {
 
 		auto getSceneObjects = []()
@@ -700,14 +790,47 @@ namespace Editor {
 		ImGui::PopStyleVar();
 	}
 
+	//SceneObjects Panel
+	void OnChangeSceneObjectTab(std::string newTab)
+	{
+		sceneObjectEdition.selectedTab = newTab;
+		sceneObjectEdition.editables = sceneObjectEdition.selected;
+		if (newTab == sceneObjectEdition.detailAbleTabs.at(1))
+		{
+			sceneObjectEdition.CreateEditableAttributesToMatch<SceneObjectType>(
+				GetSceneObjectType,
+				GetSceneObject,
+				GetSceneObjectAttributes,
+				GetSceneObjectDrawers
+			);
+			for (auto& uuid : sceneObjectEdition.editables)
+			{
+				SendEditorPreview(uuid, GetSceneObject, sceneObjectEdition.drawers);
+			}
+		}
+		else
+		{
+			for (auto& uuid : sceneObjectEdition.editables)
+			{
+				SendEditorDestroyPreview(uuid, GetSceneObject);
+			}
+		}
+	}
+
+	void OpenSceneObject(std::string uuid)
+	{
+		sceneObjectEdition.selected = { uuid };
+		OnChangeSceneObjectTab(templateEdition.detailAbleTabs.at(1));
+	}
+
+	void OpenSceneObjectOnNextFrame(std::string uuid)
+	{
+		sceneObjectEdition.selectedNextFrame = uuid;
+	}
+
 	void MarkScenePanelAssetsAsDirty()
 	{
 		sceneObjectEdition.dirtyAssetsTree = true;
-	}
-
-	void MarkTemplatesPanelAssetsAsDirty()
-	{
-		templateEdition.dirtyAssetsTree = true;
 	}
 
 	void DestroyEditorSceneObjectsReferences()
@@ -715,6 +838,70 @@ namespace Editor {
 		sceneObjectEdition.Destroy();
 	}
 
+	//Templates Panel
+	void OnChangeTemplateTab(std::string newTab)
+	{
+		templateEdition.selectedTab = newTab;
+		templateEdition.editables = templateEdition.selected;
+		if (newTab == templateEdition.detailAbleTabs.at(1))
+		{
+			templateEdition.CreateEditableAttributesToMatch<TemplateType>(
+				GetTemplateType,
+				GetTemplate,
+				GetTemplateAttributes,
+				GetTemplateDrawers
+			);
+			for (auto& uuid : templateEdition.editables)
+			{
+				SendEditorPreview(uuid, GetTemplate, templateEdition.drawers);
+			}
+		}
+		else
+		{
+			for (auto& uuid : templateEdition.editables)
+			{
+				SendEditorDestroyPreview(uuid, GetTemplate);
+			}
+		}
+	}
+
+	void OpenTemplate(std::string uuid)
+	{
+		templateEdition.selected = { uuid };
+		OnChangeTemplateTab(templateEdition.detailAbleTabs.at(1));
+	}
+
+	void OpenTemplateOnNextFrame(std::string uuid)
+	{
+		templateEdition.selectedNextFrame = uuid;
+	}
+
+	void MarkTemplatesPanelAssetsAsDirty()
+	{
+		templateEdition.dirtyAssetsTree = true;
+	}
+
+	//JObject's Preview Panel
+	void SendEditorPreview(std::string uuid, auto GetJObject, auto drawers)
+	{
+		size_t flags = 0;
+		std::shared_ptr<JObject> j = GetJObject(uuid);
+		for (auto& [attribute, _] : drawers)
+		{
+			auto& tp = j->UpdateFlagsMap.at(attribute);
+			if (!std::get<1>(tp)) continue;
+			flags |= std::get<0>(tp);
+		}
+		j->EditorPreview(flags);
+	}
+
+	void SendEditorDestroyPreview(std::string uuid, auto GetJObject)
+	{
+		std::shared_ptr<JObject> j = GetJObject(uuid);
+		j->DestroyEditorPreview();
+	}
+
+	//Gizmos
 	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera)
 	{
 		if (mousePicking.pickedObjects.size() == 0ULL) return;
@@ -959,173 +1146,13 @@ namespace Editor {
 		break;
 		}
 	}
+
 	void DrawCameraGizmo(std::shared_ptr<Camera> camera)
 	{
 	}
+
 	void DrawSoundEffectGizmo(std::shared_ptr<Camera> camera)
 	{
-	}
-
-	void OpenLevelFile()
-	{
-		using namespace Scene::Level;
-
-		ImGui::OpenFile([](std::filesystem::path path)
-			{
-				std::filesystem::path jsonFilePath = path;
-				jsonFilePath.replace_extension(".json");
-				SetLevelToLoad(jsonFilePath.generic_string());
-			},
-			defaultLevelsFolder);
-	}
-
-	void SaveLevelToFile(std::string levelFileName)
-	{
-		using namespace nlohmann;
-
-		nlohmann::json level;
-
-		level["renderables"] = json::array();
-		level["lights"] = json::array();
-		level["cameras"] = json::array();
-		level["sounds"] = json::array();
-
-		WriteRenderablesJson(level["renderables"]);
-		WriteLightsJson(level["lights"]);
-		WriteCamerasJson(level["cameras"]);
-		WriteSoundEffectsJson(level["sounds"]);
-
-		std::string levelString = level.dump(4);
-
-		const std::string levelsRootFolder = "Levels/";
-		const std::string filename = levelsRootFolder + levelFileName;
-
-		//first create the directory if needed
-		std::filesystem::path directory(levelsRootFolder);
-		std::filesystem::create_directory(directory);
-
-		//then create the json level file
-		std::filesystem::path path(filename);
-		path.replace_extension(".json");
-		std::string pathStr = path.generic_string();
-		std::ofstream file;
-		file.open(pathStr);
-		file.write(levelString.c_str(), levelString.size());
-		file.close();
-
-		currentLevelName = levelFileName;
-	}
-
-	bool SaveFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr)
-	{
-		IFileSaveDialog* p_file_save = nullptr;
-		bool are_all_operation_success = false;
-		while (!are_all_operation_success)
-		{
-			HRESULT hr = CoCreateInstance(CLSID_FileSaveDialog, NULL, CLSCTX_ALL,
-				IID_IFileSaveDialog, reinterpret_cast<void**>(&p_file_save));
-			if (FAILED(hr))
-				break;
-
-			if (!pFilterInfo)
-			{
-				COMDLG_FILTERSPEC save_filter[1];
-				save_filter[0].pszName = L"All files";
-				save_filter[0].pszSpec = L"*.*";
-				hr = p_file_save->SetFileTypes(1, save_filter);
-				if (FAILED(hr))
-					break;
-				hr = p_file_save->SetFileTypeIndex(1);
-				if (FAILED(hr))
-					break;
-			}
-			else
-			{
-				hr = p_file_save->SetFileTypes(pFilterInfo->second, pFilterInfo->first);
-				if (FAILED(hr))
-					break;
-				hr = p_file_save->SetFileTypeIndex(1);
-				if (FAILED(hr))
-					break;
-			}
-
-			if (!defaultDirectory.empty()) {
-				IShellItem* pCurFolder = NULL;
-				hr = SHCreateItemFromParsingName(defaultDirectory.c_str(), NULL, IID_PPV_ARGS(&pCurFolder));
-				if (FAILED(hr))
-					break;
-				p_file_save->SetFolder(pCurFolder);
-				pCurFolder->Release();
-			}
-
-			if (!defaultFileName.empty())
-			{
-				hr = p_file_save->SetFileName(defaultFileName.c_str());
-				if (FAILED(hr))
-					break;
-			}
-
-			hr = p_file_save->Show(NULL);
-			if (hr == HRESULT_FROM_WIN32(ERROR_CANCELLED)) // No item was selected.
-			{
-				are_all_operation_success = true;
-				break;
-			}
-			else if (FAILED(hr))
-				break;
-
-			IShellItem* p_item;
-			hr = p_file_save->GetResult(&p_item);
-			if (FAILED(hr))
-				break;
-
-			PWSTR item_path;
-			hr = p_item->GetDisplayName(SIGDN_FILESYSPATH, &item_path);
-			if (FAILED(hr))
-				break;
-			path = item_path;
-			CoTaskMemFree(item_path);
-			p_item->Release();
-
-			are_all_operation_success = true;
-		}
-
-		if (p_file_save)
-			p_file_save->Release();
-		return are_all_operation_success;
-	}
-
-	void SaveLevelAs()
-	{
-		std::thread saveAs([]()
-			{
-				//first create the directory if needed
-				std::filesystem::path directory(nostd::StringToWString(defaultLevelsFolder));
-				std::filesystem::create_directory(directory);
-
-				std::wstring path = L"";
-				COMDLG_FILTERSPEC filters[] = { {.pszName = L"JSON files. (*.json)", .pszSpec = L"*.json" } };
-				std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
-				if (!SaveFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
-				if (path.empty()) return;
-
-				std::filesystem::path jsonFilePath = path;
-				jsonFilePath.replace_extension(".json");
-
-				SaveLevelToFile(nostd::WStringToString(jsonFilePath.filename()));
-			}
-		);
-		saveAs.detach();
-	}
-
-	void SaveTemplates()
-	{
-		using namespace Templates;
-		Templates::SaveTemplates(defaultTemplatesFolder, Shader::templateName, WriteShadersJson);
-		Templates::SaveTemplates(defaultTemplatesFolder, Material::templateName, WriteMaterialsJson);
-		Templates::SaveTemplates(defaultTemplatesFolder, Model3D::templateName, WriteModel3DsJson);
-		Templates::SaveTemplates(defaultTemplatesFolder, Sound::templateName, WriteSoundsJson);
-		Templates::SaveTemplates(defaultTemplatesFolder, Texture::templateName, WriteTexturesJson);
 	}
 
 	//SceneObject Selection

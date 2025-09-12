@@ -228,26 +228,9 @@ namespace Scene {
 #if defined(_EDITOR)
 	void WriteRenderablesJson(nlohmann::json& json)
 	{
-		//std::map<std::string, std::shared_ptr<Renderable>> filtered;
-		//std::copy_if(renderables.begin(), renderables.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
-		//	{
-		//		auto& [uuid, renderable] = pair;
-		//		return !renderable->hidden();
-		//	}
-		//);
-		//std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
-		//	{
-		//		auto& [uuid, renderable] = pair;
-		//		nlohmann::json ret = renderable->json;
-		//		ret["uuid"] = uuid;
-		//		ret["skipMeshes"] = nlohmann::json::array();
-		//		for (auto skip : renderable->skipMeshes())
-		//		{
-		//			ret["skipMeshes"].push_back(skip);
-		//		}
-		//		return ret;
-		//	}
-		//);
+#include <Editor/JSaveFile.h>
+#include <RenderableAtt.h>
+#include <JEnd.h>
 	}
 #endif
 

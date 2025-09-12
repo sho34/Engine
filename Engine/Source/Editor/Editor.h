@@ -76,40 +76,48 @@ namespace Editor {
 	static const LONG ApplicationBarBottom = 19L;
 	static const LONG RightPanelWidth = 400L;
 
+	//Editor LifeCycle
 	void InitEditor();
-
 	void ImGuiImplRenderInit();
 	void SetupImGuiStyle();
 	void DestroyEditor();
 	bool WndProcHandlerEditor(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	void HandleApplicationDragTitleBar(RECT& dragRect);
 
+	//Editor Drawing
 	void DrawEditor(std::shared_ptr<Camera> camera);
 	void DrawApplicationBar();
+	void HandleApplicationDragTitleBar(RECT& dragRect);
+	void OpenLevelFile();
+	void SaveLevelAs();
+	bool SaveFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr);
+	void SaveLevelToFile(std::string levelFileName);
+	void SaveTemplates();
+	void DrawRightPanel();
+
+	//SceneObjects Panel
+	void OnChangeSceneObjectTab(std::string newTab);
 	void OpenSceneObject(std::string uuid);
 	void OpenSceneObjectOnNextFrame(std::string uuid);
-	void OnChangeSceneObjectTab(std::string newTab);
-	void OpenTemplate(std::string uuid);
-	void OpenTemplateOnNextFrame(std::string uuid);
-	void SendEditorPreview(std::string uuid, auto GetJObject, auto drawers);
-	void SendEditorDestroyPreview(std::string uuid, auto GetJObject);
-	void OnChangeTemplateTab(std::string newTab);
-	void DrawRightPanel();
 	void MarkScenePanelAssetsAsDirty();
-	void MarkTemplatesPanelAssetsAsDirty();
 	void DestroyEditorSceneObjectsReferences();
 
+	//Templates Panel
+	void OnChangeTemplateTab(std::string newTab);
+	void OpenTemplate(std::string uuid);
+	void OpenTemplateOnNextFrame(std::string uuid);
+	void MarkTemplatesPanelAssetsAsDirty();
+
+	//JObject's Preview Panel
+	void SendEditorPreview(std::string uuid, auto GetJObject, auto drawers);
+	void SendEditorDestroyPreview(std::string uuid, auto GetJObject);
+
+	//Gizmos
 	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera);
 	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4)> interaction = [](DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4) {});
 	void DrawRenderableGizmo(std::shared_ptr<Camera> camera);
 	void DrawPickedLightGizmo(std::shared_ptr<Camera> camera);
 	void DrawCameraGizmo(std::shared_ptr<Camera> camera);
 	void DrawSoundEffectGizmo(std::shared_ptr<Camera> camera);
-
-	void OpenLevelFile();
-	void SaveLevelToFile(std::string levelFileName);
-	void SaveLevelAs();
-	void SaveTemplates();
 
 	//SceneObject Selection
 	void SelectSceneObject(std::string uuid);

@@ -57,15 +57,6 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
-		//if (!sound().empty())
-		//{
-		//	auto OnSoundChange = [this](std::shared_ptr<JObject> sound)
-		//		{
-		//			UnbindFromScene();
-		//			BindToScene();
-		//		};
-		//	soundEffectInstance = GetSoundEffectInstance(sound(), instanceFlags(), uuid(), OnSoundChange);
-		//}
 #if defined(_EDITOR)
 		CreateSoundFXBillboard();
 #endif
@@ -204,19 +195,9 @@ namespace Scene {
 
 	void WriteSoundEffectsJson(nlohmann::json& json)
 	{
-		std::map<std::string, std::shared_ptr<SoundFX>> filtered;
-		std::copy_if(SoundEffects.begin(), SoundEffects.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
-			{
-				auto& [uuid, sfx] = pair;
-				return !sfx->hidden();
-			}
-		);
-		std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
-			{
-				auto& [uuid, sfx] = pair;
-				return *(static_cast<nlohmann::json*>(sfx.get()));
-			}
-		);
+#include <Editor/JSaveFile.h>
+#include <SoundFXAtt.h>
+#include <JEnd.h>
 	}
 #endif
 

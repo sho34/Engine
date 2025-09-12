@@ -368,19 +368,9 @@ namespace Scene {
 
 	void WriteLightsJson(nlohmann::json& json)
 	{
-		std::map<std::string, std::shared_ptr<Light>> filtered;
-		std::copy_if(Lights.begin(), Lights.end(), std::inserter(filtered, filtered.end()), [](const auto& pair)
-			{
-				auto& [uuid, light] = pair;
-				return !light->hidden();
-			}
-		);
-		std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](const auto& pair)
-			{
-				auto& [uuid, light] = pair;
-				return *(static_cast<nlohmann::json*>(light.get()));
-			}
-		);
+#include <Editor/JSaveFile.h>
+#include <LightAtt.h>
+#include <JEnd.h>
 	}
 
 #endif

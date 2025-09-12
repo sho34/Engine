@@ -39,6 +39,10 @@ return created; }
 #undef JEXPOSE_EDITOR_DRAWERS_DEF
 #endif
 
+#ifdef JEXPOSE_EDITOR_SAVE_FILE
+#undef JEXPOSE_EDITOR_SAVE_FILE
+#endif
+
 #ifdef JEXPOSE_TRACK_UUID_DECL
 #undef JEXPOSE_TRACK_UUID_DECL
 #endif

@@ -21,6 +21,8 @@ using namespace AudioSystem;
 using namespace Editor;
 namespace Editor {
 	extern std::string currentLevelName;
+	extern bool defaultLevel;
+	extern bool levelModified;
 }
 #endif
 
@@ -66,6 +68,8 @@ namespace Scene::Level {
 
 	void LoadDefaultLevel()
 	{
+		Editor::levelModified = false;
+		Editor::defaultLevel = true;
 		LoadSceneObjects<Renderable>(DefaultLevel::GetDefaultLevelRenderables(), "renderables");
 		LoadSceneObjects<Camera>(DefaultLevel::GetDefaultLevelCameras(), "cameras");
 		LoadSceneObjects<Light>(DefaultLevel::GetDefaultLevelLights(), "lights");
@@ -75,6 +79,8 @@ namespace Scene::Level {
 
 	void LoadLevel(std::filesystem::path level)
 	{
+		Editor::levelModified = false;
+		Editor::defaultLevel = false;
 		std::string pathStr = (std::filesystem::exists(level) ? level.generic_string() : (defaultLevelsFolder + level.generic_string() + ".json"));
 		OutputDebugStringA(std::string("Loading level: " + pathStr + "\n").c_str());
 

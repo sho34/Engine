@@ -1,6 +1,6 @@
 #if defined(JEXPOSE_CREATOR_REQUIRED)
 
-#define JCLASS(CLASS) inline std::vector<std::string> Get##CLASS##RequiredAttributes()\
+#define JCLASS(CLASS,GETJOBJECTS) inline std::vector<std::string> Get##CLASS##RequiredAttributes()\
 {\
 	std::vector<std::string> requiredAtts;
 #define JTYPE(TYPE,VALUE)
@@ -17,7 +17,7 @@
 
 #if defined(JEXPOSE_CREATOR_JSON_DECL)
 
-#define JCLASS(CLASS) nlohmann::json Create##CLASS##Json();
+#define JCLASS(CLASS,GETJOBJECTS) nlohmann::json Create##CLASS##Json();
 #define JTYPE(TYPE,VALUE)
 #define JEXPOSE(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
 #define JEXPOSE_TRANSFORM(TYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
@@ -32,7 +32,7 @@
 
 #if defined(JEXPOSE_CREATOR_JSON_DEF)
 
-#define JCLASS(CLASS) nlohmann::json Create##CLASS##Json()\
+#define JCLASS(CLASS,GETJOBJECTS) nlohmann::json Create##CLASS##Json()\
 {\
 	nlohmann::json created;
 
@@ -107,7 +107,7 @@
 
 #if defined(JEXPOSE_CREATOR_DRAWERS_DECL)
 
-#define JCLASS(CLASS) std::map<std::string, JEdvCreatorDrawerFunction> Get##CLASS##CreatorDrawers();
+#define JCLASS(CLASS,GETJOBJECTS) std::map<std::string, JEdvCreatorDrawerFunction> Get##CLASS##CreatorDrawers();
 #define JTYPE(TYPE,VALUE)
 #define JEXPOSE(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE) 
 #define JEXPOSE_TRANSFORM(TYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
@@ -122,7 +122,7 @@
 
 #if defined(JEXPOSE_CREATOR_DRAWERS_DEF)
 
-#define JCLASS(CLASS) std::map<std::string, JEdvCreatorDrawerFunction> Get##CLASS##CreatorDrawers()\
+#define JCLASS(CLASS,GETJOBJECTS) std::map<std::string, JEdvCreatorDrawerFunction> Get##CLASS##CreatorDrawers()\
 {\
 	std::map<std::string, JEdvCreatorDrawerFunction> creatorDrawers;
 #define JTYPE(TYPE,VALUE)
@@ -139,7 +139,7 @@
 
 #if defined(JEXPOSE_CREATOR_VALIDATOR_DECL)
 
-#define JCLASS(CLASS) std::map<std::string, JEdvCreatorValidatorFunction> Get##CLASS##CreatorValidator();
+#define JCLASS(CLASS,GETJOBJECTS) std::map<std::string, JEdvCreatorValidatorFunction> Get##CLASS##CreatorValidator();
 #define JTYPE(TYPE,VALUE)
 #define JEXPOSE(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE) 
 #define JEXPOSE_TRANSFORM(TYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
@@ -154,7 +154,7 @@
 
 #if defined(JEXPOSE_CREATOR_VALIDATOR_DEF)
 
-#define JCLASS(CLASS) std::map<std::string, JEdvCreatorValidatorFunction> Get##CLASS##CreatorValidator()\
+#define JCLASS(CLASS,GETJOBJECTS) std::map<std::string, JEdvCreatorValidatorFunction> Get##CLASS##CreatorValidator()\
 {\
 	std::map<std::string, JEdvCreatorValidatorFunction> creatorValidator;
 #define JTYPE(TYPE,VALUE)
