@@ -29,6 +29,10 @@ namespace Templates
 #include <Model3DAtt.h>
 #include <JEnd.h>
 
+#include <Editor/JPreviewDef.h>
+#include <Model3DAtt.h>
+#include <JEnd.h>
+
 #include <Creator/JJsonDef.h>
 #include <Model3DAtt.h>
 #include <JEnd.h>

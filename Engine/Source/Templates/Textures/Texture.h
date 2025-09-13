@@ -22,6 +22,10 @@ namespace Templates
 #include <TextureAtt.h>
 #include <JEnd.h>
 
+#include <Editor/JPreviewDecl.h>
+#include <TextureAtt.h>
+#include <JEnd.h>
+
 #include <Creator/JRequired.h>
 #include <TextureAtt.h>
 #include <JEnd.h>

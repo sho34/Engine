@@ -23,6 +23,10 @@ namespace Templates
 #include <RenderPassAtt.h>
 #include <JEnd.h>
 
+#include <Editor/JPreviewDef.h>
+#include <RenderPassAtt.h>
+#include <JEnd.h>
+
 #include <Creator/JJsonDef.h>
 #include <RenderPassAtt.h>
 #include <JEnd.h>

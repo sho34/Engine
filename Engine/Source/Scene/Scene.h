@@ -56,6 +56,7 @@ namespace Scene
 	SceneObjectType GetSceneObjectType(std::string uuid);
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetSceneObjectAttributes(SceneObjectType so);
 	std::map<std::string, JEdvEditorDrawerFunction> GetSceneObjectDrawers(SceneObjectType so);
+	std::map<std::string, JEdvEditorDrawerFunction> GetSceneObjectPreviewers(SceneObjectType so);
 	std::vector<std::string> GetSceneObjectRequiredAttributes(SceneObjectType so);
 	nlohmann::json GetSceneObjectJson(SceneObjectType so);
 	std::map<std::string, JEdvCreatorDrawerFunction> GetSceneObjectCreatorDrawers(SceneObjectType so);

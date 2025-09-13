@@ -49,6 +49,10 @@ namespace Scene
 #include <RenderableAtt.h>
 #include <JEnd.h>
 
+#include <Editor/JPreviewDecl.h>
+#include <RenderableAtt.h>
+#include <JEnd.h>
+
 #include <Creator/JRequired.h>
 #include <RenderableAtt.h>
 #include <JEnd.h>
