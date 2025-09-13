@@ -4639,13 +4639,28 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 					}, cam->previewRenderPassIndex < (rttPasses.size() - 1));
 
 				unsigned int p = cam->previewRenderPassIndex;
+
 				if (!passIsShadowMap[p])
 				{
+					std::vector<std::string> selectables(rttPasses[p]->renderToTexture.size());
+					std::generate(selectables.begin(), selectables.end(), [n = 0]() mutable {return std::to_string(n + 1); });
+
+					ImGui::Text("RTT#");
+					ImGui::SameLine();
+					std::string selected = std::to_string(cam->previewRenderToTextureIndex + 1);
+					ImGui::DrawComboSelection(selected, selectables, [cam](std::string option)
+						{
+							cam->previewRenderToTextureIndex = atoi(option.c_str()) - 1;
+						}
+					);
+
+					unsigned int rt = cam->previewRenderToTextureIndex;
+
 					ImGui::DrawTextureImage(
 						(ImTextureID)
-						rttPasses[p]->renderToTexture[0]->gpuTextureHandle.ptr,
-						rttPasses[p]->renderToTexture[0]->width,
-						rttPasses[p]->renderToTexture[0]->height
+						rttPasses[p]->renderToTexture[rt]->gpuTextureHandle.ptr,
+						rttPasses[p]->renderToTexture[rt]->width,
+						rttPasses[p]->renderToTexture[rt]->height
 					);
 				}
 				else

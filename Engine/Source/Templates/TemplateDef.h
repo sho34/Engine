@@ -81,14 +81,22 @@ Get##TemplateName##Instance(\
 )\
 {\
 	if(refTracker.Has(uuid))\
-		return refTracker.FindValue(uuid);\
+	{\
+		std::shared_ptr<TemplateName##Instance> instance = refTracker.FindValue(uuid); \
+		refTracker.IncrementRefCount(instance,1U);\
+		return instance;\
+	}\
 	else\
 		return refTracker.AddRef(uuid, newRefCallback);\
 }\
 std::shared_ptr<TemplateName##Instance> Get##TemplateName##Instance(std::string uuid)\
 {\
 	if(refTracker.Has(uuid))\
-		return refTracker.FindValue(uuid);\
+	{\
+		std::shared_ptr<TemplateName##Instance> instance = refTracker.FindValue(uuid); \
+		refTracker.IncrementRefCount(instance,1U);\
+		return instance;\
+	}\
 	else\
 		return refTracker.AddRef(uuid, [uuid]{return std::make_shared<TemplateName##Instance>(uuid);});\
 }\

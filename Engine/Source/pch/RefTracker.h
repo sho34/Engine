@@ -24,6 +24,11 @@ struct RefTracker
 		return instance;
 	}
 
+	void IncrementRefCount(V& instance, unsigned int d)
+	{
+		instancesRefCount.find(instance)->second += d;
+	}
+
 	void RemoveRef(K key, V& instance)
 	{
 		assert(instancesRefCount.contains(instance));
@@ -45,7 +50,7 @@ struct RefTracker
 	unsigned int Count(V& instance)
 	{
 		assert(instancesRefCount.contains(instance));
-		return instancesRefCount.at(instancesRefCount);
+		return instancesRefCount.at(instance);
 	}
 
 	void Clear()

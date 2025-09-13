@@ -511,7 +511,8 @@ namespace Scene {
 		if (!materials.contains(rp)) return;
 		for (auto& m : materials.at(rp))
 		{
-			DestroyMaterialInstance(m);
+			RemoveMaterialInstance(m->instanceUUID, m);
+			m = nullptr;
 		}
 		materials.erase(rp);
 	}

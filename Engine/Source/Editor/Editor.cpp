@@ -1548,9 +1548,8 @@ namespace Editor {
 
 	void DestroyPickingPass()
 	{
-		UnbindPickingRenderables();
-
 		if (mousePicking.pickingPass) {
+			UnbindPickingRenderables();
 			DestroyRenderPassInstance(mousePicking.pickingPass);
 		}
 		mousePicking.pickingPass = nullptr;

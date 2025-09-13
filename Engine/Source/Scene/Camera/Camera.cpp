@@ -71,6 +71,7 @@ namespace Scene
 		std::set<std::shared_ptr<Camera>> cams;
 		std::transform(Cameras.begin(), Cameras.end(), std::inserter(cams, cams.begin()), [](const auto& pair) { return pair.second; });
 
+		//we construct the set of cameras with dirty render passes
 		std::set<std::shared_ptr<Camera>> camsRpi;
 		std::copy_if(cams.begin(), cams.end(), std::inserter(camsRpi, camsRpi.begin()), [](const auto& cam)
 			{
@@ -78,10 +79,12 @@ namespace Scene
 			}
 		);
 
+		//go through all cameras checking updates of the swapchain
 		std::map<std::string, std::shared_ptr<Camera>> allCams(Cameras.begin(), Cameras.end());
 		for (auto& pair : allCams)
 		{
 			auto [uuid, cam] = pair;
+			//as a special case update the billboard
 #if defined(_EDITOR)
 			cam->UpdateCameraBillboard();
 #endif
@@ -95,14 +98,18 @@ namespace Scene
 			{
 				EraseCameraFromSwapChainCameras(cam);
 			}
+			//as swapchain changed add this camera to the update renderpass set
 			camsRpi.insert(cam);
 		}
 
+		//do the same for the camera controllers cameras 
 		for (auto& pair : allCams)
 		{
 			auto [uuid, cam] = pair;
+
 			if (!cam->dirty(Camera::Update_mouseController)) continue;
 			cam->clean(Camera::Update_mouseController);
+
 			if (cam->mouseController())
 			{
 				InsertCameraIntoMouseCameras(cam);
@@ -147,22 +154,18 @@ namespace Scene
 							}
 						}
 
-						for (auto& renderable : c->renderables)
+						auto renderables = c->renderables;
+
+						for (auto& renderable : renderables)
 						{
-							renderable->DestroyMaterialsInstances(c);
-							renderable->DestroyConstantsBuffersInstances(c);
-							renderable->DestroyRootSignatures(c);
-							renderable->DestroyPipelineStates(c);
+							UnbindFromScene(c->this_ptr, renderable);
 						}
 						c->DestroyRenderPasses();
 
 						c->CreateRenderPasses();
-						for (auto& renderable : c->renderables)
+						for (auto& renderable : renderables)
 						{
-							renderable->CreateMaterialsInstances(c);
-							renderable->CreateConstantsBuffersInstances(c);
-							renderable->CreateRootSignatures(c);
-							renderable->CreatePipelineStates(c);
+							BindToScene(c->this_ptr, renderable);
 						}
 
 						for (auto rpi : c->cameraRenderPasses)
