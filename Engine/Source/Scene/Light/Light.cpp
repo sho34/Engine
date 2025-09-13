@@ -29,10 +29,6 @@ namespace Scene {
 #include <LightAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDef.h>
-#include <LightAtt.h>
-#include <JEnd.h>
-
 #include <TrackUUID/JDef.h>
 #include <LightAtt.h>
 #include <JEnd.h>

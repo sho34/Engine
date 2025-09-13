@@ -17,10 +17,6 @@ namespace Templates {
 #include <ShaderAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDef.h>
-#include <ShaderAtt.h>
-#include <JEnd.h>
-
 #include <Creator/JJsonDef.h>
 #include <ShaderAtt.h>
 #include <JEnd.h>

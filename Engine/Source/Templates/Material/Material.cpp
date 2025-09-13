@@ -21,10 +21,6 @@ namespace Templates {
 #include <MaterialAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDef.h>
-#include <MaterialAtt.h>
-#include <JEnd.h>
-
 #include <Creator/JJsonDef.h>
 #include <MaterialAtt.h>
 #include <JEnd.h>

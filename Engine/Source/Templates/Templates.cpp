@@ -928,21 +928,6 @@ namespace Templates
 		return GetTDrawers.at(t)();
 	}
 
-	std::map<std::string, JEdvEditorDrawerFunction> GetTemplatePreviewers(TemplateType t)
-	{
-		const std::map<TemplateType, std::function<std::map<std::string, JEdvEditorDrawerFunction>()>> GetTPreviewers =
-		{
-			{ T_Materials, GetMaterialPreviewers },
-			{ T_Models3D, GetModel3DPreviewers },
-			{ T_Shaders, GetShaderPreviewers },
-			{ T_Sounds, GetSoundPreviewers },
-			{ T_Textures, GetTexturePreviewers },
-			{ T_RenderPasses, GetRenderPassPreviewers }
-		};
-		return GetTPreviewers.at(t)();
-	}
-
-
 	std::vector<std::string> GetTemplateRequiredAttributes(TemplateType t)
 	{
 		const std::map<TemplateType, std::function<std::vector<std::string>()>> GetTRequiredAtts =

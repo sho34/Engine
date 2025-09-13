@@ -722,8 +722,7 @@ namespace Editor {
 					GetSceneObjectType,
 					GetSceneObject,
 					GetSceneObjectAttributes,
-					GetSceneObjectDrawers,
-					GetSceneObjectPreviewers
+					GetSceneObjectDrawers
 				);
 			};
 		auto matchTemplatesAttributes = []()
@@ -732,8 +731,7 @@ namespace Editor {
 					GetTemplateType,
 					GetTemplate,
 					GetTemplateAttributes,
-					GetTemplateDrawers,
-					GetTemplatePreviewers
+					GetTemplateDrawers
 				);
 			};
 
@@ -803,8 +801,7 @@ namespace Editor {
 				GetSceneObjectType,
 				GetSceneObject,
 				GetSceneObjectAttributes,
-				GetSceneObjectDrawers,
-				GetSceneObjectPreviewers
+				GetSceneObjectDrawers
 			);
 			for (auto& uuid : sceneObjectEdition.editables)
 			{
@@ -852,8 +849,7 @@ namespace Editor {
 				GetTemplateType,
 				GetTemplate,
 				GetTemplateAttributes,
-				GetTemplateDrawers,
-				GetTemplatePreviewers
+				GetTemplateDrawers
 			);
 			for (auto& uuid : templateEdition.editables)
 			{
@@ -892,7 +888,6 @@ namespace Editor {
 		std::shared_ptr<JObject> j = GetJObject(uuid);
 		for (auto& [attribute, _] : drawers)
 		{
-			if (!j->UpdateFlagsMap.contains(attribute)) continue;
 			auto& tp = j->UpdateFlagsMap.at(attribute);
 			if (!std::get<1>(tp)) continue;
 			flags |= std::get<0>(tp);

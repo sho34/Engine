@@ -32,10 +32,6 @@ namespace Scene
 #include <CameraAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDef.h>
-#include <CameraAtt.h>
-#include <JEnd.h>
-
 #include <TrackUUID/JDef.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
@@ -760,16 +756,6 @@ namespace Scene
 		//bbox->position(json.at("position"));
 		//bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
 		//bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
-	}
-
-	void Camera::EditorPreview(size_t flags)
-	{
-		previewRenderPassIndex = 0U;
-		previewRenderToTextureIndex = 0U;
-	}
-
-	void Camera::DestroyEditorPreview()
-	{
 	}
 
 	void Camera::CreateCameraBillboard()

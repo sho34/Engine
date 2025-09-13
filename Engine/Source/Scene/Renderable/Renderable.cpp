@@ -44,10 +44,6 @@ namespace Scene {
 #include <RenderableAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDef.h>
-#include <RenderableAtt.h>
-#include <JEnd.h>
-
 #include <TrackUUID/JDef.h>
 #include <RenderableAtt.h>
 #include <JEnd.h>

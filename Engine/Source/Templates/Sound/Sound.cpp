@@ -21,10 +21,6 @@ namespace Templates
 #include <SoundAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDef.h>
-#include <SoundAtt.h>
-#include <JEnd.h>
-
 #include <Creator/JJsonDef.h>
 #include <SoundAtt.h>
 #include <JEnd.h>

@@ -235,18 +235,6 @@ namespace Scene
 		return GetSODrawers.at(so)();
 	}
 
-	std::map<std::string, JEdvEditorDrawerFunction> GetSceneObjectPreviewers(SceneObjectType so)
-	{
-		const std::map<SceneObjectType, std::function<std::map<std::string, JEdvEditorDrawerFunction>()>> GetSOPreviewers =
-		{
-			{ SO_Renderables, GetRenderablePreviewers },
-			{ SO_Lights, GetLightPreviewers },
-			{ SO_Cameras, GetCameraPreviewers },
-			{ SO_SoundEffects, GetSoundFXPreviewers }
-		};
-		return GetSOPreviewers.at(so)();
-	}
-
 	std::vector<std::string> GetSceneObjectRequiredAttributes(SceneObjectType so)
 	{
 		const std::map<SceneObjectType, std::function<std::vector<std::string>()>> GetSORequiredAtts =

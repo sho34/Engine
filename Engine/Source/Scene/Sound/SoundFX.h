@@ -22,10 +22,6 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDecl.h>
-#include <SoundFXAtt.h>
-#include <JEnd.h>
-
 #include <Creator/JRequired.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>

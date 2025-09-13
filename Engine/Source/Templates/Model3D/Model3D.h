@@ -25,10 +25,6 @@ namespace Templates
 #include <Model3DAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDecl.h>
-#include <Model3DAtt.h>
-#include <JEnd.h>
-
 #include <Creator/JRequired.h>
 #include <Model3DAtt.h>
 #include <JEnd.h>

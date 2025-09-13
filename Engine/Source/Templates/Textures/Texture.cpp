@@ -28,10 +28,6 @@ namespace Templates
 #include <TextureAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDef.h>
-#include <TextureAtt.h>
-#include <JEnd.h>
-
 #include <Creator/JJsonDef.h>
 #include <TextureAtt.h>
 #include <JEnd.h>

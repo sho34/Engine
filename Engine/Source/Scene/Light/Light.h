@@ -145,10 +145,6 @@ namespace Scene {
 #include <LightAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDecl.h>
-#include <LightAtt.h>
-#include <JEnd.h>
-
 #include <Creator/JRequired.h>
 #include <LightAtt.h>
 #include <JEnd.h>

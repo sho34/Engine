@@ -66,9 +66,6 @@ JEdvEditorDrawerFunction DrawEnum(
 		};
 }
 
-template <JsonToEditorValueType J>
-JEdvEditorDrawerFunction DrawPreview() { return nullptr; }
-
 inline void EditorDrawFloat(std::string attribute, std::shared_ptr<JObject>& json, const char* format = "%.3f", std::function<float(float)> cb = [](float v) {return v; })
 {
 	ImGui::TableNextRow();
@@ -4580,83 +4577,4 @@ inline JEdvEditorDrawerFunction DrawValue<Orthographic, jedv_t_object>()
 			}
 		};
 
-}
-
-template <>
-inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
-{
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
-		{
-			for (auto& j : json)
-			{
-				if (json.size() > 1)
-				{
-					ImGui::Text(std::string(j->at("name")).c_str());
-				}
-
-				std::shared_ptr<Camera> cam = std::dynamic_pointer_cast<Camera>(json[0]);
-				std::vector<std::shared_ptr<RenderPassInstance>> passes;
-				std::copy_if(cam->cameraRenderPasses.begin(), cam->cameraRenderPasses.end(), std::back_inserter(passes), [](auto& pass)
-					{
-						return pass->type != RenderPassType_SwapChainPass;
-					}
-				);
-				std::vector<bool> passIsShadowMap;
-				std::transform(passes.begin(), passes.end(), std::back_inserter(passIsShadowMap), [](auto& pass)
-					{
-						return pass->materialOverride == RenderPassMaterialOverride_ShadowMap;
-					}
-				);
-				std::vector<std::shared_ptr<RenderToTexturePass>> rttPasses;
-				std::transform(passes.begin(), passes.end(), std::back_inserter(rttPasses), [](auto& pass)
-					{
-						return pass->rendererToTexturePass;
-					}
-				);
-
-				ImGui::DrawItemWithEnabledState([cam]()
-					{
-						ImGui::PushID("Minus");
-						if (ImGui::Button(ICON_FA_MINUS))
-						{
-							cam->previewRenderPassIndex--;
-							cam->previewRenderToTextureIndex = 0U;
-						}
-						ImGui::PopID();
-					}, cam->previewRenderPassIndex > 0U);
-				ImGui::SameLine();
-				ImGui::Text(std::string(std::string("Pass ") + std::to_string(cam->previewRenderPassIndex + 1)).c_str());
-				ImGui::SameLine();
-				ImGui::DrawItemWithEnabledState([cam]()
-					{
-						ImGui::PushID("Plus");
-						if (ImGui::Button(ICON_FA_PLUS))
-						{
-							cam->previewRenderPassIndex++;
-							cam->previewRenderToTextureIndex = 0U;
-						}
-						ImGui::PopID();
-					}, cam->previewRenderPassIndex < (rttPasses.size() - 1));
-
-				unsigned int p = cam->previewRenderPassIndex;
-				if (!passIsShadowMap[p])
-				{
-					ImGui::DrawTextureImage(
-						(ImTextureID)
-						rttPasses[p]->renderToTexture[0]->gpuTextureHandle.ptr,
-						rttPasses[p]->renderToTexture[0]->width,
-						rttPasses[p]->renderToTexture[0]->height
-					);
-				}
-				else
-				{
-					ImGui::DrawTextureImage(
-						(ImTextureID)
-						rttPasses[p]->gpuDepthStencilTextureHandle.ptr,
-						rttPasses[p]->scissorRect.right - rttPasses[p]->scissorRect.left,
-						rttPasses[p]->scissorRect.bottom - rttPasses[p]->scissorRect.top
-					);
-				}
-			}
-		};
 }

@@ -66,10 +66,6 @@ namespace Templates {
 #include <MaterialAtt.h>
 #include <JEnd.h>
 
-#include <Editor/JPreviewDecl.h>
-#include <MaterialAtt.h>
-#include <JEnd.h>
-
 #include <Creator/JRequired.h>
 #include <MaterialAtt.h>
 #include <JEnd.h>
