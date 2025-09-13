@@ -98,6 +98,10 @@ namespace Templates
 #include <RenderPassAtt.h>
 #include <JEnd.h>
 
+#include <Editor/JPreviewDecl.h>
+#include <RenderPassAtt.h>
+#include <JEnd.h>
+
 #include <Creator/JRequired.h>
 #include <RenderPassAtt.h>
 #include <JEnd.h>

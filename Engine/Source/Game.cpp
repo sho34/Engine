@@ -475,8 +475,9 @@ void EditorModeCreate()
 			//mainPass = CreateMainPass();
 			//resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
-			LoadDefaultLevel();
+			//LoadDefaultLevel();
 			//LoadLevel("pyramid");
+			LoadLevel("twocams");
 			//LoadLevel("female");
 			//LoadLevel("knight");
 			//LoadLevel("spartan");

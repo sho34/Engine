@@ -24,6 +24,10 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
+#include <Editor/JPreviewDef.h>
+#include <SoundFXAtt.h>
+#include <JEnd.h>
+
 #include <TrackUUID/JDef.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>

@@ -241,7 +241,7 @@ struct RightPanelComponent
 	}
 
 	template<typename Type>
-	void CreateEditableAttributesToMatch(auto GetTypes, auto GetJson, auto GetAttributes, auto GetDrawers)
+	void CreateEditableAttributesToMatch(auto GetTypes, auto GetJson, auto GetAttributes, auto GetDrawers, auto GetPreviews)
 	{
 		std::set<Type> objectTypes;
 		//create an attributes counter map for all the attributes in every selected scene object
@@ -303,6 +303,16 @@ struct RightPanelComponent
 
 				//auto& drawer = attDrawers.at(att);
 				auto& drawer = typeDrawers.at(type).at(att);
+				drawers.insert_or_assign(att, drawer);
+			}
+		}
+
+		if (objectTypes.size() == 1ULL)
+		{
+			auto previewers = GetPreviews(*objectTypes.begin());
+			for (auto& [att, drawer] : previewers)
+			{
+				drawersOrder.insert(att);
 				drawers.insert_or_assign(att, drawer);
 			}
 		}

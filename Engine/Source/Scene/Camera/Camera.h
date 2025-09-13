@@ -64,6 +64,10 @@ namespace Scene {
 #include <CameraAtt.h>
 #include <JEnd.h>
 
+#include <Editor/JPreviewDecl.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
+
 #include <Creator/JRequired.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
@@ -174,6 +178,11 @@ namespace Scene {
 
 #if defined(_EDITOR)
 		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
+
+		unsigned int previewRenderPassIndex = 0U;
+		unsigned int previewRenderToTextureIndex = 0U;
+		virtual void EditorPreview(size_t flags);
+		virtual void DestroyEditorPreview();
 
 		std::shared_ptr<Scene::Renderable> cameraBillboard;
 		void CreateCameraBillboard();

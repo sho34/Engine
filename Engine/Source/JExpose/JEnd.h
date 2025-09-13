@@ -43,6 +43,15 @@ return created; }
 #undef JEXPOSE_EDITOR_SAVE_FILE
 #endif
 
+#ifdef JEXPOSE_EDITOR_PREVIEW_DECL
+#undef JEXPOSE_EDITOR_PREVIEW_DECL
+#endif
+
+#ifdef JEXPOSE_EDITOR_PREVIEW_DEF
+}); }
+#undef JEXPOSE_EDITOR_PREVIEW_DEF
+#endif
+
 #ifdef JEXPOSE_TRACK_UUID_DECL
 #undef JEXPOSE_TRACK_UUID_DECL
 #endif
@@ -95,4 +104,5 @@ return creatorValidator; }
 #undef JEXPOSE_VECTOR_TRANSFORM
 #undef JEXPOSE_SET
 #undef JEXPOSE_MAP_TRANSFORM
+#undef JPREVIEW
 #undef JTRACKUUID

@@ -498,6 +498,12 @@
     <ClInclude Include="JExpose\Editor\JSaveFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="JExpose\Editor\JPreviewDecl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JExpose\Editor\JPreviewDef.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">

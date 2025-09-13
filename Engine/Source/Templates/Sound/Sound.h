@@ -28,6 +28,10 @@ namespace Templates
 #include <SoundAtt.h>
 #include <JEnd.h>
 
+#include <Editor/JPreviewDecl.h>
+#include <SoundAtt.h>
+#include <JEnd.h>
+
 #include <Creator/JRequired.h>
 #include <SoundAtt.h>
 #include <JEnd.h>
