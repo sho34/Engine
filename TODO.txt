@@ -1,53 +1,47 @@
 BUGS:
--visualizar el point light, después el spot y se ve el point achatado
 
-TODO
--Agregar Blending
--Arreglar el tema del defined(_HAS_METALLIC_B...) en PBR.hlsl que hace fallback a blinnphong
--Cambiar el "RGB" de las luces por "Color Temperature" https://youtu.be/AlVWC_qycVw?t=289
-	-Presets
-		-daylight
-		-night
-		…
-	-Modo Manual con slider de temperatura en kelvin con textura bajo el slider
--Deferred Rendering
+TODO:
+-grabar templates
+	-si se quiere cerrar el editor y los templates han sido editados. dar la opcion de guardarlos
+-creacion de templates
+	-Texture
+		-Ensamblado de texturas para cubemaps
+-eliminar objetos de la escena
+-eliminar templates
+	-buscar referencias a los templates dentro de todas las escenas
+-Interaccion de Gizmos de ImGuizmo con la posibilidad de combinar todos los objetos que sean seleccionables
+	-Renderables: todos
+	-SoundFX: sonidos 3d
+	-Luces: spot, point
+	-Cameras: todas
+-Revivir el pipeline HDR
+-Revivir el IBL
+-Cargar modelos GLB
+-Revivir GameMode(No Editor)
+	-splash screen
+	-barra de carga
+	-mostrar nivel con un escenario
+		-town(sacar modelos de sketchfab) de 4 casas mediebales
+		-poner 5 personajes animados en esta taberna
+		-poder moverse utilizando el teclado y mouse en modo free fly
+		-poder utilizar el joystick en modo free fly
 
-DONE
--Arreglar sonido que, cuando se parte un nivel que tiene sonido el volumen del 1er frame parte muy alto
--Agregar mesh de esfera
--Agregar mesh de cono
--muevo el sliderbar de una imagen con frames y si la paso por el area de juego se mueve la camara
--Arreglar los bounding boxes rotados, escalados y en animaciones
--Cambiar las rotaciones para que usen quaterniones y grados
-	-Sound Effects
-	-Scene Objects
-	-Camaras
-	-Lights
--IBL:
-	-Agregar codigo ibl a los shaders
-	-Agregar generacion de textura LUT 
-	-Agregar generacion de prefiltered environment map
-	-Agregar a generacion de cube environment la generacion de diffuse IBL
-	-Generacion de cube maps de environment desde 6 texturas o un skybox horizontal
--texturas con preview, creacion y destruccion desde el editor
--HDR with automatic exposure adjustment or eye adaptation 
--texturas srgb que pasen define al shader
--arreglar el bug de la no recarga de las texturas cuando las cambio de formato. los basetexture de knight son un muy buen ejemplo ya que cargan mal como srgb y la swordfur carga bien por que BGRA
--Arreglar el crash de Windows minimizar
--Arreglar el crash de Windows resize
--Hacer Gizmos para las luces
--Hacer Gizmos para las cámaras
--Hacer Gizmos para los sonidos
--Hacer de las texturas un template
--add object picking
--Calcular el BoundingBox de los modelos animados
--add Gizmos https://github.com/CedricGuillemet/ImGuizmo
--Hacer que el nivel cargado en el editor pueda ser navegado
-	-Eje fw de la cámara con el Wheel del mouse.
-	-rotar la cámara al hacer click izquierdo y mover el mouse
-	-Eje derecha de la cámara mover izq-derecha con click derecho y movimiento horizontal
-	-Eje arriba de la cámara mover arriba-abajo con click derecho y movimiento vertical 
-	-desabilitar movimiento/rotacion de camera si se esta interactuando con un gizmo
+NICE TO HAVE:
 
-NICETOHAVE
--Hacer render preview de las camaras
+DONE:
+-creacion de templates
+	-Shader
+	-Material
+	-RenderPass
+	-Sound
+	-Model3D
+-Guardado de niveles y de assets
+	-registro de timestamp de modificacion
+		-si edite objetos y no se han grabado si salgo del nivel o quiero cerrar se me advierta y se me de la oportunidad de grabar antes de proseguir con la accion
+-Si al material de un renderable se le cambia alguna propiedad, volver a hacer pick sobre este renderable hace crash
+-Hacer testing con objetos que tengan blending
+-si cambio los render passes de una camara(2 render passes y quito uno) y cierro la app esto causa un assert por que existen instancias de materiales dando vueltas
+	-era que no se manejaba bien el refCount de las instancias en RefTracker
+-Camaras con RenderToTexture como resultado final muestren al final del modo edicion un preview del rendering donde se pueda seleccionar el renderPass a mostrar
+-crear un template de modelo 3d. crear un renderable de ese modelo hace que se caiga
+	-agregado JObject::json para poder crear templates que aceptan un json. por alguna razon la serializacion pura de derivados no sirve

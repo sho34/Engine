@@ -1,13 +1,15 @@
 #include "pch.h"
 #include "Templates.h"
 #include <fstream>
-
 #include <Material/Material.h>
 #include <Model3D/Model3D.h>
 #include <RenderPass/RenderPass.h>
 #include <Shader/Shader.h>
 #include <Sound/Sound.h>
 #include <Textures/Texture.h>
+#if defined(_EDITOR)
+#include <Editor.h>
+#endif
 
 namespace Templates
 {
@@ -942,7 +944,6 @@ namespace Templates
 		return GetTPreviewers.at(t)();
 	}
 
-
 	std::vector<std::string> GetTemplateRequiredAttributes(TemplateType t)
 	{
 		const std::map<TemplateType, std::function<std::vector<std::string>()>> GetTRequiredAtts =
@@ -1012,18 +1013,29 @@ namespace Templates
 		return GetTName.at(t)(uuid);
 	}
 
+	void CreateTemplateFromJson(nlohmann::json& json, std::function<void(nlohmann::json json)> creator)
+	{
+		if (!json.contains("uuid") || json.at("uuid") == "")
+		{
+			nlohmann::json patch = { {"uuid",getUUID()} };
+			json.merge_patch(patch);
+		}
+		creator(json);
+	}
+
 	void CreateTemplate(TemplateType t, nlohmann::json json)
 	{
 		const std::map<TemplateType, std::function<void(nlohmann::json json)>> CreateT =
 		{
-			{ T_Materials, [](nlohmann::json json) {}},
-			{ T_Models3D, [](nlohmann::json json) {} },
-			{ T_Shaders, [](nlohmann::json json) {} },
-			{ T_Sounds, [](nlohmann::json json) {} },
-			{ T_Textures, [](nlohmann::json json) {} },
-			{ T_RenderPasses, [](nlohmann::json json) {} },
+			{ T_Materials, [](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateMaterial); } },
+			{ T_Models3D,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateModel3D); } },
+			{ T_Shaders,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateShader); } },
+			{ T_Sounds,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateSound); } },
+			{ T_Textures,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateTexture); } },
+			{ T_RenderPasses,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateRenderPass); } },
 		};
 		CreateT.at(t)(json);
+		Editor::MarkTemplatesPanelAssetsAsDirty();
 	}
 
 	void DeleteTemplate(TemplateType t, std::string uuid)

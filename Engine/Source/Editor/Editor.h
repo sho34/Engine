@@ -37,12 +37,13 @@ struct CreatorModal {
 	std::map<std::string, JEdvCreatorDrawerFunction> drawers;
 	std::map<std::string, JEdvCreatorValidatorFunction> validators;
 	std::function<void(T type, nlohmann::json)> onCreate;
-	void DrawCreationPopup()
+
+	void DrawCreationPopup(const char* title)
 	{
 		if (!creating) return;
 
-		ImGui::OpenPopup("createPopup");
-		if (ImGui::BeginPopupModal("createPopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		ImGui::OpenPopup(title);
+		if (ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			for (auto& att : atts)
 			{

@@ -3550,7 +3550,7 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 }
 
 template<>
-inline JEdvEditorDrawerFunction DrawVector<DXGI_FORMAT, jedv_t_vector>()
+inline JEdvEditorDrawerFunction DrawVector<DXGI_FORMAT, jedv_t_dxgi_format_vector>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{

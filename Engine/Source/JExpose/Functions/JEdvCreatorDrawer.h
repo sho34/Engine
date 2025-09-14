@@ -132,36 +132,97 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<unsigned int, jedv_t_sound_ins
 		};
 }
 
+inline void EditorCreatorDrawTemplateSelector(
+	std::string attribute,
+	nlohmann::json& json,
+	auto GetNameFromUUID,
+	auto GetUUIDsNames
+)
+{
+	std::vector<UUIDName> selectables;
+	UUIDName selected = std::make_tuple("", "");
+	selectables.push_back(selected);
+
+	if (json.at(attribute) != "")
+	{
+		std::string& uuid = std::get<0>(selected);
+		std::string& name = std::get<1>(selected);
+		uuid = json.at(attribute);
+		name = GetNameFromUUID(uuid);
+	}
+	std::vector<UUIDName> resources = SortUUIDNameByName(GetUUIDsNames)();
+	nostd::AppendToVector(selectables, resources);
+
+	ImGui::Text(attribute.c_str());
+
+	ImGui::PushID(attribute.c_str());
+	{
+		ImGui::DrawComboSelection(selected, selectables, [attribute, &json](UUIDName option)
+			{
+				json.at(attribute) = std::get<0>(option);
+			}
+		);
+	}
+	ImGui::PopID();
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_shader>()
+{
+	return [](std::string attribute, nlohmann::json& json)
+		{
+			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetShaderName, Templates::GetShadersUUIDsNames);
+
+		};
+}
+
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_sound>()
 {
 	return [](std::string attribute, nlohmann::json& json)
 		{
-			std::vector<UUIDName> selectables;
-			UUIDName selected = std::make_tuple("", "");
-			selectables.push_back(selected);
+			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetSoundName, Templates::GetSoundsUUIDsNames);
 
-			if (json.at(attribute) != "")
-			{
-				std::string& uuid = std::get<0>(selected);
-				std::string& name = std::get<1>(selected);
-				uuid = json.at(attribute);
-				name = Templates::GetSoundName(uuid);
-			}
-			std::vector<UUIDName> resources = Templates::GetSoundsUUIDsNames();
-			nostd::AppendToVector(selectables, resources);
+		};
+}
 
-			ImGui::Text(attribute.c_str());
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_material>()
+{
+	return [](std::string attribute, nlohmann::json& json)
+		{
+			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetMaterialName, Templates::GetMaterialsUUIDsNames);
 
-			ImGui::PushID(attribute.c_str());
-			{
-				ImGui::DrawComboSelection(selected, selectables, [attribute, &json](UUIDName option)
-					{
-						json.at(attribute) = std::get<0>(option);
-					}
-				);
-			}
-			ImGui::PopID();
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_model3d>()
+{
+	return [](std::string attribute, nlohmann::json& json)
+		{
+			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetModel3DName, Templates::GetModel3DsUUIDsNames);
+
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_renderpass>()
+{
+	return [](std::string attribute, nlohmann::json& json)
+		{
+			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetRenderPassName, Templates::GetRenderPasssUUIDsNames);
+
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_texture>()
+{
+	return [](std::string attribute, nlohmann::json& json)
+		{
+			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetTextureName, Templates::GetTexturesUUIDsNames);
+
 		};
 }
 
@@ -347,6 +408,49 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_so_camera
 }
 
 template<>
+inline JEdvCreatorDrawerFunction DrawCreatorVector<DXGI_FORMAT, jedv_t_dxgi_format_vector>()
+{
+	return [](std::string attribute, nlohmann::json& json)
+		{
+			unsigned int size = static_cast<unsigned int>(json.at(attribute).size());
+
+			std::vector<std::string> selectables = { "" };
+			std::vector<std::string> formats = nostd::GetKeysFromMap(StringToDXGI_FORMAT);
+			nostd::AppendToVector(selectables, formats);
+
+			auto drawRow = [&json, attribute, &selectables](unsigned int row)
+				{
+					std::string selected = json.at(attribute).at(row);
+					ImGui::PushID(std::string(std::string("format-") + std::to_string(row)).c_str());
+					ImGui::DrawComboSelection(selected, selectables, [&json, attribute, row](std::string option)
+						{
+							json.at(attribute).at(row) = option;
+						}, "##");
+					ImGui::PopID();
+				};
+
+			ImGui::PushID(attribute.c_str());
+			{
+				ImGui::Text(attribute.c_str());
+
+				for (unsigned int i = 0; i < size; i++)
+				{
+					drawRow(i);
+				}
+			}
+			ImGui::PopID();
+
+			if (json.at(attribute).size() < 8) //(MAX RENDER PASSES?)
+			{
+				if (ImGui::Button(ICON_FA_PLUS, ImVec2(ImGui::GetContentRegionAvail().x, 20.0f)))
+				{
+					json.at(attribute).push_back("");
+				}
+			}
+		};
+}
+
+template<>
 inline JEdvCreatorDrawerFunction DrawCreatorEnum<LightType, jedv_t_lighttype>(
 	std::map<LightType, std::string>& EtoS,
 	std::map<std::string, LightType>& StoE
@@ -413,3 +517,70 @@ inline JEdvCreatorDrawerFunction DrawCreatorEnum<LightType, jedv_t_lighttype>(
 		};
 }
 
+inline void EditorCreatorDrawFilePath(
+	std::string attribute,
+	nlohmann::json& json,
+	const char* buttonIcon,
+	const std::string defaultFolder,
+	std::vector<std::string> filterName,
+	std::vector<std::string> filterPattern
+)
+{
+	auto getFilePath = [attribute, &json]()
+		{
+			return json.at(attribute);
+		};
+	auto setFilePath = [attribute, &json](std::string path)
+		{
+			nlohmann::json patch = { {attribute,path} };
+			json.merge_patch(patch);
+		};
+
+	ImGui::PushID(attribute.c_str());
+	{
+		ImGui::Text(attribute.c_str());
+		std::filesystem::path path = getFilePath();
+
+		if (ImGui::Button(buttonIcon))
+		{
+			ImGui::OpenFile([setFilePath, defaultFolder](std::filesystem::path p)
+				{
+					std::filesystem::path absfilepath = std::filesystem::current_path().append(defaultFolder);
+					std::filesystem::path rel = std::filesystem::relative(p, absfilepath);
+					setFilePath(rel.generic_string());
+				}, defaultFolder, filterName, filterPattern);
+		}
+		ImGui::SameLine();
+		ImGui::InputText("##", path.string().data(), path.string().size(), ImGuiInputTextFlags_ReadOnly);
+	}
+	ImGui::PopID();
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_shaders_filepath>()
+{
+	return[](std::string attribute, nlohmann::json& json)
+		{
+			EditorCreatorDrawFilePath(attribute, json, ICON_FA_FILE_CODE, defaultShadersFolder, { "HLSL files. (*.hlsl)" }, { "*.hlsl" });
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_sounds_filepath>()
+{
+	return[](std::string attribute, nlohmann::json& json)
+		{
+			EditorCreatorDrawFilePath(attribute, json, ICON_FA_FILE_AUDIO, defaultSoundsFolder,
+				{ "WAV files. (*.wav)", "MP3 files. (*.mp3)", "OGG files. (*.ogg)" },
+				{ "*.wav", "*.mp3", "*.ogg" });
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_model3d_filepath>()
+{
+	return[](std::string attribute, nlohmann::json& json)
+		{
+			EditorCreatorDrawFilePath(attribute, json, ICON_FA_CUBE, default3DModelsFolder, { "3D Models files. (*.gltf)" }, { "*.gltf" });
+		};
+}

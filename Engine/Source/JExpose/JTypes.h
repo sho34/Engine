@@ -48,6 +48,8 @@ enum JsonToEditorValueType
 	jdev_t_animation,
 	jedv_t_tex_dimension,
 	jedv_t_lighttype,
+	jedv_t_dxgi_format,
+	jedv_t_dxgi_format_vector,
 	jedv_t_so_camera,
 	jedv_t_so_camera_name,
 	jedv_t_so_camera_vector,

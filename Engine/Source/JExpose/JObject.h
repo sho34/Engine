@@ -26,6 +26,12 @@ struct JObject : nlohmann::json
 	unsigned int updateFlag = 0U;
 
 	JObject(nlohmann::json json) :nlohmann::json(json) {}
+	nlohmann::json json()
+	{
+		nlohmann::json j;
+		j.merge_patch(*this);
+		return j;
+	}
 	void JUpdate(nlohmann::json p)
 	{
 #if defined(_EDITOR)

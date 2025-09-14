@@ -67,13 +67,13 @@ struct RasterizerDesc : D3D12_RASTERIZER_DESC
 		return {
 			{ "FillMode", D3D12_FILL_MODEToString.at(FillMode) },
 			{ "CullMode", D3D12_CULL_MODEToString.at(CullMode) },
-			{ "FrontCounterClockwise", FrontCounterClockwise },
+			{ "FrontCounterClockwise", static_cast<bool>(!!FrontCounterClockwise) },
 			{ "DepthBias", DepthBias },
 			{ "DepthBiasClamp", DepthBiasClamp },
 			{ "SlopeScaledDepthBias", SlopeScaledDepthBias },
-			{ "DepthClipEnable", DepthClipEnable },
-			{ "MultisampleEnable", MultisampleEnable },
-			{ "AntialiasedLineEnable", AntialiasedLineEnable },
+			{ "DepthClipEnable", static_cast<bool>(!!DepthClipEnable) },
+			{ "MultisampleEnable", static_cast<bool>(!!MultisampleEnable) },
+			{ "AntialiasedLineEnable", static_cast<bool>(!!AntialiasedLineEnable) },
 			{ "ForcedSampleCount", ForcedSampleCount },
 			{ "ConservativeRaster", D3D12_CONSERVATIVE_RASTERIZATION_MODEToString.at(ConservativeRaster) }
 		};

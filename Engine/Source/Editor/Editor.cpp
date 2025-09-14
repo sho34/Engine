@@ -328,8 +328,10 @@ namespace Editor {
 		if (camera)
 			DrawPickedObjectsGizmo(camera);
 
-		sceneObjectModal.DrawCreationPopup();
-		templateModal.DrawCreationPopup();
+		if (sceneObjectModal.creating)
+			sceneObjectModal.DrawCreationPopup(SceneObjectsTypePanelMenuItems.at(sceneObjectModal.type));
+		if (templateModal.creating)
+			templateModal.DrawCreationPopup(TemplateTypePanelMenuItems.at(templateModal.type));
 
 		// Rendering
 		ImGui::Render();

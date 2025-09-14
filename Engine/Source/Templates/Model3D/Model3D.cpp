@@ -23,6 +23,13 @@ using namespace Animation;
 using namespace DeviceUtils;
 using namespace Templates;
 
+#if defined(_EDITOR)
+namespace Editor
+{
+	extern void MarkTemplatesPanelAssetsAsDirty();
+};
+#endif
+
 namespace Templates
 {
 #include <Editor/JDrawersDef.h>
@@ -67,9 +74,10 @@ namespace Templates
 		return "mat-" + uuid + "-" + std::to_string(index);
 	}
 
-	std::string GetModel3DMaterialInstanceName(std::string model3dName, unsigned int index)
+	std::string GetModel3DMaterialInstanceName(std::string uuid, unsigned int index)
 	{
-		return "mat-" + model3dName + "-" + std::to_string(index);
+		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(uuid);
+		return "mat-" + mdl->name() + "-" + std::to_string(index);
 	}
 
 	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D)
@@ -157,13 +165,15 @@ namespace Templates
 		std::string filename = default3DModelsFolder + mdl->path();
 		std::filesystem::path path(filename);
 
+		bool dirtyTemplatesPanel = false;
+
 		//go through all the meshes in the model
 		for (unsigned int meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++)
 		{
 			auto aMesh = aiModel->mMeshes[meshIndex];
 			aiMaterial* aiMat = aiModel->mMaterials[aMesh->mMaterialIndex];
 
-			MaterialJson texturesMaterialJson = GetAssimpTexturesMaterialJson(path.relative_path(), aiMat);
+			nlohmann::json texturesMaterialJson = GetAssimpTexturesMaterialJson(path.relative_path(), aiMat);
 
 			std::string materialUUID = GetModel3DMaterialInstanceUUID(model3DUUID, meshIndex);
 
@@ -177,9 +187,14 @@ namespace Templates
 					aiModel->mMaterials[aMesh->mMaterialIndex]
 				);
 				materialJson.merge_patch(texturesMaterialJson);
-				CreateMaterial(materialJson);
+				CreateMaterial(materialJson.json());
+				dirtyTemplatesPanel = true;
 			}
 			mdl->materials_push_back(materialUUID);
+		}
+		if (dirtyTemplatesPanel)
+		{
+			Editor::MarkTemplatesPanelAssetsAsDirty();
 		}
 	}
 
@@ -200,11 +215,11 @@ namespace Templates
 		boundingBox = BoundingBox(center, extents);
 	}
 
-	MaterialJson Model3DInstance::GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, aiMaterial* material)
+	nlohmann::json Model3DInstance::GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, aiMaterial* material)
 	{
 		using namespace Templates::Model3D;
 
-		MaterialJson mat(nlohmann::json({}));
+		nlohmann::json mat(nlohmann::json({}));
 
 		aiString diffuseName;
 		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
@@ -221,7 +236,7 @@ namespace Templates
 		return mat;
 	}
 
-	void Model3DInstance::PushAssimpTextureToJson(MaterialJson& m, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture, DXGI_FORMAT fallbackFormat)
+	void Model3DInstance::PushAssimpTextureToJson(nlohmann::json& m, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture, DXGI_FORMAT fallbackFormat)
 	{
 		std::filesystem::path textureJsonPath = fallbackTexture;
 		DXGI_FORMAT textureJsonFormat = fallbackFormat;
@@ -240,7 +255,12 @@ namespace Templates
 			{
 				texUUID = CreateTextureTemplate(textureJsonPath.string(), textureJsonFormat);
 			}
-			m.textures_insert(textureType, texUUID);
+			//m.textures_insert(textureType, texUUID);
+			if (!m.contains("textures"))
+			{
+				m["textures"] = nlohmann::json::object({});
+			}
+			m["textures"][TextureShaderUsageToString.at(textureType)] = texUUID;
 		}
 	}
 
@@ -248,15 +268,15 @@ namespace Templates
 	{
 		MaterialJson matJson(nlohmann::json({}));
 
-		matJson.create_uuid(materialUUID);
-		matJson.create_name(materialName);
-		matJson.create_shader_vs(vertexShader);
-		matJson.create_shader_ps(pixelShader);
-		matJson.create_mappedValues({});
+		matJson.uuid(materialUUID);
+		matJson.name(materialName);
+		matJson.shader_vs(vertexShader);
+		matJson.shader_ps(pixelShader);
+		matJson.mappedValues({});
 
 		bool twoSided;
 		material->Get(AI_MATKEY_TWOSIDED, twoSided);
-		D3D12_RASTERIZER_DESC rasterizerState;
+		CD3DX12_RASTERIZER_DESC rasterizerState(D3D12_DEFAULT);
 		rasterizerState.CullMode = twoSided ? D3D12_CULL_MODE_NONE : D3D12_CULL_MODE_BACK;
 		matJson.rasterizerState(rasterizerState);
 

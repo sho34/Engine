@@ -74,7 +74,7 @@ namespace Templates
 
 	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index);
 	std::string GetModel3DMaterialInstanceUUID(std::string uuid, unsigned int index);
-	std::string GetModel3DMaterialInstanceName(std::string model3dName, unsigned int index);
+	std::string GetModel3DMaterialInstanceName(std::string uuid, unsigned int index);
 
 	struct Model3DInstance
 	{
@@ -84,9 +84,9 @@ namespace Templates
 		void LoadModel3DInstance();
 		void CreateModel3DMaterialsTemplates(const aiScene* aiModel);
 		void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh);
-		MaterialJson GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, aiMaterial* material);
+		nlohmann::json GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, aiMaterial* material);
 #if defined(_DEVELOPMENT)
-		void PushAssimpTextureToJson(MaterialJson& j, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT fallbackFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+		void PushAssimpTextureToJson(nlohmann::json& j, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT fallbackFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 		MaterialJson CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, aiMaterial* material);
 #endif
 		VertexClass vertexClass;
