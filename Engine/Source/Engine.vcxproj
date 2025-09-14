@@ -739,11 +739,11 @@
     <ClCompile Include="Templates\Textures\Texture.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="WindowsProject2.rc" />
+    <ResourceCompile Include="CulpeoEngine.rc" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="small.ico" />
-    <Image Include="WindowsProject2.ico" />
+    <Image Include="CulpeoEngine.ico" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
