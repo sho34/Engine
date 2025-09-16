@@ -95,6 +95,7 @@ namespace Scene {
 
 	void CamerasStep();
 	void DestroyCameras();
+	void DeleteCamera(std::string uuid);
 
 #if defined(_EDITOR)
 	void WriteCamerasJson(nlohmann::json& json);
@@ -155,6 +156,7 @@ namespace Scene {
 
 		BoundingFrustum boundingFrustum;
 
+		bool markedForDelete = false;
 		void Destroy();
 
 		void CreateIBLTexturesInstances();

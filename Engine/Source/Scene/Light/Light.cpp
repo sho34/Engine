@@ -153,6 +153,7 @@ namespace Scene {
 		std::set<std::shared_ptr<Light>> lightsToUpdateCamAttributes;
 		std::set<std::shared_ptr<Light>> lightsToUpdateTransformation;
 		std::set<std::shared_ptr<Light>> lightsToDestroySMChain;
+		std::set<std::shared_ptr<Light>> lightsToDelete;
 
 		std::set<Light::Light_UpdateFlags> smCamAttributes =
 		{
@@ -227,9 +228,17 @@ namespace Scene {
 				lightsToUpdateTransformation.insert(l);
 				std::for_each(smCamTransformations.begin(), smCamTransformations.end(), [l](auto flag) { l->clean(flag); });
 			}
+
+			if (l->markedForDelete) {
+				lightsToDelete.insert(l);
+				if (l->hasShadowMaps())
+				{
+					lightsToDestroyShadowMaps.insert(l);
+				}
+			}
 		}
 
-		bool criticalFrame = !!lightsToDestroyShadowMaps.size() || !!lightsToCreateShadowMaps.size() || !!lightsToDestroySMChain.size();
+		bool criticalFrame = !!lightsToDestroyShadowMaps.size() || !!lightsToCreateShadowMaps.size() || !!lightsToDestroySMChain.size() || !!lightsToDelete.size();
 
 		if (criticalFrame)
 		{
@@ -237,7 +246,8 @@ namespace Scene {
 			renderer->RenderCriticalFrame([
 				&lightsToDestroyShadowMaps,
 				&lightsToCreateShadowMaps,
-				&lightsToDestroySMChain
+				&lightsToDestroySMChain,
+				&lightsToDelete
 			]
 				{
 					for (auto& l : lightsToDestroyShadowMaps)
@@ -255,6 +265,13 @@ namespace Scene {
 					for (auto& l : lightsToDestroySMChain)
 					{
 						l->DestroyShadowMapMinMaxChain();
+					}
+					for (auto& l : lightsToDelete)
+					{
+						EraseLightFromLights(l);
+						EraseLightFromShadowMapLights(l);
+						std::shared_ptr<Light> light = l;
+						SafeDeleteSceneObject(light);
 					}
 				}
 			);
@@ -349,6 +366,20 @@ namespace Scene {
 #include <TrackUUID/JClear.h>
 #include <LightAtt.h>
 #include <JEnd.h>
+	}
+
+	void DeleteLight(std::string uuid)
+	{
+		std::shared_ptr<Light> l = FindInLights(uuid);
+#if defined(_EDITOR)
+		if (l->lightBillboard)
+		{
+			DeleteSceneObject(l->lightBillboard->uuid());
+			l->lightBillboard->OnPick = [] {};
+			l->lightBillboard = nullptr;
+		}
+#endif
+		l->markedForDelete = true;
 	}
 
 	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex)

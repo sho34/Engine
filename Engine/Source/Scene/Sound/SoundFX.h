@@ -55,6 +55,7 @@ namespace Scene {
 #include <JEnd.h>
 
 		virtual void Initialize();
+		bool markedForDelete = false;
 		void Destroy();
 
 		XMVECTOR rotationQ();
@@ -94,6 +95,7 @@ namespace Scene {
 
 	//DESTROY
 	void DestroySoundEffects();
+	void DeleteSoundEffect(std::string uuid);
 
 #if defined(_EDITOR)
 	void WriteSoundEffectsJson(nlohmann::json& json);

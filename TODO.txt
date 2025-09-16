@@ -1,9 +1,10 @@
 BUGS:
 
 TODO:
+-generalizar los billboards
+	-arreglar el shader para que el porte siempre sea fijo y no utilice ese hack feo
 -grabar templates
 	-si se quiere cerrar el editor y los templates han sido editados. dar la opcion de guardarlos
--eliminar objetos de la escena
 -eliminar templates
 	-buscar referencias a los templates dentro de todas las escenas
 -Interaccion de Gizmos de ImGuizmo con la posibilidad de combinar todos los objetos que sean seleccionables
@@ -26,6 +27,7 @@ TODO:
 NICE TO HAVE:
 
 DONE:
+-eliminar objetos de la escena
 -creacion de templates
 	-Shader
 	-Material

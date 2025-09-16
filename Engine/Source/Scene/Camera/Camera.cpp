@@ -136,10 +136,13 @@ namespace Scene
 			cam->UpdateProjection();
 		}
 
-		if (camsRpi.size() > 0ULL)
+		std::set<std::shared_ptr<Camera>> delCams;
+		std::copy_if(cams.begin(), cams.end(), std::inserter(delCams, delCams.begin()), [](auto& c) {return c->markedForDelete; });
+
+		if (camsRpi.size() > 0ULL || delCams.size() > 0ULL)
 		{
 			renderer->Flush();
-			renderer->RenderCriticalFrame([&camsRpi]
+			renderer->RenderCriticalFrame([&camsRpi, &delCams]
 				{
 					for (auto& c : camsRpi)
 					{
@@ -177,6 +180,16 @@ namespace Scene
 							}
 						}
 					}
+
+					for (auto& c : delCams)
+					{
+						EraseCameraFromCameras(c);
+						EraseCameraFromWindowCameras(c);
+						EraseCameraFromSwapChainCameras(c);
+						EraseCameraFromMouseCameras(c);
+						std::shared_ptr<Camera> cam = c;
+						SafeDeleteSceneObject(cam);
+					}
 				}
 			);
 		}
@@ -193,6 +206,20 @@ namespace Scene
 #include <TrackUUID/JClear.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
+	}
+
+	void DeleteCamera(std::string uuid)
+	{
+		std::shared_ptr<Camera> cam = FindInCameras(uuid);
+#if defined(_EDITOR)
+		if (cam->cameraBillboard)
+		{
+			DeleteSceneObject(cam->cameraBillboard->uuid());
+			cam->cameraBillboard->OnPick = [] {};
+			cam->cameraBillboard = nullptr;
+		}
+#endif
+		cam->markedForDelete = true;
 	}
 
 #if defined(_EDITOR)

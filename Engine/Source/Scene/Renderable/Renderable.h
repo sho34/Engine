@@ -77,6 +77,7 @@ namespace Scene
 
 	//DELETE
 	void DestroyRenderables();
+	void DeleteRenderable(std::string uuid);
 
 	//EDITOR
 #if defined(_EDITOR)
@@ -194,6 +195,7 @@ namespace Scene
 		void StepAnimation(double elapsedSeconds);
 
 		//DESTROY
+		bool markedForDelete = false;
 		void Destroy();
 
 		//RENDER

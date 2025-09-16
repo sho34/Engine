@@ -344,10 +344,34 @@ namespace Scene
 	{
 		const std::map<SceneObjectType, std::function<void(std::string)>> DeleteSO =
 		{
-			{ SO_Renderables, [](std::string uuid) {} },
-			{ SO_Lights, [](std::string uuid) {}},
-			{ SO_Cameras, [](std::string uuid) {} },
-			{ SO_SoundEffects, [](std::string uuid) {}}
+			{ SO_Renderables, [](std::string uuid)
+			{
+				Editor::EraseSceneObjectFromSelection(GetSceneObject(uuid));
+				DeleteRenderable(uuid);
+				Editor::MarkScenePanelAssetsAsDirty();
+			}
+			},
+			{ SO_Lights, [](std::string uuid)
+			{
+				Editor::EraseSceneObjectFromSelection(GetSceneObject(uuid));
+				DeleteLight(uuid);
+				Editor::MarkScenePanelAssetsAsDirty();
+			}
+			},
+			{ SO_Cameras, [](std::string uuid)
+			{
+				Editor::EraseSceneObjectFromSelection(GetSceneObject(uuid));
+				DeleteCamera(uuid);
+				Editor::MarkScenePanelAssetsAsDirty();
+			}
+			},
+			{ SO_SoundEffects, [](std::string uuid)
+			{
+				Editor::EraseSceneObjectFromSelection(GetSceneObject(uuid));
+				DeleteSoundEffect(uuid);
+				Editor::MarkScenePanelAssetsAsDirty();
+			}
+			}
 		};
 		DeleteSO.at(so)(uuid);
 	}

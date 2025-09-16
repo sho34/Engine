@@ -138,7 +138,7 @@ inline JEdvCreatorValidatorFunction CreatorValidVector<std::string, jedv_t_filep
 		{
 			if (json.at("name") == "") return false;
 
-			unsigned int size = json.at(attribute).size();
+			unsigned int size = static_cast<unsigned int>(json.at(attribute).size());
 			for (unsigned int i = 0; i < size; i++)
 			{
 				if (json.at(attribute).at(i) == "")

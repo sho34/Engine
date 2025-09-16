@@ -177,6 +177,7 @@ namespace Scene {
 #include <LightAtt.h>
 #include <JEnd.h>
 
+		bool markedForDelete = false;
 		void Destroy();
 
 		XMMATRIX world();
@@ -258,6 +259,7 @@ namespace Scene {
 	//DELETE
 	void DestroyLightsResources();
 	void DestroyLights();
+	void DeleteLight(std::string uuid);
 	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex);
 	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex);
 

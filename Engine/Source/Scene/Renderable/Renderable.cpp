@@ -113,12 +113,19 @@ namespace Scene {
 			}
 		);
 
-		bool criticalFrame = meshes.size() > 0ULL || models.size() > 0ULL || bindToCam.size() > 0ULL;
+		std::set<std::shared_ptr<Renderable>> todelete;
+		std::copy_if(r.begin(), r.end(), std::inserter(todelete, todelete.begin()), [](auto& r)
+			{
+				return r->markedForDelete;
+			}
+		);
+
+		bool criticalFrame = meshes.size() > 0ULL || models.size() > 0ULL || bindToCam.size() > 0ULL || todelete.size() > 0ULL;
 
 		if (criticalFrame)
 		{
 			renderer->Flush();
-			renderer->RenderCriticalFrame([&meshes, &models, &bindToCam]
+			renderer->RenderCriticalFrame([&meshes, &models, &bindToCam, &todelete]
 				{
 					for (auto& r : meshes)
 					{
@@ -184,6 +191,14 @@ namespace Scene {
 
 						r->clean(Renderable::Update_cameras);
 					}
+					for (auto& r : todelete)
+					{
+						EraseRenderableFromRenderables(r);
+						EraseRenderableFromAnimables(r);
+						EraseRenderableFromShadowCasts(r);
+						std::shared_ptr<Renderable> renderable = r;
+						SafeDeleteSceneObject(renderable);
+					}
 				}
 			);
 		}
@@ -228,6 +243,12 @@ namespace Scene {
 #include <TrackUUID/JClear.h>
 #include <RenderableAtt.h>
 #include <JEnd.h>
+	}
+
+	void DeleteRenderable(std::string uuid)
+	{
+		std::shared_ptr<Renderable> r = FindInRenderables(uuid);
+		r->markedForDelete = true;
 	}
 
 	//EDITOR

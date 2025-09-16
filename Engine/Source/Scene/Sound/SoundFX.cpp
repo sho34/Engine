@@ -253,6 +253,21 @@ namespace Scene {
 				sfx->clear();
 			}
 		);
+
+		std::set<std::shared_ptr<SoundFX>> sfxsDelete;
+		std::copy_if(sfxs.begin(), sfxs.end(), std::inserter(sfxsDelete, sfxsDelete.end()), [](auto& sfx)
+			{
+				return sfx->markedForDelete;
+			}
+		);
+
+		for (auto& sfx : sfxsDelete)
+		{
+			EraseSoundFXFromSoundEffects(sfx);
+			EraseSoundFXFromSound3DEffects(sfx);
+			std::shared_ptr<SoundFX> soundfx = sfx;
+			SafeDeleteSceneObject(soundfx);
+		}
 	}
 
 	void SoundFX::UpdateEmmiter()
@@ -345,5 +360,18 @@ namespace Scene {
 #include <TrackUUID/JClear.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>
+	}
+	void DeleteSoundEffect(std::string uuid)
+	{
+		std::shared_ptr<SoundFX> sfx = FindInSoundEffects(uuid);
+#if defined(_EDITOR)
+		if (sfx->soundFXBillboard)
+		{
+			DeleteSceneObject(sfx->soundFXBillboard->uuid());
+			sfx->soundFXBillboard->OnPick = [] {};
+			sfx->soundFXBillboard = nullptr;
+		}
+#endif
+		sfx->markedForDelete = true;
 	}
 }
