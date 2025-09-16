@@ -18,11 +18,10 @@ namespace Utils
 		TextureType type = TextureType_2D;
 	};
 
-	void GetImageAttributes(std::filesystem::path src, DXGI_FORMAT& format, unsigned int& width, unsigned int& height, unsigned int& mipLevels, unsigned int& numFrames);
 	void GetImageAttributes(std::filesystem::path src, DirectX::TexMetadata& info);
-	void ConvertToDDS(std::filesystem::path image, std::filesystem::path dds, DXGI_FORMAT desiredFormat, unsigned int width, unsigned int height, unsigned int mipLevels);
 	void ConvertToDDS(ImageConverter& conversion);
+	void AssembleArrayDDSFromGif(std::filesystem::path image, std::filesystem::path gif);
 	void AssembleCubeDDS(std::filesystem::path image, std::vector<std::string> facesPath, unsigned int width, unsigned int height);
 	void AssembleCubeDDSFromSkybox(std::filesystem::path image, std::filesystem::path skybox);
-	void AssembleArrayDDSFromGif(std::filesystem::path image, std::filesystem::path gif);
+
 }

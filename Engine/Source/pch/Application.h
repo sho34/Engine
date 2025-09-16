@@ -8,11 +8,18 @@ static const std::string defaultAssetsFolder = "Assets/";
 static const std::string default3DModelsFolder = "Assets/models/";
 static const std::string defaultSoundsFolder = "Assets/sounds/";
 static const std::vector<std::string> defaultTexturesFilters = {
-	"JPEG files. (*.jpg,*jpeg)", "PNG files. (*.png)" , "DDS files. (*.dds)", "Gif files. (*.gif)"
+	"All Image files. (*.jpg,*jpeg,*.png)","JPEG files. (*.jpg,*jpeg)", "PNG files. (*.png)"
 };
 static const std::vector<std::string> defaultTexturesExtensions = {
-	"*.jpg;*jpeg", "*.png", "*.dds", "*.gif"
+	"*.jpg;*jpeg;*.png","*.jpg;*jpeg", "*.png"
 };
+static const std::vector<std::string> defaultAnimatedTexturesFilters = {
+	"Gif files. (*.gif)"
+};
+static const std::vector<std::string> defaultAnimatedTexturesExtensions = {
+	"*.gif"
+};
+static const std::vector<std::string> cubeTextureAxesNames = { "X+" , "X-" , "Y+" , "Y-" , "Z+" , "Z-" , };
 
 #define HWNDWIDTH	(static_cast<unsigned int>(hWndRect.right - hWndRect.left))
 #define HWNDHEIGHT (static_cast<unsigned int>(hWndRect.bottom - hWndRect.top))

@@ -131,3 +131,19 @@ inline JEdvCreatorValidatorFunction CreatorValidValue<std::string, jedv_t_model3
 			return json.at(attribute) != "";
 		};
 }
+
+template<>
+inline JEdvCreatorValidatorFunction CreatorValidVector<std::string, jedv_t_filepath_vector_image>() {
+	return[](std::string attribute, nlohmann::json& json)
+		{
+			if (json.at("name") == "") return false;
+
+			unsigned int size = json.at(attribute).size();
+			for (unsigned int i = 0; i < size; i++)
+			{
+				if (json.at(attribute).at(i) == "")
+					return false;
+			}
+			return true;
+		};
+}

@@ -3,9 +3,6 @@ BUGS:
 TODO:
 -grabar templates
 	-si se quiere cerrar el editor y los templates han sido editados. dar la opcion de guardarlos
--creacion de templates
-	-Texture
-		-Ensamblado de texturas para cubemaps
 -eliminar objetos de la escena
 -eliminar templates
 	-buscar referencias a los templates dentro de todas las escenas
@@ -35,6 +32,11 @@ DONE:
 	-RenderPass
 	-Sound
 	-Model3D
+	-Texture
+		-2D
+		-Array
+		-Cube
+		-Skybox
 -Guardado de niveles y de assets
 	-registro de timestamp de modificacion
 		-si edite objetos y no se han grabado si salgo del nivel o quiero cerrar se me advierta y se me de la oportunidad de grabar antes de proseguir con la accion

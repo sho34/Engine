@@ -155,7 +155,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -211,7 +211,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -258,7 +258,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/directxtk12_desktop_2019.2024.10.29.1/include;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>

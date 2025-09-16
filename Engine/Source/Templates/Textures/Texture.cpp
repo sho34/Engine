@@ -19,7 +19,7 @@
 extern std::shared_ptr<Renderer> renderer;
 
 namespace Editor {
-	extern std::string selTemp;
+	void MarkTemplatesPanelAssetsAsDirty();
 };
 
 namespace Templates
@@ -46,25 +46,7 @@ namespace Templates
 
 #if defined(_EDITOR)
 	std::shared_ptr<TextureInstance> texturePreview = nullptr;
-	std::vector<std::string> cubeTextureAxesNames = { "X+" , "X-" , "Y+" , "Y-" , "Z+" , "Z-" , };
-	std::map<TextureType, std::string> textureTypeFilesTitle = {
-		{ TextureType_2D, "Texture files. (*.jpg, *.jpeg, *.png, *.bmp)"},
-		{ TextureType_Array, "Texture files. (*.gif)"},
-		{ TextureType_Cube, "Texture files. (*.jpg, *.jpeg, *.png, *.bmp)"},
-	};
-	std::map<TextureType, std::string> textureTypeFilesFilter = {
-		{ TextureType_2D, "*.jpg;*.jpeg;*.png;*.bmp" },
-		{ TextureType_Array,"*.gif" },
-		{ TextureType_Cube,"*.jpg;*.jpeg;*.png;*.bmp" },
-	};
 #endif
-
-	namespace Texture
-	{
-#if defined(_EDITOR)
-		std::filesystem::path filePickingDirectory = defaultAssetsFolder;
-#endif
-	};
 
 	TextureJson::TextureJson(nlohmann::json json) : JTemplate(json)
 	{
@@ -191,154 +173,145 @@ namespace Templates
 
 #endif
 
-	/*
-	void Create2DDDSFile(std::shared_ptr<TextureJson> json, bool overwrite)
+	void Create2DDDSFile(TextureJson& json)
 	{
 		using namespace Utils;
 
-		std::filesystem::path ddsPath = json->name();
+		std::filesystem::path ddsPath = json.name();
 		ddsPath.replace_extension(".dds");
 
-		unsigned int width, height, mipLevels, numFrames;
-		DXGI_FORMAT format;
+		std::filesystem::path image = json.images().at(0);
+		std::string extension = image.extension().string();
+		nostd::ToLower(extension);
 
-		if (!std::filesystem::exists(ddsPath))
-			overwrite = true;
+		DirectX::TexMetadata info{};
+		GetImageAttributes(image, info);
 
-		if (!overwrite)
-		{
-			GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
-		}
-		else
-		{
-			std::filesystem::path image = json->images().at(0);
-			std::string extension = image.extension().string();
-			nostd::ToLower(extension);
+		ImageConverter conv;
+		conv.src = image;
+		conv.dst = ddsPath;
+		conv.format = info.format;
+		conv.width = (!IsPowerOfTwo(static_cast<unsigned int>(info.width))) ? PrevPowerOfTwo(static_cast<unsigned int>(info.width)) : static_cast<unsigned int>(info.width);
+		conv.height = (!IsPowerOfTwo(static_cast<unsigned int>(info.height))) ? PrevPowerOfTwo(static_cast<unsigned int>(info.height)) : static_cast<unsigned int>(info.height);
+		conv.mipLevels = GetMipMaps(static_cast<unsigned int>(conv.width), static_cast<unsigned int>(conv.height));
+		ConvertToDDS(conv);
 
-			GetImageAttributes(image, format, width, height, mipLevels, numFrames);
-			if (!IsPowerOfTwo(width)) { width = PrevPowerOfTwo(width); }
-			if (!IsPowerOfTwo(height)) { height = PrevPowerOfTwo(height); }
-
-			if (extension != ".dds")
-			{
-				mipLevels = GetMipMaps(width, height);
-				ConvertToDDS(image, ddsPath, format, width, height, mipLevels);
-			}
-		}
-
-		json->numFrames(numFrames);
-		json->format(format);
-		json->width(width);
-		json->height(height);
-		json->mipLevels(mipLevels);
+		json.numFrames(conv.numFrames);
+		json.format(conv.format);
+		json.width(conv.width);
+		json.height(conv.height);
+		json.mipLevels(conv.mipLevels);
 	}
-	*/
 
-	/*
-	void CreateArrayDDSFile(std::shared_ptr<TextureJson> json, bool overwrite)
+	void CreateArrayDDSFile(TextureJson& json)
 	{
 		using namespace Utils;
 
-		std::filesystem::path ddsPath = json->name();
+		std::filesystem::path ddsPath = json.name();
 		ddsPath.replace_extension(".dds");
+		std::filesystem::path image = json.images().at(0);
 
-		unsigned int width, height, mipLevels, numFrames;
-		DXGI_FORMAT format;
+		//convert the gif to dds
+		AssembleArrayDDSFromGif(ddsPath, image);
 
-		if (!std::filesystem::exists(ddsPath))
-			overwrite = true;
+		//get the dds attributes
+		DirectX::TexMetadata info{};
+		GetImageAttributes(ddsPath, info);
 
-		if (!overwrite)
-		{
-			GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
-		}
-		else
-		{
-			std::filesystem::path image = json->images().at(0);
-			AssembleArrayDDSFromGif(ddsPath, image);
-			GetImageAttributes(image, format, width, height, mipLevels, numFrames);
-			if (!IsPowerOfTwo(width)) { width = PrevPowerOfTwo(width); }
-			if (!IsPowerOfTwo(height)) { height = PrevPowerOfTwo(height); }
-			ConvertToDDS(image, ddsPath, StringToDXGI_FORMAT.at(json->at("format")), width, height, mipLevels);
-			GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
-		}
+		//prepare the dds conversion to calculate sizes and mipmaps
+		ImageConverter conv;
+		conv.src = ddsPath;
+		conv.dst = ddsPath;
+		conv.format = info.format;
+		conv.width = (!IsPowerOfTwo(static_cast<unsigned int>(info.width))) ? PrevPowerOfTwo(static_cast<unsigned int>(info.width)) : static_cast<unsigned int>(info.width);
+		conv.height = (!IsPowerOfTwo(static_cast<unsigned int>(info.height))) ? PrevPowerOfTwo(static_cast<unsigned int>(info.height)) : static_cast<unsigned int>(info.height);
+		conv.mipLevels = GetMipMaps(static_cast<unsigned int>(conv.width), static_cast<unsigned int>(conv.height));
 
-		json->numFrames(numFrames);
-		json->format(format);
-		json->width(width);
-		json->height(height);
-		json->mipLevels(mipLevels);
+		//only apply dds to dds conversion if the sizes are not matching
+		if (conv.width != static_cast<unsigned int>(info.width) || conv.height != static_cast<unsigned int>(info.height))
+			ConvertToDDS(conv);
+
+		json.numFrames(conv.numFrames);
+		json.format(conv.format);
+		json.width(conv.width);
+		json.height(conv.height);
+		json.mipLevels(conv.mipLevels);
 	}
-	*/
 
-	/*
-	void CreateCubeDDSFile(std::shared_ptr<TextureJson> json, bool overwrite)
+	void CreateCubeDDSFile(TextureJson& json)
 	{
 		using namespace Utils;
 
-		std::filesystem::path ddsPath = json->name();
+		std::filesystem::path ddsPath = json.name();
 		ddsPath.replace_extension(".dds");
 
-		unsigned int width, height, mipLevels, numFrames;
-		DXGI_FORMAT format;
+		unsigned int minWidth;
+		unsigned int minHeight;
+		std::vector<std::string> facesPath = json.images();
 
-		if (!std::filesystem::exists(ddsPath))
-			overwrite = true;
-
-		if (!overwrite)
+		for (unsigned int i = 0; i < facesPath.size(); i++)
 		{
-			GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
-		}
-		else
-		{
-			if (!Texture::createCubeFromSkybox)
+			DirectX::TexMetadata info{};
+			GetImageAttributes(facesPath[i], info);
+			if (i == 0)
 			{
-				unsigned int widthO, widthN;
-				unsigned int heightO, heightN;
-				unsigned int mipLevelsO, mipLevelsN;
-				unsigned int numFramesO, numFramesN;
-				DXGI_FORMAT formatO;
-
-				auto images = json->images();
-				for (unsigned int i = 0U; i < images.size(); i++)
-				{
-					std::filesystem::path imagePath = images.at(i);
-					GetImageAttributes(imagePath, formatO, widthO, heightO, mipLevelsO, numFramesO);
-					widthN = std::min(i == 0 ? widthO : widthN, widthO);
-					heightN = std::min(i == 0 ? heightO : heightN, heightO);
-					mipLevelsN = std::min(i == 0 ? mipLevelsO : mipLevelsN, mipLevelsO);
-					numFramesN = std::min(i == 0 ? numFramesO : numFramesN, numFramesO);
-				}
-
-				width = widthN;
-				height = heightN;
-				format = json->format();
-
-				if (!IsPowerOfTwo(width)) { width = PrevPowerOfTwo(width); }
-				if (!IsPowerOfTwo(height)) { height = PrevPowerOfTwo(height); }
-
-				AssembleCubeDDS(ddsPath, images, width, height);
-				ConvertToDDS(ddsPath, ddsPath, format, 0U, 0U, 0U);
-				GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+				minWidth = static_cast<unsigned int>(info.width);
+				minHeight = static_cast<unsigned int>(info.height);
 			}
 			else
 			{
-				AssembleCubeDDSFromSkybox(ddsPath, json->images().at(0));
-				GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
-				if (!IsPowerOfTwo(width)) { width = PrevPowerOfTwo(width); }
-				if (!IsPowerOfTwo(height)) { height = PrevPowerOfTwo(height); }
-				ConvertToDDS(ddsPath, ddsPath, json->format(), width, height, 0U);
-				GetImageAttributes(ddsPath, format, width, height, mipLevels, numFrames);
+				minWidth = std::min(minWidth, static_cast<unsigned int>(info.width));
+				minHeight = std::min(minHeight, static_cast<unsigned int>(info.height));
 			}
 		}
 
-		json->numFrames(numFrames);
-		json->format(format);
-		json->width(width);
-		json->height(height);
-		json->mipLevels(mipLevels);
+		AssembleCubeDDS(ddsPath, facesPath, minWidth, minHeight);
+
+		//get the dds attributes
+		DirectX::TexMetadata info{};
+		GetImageAttributes(ddsPath, info);
+
+		json.numFrames(static_cast<unsigned int>(info.depth));
+		json.format(info.format);
+		json.width(static_cast<unsigned int>(info.width));
+		json.height(static_cast<unsigned int>(info.height));
+		json.mipLevels(static_cast<unsigned int>(info.mipLevels));
 	}
-	*/
+
+	void CreateCubeDDSFileFromSkyBox(TextureJson& json)
+	{
+		using namespace Utils;
+
+		std::filesystem::path ddsPath = json.name();
+		ddsPath.replace_extension(".dds");
+		std::string image = json.images().at(0);
+
+		AssembleCubeDDSFromSkybox(ddsPath, image);
+
+		//get the dds attributes
+		DirectX::TexMetadata info{};
+		GetImageAttributes(ddsPath, info);
+
+		if (!IsPowerOfTwo(static_cast<unsigned int>(info.width)) || !IsPowerOfTwo(static_cast<unsigned int>(info.height)))
+		{
+			//prepare the dds conversion to calculate sizes and mipmaps
+			ImageConverter conv;
+			conv.src = ddsPath;
+			conv.dst = ddsPath;
+			conv.format = info.format;
+			conv.width = (!IsPowerOfTwo(static_cast<unsigned int>(info.width))) ? PrevPowerOfTwo(static_cast<unsigned int>(info.width)) : static_cast<unsigned int>(info.width);
+			conv.height = (!IsPowerOfTwo(static_cast<unsigned int>(info.height))) ? PrevPowerOfTwo(static_cast<unsigned int>(info.height)) : static_cast<unsigned int>(info.height);
+			conv.mipLevels = GetMipMaps(static_cast<unsigned int>(conv.width), static_cast<unsigned int>(conv.height));
+			ConvertToDDS(conv);
+			GetImageAttributes(ddsPath, info);
+		}
+
+		json.numFrames(static_cast<unsigned int>(info.depth));
+		json.format(info.format);
+		json.width(static_cast<unsigned int>(info.width));
+		json.height(static_cast<unsigned int>(info.height));
+		json.mipLevels(static_cast<unsigned int>(info.mipLevels));
+	}
 
 	TextureJson CreateBaseTextureJson(std::string name, unsigned int numFrames, DXGI_FORMAT format)
 	{
@@ -357,6 +330,37 @@ namespace Templates
 		));
 	}
 
+	void CreateTextureFromJsonDefinition(nlohmann::json json)
+	{
+		TextureJson texJson(json);
+		switch (texJson.type())
+		{
+		case TextureType_2D:
+		{
+			Create2DDDSFile(texJson);
+		}
+		break;
+		case TextureType_Array:
+		{
+			CreateArrayDDSFile(texJson);
+		}
+		break;
+		case TextureType_Cube:
+		{
+			CreateCubeDDSFile(texJson);
+		}
+		break;
+		case TextureType_Skybox:
+		{
+			CreateCubeDDSFileFromSkyBox(texJson);
+		}
+		break;
+		}
+
+		CreateTexture(texJson.json());
+		Editor::MarkTemplatesPanelAssetsAsDirty();
+	}
+
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format)
 	{
 		//used for creating
@@ -371,35 +375,57 @@ namespace Templates
 
 	void CreateDDSFile(std::shared_ptr<TextureJson>& tex)
 	{
-		using namespace Utils;
 
 		std::filesystem::path ddsPath = tex->name();
 		ddsPath.replace_extension(".dds");
+
 		if (!std::filesystem::exists(ddsPath))
 		{
+			switch (tex->type())
+			{
+			case TextureType_2D:
+			{
+				Create2DDDSFile(*tex);
+			}
+			break;
+			case TextureType_Array:
+			{
+				CreateArrayDDSFile(*tex);
+			}
+			break;
+			case TextureType_Cube:
+			{
+				CreateCubeDDSFile(*tex);
+			}
+			break;
+			case TextureType_Skybox:
+			{
+				CreateCubeDDSFileFromSkyBox(*tex);
+			}
+			break;
+			}
+		}
+		Editor::MarkTemplatesPanelAssetsAsDirty();
+
+		/*
+
 			ImageConverter convert = {
 				.src = tex->name(),
 				.dst = ddsPath
 			};
 			ConvertToDDS(convert);
-			tex->format(convert.format);
-			tex->width(convert.width);
-			tex->height(convert.height);
-			tex->mipLevels(convert.mipLevels);
-			tex->numFrames(convert.numFrames);
-			tex->type(convert.type);
-		}
-		else
-		{
-			DirectX::TexMetadata info;
-			GetImageAttributes(ddsPath, info);
-			tex->width(static_cast<unsigned int>(info.width));
-			tex->height(static_cast<unsigned int>(info.height));
-			tex->format(info.format);
-			tex->mipLevels(static_cast<unsigned int>(info.mipLevels));
-			tex->numFrames(static_cast<unsigned int>(info.arraySize));
-			tex->type(info.IsCubemap() ? (TextureType_Cube) : (info.arraySize > 1ULL) ? TextureType_Array : TextureType_2D);
-		}
+		*/
+
+		/*
+		DirectX::TexMetadata info{};
+		GetImageAttributes(ddsPath, info);
+		tex->width(static_cast<unsigned int>(info.width));
+		tex->height(static_cast<unsigned int>(info.height));
+		tex->format(info.format);
+		tex->mipLevels(static_cast<unsigned int>(info.mipLevels));
+		tex->numFrames(static_cast<unsigned int>(info.arraySize));
+		tex->type(info.IsCubemap() ? (TextureType_Cube) : (info.arraySize > 1ULL) ? TextureType_Array : TextureType_2D);
+		*/
 	}
 
 	void PreviewTexturesStep(float elapsedSeconds)
@@ -691,8 +717,6 @@ namespace Templates
 	}
 	*/
 
-
-
 	/*
 	void TextureInstance::BindChangeCallback(std::string uuid, std::function<void()> cb)
 	{
@@ -793,6 +817,7 @@ namespace Templates
 		}
 		break;
 		case TextureType_Cube:
+		case TextureType_Skybox:
 		{
 			viewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 			viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;

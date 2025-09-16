@@ -3,6 +3,7 @@
 #include "Utils.h"
 #include <DirectXTex.h>
 #include <texdiag.h>
+#include <texassemble.h>
 #include <Command.h>
 #include <regex>
 #include <DXTypes.h>
@@ -10,56 +11,12 @@
 
 namespace Utils
 {
-	void GetImageAttributes(std::filesystem::path src, DXGI_FORMAT& format, unsigned int& width, unsigned int& height, unsigned int& mipLevels, unsigned int& numFrames)
-	{
-		using namespace raymii;
-
-		std::string cmdInfo = GetUtilsPath() + "texdiag.exe info \"" + src.string() + "\"";
-		CommandResult resultInfo = Command::exec(cmdInfo);
-		//OutputDebugStringA((cmdInfo + "\n").c_str());
-		std::string text = resultInfo.output;
-		//OutputDebugStringA((text + "\n").c_str());
-		std::regex pattern("width = ([\\d]+)[\\w\\d\\n\\W]+height = ([\\d]+)[\\w\\d\\n\\W]+mipLevels = ([\\d]+)[\\w\\d\\n\\W]+arraySize = ([\\d]+)[\\w\\d\\n\\W]+format = ([\\w]+)");
-		std::smatch matches;
-
-		if (std::regex_search(text, matches, pattern))
-		{
-			width = std::stoi(matches[1]);
-			height = std::stoi(matches[2]);
-			mipLevels = std::stoi(matches[3]);
-			numFrames = std::stoi(matches[4]);
-			format = StringToDXGI_FORMAT.at(matches[5]);
-		}
-		else
-		{
-			assert(!!!"no info found from image file");
-		}
-	}
-
 	void GetImageAttributes(std::filesystem::path src, DirectX::TexMetadata& info)
 	{
 		std::vector<std::wstring> args = { L"", L"info", src.wstring() };
 		std::vector<wchar_t*> texDiagArgs;
 		std::transform(args.begin(), args.end(), std::back_inserter(texDiagArgs), [](auto& arg) { return arg.data(); });
 		texDiag(static_cast<int>(texDiagArgs.size()), texDiagArgs.data(), &info);
-	}
-
-	void ConvertToDDS(std::filesystem::path image, std::filesystem::path dds, DXGI_FORMAT desiredFormat, unsigned int width, unsigned int height, unsigned int mipLevels)
-	{
-		using namespace raymii;
-
-		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdConv = GetUtilsPath() + "texconv.exe \"" + image.string() + "\" -f " + DXGI_FORMATToString.at(desiredFormat) + " -y";
-		if (width != 0U) { cmdConv += " -w " + std::to_string(width); }
-		if (height != 0U) { cmdConv += " -h " + std::to_string(height); }
-		if (mipLevels != 0U) { cmdConv += " -m " + std::to_string(mipLevels); }
-
-		CommandResult result = Command::exec(cmdConv);
-
-		std::filesystem::path ddsUpperCase = dds;
-		ddsUpperCase.replace_extension(".DDS");
-
-		std::filesystem::rename(ddsUpperCase, dds);
 	}
 
 	void ConvertToDDS(ImageConverter& conversion)
@@ -106,19 +63,35 @@ namespace Utils
 		conversion.type = info.IsCubemap() ? (TextureType_Cube) : (info.arraySize > 1ULL) ? TextureType_Array : TextureType_2D;
 	}
 
+	void AssembleArrayDDSFromGif(std::filesystem::path image, std::filesystem::path gif)
+	{
+		std::vector<std::wstring> args = { L"", L"gif", L"-o", image.wstring(), L"-l", L"-y", gif.wstring() };
+		std::vector<wchar_t*> texAsmArgs;
+		std::transform(args.begin(), args.end(), std::back_inserter(texAsmArgs), [](auto& arg) { return arg.data(); });
+		texAssemble(static_cast<int>(texAsmArgs.size()), texAsmArgs.data());
+
+		std::filesystem::path ddsUpperCase = image;
+		ddsUpperCase.replace_extension(".DDS");
+
+		std::filesystem::rename(ddsUpperCase, image);
+	}
+
 	void AssembleCubeDDS(std::filesystem::path image, std::vector<std::string> facesPath, unsigned int width, unsigned int height)
 	{
-		using namespace raymii;
-
-		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe cube -o \"" + image.string() + "\" -l -y -w " + std::to_string(width) + " -h " + std::to_string(height) + " ";
-		for (auto& facePath : facesPath)
-		{
-			cmdAssemble += std::string("\"") + facePath + "\" ";
-		}
-		OutputDebugStringA((cmdAssemble + "\n").c_str());
-		CommandResult result = Command::exec(cmdAssemble);
-		OutputDebugStringA((result.output + "\n").c_str());
+		std::vector<std::wstring> args = {
+			L"", L"cube", L"-o", image.wstring(), L"-l", L"-y",
+			L"-w", std::to_wstring(width),
+			L"-h", std::to_wstring(height),
+			nostd::StringToWString(facesPath[0]),
+			nostd::StringToWString(facesPath[1]),
+			nostd::StringToWString(facesPath[2]),
+			nostd::StringToWString(facesPath[3]),
+			nostd::StringToWString(facesPath[4]),
+			nostd::StringToWString(facesPath[5])
+		};
+		std::vector<wchar_t*> texAsmArgs;
+		std::transform(args.begin(), args.end(), std::back_inserter(texAsmArgs), [](auto& arg) { return arg.data(); });
+		texAssemble(static_cast<int>(texAsmArgs.size()), texAsmArgs.data());
 
 		std::filesystem::path ddsUpperCase = image;
 		ddsUpperCase.replace_extension(".DDS");
@@ -128,31 +101,10 @@ namespace Utils
 
 	void AssembleCubeDDSFromSkybox(std::filesystem::path image, std::filesystem::path skybox)
 	{
-		using namespace raymii;
-
-		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe cube-from-hc -o \"" + image.string() + "\" -l -y \"" + skybox.string() + "\"";
-
-		OutputDebugStringA((cmdAssemble + "\n").c_str());
-		CommandResult result = Command::exec(cmdAssemble);
-		OutputDebugStringA((result.output + "\n").c_str());
-
-		std::filesystem::path ddsUpperCase = image;
-		ddsUpperCase.replace_extension(".DDS");
-
-		std::filesystem::rename(ddsUpperCase, image);
-	}
-
-	void AssembleArrayDDSFromGif(std::filesystem::path image, std::filesystem::path gif)
-	{
-		using namespace raymii;
-
-		std::filesystem::path parentPath = image.parent_path();
-		std::string cmdAssemble = GetUtilsPath() + "texassemble.exe gif -o \"" + image.string() + "\" -l -y " + gif.string();
-
-		OutputDebugStringA((cmdAssemble + "\n").c_str());
-		CommandResult result = Command::exec(cmdAssemble);
-		OutputDebugStringA((result.output + "\n").c_str());
+		std::vector<std::wstring> args = { L"", L"cube-from-hc", L"-o", image.wstring(), L"-l", L"-y", skybox.wstring() };
+		std::vector<wchar_t*> texAsmArgs;
+		std::transform(args.begin(), args.end(), std::back_inserter(texAsmArgs), [](auto& arg) { return arg.data(); });
+		texAssemble(static_cast<int>(texAsmArgs.size()), texAsmArgs.data());
 
 		std::filesystem::path ddsUpperCase = image;
 		ddsUpperCase.replace_extension(".DDS");

@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <UUID.h>
 #include <NoStd.h>
+#include <nlohmann/json.hpp>
 
 #if defined(_EDITOR)
 
@@ -30,6 +31,7 @@ namespace ImGui
 
 	bool DrawComboSelection(UUIDName selected, std::vector<UUIDName> selectables, std::function<void(UUIDName)> onSelect, std::string label = "##");
 	bool DrawComboSelection(std::string selected, std::vector<std::string> selectables, std::function<void(std::string)> onSelect, std::string label = "##");
+	bool DrawComboSelection(nlohmann::json& json, std::string attribute, std::vector<std::string> selectables, std::string label = "##");
 
 	void ItemLabel(std::string_view title, ItemLabelFlag flags);
 

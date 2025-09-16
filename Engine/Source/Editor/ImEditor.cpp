@@ -58,6 +58,35 @@ namespace ImGui
 		return ret;
 	}
 
+	bool DrawComboSelection(nlohmann::json& json, std::string attribute, std::vector<std::string> selectables, std::string label)
+	{
+		bool ret = false;
+		std::string current = json.at(attribute);
+		if (ImGui::BeginCombo(label.c_str(), current.c_str()))
+		{
+			Editor::NonGameMode = true;
+			for (int i = 0; i < selectables.size(); i++)
+			{
+				if (ImGui::Selectable(
+					(selectables[i] == "") ? "##" : selectables[i].c_str(),
+					current == selectables[i],
+					(current == selectables[i]) ? ImGuiSelectableFlags_Highlight : 0)
+					)
+				{
+					ret = true;
+					json.at(attribute) = selectables[i];
+				}
+				if (current == selectables[i])
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+		return ret;
+	}
+
 	void ItemLabel(std::string_view title, ItemLabelFlag flags)
 	{
 		ImGuiWindow* window = ImGui::GetCurrentWindow();

@@ -77,43 +77,23 @@ namespace Templates
 
 	TEMPDECL_FULL(Texture);
 
-#if defined(_EDITOR)
-	enum TexturePopupModal
-	{
-		TexturePopupModal_CannotDelete = 1,
-		TexturePopupModal_CreateNew = 2
-	};
-
-	/*
-	enum TextureUpdateFlags {
-		TextureUpdateFlags_Load = 0x1,
-		TextureUpdateFlags_Release = 0x2,
-		TextureUpdateFlags_Reload = TextureUpdateFlags_Load | TextureUpdateFlags_Release,
-	};
-	*/
-#endif
-
 	namespace Texture
 	{
 		inline static const std::string templateName = "textures.json";
-		//#if defined(_EDITOR)
-		//		bool DrawEditorInformationAttributes(std::string uuid);
-		//		bool DrawEditorAssetAttributes(std::string uuid);
-		//		void RebuildInstance(std::string& uuid);
-		//		void DrawEditorTexturePreview(std::string uuid);
-		//#endif
 	}
 
 #if defined(_EDITOR)
 	void ResetTexturePopupIBLParameters();
 #endif
 
-	//void Create2DDDSFile(TextureJson& json, bool overwrite);
-	//void CreateArrayDDSFile(TextureJson& json, bool overwrite);
-	//void CreateCubeDDSFile(TextureJson& json, bool overwrite);
+	void Create2DDDSFile(TextureJson& json);
+	void CreateArrayDDSFile(TextureJson& json);
+	void CreateCubeDDSFile(TextureJson& json);
+	void CreateCubeDDSFileFromSkyBox(TextureJson& json);
 	//void CreateDDSFile(TextureJson& json, bool overwrite);
 	//void RebuildTexture(std::string uuid);
 	//void CreateTexturesTemplatesFromMaterial(nlohmann::json json);
+	void CreateTextureFromJsonDefinition(nlohmann::json json);
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format);
 	void CreateDDSFile(std::shared_ptr<TextureJson>& tex);
 

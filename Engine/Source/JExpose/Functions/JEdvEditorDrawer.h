@@ -1138,6 +1138,12 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_i
 				};
 			auto drawTexturePreview = [](auto& texture)
 				{
+					if (std::set<TextureType>({ TextureType_Cube, TextureType_Skybox }).contains(texture->type()))
+					{
+						ImGui::Text("Preview not available");
+						return;
+					}
+
 					ImGui::DrawTextureImage((ImTextureID)texture->preview->gpuHandle.ptr, texture->width(), texture->height());
 					if (texture->type() == TextureType_Array)
 					{
@@ -1168,7 +1174,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_i
 						ImGui::SameLine();
 						ImGui::PushID(std::string(texture->uuid() + "-timeFactor").c_str());
 						ImGui::PushItemWidth(100.0f);
-						ImGui::InputFloat("timeFactor", &texture->previewTimeFactor);
+						ImGui::InputFloat("timeFactor", &texture->previewTimeFactor, 0.001f, 0.001f, "%.3f");
 						ImGui::PopItemWidth();
 						ImGui::PopID();
 

@@ -517,28 +517,31 @@ inline JEdvCreatorDrawerFunction DrawCreatorEnum<LightType, jedv_t_lighttype>(
 		};
 }
 
-inline void EditorCreatorDrawFilePath(
+inline bool EditorCreatorDrawFilePath(
 	std::string attribute,
 	nlohmann::json& json,
+	std::string attText,
 	const char* buttonIcon,
 	const std::string defaultFolder,
 	std::vector<std::string> filterName,
 	std::vector<std::string> filterPattern
 )
 {
+	bool ret = false;
 	auto getFilePath = [attribute, &json]()
 		{
 			return json.at(attribute);
 		};
-	auto setFilePath = [attribute, &json](std::string path)
+	auto setFilePath = [&ret, attribute, &json](std::string path)
 		{
 			nlohmann::json patch = { {attribute,path} };
 			json.merge_patch(patch);
+			ret = true;
 		};
 
 	ImGui::PushID(attribute.c_str());
 	{
-		ImGui::Text(attribute.c_str());
+		ImGui::Text(attText.c_str());
 		std::filesystem::path path = getFilePath();
 
 		if (ImGui::Button(buttonIcon))
@@ -554,6 +557,50 @@ inline void EditorCreatorDrawFilePath(
 		ImGui::InputText("##", path.string().data(), path.string().size(), ImGuiInputTextFlags_ReadOnly);
 	}
 	ImGui::PopID();
+	return ret;
+}
+
+inline bool EditorCreatorDrawFilePath(
+	std::string attribute,
+	nlohmann::json& json,
+	unsigned int attIndex,
+	std::string attText,
+	const char* buttonIcon,
+	const std::string defaultFolder,
+	std::vector<std::string> filterName,
+	std::vector<std::string> filterPattern
+)
+{
+	bool ret = false;
+	auto getFilePath = [attribute, &json, attIndex]()
+		{
+			return json.at(attribute).at(attIndex);
+		};
+	auto setFilePath = [&ret, attribute, &json, attIndex](std::string path)
+		{
+			json.at(attribute)[attIndex] = path;
+			ret = true;
+		};
+
+	ImGui::PushID(attribute.c_str());
+	{
+		ImGui::Text(attText.c_str());
+		std::filesystem::path path = getFilePath();
+
+		if (ImGui::Button(buttonIcon))
+		{
+			ImGui::OpenFile([setFilePath, defaultFolder](std::filesystem::path p)
+				{
+					std::filesystem::path absfilepath = std::filesystem::current_path().append(defaultFolder);
+					std::filesystem::path rel = std::filesystem::relative(p, absfilepath);
+					setFilePath(rel.generic_string());
+				}, defaultFolder, filterName, filterPattern);
+		}
+		ImGui::SameLine();
+		ImGui::InputText("##", path.string().data(), path.string().size(), ImGuiInputTextFlags_ReadOnly);
+	}
+	ImGui::PopID();
+	return ret;
 }
 
 template<>
@@ -561,7 +608,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_shaders_fi
 {
 	return[](std::string attribute, nlohmann::json& json)
 		{
-			EditorCreatorDrawFilePath(attribute, json, ICON_FA_FILE_CODE, defaultShadersFolder, { "HLSL files. (*.hlsl)" }, { "*.hlsl" });
+			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_FILE_CODE, defaultShadersFolder, { "HLSL files. (*.hlsl)" }, { "*.hlsl" });
 		};
 }
 
@@ -570,7 +617,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_sounds_fil
 {
 	return[](std::string attribute, nlohmann::json& json)
 		{
-			EditorCreatorDrawFilePath(attribute, json, ICON_FA_FILE_AUDIO, defaultSoundsFolder,
+			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_FILE_AUDIO, defaultSoundsFolder,
 				{ "WAV files. (*.wav)", "MP3 files. (*.mp3)", "OGG files. (*.ogg)" },
 				{ "*.wav", "*.mp3", "*.ogg" });
 		};
@@ -581,6 +628,84 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_model3d_fi
 {
 	return[](std::string attribute, nlohmann::json& json)
 		{
-			EditorCreatorDrawFilePath(attribute, json, ICON_FA_CUBE, default3DModelsFolder, { "3D Models files. (*.gltf)" }, { "*.gltf" });
+			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_CUBE, default3DModelsFolder, { "3D Models files. (*.gltf)" }, { "*.gltf" });
+		};
+}
+
+template<>
+inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_filepath_vector_image>()
+{
+	return [](std::string attribute, nlohmann::json& json)
+		{
+			TextureType oldType = StringToTextureType.at(json.at("type"));
+
+			ImGui::Text("type");
+			ImGui::PushID("type");
+			ImGui::DrawComboSelection(json, "type", nostd::GetKeysFromMap(StringToTextureType));
+			ImGui::PopID();
+
+			TextureType newType = StringToTextureType.at(json.at("type"));
+
+			if (newType != oldType || json.at("images").size() == 0ULL)
+			{
+				json.at("name") = "";
+				switch (newType)
+				{
+				case TextureType_Cube:
+				{
+					json.at("images") = { "","","","","","" };
+				}
+				break;
+				default:
+				{
+					json.at("images") = { "" };
+				}
+				break;
+				}
+			}
+
+			ImGui::Text("name");
+			std::string name = json.at("name");
+			switch (newType)
+			{
+			case TextureType_2D:
+			case TextureType_Skybox:
+			case TextureType_Array:
+			{
+				ImGui::PushID(std::string(attribute + "-input-text").c_str());
+				ImGui::InputText("##", name.data(), name.size(), ImGuiInputTextFlags_ReadOnly);
+				ImGui::PopID();
+				ImGui::PushID(std::string(attribute + "-pick-file-0").c_str());
+				if (EditorCreatorDrawFilePath(attribute, json, 0, attribute, ICON_FA_FILE_IMAGE, "./",
+					(newType != TextureType_Array) ? defaultTexturesFilters : defaultAnimatedTexturesFilters,
+					(newType != TextureType_Array) ? defaultTexturesExtensions : defaultAnimatedTexturesExtensions
+				))
+				{
+					json.at("name") = json.at(attribute).at(0);
+				}
+				ImGui::PopID();
+			}
+			break;
+			case TextureType_Cube:
+			{
+				ImGui::PushID(std::string(attribute + "-input-text").c_str());
+				ImGui::InputText("##", json.at("name").get_ptr<std::string*>());
+				ImGui::PopID();
+
+				for (unsigned int i = 0; i < 6U; i++)
+				{
+					ImGui::PushID(std::string(attribute + "-pick-file-" + std::to_string(i)).c_str());
+					if (EditorCreatorDrawFilePath(attribute, json, i, cubeTextureAxesNames.at(i), ICON_FA_FILE_IMAGE, "./", defaultTexturesFilters, defaultTexturesExtensions))
+					{
+						if (i == 0)
+						{
+							json.at("name") = json.at(attribute).at(0);
+						}
+					}
+					ImGui::PopID();
+				}
+			}
+			break;
+			}
 		};
 }

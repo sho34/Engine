@@ -224,6 +224,7 @@ enum TextureType
 	TextureType_2D,
 	TextureType_Array,
 	TextureType_Cube,
+	TextureType_Skybox,
 };
 
 inline static std::map<TextureType, std::string> TextureTypeToString =
@@ -231,6 +232,7 @@ inline static std::map<TextureType, std::string> TextureTypeToString =
 	{ TextureType_2D, "2D" },
 	{ TextureType_Array, "Array" },
 	{ TextureType_Cube, "Cube" },
+	{ TextureType_Skybox, "Skybox" },
 };
 
 inline static std::map<std::string, TextureType> StringToTextureType =
@@ -238,6 +240,7 @@ inline static std::map<std::string, TextureType> StringToTextureType =
 	{ "2D", TextureType_2D },
 	{ "Array", TextureType_Array },
 	{ "Cube", TextureType_Cube },
+	{ "Skybox", TextureType_Skybox},
 };
 
 //define the Textures binding

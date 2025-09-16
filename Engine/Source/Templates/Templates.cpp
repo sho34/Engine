@@ -1031,7 +1031,7 @@ namespace Templates
 			{ T_Models3D,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateModel3D); } },
 			{ T_Shaders,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateShader); } },
 			{ T_Sounds,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateSound); } },
-			{ T_Textures,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateTexture); } },
+			{ T_Textures,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateTextureFromJsonDefinition); } },
 			{ T_RenderPasses,[](nlohmann::json json) { CreateTemplateFromJson(json,Templates::CreateRenderPass); } },
 		};
 		CreateT.at(t)(json);
