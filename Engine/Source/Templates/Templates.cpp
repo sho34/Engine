@@ -1054,8 +1054,142 @@ namespace Templates
 	void DeleteTemplate(std::string uuid)
 	{
 		TemplateType type = GetTemplateType(uuid);
-		DeleteTemplate(type, uuid);
+		std::string name = GetTemplateName(type, uuid);
+
+		/*
+		auto deleteTemplate = [type, uuid]()
+			{
+				DeleteTemplate(type, uuid);
+			};
+		*/
+
+		std::vector<nlohmann::json> references;
+		FindTemplateReferencesInLevels(references, uuid, name);
+		FindTemplateReferencesInTemplates(references, uuid, name);
+		for (unsigned int i = 0; i < references.size(); i++)
+		{
+			auto& nav = references.at(i);
+			std::string resource = nav.at("resource");
+			std::string path = nav.at("path");
+			std::string asset = nav.at("asset");
+			std::string uuid = nav.at("uuid");
+			OutputDebugStringA(std::string("found " + name + " in resource " + resource + " at path:" + path + "\n").c_str());
+		}
 	}
 
+	void RecursiveIterateArray(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue)
+	{
+		unsigned int size = static_cast<unsigned int>(json.size());
+		for (unsigned int i = 0; i < size; i++)
+		{
+			auto& val = json.at(i);
+			nlohmann::json nobj = object;
+			std::string npath = nobj["path"];
+			npath += "[" + std::to_string(i) + "]";
+			nobj["path"] = npath;
+
+			if (val.is_structured())
+			{
+				if (val.is_object())
+				{
+					RecursiveIterate(nobj, val, uuid, callkeyvalue);
+				}
+				else if (val.is_array())
+				{
+					RecursiveIterateArray(nobj, val, uuid, callkeyvalue);
+				}
+			}
+			else
+			{
+				if (!val.is_string()) continue;
+				std::string cmpUUID = json.at(i);
+				if (cmpUUID != uuid) continue;
+
+				callkeyvalue(nobj);
+			}
+		}
+	}
+
+	void RecursiveIterate(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue)
+	{
+		for (auto& [key, val] : json.items())
+		{
+			nlohmann::json nobj = object;
+			if (nobj["path"] != "") {
+				std::string npath = nobj["path"];
+				npath += ".";
+				nobj["path"] = npath;
+			}
+			std::string npath = nobj["path"];
+			npath += key;
+			nobj["path"] = npath;
+
+			if (val.is_structured())
+			{
+				if (val.is_object())
+				{
+					RecursiveIterate(nobj, val, uuid, callkeyvalue);
+				}
+				else if (val.is_array())
+				{
+					RecursiveIterateArray(nobj, val, uuid, callkeyvalue);
+				}
+			}
+			else
+			{
+				if (!val.is_string()) continue;
+				std::string cmpUUID = json.at(key);
+				if (cmpUUID != uuid) continue;
+
+				callkeyvalue(nobj);
+			}
+		}
+	}
+
+	void FindTemplateReferencesInLevels(std::vector<nlohmann::json>& references, std::string uuid, std::string name)
+	{
+		for (auto& entry : std::filesystem::directory_iterator(defaultLevelsFolder))
+		{
+			auto path = entry.path();
+			if (path.extension() != ".json") continue;
+
+			std::ifstream file(path);
+			nlohmann::json data = nlohmann::json::parse(file);
+
+			nlohmann::json object = { { "resource", path.string() }, {"path", ""} };
+
+			RecursiveIterate(object, data, uuid, [&references, uuid, name](nlohmann::json nav)
+				{
+					nlohmann::json ref = nav;
+					ref["asset"] = name;
+					ref["uuid"] = uuid;
+					references.push_back(ref);
+				}
+			);
+		}
+	}
+
+	void FindTemplateReferencesInTemplates(std::vector<nlohmann::json>& references, std::string uuid, std::string name)
+	{
+		for (auto& entry : std::filesystem::directory_iterator(defaultTemplatesFolder))
+		{
+			auto path = entry.path();
+			if (path.extension() != ".json") continue;
+
+			std::ifstream file(path);
+			nlohmann::json data = nlohmann::json::parse(file);
+
+			nlohmann::json object = { { "resource", path.string() }, {"path", ""} };
+
+			RecursiveIterate(object, data, uuid, [&references, uuid, name](nlohmann::json nav)
+				{
+					nlohmann::json ref = nav;
+					ref["asset"] = name;
+					ref["uuid"] = uuid;
+					references.push_back(ref);
+				}
+			);
+		}
+	}
 #endif
 }

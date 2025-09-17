@@ -128,6 +128,10 @@ namespace Templates {
 	void DeleteTemplate(TemplateType t, std::string uuid);
 	void DeleteTemplate(std::string uuid);
 
+	void RecursiveIterateArray(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue);
+	void RecursiveIterate(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue);
+	void FindTemplateReferencesInLevels(std::vector<nlohmann::json>& references, std::string uuid, std::string name);
+	void FindTemplateReferencesInTemplates(std::vector<nlohmann::json>& references, std::string uuid, std::string name);
 #endif
 
 }
