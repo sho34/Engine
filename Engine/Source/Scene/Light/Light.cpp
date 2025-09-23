@@ -80,7 +80,7 @@ namespace Scene {
 			CreateShadowMap();
 		}
 #if defined(_EDITOR)
-		CreateLightBillboard();
+		//CreateLightBillboard();
 #endif
 	}
 
@@ -93,7 +93,7 @@ namespace Scene {
 		BindRenderablesToShadowMapCamera();
 
 #if defined(_EDITOR)
-		BindLightBillboardToScene();
+		//BindLightBillboardToScene();
 #endif
 	}
 
@@ -167,7 +167,7 @@ namespace Scene {
 
 		for (auto& [uuid, l] : Lights)
 		{
-			l->UpdateLightBillboard();
+			//l->UpdateLightBillboard();
 
 			//if the light type changed
 			if (l->dirty(Light::Update_lightType))

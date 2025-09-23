@@ -62,7 +62,7 @@ namespace Scene {
 #include <JEnd.h>
 
 #if defined(_EDITOR)
-		CreateSoundFXBillboard();
+		//CreateSoundFXBillboard();
 #endif
 	}
 
@@ -91,7 +91,7 @@ namespace Scene {
 			Play();
 		}
 #if defined(_EDITOR)
-		BindSoundFXBillboardToScene();
+		//BindSoundFXBillboardToScene();
 #endif
 	}
 
@@ -214,7 +214,7 @@ namespace Scene {
 			{
 				sfx->Step(step);
 #if defined(_EDITOR)
-				sfx->UpdateSoundFXBillboard();
+				//sfx->UpdateSoundFXBillboard();
 #endif
 			}
 		);

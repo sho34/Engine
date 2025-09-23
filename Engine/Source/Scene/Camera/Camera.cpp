@@ -458,8 +458,10 @@ namespace Scene
 		CreateConstantsBuffer();
 		CreateRenderPasses();
 #if defined(_EDITOR)
+		/*
 		if (!lightCam)
 			CreateCameraBillboard();
+			*/
 #endif
 	}
 
@@ -475,7 +477,7 @@ namespace Scene
 		break;
 		}
 #if defined(_EDITOR)
-		BindCameraBillboardToScene();
+		//BindCameraBillboardToScene();
 #endif
 	}
 
@@ -499,7 +501,7 @@ namespace Scene
 #include <JEnd.h>
 
 #if defined(_EDITOR)
-		BindCameraBillboardToScene();
+		//BindCameraBillboardToScene();
 #endif
 	}
 

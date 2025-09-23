@@ -4646,7 +4646,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 
 				unsigned int p = cam->previewRenderPassIndex;
 
-				if (!passIsShadowMap[p])
+				if (passIsShadowMap.size()<p && !passIsShadowMap[p])
 				{
 					std::vector<std::string> selectables(rttPasses[p]->renderToTexture.size());
 					std::generate(selectables.begin(), selectables.end(), [n = 0]() mutable {return std::to_string(n + 1); });
@@ -4669,7 +4669,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 						rttPasses[p]->renderToTexture[rt]->height
 					);
 				}
-				else
+				else if(rttPasses.size() < p)
 				{
 					ImGui::DrawTextureImage(
 						(ImTextureID)

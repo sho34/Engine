@@ -460,7 +460,7 @@ void PlayModeLeave()
 //Editor
 #if defined(_EDITOR)
 
-void CreateEditorModeBindings()
+void DestroyEditorModeBindings()
 {
 	DestroyRenderableBoundingBox();
 	DestroyPickingPass();
@@ -484,7 +484,6 @@ void EditorModeCreate()
 			//LoadLevel("family");
 			//LoadLevel("venom");
 			BindSceneObjects();
-			CreateEditorModeBindings();
 
 			//hdrHistogram = std::make_shared<LuminanceHistogram>(mainPass->renderToTexture[0]);
 			//hdrHistogram->UpdateLuminanceHistogramParams(mainPass->renderToTexture[0]->width, mainPass->renderToTexture[0]->height, -2.0f, 10.0f);
@@ -570,8 +569,9 @@ void EditorModeStep()
 		renderer->Flush();
 		renderer->RenderCriticalFrame([]
 			{
+				DestroyEditorModeBindings();
 				LoadPendingLevel();
-				CreateEditorModeBindings();
+				BindSceneObjects();
 			}
 		);
 	}

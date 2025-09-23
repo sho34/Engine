@@ -1,6 +1,10 @@
 BUGS:
 
 TODO:
+-manejar referencias rotas
+	-Renderable
+	-SoundFX
+	-Camera	
 -generalizar los billboards
 	-arreglar el shader para que el porte siempre sea fijo y no utilice ese hack feo
 -grabar templates
