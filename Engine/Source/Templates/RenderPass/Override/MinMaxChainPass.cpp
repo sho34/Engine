@@ -11,8 +11,8 @@ MinMaxChainPass::MinMaxChainPass(std::shared_ptr<Camera> cam, unsigned int rpI, 
 	CreateFsQuadResources("DepthMinMax", GetRenderPassTemplate(rp->renderPassUUID), [this, rp](std::string name, ShaderConstantsBufferVariable& var)
 		{
 			XMFLOAT2 texelInvSize = {
-				1.0f / rp->rendererToTexturePass->screenViewport.Width,
-				1.0f / rp->rendererToTexturePass->screenViewport.Height
+				1.0f / rp->renderToTexturePass->screenViewport.Width,
+				1.0f / rp->renderToTexturePass->screenViewport.Height
 			};
 
 			for (unsigned int n = 0; n < renderer->numFrames; n++)
@@ -28,9 +28,9 @@ MinMaxChainPass::MinMaxChainPass(std::shared_ptr<Camera> cam, unsigned int rpI, 
 
 void MinMaxChainPass::Pass()
 {
-	renderPassInstance->rendererToTexturePass->BeginRenderPass();
+	renderPassInstance->renderToTexturePass->BeginRenderPass();
 	Render();
-	renderPassInstance->rendererToTexturePass->EndRenderPass();
+	renderPassInstance->renderToTexturePass->EndRenderPass();
 }
 
 void MinMaxChainPass::Render()

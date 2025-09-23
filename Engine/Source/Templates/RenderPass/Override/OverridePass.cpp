@@ -76,5 +76,5 @@ void OverridePass::CreateFsQuadResources(std::string materialName, std::shared_p
 std::shared_ptr<RenderToTexture> OverridePass::GetPrevPassRenderToTexture(unsigned int index)
 {
 	std::shared_ptr<RenderPassInstance> prevPass = camera->cameraRenderPasses.at(renderPassIndex - 1);
-	return prevPass->rendererToTexturePass->renderToTexture.at(index);
+	return prevPass->renderToTexturePass->renderToTexture.at(index);
 }

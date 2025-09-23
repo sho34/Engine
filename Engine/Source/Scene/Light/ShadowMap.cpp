@@ -327,6 +327,12 @@ namespace Scene {
 
 	void Light::CreateShadowMapShaderResourceView()
 	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC shadowMapSrvDesc = {
+			.Format = Renderer::depthFormatConversion.contains(shadowMapRenderPass->depthStencilFormat) ? Renderer::depthFormatConversion.at(shadowMapRenderPass->depthStencilFormat) : shadowMapRenderPass->depthStencilFormat,
+			.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
+			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+			.Texture2D = {.MostDetailedMip = 0, .MipLevels = 1U, .ResourceMinLODClamp = 0.0f },
+		};
 		renderer->d3dDevice->CreateShaderResourceView(shadowMapRenderPass->depthStencilTexture, &shadowMapSrvDesc, shadowMapSrvCpuDescriptorHandle[shadowMapIndex]);
 	}
 
@@ -356,8 +362,8 @@ namespace Scene {
 			chainPass->shadowMapChainGpuHandle1 = shadowMapChainGpuHandle1;
 			chainPass->shadowMapChainGpuHandle2 = shadowMapChainGpuHandle2;
 
-			shadowMapChainGpuHandle1 = chainPass->renderPassInstance->rendererToTexturePass->renderToTexture.at(0)->gpuTextureHandle;
-			shadowMapChainGpuHandle2 = chainPass->renderPassInstance->rendererToTexturePass->renderToTexture.at(1)->gpuTextureHandle;
+			shadowMapChainGpuHandle1 = chainPass->renderPassInstance->renderToTexturePass->renderToTexture.at(0)->gpuTextureHandle;
+			shadowMapChainGpuHandle2 = chainPass->renderPassInstance->renderToTexturePass->renderToTexture.at(1)->gpuTextureHandle;
 
 			//rpInstance->overridePass->prevPassRTT = prevPassRTT;
 			//prevPassRTT = rpInstance->rendererToTexturePass->renderToTexture.at(0);
@@ -447,8 +453,8 @@ namespace Scene {
 
 		std::shared_ptr<RenderPassInstance> last = shadowMapMinMaxChainRenderPass.back();
 		resultPass->depthGpuHandle = shadowMapChainGpuHandle;
-		resultPass->shadowMapChainGpuHandle1 = last->rendererToTexturePass->renderToTexture.at(0)->gpuTextureHandle;
-		resultPass->shadowMapChainGpuHandle2 = last->rendererToTexturePass->renderToTexture.at(1)->gpuTextureHandle;
+		resultPass->shadowMapChainGpuHandle1 = last->renderToTexturePass->renderToTexture.at(0)->gpuTextureHandle;
+		resultPass->shadowMapChainGpuHandle2 = last->renderToTexturePass->renderToTexture.at(1)->gpuTextureHandle;
 		resultPass->CreateFSQuad((lightType() != LT_Spot) ? "DepthMinMaxToRGBA" : "DepthMinMaxToRGBASpot");
 
 		/*

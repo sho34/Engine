@@ -810,9 +810,9 @@ inline JEdvEditorDrawerFunction DrawEnum<LightType, jedv_t_lighttype>(
 					{
 						ImGui::DrawTextureImage(
 							(ImTextureID)
-							light->shadowMapMinMaxChainResultRenderPass->rendererToTexturePass->renderToTexture.at(0)->gpuTextureHandle.ptr,
-							light->shadowMapMinMaxChainResultRenderPass->rendererToTexturePass->renderToTexture.at(0)->width,
-							light->shadowMapMinMaxChainResultRenderPass->rendererToTexturePass->renderToTexture.at(0)->height
+							light->shadowMapMinMaxChainResultRenderPass->renderToTexturePass->renderToTexture.at(0)->gpuTextureHandle.ptr,
+							light->shadowMapMinMaxChainResultRenderPass->renderToTexturePass->renderToTexture.at(0)->width,
+							light->shadowMapMinMaxChainResultRenderPass->renderToTexturePass->renderToTexture.at(0)->height
 						);
 					}
 				};
@@ -4616,7 +4616,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 				std::vector<std::shared_ptr<RenderToTexturePass>> rttPasses;
 				std::transform(passes.begin(), passes.end(), std::back_inserter(rttPasses), [](auto& pass)
 					{
-						return pass->rendererToTexturePass;
+						return pass->renderToTexturePass;
 					}
 				);
 
@@ -4646,7 +4646,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 
 				unsigned int p = cam->previewRenderPassIndex;
 
-				if (passIsShadowMap.size()<p && !passIsShadowMap[p])
+				if (passIsShadowMap.size() < p && !passIsShadowMap[p])
 				{
 					std::vector<std::string> selectables(rttPasses[p]->renderToTexture.size());
 					std::generate(selectables.begin(), selectables.end(), [n = 0]() mutable {return std::to_string(n + 1); });
@@ -4669,7 +4669,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 						rttPasses[p]->renderToTexture[rt]->height
 					);
 				}
-				else if(rttPasses.size() < p)
+				else if (rttPasses.size() < p)
 				{
 					ImGui::DrawTextureImage(
 						(ImTextureID)

@@ -42,7 +42,7 @@ void ToneMappingPass::Pass()
 	luminanceHistogramAverage->Compute();
 
 	//render the scene using the applied luminane correction
-	auto& rttPass = renderPassInstance->rendererToTexturePass;
+	auto& rttPass = renderPassInstance->renderToTexturePass;
 	rttPass->BeginRenderPass();
 	Render();
 	rttPass->EndRenderPass();

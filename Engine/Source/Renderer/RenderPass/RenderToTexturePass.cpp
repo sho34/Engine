@@ -11,10 +11,6 @@ extern std::shared_ptr<Renderer> renderer;
 
 namespace DeviceUtils {
 
-	std::map<DXGI_FORMAT, DXGI_FORMAT> depthFormatConversion = {
-		{ DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_R32_FLOAT }
-	};
-
 	std::shared_ptr<RenderToTexturePass> CreateRenderPass(const std::string name, std::vector<DXGI_FORMAT> renderTargetsFormats, DXGI_FORMAT depthStencilFormat, unsigned int width, unsigned int height)
 	{
 		auto& d3dDevice = renderer->d3dDevice;
@@ -54,6 +50,9 @@ namespace DeviceUtils {
 			d3dDevice->CreateShaderResourceView(rtt->renderToTexture, &rttSRVDesc, rtt->cpuTextureHandle);
 		}
 
+		if (Renderer::depthFallback.contains(depthStencilFormat) && !renderer->d32FSupported)
+			depthStencilFormat = Renderer::depthFallback.at(depthStencilFormat);
+
 		renderPass->depthStencilFormat = depthStencilFormat;
 		if (depthStencilFormat != DXGI_FORMAT_UNKNOWN)
 		{
@@ -66,7 +65,7 @@ namespace DeviceUtils {
 			AllocCSUDescriptor(renderPass->cpuDepthStencilTextureHandle, renderPass->gpuDepthStencilTextureHandle);
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC depthStencilSRVDesc = {
-				.Format = depthFormatConversion.contains(depthStencilFormat) ? depthFormatConversion.at(depthStencilFormat) : depthStencilFormat,
+				.Format = Renderer::depthFormatConversion.contains(depthStencilFormat) ? Renderer::depthFormatConversion.at(depthStencilFormat) : depthStencilFormat,
 				.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
 				.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
 				.Texture2D = {.MostDetailedMip = 0, .MipLevels = 1U, .ResourceMinLODClamp = 0.0f },
@@ -201,7 +200,7 @@ namespace DeviceUtils {
 			AllocCSUDescriptor(cpuDepthStencilTextureHandle, gpuDepthStencilTextureHandle);
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC depthStencilSRVDesc = {
-				.Format = depthFormatConversion.contains(depthStencilFormat) ? depthFormatConversion.at(depthStencilFormat) : depthStencilFormat,
+				.Format = Renderer::depthFormatConversion.contains(depthStencilFormat) ? Renderer::depthFormatConversion.at(depthStencilFormat) : depthStencilFormat,
 				.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
 				.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
 				.Texture2D = {.MostDetailedMip = 0, .MipLevels = 1U, .ResourceMinLODClamp = 0.0f },

@@ -650,9 +650,8 @@ namespace Scene {
 
 	void Renderable::CreateRenderPassPipelineStates(std::shared_ptr<Templates::RenderPassInstance>& rp)
 	{
-		std::shared_ptr<RenderPassJson> renderPass = GetRenderPassTemplate(rp->renderPassUUID);
-		auto rtFormats = renderPass->renderTargetFormats();
-		auto depthFormat = renderPass->depthStencilFormat();
+		auto rtFormats = rp->GetRenderTargetsFormats();
+		auto depthFormat = rp->GetDepthStencilFormat();
 
 		for (unsigned int i = 0; i < meshes.size(); i++)
 		{

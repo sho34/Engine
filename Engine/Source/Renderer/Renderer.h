@@ -12,6 +12,13 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 	~Renderer() {}
 	static const constexpr unsigned int numFrames = 3;
 	static const constexpr float fovAngleY = (70.0f * XM_PI / 180.0f);
+	static inline const std::map<DXGI_FORMAT, DXGI_FORMAT> depthFallback = {
+		{ DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT }
+	};
+	static inline const std::map<DXGI_FORMAT, DXGI_FORMAT> depthFormatConversion = {
+		{ DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_R32_FLOAT },
+		{ DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS }
+	};
 
 	//app window reference
 	HWND hwnd;
@@ -20,6 +27,7 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 	CComPtr<ID3D12Device2> d3dDevice;
 	CComPtr<ID3D12CommandQueue> commandQueue;
 	CComPtr<IDXGISwapChain4> swapChain;
+	DXGI_FORMAT swapChainFormat;
 
 	//command
 	CComPtr<ID3D12CommandAllocator> commandAllocators[numFrames];
@@ -36,6 +44,7 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 	D3D12_RECT scissorRect;
 
 	unsigned int backBufferIndex;
+	bool d32FSupported;
 
 	//the swap chain pass
 	std::shared_ptr<RenderPassInstance> swapChainPass;

@@ -123,7 +123,7 @@ namespace Templates
 		{
 			assert(width != 0U); assert(height != 0U);
 			instance->type = RenderPassType_RenderToTexturePass;
-			instance->rendererToTexturePass = DeviceUtils::CreateRenderPass(
+			instance->renderToTexturePass = DeviceUtils::CreateRenderPass(
 				GetRenderPassName(uuid),
 				rp->renderTargetFormats(),
 				rp->depthStencilFormat(),
@@ -157,8 +157,8 @@ namespace Templates
 		break;
 		case RenderPassType_RenderToTexturePass:
 		{
-			rp->rendererToTexturePass->ReleaseResources();
-			rp->rendererToTexturePass = nullptr;
+			rp->renderToTexturePass->ReleaseResources();
+			rp->renderToTexturePass = nullptr;
 		}
 		break;
 		}
@@ -170,9 +170,9 @@ namespace Templates
 			swapChainPass->ReleaseResources();
 			swapChainPass = nullptr;
 		}
-		if (rendererToTexturePass) {
-			rendererToTexturePass->ReleaseResources();
-			rendererToTexturePass = nullptr;
+		if (renderToTexturePass) {
+			renderToTexturePass->ReleaseResources();
+			renderToTexturePass = nullptr;
 		}
 	}
 
@@ -184,7 +184,7 @@ namespace Templates
 		{
 		case RenderPassType_RenderToTexturePass:
 		{
-			rendererToTexturePass->Pass(renderCallback, clearColor);
+			renderToTexturePass->Pass(renderCallback, clearColor);
 		}
 		break;
 		case RenderPassType_SwapChainPass:
@@ -273,7 +273,7 @@ namespace Templates
 			swapChainPass->ReleaseResources();
 			break;
 		case RenderPassType_RenderToTexturePass:
-			rendererToTexturePass->ReleaseResources();
+			renderToTexturePass->ReleaseResources();
 			break;
 		}
 	}
@@ -286,8 +286,34 @@ namespace Templates
 			swapChainPass->Resize(width, height);
 			break;
 		case RenderPassType_RenderToTexturePass:
-			rendererToTexturePass->Resize(width, height);
+			renderToTexturePass->Resize(width, height);
 			break;
 		}
+	}
+	std::vector<DXGI_FORMAT> RenderPassInstance::GetRenderTargetsFormats() const
+	{
+		std::vector<DXGI_FORMAT> formats;
+		switch (type)
+		{
+		case RenderPassType_SwapChainPass:
+		{
+			formats.push_back(renderer->swapChainFormat);
+		}
+		break;
+		case RenderPassType_RenderToTexturePass:
+		{
+			for (auto& rt : renderToTexturePass->renderToTexture)
+			{
+				formats.push_back(rt->format);
+			}
+		}
+		break;
+		}
+		return formats;
+	}
+
+	DXGI_FORMAT RenderPassInstance::GetDepthStencilFormat()
+	{
+		return (type == RenderPassType_SwapChainPass) ? swapChainPass->depthStencilFormat : renderToTexturePass->depthStencilFormat;
 	}
 };

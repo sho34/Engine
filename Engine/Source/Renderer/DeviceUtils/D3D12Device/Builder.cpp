@@ -190,4 +190,21 @@ namespace DeviceUtils {
 
 		return fenceEvent;
 	}
+
+	bool D32FSupported(CComPtr<ID3D12Device2> device)
+	{
+		D3D12_FEATURE_DATA_FORMAT_SUPPORT supported =
+		{
+			.Format = DXGI_FORMAT_D32_FLOAT
+		};
+		DX::ThrowIfFailed(device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &supported, sizeof(supported)));
+		return !!(supported.Support1 & D3D12_FORMAT_SUPPORT1_DEPTH_STENCIL);
+	}
+
+	DXGI_FORMAT GetSwapChainFormat(CComPtr<IDXGISwapChain4> swapChain)
+	{
+		DXGI_SWAP_CHAIN_DESC swapChainDesc;
+		DX::ThrowIfFailed(swapChain->GetDesc(&swapChainDesc));
+		return swapChainDesc.BufferDesc.Format;
+	}
 }

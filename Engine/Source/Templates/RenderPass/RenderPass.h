@@ -156,7 +156,7 @@ namespace Templates
 		std::shared_ptr<OverridePass> overridePass;
 		RenderPassType type = RenderPassType_SwapChainPass;
 		std::shared_ptr<SwapChainPass> swapChainPass;
-		std::shared_ptr<RenderToTexturePass> rendererToTexturePass;
+		std::shared_ptr<RenderToTexturePass> renderToTexturePass;
 
 		RenderPassInstance() {}
 		~RenderPassInstance();
@@ -172,6 +172,8 @@ namespace Templates
 		) const;
 		void ResizeRelease() const;
 		void Resize(unsigned int width, unsigned int height) const;
+		std::vector<DXGI_FORMAT> GetRenderTargetsFormats() const;
+		DXGI_FORMAT GetDepthStencilFormat();
 	};
 };
 

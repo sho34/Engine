@@ -13,5 +13,7 @@ namespace DeviceUtils {
 	CComPtr<ID3D12GraphicsCommandList2> CreateCommandList(CComPtr<ID3D12Device2> device, CComPtr<ID3D12CommandAllocator> commandAllocator);
 	CComPtr<ID3D12Fence> CreateFence(CComPtr<ID3D12Device2> device, std::string name);
 	HANDLE CreateEventHandle();
+	bool D32FSupported(CComPtr<ID3D12Device2> device);
+	DXGI_FORMAT GetSwapChainFormat(CComPtr<IDXGISwapChain4> swapChain);
 }
 

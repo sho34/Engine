@@ -1603,7 +1603,7 @@ namespace Editor {
 		PIXBeginEvent(renderer->commandList.p, 0, L"Scene Picker");
 #endif
 
-		mousePicking.pickingPass->rendererToTexturePass->Pass([camera]()
+		mousePicking.pickingPass->renderToTexturePass->Pass([camera]()
 			{
 				unsigned int backBufferIndex = renderer->backBufferIndex;
 				unsigned int objectId = 1U;
@@ -1635,9 +1635,9 @@ namespace Editor {
 		DeviceUtils::CaptureTexture(
 			renderer->d3dDevice,
 			renderer->commandQueue,
-			mousePicking.pickingPass->rendererToTexturePass->renderToTexture[0]->renderToTexture,
-			mousePicking.pickingPass->rendererToTexturePass->renderToTexture[0]->width * sizeof(unsigned int),
-			mousePicking.pickingPass->rendererToTexturePass->renderToTexture[0]->resourceDesc,
+			mousePicking.pickingPass->renderToTexturePass->renderToTexture[0]->renderToTexture,
+			mousePicking.pickingPass->renderToTexturePass->renderToTexture[0]->width * sizeof(unsigned int),
+			mousePicking.pickingPass->renderToTexturePass->renderToTexture[0]->resourceDesc,
 			mousePicking.pickingCpuBuffer,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
@@ -1689,12 +1689,12 @@ namespace Editor {
 
 	void ReleasePickingPassResources()
 	{
-		if (mousePicking.pickingPass) mousePicking.pickingPass->rendererToTexturePass->ReleaseResources();
+		if (mousePicking.pickingPass) mousePicking.pickingPass->renderToTexturePass->ReleaseResources();
 	}
 
 	void ResizePickingPass(unsigned int width, unsigned int height)
 	{
-		if (mousePicking.pickingPass) mousePicking.pickingPass->rendererToTexturePass->Resize(width, height);
+		if (mousePicking.pickingPass) mousePicking.pickingPass->renderToTexturePass->Resize(width, height);
 	}
 
 	//JObjects Creation

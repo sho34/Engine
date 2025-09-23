@@ -32,6 +32,9 @@ namespace DeviceUtils
 		swapChainPass->width = static_cast<unsigned int>(abs(renderer->scissorRect.right - renderer->scissorRect.left));
 		swapChainPass->height = static_cast<unsigned int>(abs(renderer->scissorRect.bottom - renderer->scissorRect.top));
 
+		if (Renderer::depthFallback.contains(depthStencilFormat) && !renderer->d32FSupported)
+			depthStencilFormat = Renderer::depthFallback.at(depthStencilFormat);
+
 		swapChainPass->depthStencilFormat = depthStencilFormat;
 		if (depthStencilFormat != DXGI_FORMAT_UNKNOWN)
 		{

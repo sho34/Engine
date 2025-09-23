@@ -17,9 +17,9 @@ void MinMaxChainResultPass::CreateFSQuad(std::string materialName)
 
 void MinMaxChainResultPass::Pass()
 {
-	renderPassInstance->rendererToTexturePass->BeginRenderPass();
+	renderPassInstance->renderToTexturePass->BeginRenderPass();
 	Render();
-	renderPassInstance->rendererToTexturePass->EndRenderPass();
+	renderPassInstance->renderToTexturePass->EndRenderPass();
 }
 
 void MinMaxChainResultPass::Render()

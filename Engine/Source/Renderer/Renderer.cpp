@@ -46,6 +46,8 @@ void Renderer::Initialize(HWND coreHwnd) {
 	CComPtr<IDXGIAdapter4> dxgiAdapter4 = GetAdapter();
 	d3dDevice = CreateDevice(dxgiAdapter4);
 
+	d32FSupported = !D32FSupported(d3dDevice);
+
 #if defined(_DEBUG)
 	d3dDevice->QueryInterface(IID_PPV_ARGS(&debugDevice));
 #endif
@@ -53,6 +55,8 @@ void Renderer::Initialize(HWND coreHwnd) {
 	commandQueue = CreateCommandQueue(d3dDevice);
 	swapChain = CreateSwapChain(hwnd, commandQueue, numFrames);
 	backBufferIndex = swapChain->GetCurrentBackBufferIndex();
+
+	swapChainFormat = GetSwapChainFormat(swapChain);
 
 	CCNAME_D3D12_OBJECT_N(d3dDevice, std::string("Renderer"));
 	CCNAME_D3D12_OBJECT_N(commandQueue, std::string("Renderer"));
