@@ -46,7 +46,7 @@ void Renderer::Initialize(HWND coreHwnd) {
 	CComPtr<IDXGIAdapter4> dxgiAdapter4 = GetAdapter();
 	d3dDevice = CreateDevice(dxgiAdapter4);
 
-	d32FSupported = !D32FSupported(d3dDevice);
+	d32FSupported = D32FSupported(d3dDevice);
 
 #if defined(_DEBUG)
 	d3dDevice->QueryInterface(IID_PPV_ARGS(&debugDevice));
