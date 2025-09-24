@@ -72,6 +72,72 @@ struct CreatorModal {
 	}
 };
 
+struct DeletePrompt
+{
+	bool showing = false;
+	std::vector<nlohmann::json> references;
+	std::function<void()> OnDelete;
+	std::function<void()> OnCancel;
+
+	void DrawPrompt(const char* prompTitle)
+	{
+		const ImGuiTableFlags column_flags = ImGuiTableColumnFlags_None;
+
+		std::string title = "delete-template";
+		ImGui::OpenPopup(prompTitle);
+		if (ImGui::BeginPopupModal(prompTitle, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			std::string tableName = "delete-template-table";
+			if (ImGui::BeginTable(tableName.c_str(), 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersV))
+			{
+				ImGui::TableSetupColumn("resource", column_flags);
+				ImGui::TableSetupColumn("path", column_flags);
+				ImGui::TableSetupColumn("asset", column_flags);
+				//ImGui::TableSetupColumn("uuid", column_flags);
+
+				ImGui::TableHeadersRow();
+
+				for (unsigned int i = 0; i < references.size(); i++)
+				{
+					ImGui::TableNextRow();
+					auto& nav = references.at(i);
+					std::string resource = nav.at("resource");
+					std::string path = nav.at("path");
+					std::string asset = nav.at("asset");
+					//std::string uuid = nav.at("uuid");
+
+					ImGui::TableSetColumnIndex(0);
+					ImGui::Text(resource.c_str());
+
+					ImGui::TableSetColumnIndex(1);
+					ImGui::Text(path.c_str());
+
+					ImGui::TableSetColumnIndex(2);
+					ImGui::Text(asset.c_str());
+
+					//ImGui::TableSetColumnIndex(3);
+					//ImGui::Text(uuid.c_str());
+
+					//OutputDebugStringA(std::string("found " + name + " in resource " + resource + " at path:" + path + "\n").c_str());
+				}
+
+				ImGui::EndTable();
+			}
+
+			if (ImGui::Button("Delete"))
+			{
+				OnDelete();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel"))
+			{
+				OnCancel();
+			}
+			ImGui::EndPopup();
+		}
+	}
+};
+
 namespace Editor {
 
 	static const LONG ApplicationBarBottom = 19L;
@@ -94,6 +160,9 @@ namespace Editor {
 	void SaveLevelToFile(std::string levelFileName);
 	void SaveTemplates();
 	void DrawRightPanel();
+	void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void()> OnDelete, std::function<void()> OnCancel);
+	void DrawDeletePrompt();
+	void CloseDeletionPrompt();
 
 	//SceneObjects Panel
 	void OnChangeSceneObjectTab(std::string newTab);

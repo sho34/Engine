@@ -15,7 +15,11 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 	static inline const std::map<DXGI_FORMAT, DXGI_FORMAT> depthFallback = {
 		{ DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_D24_UNORM_S8_UINT }
 	};
-	static inline const std::map<DXGI_FORMAT, DXGI_FORMAT> depthFormatConversion = {
+	static inline const std::map<DXGI_FORMAT, DXGI_FORMAT> depthFormatTexConversion = {
+		{ DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_R32_TYPELESS },
+		{ DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS }
+	};
+	static inline const std::map<DXGI_FORMAT, DXGI_FORMAT> depthFormatSRVConversion = {
 		{ DXGI_FORMAT_D32_FLOAT, DXGI_FORMAT_R32_FLOAT },
 		{ DXGI_FORMAT_D24_UNORM_S8_UINT, DXGI_FORMAT_R24_UNORM_X8_TYPELESS }
 	};

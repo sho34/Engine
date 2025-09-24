@@ -31,6 +31,9 @@ TODO:
 NICE TO HAVE:
 
 DONE:
+-formato correcto de Tex2D para shadowmaps
+	-https://www.gamedev.net/forums/topic/666986-direct3d-12-documentation-is-now-public/?page=13
+-formato de depth target D24
 -eliminar objetos de la escena
 -creacion de templates
 	-Shader

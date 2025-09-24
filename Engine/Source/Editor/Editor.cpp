@@ -104,6 +104,7 @@ namespace Editor {
 
 	CreatorModal<SceneObjectType> sceneObjectModal;
 	CreatorModal<TemplateType> templateModal;
+	DeletePrompt deletePrompt;
 
 	//Editor LifeCycle
 	void InitEditor()
@@ -332,6 +333,8 @@ namespace Editor {
 			sceneObjectModal.DrawCreationPopup(SceneObjectsTypePanelMenuItems.at(sceneObjectModal.type));
 		if (templateModal.creating)
 			templateModal.DrawCreationPopup(TemplateTypePanelMenuItems.at(templateModal.type));
+		if (deletePrompt.showing)
+			deletePrompt.DrawPrompt("Delete Template");
 
 		// Rendering
 		ImGui::Render();
@@ -678,6 +681,7 @@ namespace Editor {
 		Templates::SaveTemplates(defaultTemplatesFolder, Model3D::templateName, WriteModel3DsJson);
 		Templates::SaveTemplates(defaultTemplatesFolder, Sound::templateName, WriteSoundsJson);
 		Templates::SaveTemplates(defaultTemplatesFolder, Texture::templateName, WriteTexturesJson);
+		Templates::SaveTemplates(defaultTemplatesFolder, RenderPass::templateName, WriteRenderPasssJson);
 	}
 
 	float separatorFactor = 0.0f;
@@ -792,6 +796,19 @@ namespace Editor {
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();
+	}
+
+	void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void()> OnDelete, std::function<void()> OnCancel)
+	{
+		deletePrompt.showing = true;
+		deletePrompt.references = references;
+		deletePrompt.OnDelete = OnDelete;
+		deletePrompt.OnCancel = OnCancel;
+	}
+
+	void CloseDeletionPrompt()
+	{
+		deletePrompt.showing = false;
 	}
 
 	//SceneObjects Panel
@@ -1384,7 +1401,7 @@ namespace Editor {
 
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera)
 	{
-		if (sceneObjectModal.creating || templateModal.creating) return;
+		if (sceneObjectModal.creating || templateModal.creating || deletePrompt.showing) return;
 
 		DirectX::Mouse::State state = mouse->GetState();
 

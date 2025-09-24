@@ -26,7 +26,9 @@ namespace DeviceUtils {
 		optimizedClearValue.DepthStencil = { 1.0f, 0 };
 
 		const CD3DX12_HEAP_PROPERTIES depthHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-		const CD3DX12_RESOURCE_DESC depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D(format, width, height,
+		const CD3DX12_RESOURCE_DESC depthStencilDesc = CD3DX12_RESOURCE_DESC::Tex2D(
+			Renderer::depthFormatTexConversion.contains(format) ? Renderer::depthFormatTexConversion.at(format) : format,
+			width, height,
 			1, 0, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL);
 
 		DX::ThrowIfFailed(device->CreateCommittedResource(

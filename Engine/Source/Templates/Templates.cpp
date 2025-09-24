@@ -1038,6 +1038,19 @@ namespace Templates
 		Editor::MarkTemplatesPanelAssetsAsDirty();
 	}
 
+	std::string GetTemplateFile(TemplateType t)
+	{
+		const std::map<TemplateType, std::function<std::string()>> GetF = {
+			{ T_Materials, []() {return Material::templateName; } },
+			{ T_Models3D, []() {return Model3D::templateName; } },
+			{ T_Shaders, []() {return Shader::templateName; } },
+			{ T_Sounds, []() {return Sound::templateName; } },
+			{ T_Textures, []() {return Texture::templateName; } },
+			{ T_RenderPasses, []() {return RenderPass::templateName; } },
+		};
+		return defaultTemplatesFolder + GetF.at(t)();
+	}
+
 	void DeleteTemplate(TemplateType t, std::string uuid)
 	{
 		const std::map<TemplateType, std::function<void(std::string)>> DeleteT = {
@@ -1055,17 +1068,29 @@ namespace Templates
 	{
 		TemplateType type = GetTemplateType(uuid);
 		std::string name = GetTemplateName(type, uuid);
+		std::set<std::string> skipTemplateFile = { GetTemplateFile(type) };
 
-		/*
 		auto deleteTemplate = [type, uuid]()
 			{
-				DeleteTemplate(type, uuid);
+				//DeleteTemplate(type, uuid);
 			};
-		*/
 
 		std::vector<nlohmann::json> references;
 		FindTemplateReferencesInLevels(references, uuid, name);
-		FindTemplateReferencesInTemplates(references, uuid, name);
+		FindTemplateReferencesInTemplates(references, uuid, name, skipTemplateFile);
+		if (references.size() > 0U)
+		{
+			Editor::PromptTemplateDeletion(references, deleteTemplate, []()
+				{
+					Editor::CloseDeletionPrompt();
+				}
+			);
+		}
+		else
+		{
+			deleteTemplate();
+		}
+		/*
 		for (unsigned int i = 0; i < references.size(); i++)
 		{
 			auto& nav = references.at(i);
@@ -1075,6 +1100,7 @@ namespace Templates
 			std::string uuid = nav.at("uuid");
 			OutputDebugStringA(std::string("found " + name + " in resource " + resource + " at path:" + path + "\n").c_str());
 		}
+		*/
 	}
 
 	void RecursiveIterateArray(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue)
@@ -1148,6 +1174,13 @@ namespace Templates
 
 	void FindTemplateReferencesInLevels(std::vector<nlohmann::json>& references, std::string uuid, std::string name)
 	{
+		auto addReference = [&references, uuid, name](nlohmann::json nav)
+			{
+				nlohmann::json ref = nav;
+				ref["asset"] = name;
+				ref["uuid"] = uuid;
+				references.push_back(ref);
+			};
 		for (auto& entry : std::filesystem::directory_iterator(defaultLevelsFolder))
 		{
 			auto path = entry.path();
@@ -1158,37 +1191,45 @@ namespace Templates
 
 			nlohmann::json object = { { "resource", path.string() }, {"path", ""} };
 
-			RecursiveIterate(object, data, uuid, [&references, uuid, name](nlohmann::json nav)
-				{
-					nlohmann::json ref = nav;
-					ref["asset"] = name;
-					ref["uuid"] = uuid;
-					references.push_back(ref);
-				}
-			);
+			if (data.is_object())
+			{
+				RecursiveIterate(object, data, uuid, addReference);
+			}
+			else if (data.is_array())
+			{
+				RecursiveIterateArray(object, data, uuid, addReference);
+			}
 		}
 	}
 
-	void FindTemplateReferencesInTemplates(std::vector<nlohmann::json>& references, std::string uuid, std::string name)
+	void FindTemplateReferencesInTemplates(std::vector<nlohmann::json>& references, std::string uuid, std::string name, std::set<std::string> skipTemplateFile)
 	{
+		auto addReference = [&references, uuid, name](nlohmann::json nav)
+			{
+				nlohmann::json ref = nav;
+				ref["asset"] = name;
+				ref["uuid"] = uuid;
+				references.push_back(ref);
+			};
+
 		for (auto& entry : std::filesystem::directory_iterator(defaultTemplatesFolder))
 		{
 			auto path = entry.path();
-			if (path.extension() != ".json") continue;
+			if (path.extension() != ".json" || skipTemplateFile.contains(path.string())) continue;
 
 			std::ifstream file(path);
 			nlohmann::json data = nlohmann::json::parse(file);
 
 			nlohmann::json object = { { "resource", path.string() }, {"path", ""} };
 
-			RecursiveIterate(object, data, uuid, [&references, uuid, name](nlohmann::json nav)
-				{
-					nlohmann::json ref = nav;
-					ref["asset"] = name;
-					ref["uuid"] = uuid;
-					references.push_back(ref);
-				}
-			);
+			if (data.is_object())
+			{
+				RecursiveIterate(object, data, uuid, addReference);
+			}
+			else if (data.is_array())
+			{
+				RecursiveIterateArray(object, data, uuid, addReference);
+			}
 		}
 	}
 #endif

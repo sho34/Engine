@@ -328,7 +328,7 @@ namespace Scene {
 	void Light::CreateShadowMapShaderResourceView()
 	{
 		D3D12_SHADER_RESOURCE_VIEW_DESC shadowMapSrvDesc = {
-			.Format = Renderer::depthFormatConversion.contains(shadowMapRenderPass->depthStencilFormat) ? Renderer::depthFormatConversion.at(shadowMapRenderPass->depthStencilFormat) : shadowMapRenderPass->depthStencilFormat,
+			.Format = Renderer::depthFormatSRVConversion.contains(shadowMapRenderPass->depthStencilFormat) ? Renderer::depthFormatSRVConversion.at(shadowMapRenderPass->depthStencilFormat) : shadowMapRenderPass->depthStencilFormat,
 			.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D,
 			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
 			.Texture2D = {.MostDetailedMip = 0, .MipLevels = 1U, .ResourceMinLODClamp = 0.0f },
