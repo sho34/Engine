@@ -56,6 +56,14 @@ inline const std::map<std::string, std::string> JsonContainerToString =
 	{ "sounds", "SoundEffects" }
 };
 
+inline const std::map<std::string, std::string> StringToJsonContainer =
+{
+	{ "Renderables", "renderables" },
+	{ "Lights", "lights" },
+	{ "Cameras", "cameras" },
+	{ "SoundEffects", "sounds" }
+};
+
 namespace Scene
 {
 	struct SceneObject : JObject

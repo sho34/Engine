@@ -131,9 +131,11 @@ namespace Templates {
 	void DeleteTemplate(std::string uuid);
 	void DeleteTemplateReferences(std::vector<nlohmann::json> references);
 	void DeleteTemplateReferencesInLevels(std::vector<nlohmann::json> references);
+	void DeleteTemplateReferencesInCurrentLevel(std::vector<nlohmann::json> references);
 
 	void FindTemplatesReferencesInTemplates(std::string uuid, std::set<std::string> skipTemplateFile, std::function<void(nlohmann::json)> addReference);
-	void FindTemplatesReferencesInLevels(std::string uuid, std::function<void(nlohmann::json)> addReference);
+	void FindTemplatesReferencesInLevels(std::string uuid, std::set<std::string> skipLevelFiles, std::function<void(nlohmann::json)> addReference);
+	void FindTemplatesReferencesInCurrentLevel(std::string uuid, std::function<void(nlohmann::json)> addReference);
 	void FindRecursiveJsonReference(nlohmann::json json, std::string uuid, std::string path, std::function<void(std::string path)> addReference);
 
 #endif

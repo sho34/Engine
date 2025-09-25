@@ -9,6 +9,10 @@
 #include <Textures/Texture.h>
 #if defined(_EDITOR)
 #include <Editor.h>
+namespace Editor
+{
+	extern std::string currentLevelName;
+}
 #endif
 
 namespace Templates
@@ -1082,6 +1086,7 @@ namespace Templates
 		TemplateType type = GetTemplateType(uuid);
 		std::string name = GetTemplateName(type, uuid);
 		std::set<std::string> skipTemplateFile = { GetTemplateFile(type) };
+		std::set<std::string> skipLevelFiles = { defaultLevelsFolder + Editor::currentLevelName + ".json" };
 		std::vector<nlohmann::json> references;
 
 		auto deleteTemplate = [type, uuid](std::vector<nlohmann::json> references)
@@ -1098,22 +1103,34 @@ namespace Templates
 				std::copy_if(references.begin(), references.end(), std::back_inserter(sceneObjectReferences), [](auto& ref)
 					{
 						std::string type = ref.at("type");
-						return type != "template";
+						return type == "sceneobject";
+					}
+				);
+				std::vector<nlohmann::json> currentLevelReferences;
+				std::copy_if(references.begin(), references.end(), std::back_inserter(currentLevelReferences), [](auto& ref)
+					{
+						std::string type = ref.at("type");
+						return type == "currentlevel";
 					}
 				);
 				DeleteTemplateReferences(templateReferences);
 				DeleteTemplateReferencesInLevels(sceneObjectReferences);
+				DeleteTemplateReferencesInCurrentLevel(currentLevelReferences);
 				Editor::CloseDeletionPrompt();
 				Editor::MarkTemplatesPanelAssetsAsDirty();
 			};
-
 
 		FindTemplatesReferencesInTemplates(uuid, skipTemplateFile, [&references](nlohmann::json nav)
 			{
 				references.push_back(nav);
 			}
 		);
-		FindTemplatesReferencesInLevels(uuid, [&references](nlohmann::json nav)
+		FindTemplatesReferencesInLevels(uuid, skipLevelFiles, [&references](nlohmann::json nav)
+			{
+				references.push_back(nav);
+			}
+		);
+		FindTemplatesReferencesInCurrentLevel(uuid, [&references](nlohmann::json nav)
 			{
 				references.push_back(nav);
 			}
@@ -1187,6 +1204,47 @@ namespace Templates
 		}
 	}
 
+	void DeleteTemplateReferencesInCurrentLevel(std::vector<nlohmann::json> references)
+	{
+		for (auto& ref : references)
+		{
+			std::string uuid = ref.at("uuid");
+			std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
+
+			std::string path = ref.at("path");
+			std::vector<std::string> parts = nostd::split(path, "/");
+
+			parts.erase(parts.begin());
+			nlohmann::json att = so->at(parts.front());
+			if (att.is_string())
+			{
+				nlohmann::json patch = { {parts.front(),""} };
+				so->JUpdate(patch);
+			}
+			else
+			{
+				parts.erase(parts.begin());
+				std::string replacePath;
+				std::for_each(parts.begin(), parts.end(), [&replacePath](std::string part)
+					{
+						replacePath += "/" + part;
+					}
+				);
+
+				nlohmann::json patch = {
+				{
+					{ "op", "replace" },
+					{ "path", replacePath },
+					{ "value", "" },
+					}
+				};
+
+				att.patch_inplace(patch);
+				so->JUpdate(att);
+			}
+		}
+	}
+
 	void FindTemplatesReferencesInTemplates(std::string uuid, std::set<std::string> skipTemplateFile, std::function<void(nlohmann::json)> addReference)
 	{
 		for (auto& entry : std::filesystem::directory_iterator(defaultTemplatesFolder))
@@ -1205,6 +1263,7 @@ namespace Templates
 				auto& j = data.at(i);
 
 				nlohmann::json json = {
+					{ "delete", false },
 					{ "uuid", j.at("uuid") },
 					{ "name", j.at("name") },
 					{ "type", "template" },
@@ -1220,12 +1279,12 @@ namespace Templates
 		}
 	}
 
-	void FindTemplatesReferencesInLevels(std::string uuid, std::function<void(nlohmann::json)> addReference)
+	void FindTemplatesReferencesInLevels(std::string uuid, std::set<std::string> skipLevelFiles, std::function<void(nlohmann::json)> addReference)
 	{
 		for (auto& entry : std::filesystem::directory_iterator(defaultLevelsFolder))
 		{
 			auto path = entry.path();
-			if (path.extension() != ".json") continue;
+			if (path.extension() != ".json" || skipLevelFiles.contains(path.string())) continue;
 
 			std::ifstream file(path);
 			nlohmann::json data = nlohmann::json::parse(file);
@@ -1240,6 +1299,7 @@ namespace Templates
 					auto& j = data.at(item).at(i);
 
 					nlohmann::json json = {
+						{ "delete", false },
 						{ "uuid", j.at("uuid") },
 						{ "name", j.at("name") },
 						{ "type", "sceneobject" },
@@ -1253,6 +1313,34 @@ namespace Templates
 						}
 					);
 				}
+			}
+		}
+	}
+
+	void FindTemplatesReferencesInCurrentLevel(std::string uuid, std::function<void(nlohmann::json)> addReference)
+	{
+		for (auto& [type, item] : SceneObjectTypeJsonContainer)
+		{
+			std::vector<UUIDName> uuidNames = GetSceneObjects(type);
+			for (auto& uuidName : uuidNames)
+			{
+				std::string& soUUID = std::get<0>(uuidName);
+				std::shared_ptr<SceneObject> so = GetSceneObject(soUUID);
+
+				nlohmann::json json = {
+					{ "delete", true },
+					{ "uuid", soUUID },
+					{ "name", so->at("name") },
+					{ "type", "currentlevel" },
+					{ "sceneObject", item }
+				};
+
+				FindRecursiveJsonReference(so->json(), uuid, "", [&json, addReference](std::string path)
+					{
+						json["path"] = path;
+						addReference(json);
+					}
+				);
 			}
 		}
 	}

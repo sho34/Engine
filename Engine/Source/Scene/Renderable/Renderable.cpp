@@ -137,6 +137,7 @@ namespace Scene {
 					}
 					for (auto& r : models)
 					{
+						EraseRenderableFromAnimables(r);
 						nlohmann::json patch = { {"meshMaterials", nlohmann::json::array({})} };
 						r->merge_patch(patch);
 						r->RebuildMeshMaterials();
@@ -839,7 +840,7 @@ namespace Scene {
 	{
 		using namespace Animation;
 
-		if (!visible() || renderException) return;
+		if (!visible() || !materials.contains(renderPass) || renderException) return;
 
 		auto& commandList = renderer->commandList;
 
