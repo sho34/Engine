@@ -10,6 +10,7 @@
 #define TEMPDECL_RELEASE(TemplateName) void Release##TemplateName##Templates()
 #define TEMPDECL_EXIST(TemplateName) bool TemplateName##TemplateExist(std::string uuid)
 #define TEMPDECL_RENAME(TemplateName) void Rename##TemplateName(std::string uuid, std::string newName)
+#define TEMPDECL_DELETE(TemplateName) void Delete##TemplateName(std::string uuid)
 
 #define TEMPDECL_FULL(TemplateName) \
 	TEMPDECL_TUPLE(TemplateName);\
@@ -23,7 +24,8 @@
 	TEMPDECL_WRITEJSON(TemplateName);\
 	TEMPDECL_RELEASE(TemplateName);\
 	TEMPDECL_EXIST(TemplateName);\
-	TEMPDECL_RENAME(TemplateName)
+	TEMPDECL_RENAME(TemplateName);\
+	TEMPDECL_DELETE(TemplateName)
 
 #define TEMPDECL_REFTRACKER(TemplateName)\
 	std::shared_ptr<TemplateName##Instance> Get##TemplateName##Instance(\

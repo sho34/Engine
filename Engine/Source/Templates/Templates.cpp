@@ -547,7 +547,7 @@ namespace Templates
 				{ "systemCreated" , true},
 				{ "rasterizerState",
 					{
-						{	"FillMode", "SOLID" },
+						{ "FillMode", "SOLID" },
 						{ "CullMode", "NONE" },
 						{ "FrontCounterClockwise", false},
 						{ "DepthBias", 0},
@@ -857,18 +857,18 @@ namespace Templates
 		{ T_RenderPasses, SortUUIDNameByName(GetRenderPasssUUIDsNames) }
 	};
 
+	const std::map<TemplateType, std::function<std::shared_ptr<JObject>(std::string)>> GetSharedPtrT =
+	{
+		{ T_Materials, [](std::string uuid) { std::shared_ptr<JObject> o = GetMaterialTemplate(uuid); return o; } },
+		{ T_Models3D, [](std::string uuid) { std::shared_ptr<JObject> o = GetModel3DTemplate(uuid); return o; } },
+		{ T_Shaders, [](std::string uuid) { std::shared_ptr<JObject> o = GetShaderTemplate(uuid); return o; } },
+		{ T_Sounds, [](std::string uuid) { std::shared_ptr<JObject> o = GetSoundTemplate(uuid); return o; } },
+		{ T_Textures, [](std::string uuid) { std::shared_ptr<JObject> o = GetTextureTemplate(uuid); return o; } },
+		{ T_RenderPasses, [](std::string uuid) { std::shared_ptr<JObject> o = GetRenderPassTemplate(uuid); return o; } }
+	};
+
 	std::shared_ptr<JObject> GetTemplate(std::string uuid)
 	{
-		const std::map<TemplateType, std::function<std::shared_ptr<JObject>(std::string)>> GetSharedPtrT =
-		{
-			{ T_Materials, [](std::string uuid) { std::shared_ptr<JObject> o = GetMaterialTemplate(uuid); return o; } },
-			{ T_Models3D, [](std::string uuid) { std::shared_ptr<JObject> o = GetModel3DTemplate(uuid); return o; } },
-			{ T_Shaders, [](std::string uuid) { std::shared_ptr<JObject> o = GetShaderTemplate(uuid); return o; } },
-			{ T_Sounds, [](std::string uuid) { std::shared_ptr<JObject> o = GetSoundTemplate(uuid); return o; } },
-			{ T_Textures, [](std::string uuid) { std::shared_ptr<JObject> o = GetTextureTemplate(uuid); return o; } },
-			{ T_RenderPasses, [](std::string uuid) { std::shared_ptr<JObject> o = GetRenderPassTemplate(uuid); return o; } }
-		};
-
 		return GetSharedPtrT.at(GetTemplateType(uuid))(uuid); //kill me please this is slow as hell
 	}
 
@@ -1000,6 +1000,19 @@ namespace Templates
 		return GetTValidator.at(t)();
 	}
 
+	TemplateType GetTemplateTypeFromFile(std::string file)
+	{
+		const std::map<std::string, TemplateType> GetT4F = {
+			{ Material::templateName, T_Materials },
+			{ Model3D::templateName, T_Models3D },
+			{ Shader::templateName, T_Shaders },
+			{ Sound::templateName, T_Sounds },
+			{ Texture::templateName, T_Textures },
+			{ RenderPass::templateName, T_RenderPasses },
+		};
+		return GetT4F.at(file);
+	}
+
 	std::string GetTemplateName(TemplateType t, std::string uuid)
 	{
 		const std::map<TemplateType, std::function<std::string(std::string)>> GetTName = {
@@ -1054,12 +1067,12 @@ namespace Templates
 	void DeleteTemplate(TemplateType t, std::string uuid)
 	{
 		const std::map<TemplateType, std::function<void(std::string)>> DeleteT = {
-			{ T_Materials, [](std::string uuid) {}},
-			{ T_Models3D, [](std::string uuid) {} },
-			{ T_Shaders, [](std::string uuid) {} },
-			{ T_Sounds, [](std::string uuid) {} },
-			{ T_Textures, [](std::string uuid) {} },
-			{ T_RenderPasses, [](std::string uuid) {} },
+			{ T_Materials, [](std::string uuid) { DeleteMaterial(uuid); }},
+			{ T_Models3D, [](std::string uuid) { DeleteModel3D(uuid); }},
+			{ T_Shaders, [](std::string uuid) { DeleteShader(uuid); }},
+			{ T_Sounds, [](std::string uuid) { DeleteSound(uuid); }},
+			{ T_Textures, [](std::string uuid) { DeleteTexture(uuid); }},
+			{ T_RenderPasses, [](std::string uuid) { DeleteRenderPass(uuid); }},
 		};
 		DeleteT.at(t)(uuid);
 	}
@@ -1069,15 +1082,42 @@ namespace Templates
 		TemplateType type = GetTemplateType(uuid);
 		std::string name = GetTemplateName(type, uuid);
 		std::set<std::string> skipTemplateFile = { GetTemplateFile(type) };
+		std::vector<nlohmann::json> references;
 
-		auto deleteTemplate = [type, uuid]()
+		auto deleteTemplate = [type, uuid](std::vector<nlohmann::json> references)
 			{
-				//DeleteTemplate(type, uuid);
+				DeleteTemplate(type, uuid);
+				std::vector<nlohmann::json> templateReferences;
+				std::copy_if(references.begin(), references.end(), std::back_inserter(templateReferences), [](auto& ref)
+					{
+						std::string type = ref.at("type");
+						return type == "template";
+					}
+				);
+				std::vector<nlohmann::json> sceneObjectReferences;
+				std::copy_if(references.begin(), references.end(), std::back_inserter(sceneObjectReferences), [](auto& ref)
+					{
+						std::string type = ref.at("type");
+						return type != "template";
+					}
+				);
+				DeleteTemplateReferences(templateReferences);
+				DeleteTemplateReferencesInLevels(sceneObjectReferences);
+				Editor::CloseDeletionPrompt();
+				Editor::MarkTemplatesPanelAssetsAsDirty();
 			};
 
-		std::vector<nlohmann::json> references;
-		FindTemplateReferencesInLevels(references, uuid, name);
-		FindTemplateReferencesInTemplates(references, uuid, name, skipTemplateFile);
+
+		FindTemplatesReferencesInTemplates(uuid, skipTemplateFile, [&references](nlohmann::json nav)
+			{
+				references.push_back(nav);
+			}
+		);
+		FindTemplatesReferencesInLevels(uuid, [&references](nlohmann::json nav)
+			{
+				references.push_back(nav);
+			}
+		);
 		if (references.size() > 0U)
 		{
 			Editor::PromptTemplateDeletion(references, deleteTemplate, []()
@@ -1088,130 +1128,67 @@ namespace Templates
 		}
 		else
 		{
-			deleteTemplate();
-		}
-		/*
-		for (unsigned int i = 0; i < references.size(); i++)
-		{
-			auto& nav = references.at(i);
-			std::string resource = nav.at("resource");
-			std::string path = nav.at("path");
-			std::string asset = nav.at("asset");
-			std::string uuid = nav.at("uuid");
-			OutputDebugStringA(std::string("found " + name + " in resource " + resource + " at path:" + path + "\n").c_str());
-		}
-		*/
-	}
-
-	void RecursiveIterateArray(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue)
-	{
-		unsigned int size = static_cast<unsigned int>(json.size());
-		for (unsigned int i = 0; i < size; i++)
-		{
-			auto& val = json.at(i);
-			nlohmann::json nobj = object;
-			std::string npath = nobj["path"];
-			npath += "[" + std::to_string(i) + "]";
-			nobj["path"] = npath;
-
-			if (val.is_structured())
-			{
-				if (val.is_object())
-				{
-					RecursiveIterate(nobj, val, uuid, callkeyvalue);
-				}
-				else if (val.is_array())
-				{
-					RecursiveIterateArray(nobj, val, uuid, callkeyvalue);
-				}
-			}
-			else
-			{
-				if (!val.is_string()) continue;
-				std::string cmpUUID = json.at(i);
-				if (cmpUUID != uuid) continue;
-
-				callkeyvalue(nobj);
-			}
+			deleteTemplate(references);
 		}
 	}
 
-	void RecursiveIterate(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue)
+	void DeleteTemplateReferences(std::vector<nlohmann::json> references)
 	{
-		for (auto& [key, val] : json.items())
+		for (auto& ref : references)
 		{
-			nlohmann::json nobj = object;
-			if (nobj["path"] != "") {
-				std::string npath = nobj["path"];
-				npath += ".";
-				nobj["path"] = npath;
-			}
-			std::string npath = nobj["path"];
-			npath += key;
-			nobj["path"] = npath;
+			std::string uuid = ref.at("uuid");
+			std::string path = ref.at("path");
+			TemplateType type = StringToTemplateType.at(ref.at("template"));
+			std::shared_ptr<JObject> j = GetSharedPtrT.at(type)(uuid);
 
-			if (val.is_structured())
-			{
-				if (val.is_object())
+			nlohmann::json j_patch = {
 				{
-					RecursiveIterate(nobj, val, uuid, callkeyvalue);
+					{ "op", "replace" },
+					{ "path", path },
+					{ "value", "" },
 				}
-				else if (val.is_array())
-				{
-					RecursiveIterateArray(nobj, val, uuid, callkeyvalue);
-				}
-			}
-			else
-			{
-				if (!val.is_string()) continue;
-				std::string cmpUUID = json.at(key);
-				if (cmpUUID != uuid) continue;
-
-				callkeyvalue(nobj);
-			}
-		}
-	}
-
-	void FindTemplateReferencesInLevels(std::vector<nlohmann::json>& references, std::string uuid, std::string name)
-	{
-		auto addReference = [&references, uuid, name](nlohmann::json nav)
-			{
-				nlohmann::json ref = nav;
-				ref["asset"] = name;
-				ref["uuid"] = uuid;
-				references.push_back(ref);
 			};
-		for (auto& entry : std::filesystem::directory_iterator(defaultLevelsFolder))
-		{
-			auto path = entry.path();
-			if (path.extension() != ".json") continue;
 
+			j->patch_inplace(j_patch);
+		}
+	}
+
+	void DeleteTemplateReferencesInLevels(std::vector<nlohmann::json> references)
+	{
+		std::map<std::string, std::set<std::string>> levelPaths;
+		for (auto& ref : references)
+		{
+			std::string filename = ref.at("filename");
+			std::string path = ref.at("path");
+			levelPaths[filename].insert(path);
+		}
+
+		for (auto& [level, paths] : levelPaths)
+		{
+			std::filesystem::path path = defaultLevelsFolder + level;
 			std::ifstream file(path);
 			nlohmann::json data = nlohmann::json::parse(file);
-
-			nlohmann::json object = { { "resource", path.string() }, {"path", ""} };
-
-			if (data.is_object())
+			file.close();
+			for (auto& p : paths)
 			{
-				RecursiveIterate(object, data, uuid, addReference);
+				nlohmann::json j_patch = {
+					{
+						{ "op", "replace" },
+						{ "path", p },
+						{ "value", "" },
+					}
+				};
+				data.patch_inplace(j_patch);
 			}
-			else if (data.is_array())
-			{
-				RecursiveIterateArray(object, data, uuid, addReference);
-			}
+			std::ofstream ofile(path);
+			std::string levelString = data.dump(4);
+			ofile.write(levelString.c_str(), levelString.size());
+			ofile.close();
 		}
 	}
 
-	void FindTemplateReferencesInTemplates(std::vector<nlohmann::json>& references, std::string uuid, std::string name, std::set<std::string> skipTemplateFile)
+	void FindTemplatesReferencesInTemplates(std::string uuid, std::set<std::string> skipTemplateFile, std::function<void(nlohmann::json)> addReference)
 	{
-		auto addReference = [&references, uuid, name](nlohmann::json nav)
-			{
-				nlohmann::json ref = nav;
-				ref["asset"] = name;
-				ref["uuid"] = uuid;
-				references.push_back(ref);
-			};
-
 		for (auto& entry : std::filesystem::directory_iterator(defaultTemplatesFolder))
 		{
 			auto path = entry.path();
@@ -1220,17 +1197,93 @@ namespace Templates
 			std::ifstream file(path);
 			nlohmann::json data = nlohmann::json::parse(file);
 
-			nlohmann::json object = { { "resource", path.string() }, {"path", ""} };
+			TemplateType templateType = GetTemplateTypeFromFile(path.filename().string());
 
-			if (data.is_object())
+			unsigned int size = static_cast<unsigned int>(data.size());
+			for (unsigned int i = 0U; i < size; i++)
 			{
-				RecursiveIterate(object, data, uuid, addReference);
-			}
-			else if (data.is_array())
-			{
-				RecursiveIterateArray(object, data, uuid, addReference);
+				auto& j = data.at(i);
+
+				nlohmann::json json = {
+					{ "uuid", j.at("uuid") },
+					{ "name", j.at("name") },
+					{ "type", "template" },
+					{ "template", TemplateTypeToString.at(templateType) }
+				};
+				FindRecursiveJsonReference(j, uuid, "", [&json, addReference](std::string path)
+					{
+						json["path"] = path;
+						addReference(json);
+					}
+				);
 			}
 		}
 	}
+
+	void FindTemplatesReferencesInLevels(std::string uuid, std::function<void(nlohmann::json)> addReference)
+	{
+		for (auto& entry : std::filesystem::directory_iterator(defaultLevelsFolder))
+		{
+			auto path = entry.path();
+			if (path.extension() != ".json") continue;
+
+			std::ifstream file(path);
+			nlohmann::json data = nlohmann::json::parse(file);
+
+			for (auto& [_, item] : SceneObjectTypeJsonContainer)
+			{
+				if (!data.contains(item)) continue;
+
+				unsigned int size = static_cast<unsigned int>(data.at(item).size());
+				for (unsigned int i = 0U; i < size; i++)
+				{
+					auto& j = data.at(item).at(i);
+
+					nlohmann::json json = {
+						{ "uuid", j.at("uuid") },
+						{ "name", j.at("name") },
+						{ "type", "sceneobject" },
+						{ "sceneObject", item },
+						{ "filename", path.filename().string() }
+					};
+					FindRecursiveJsonReference(j, uuid, "/" + item + "/" + std::to_string(i), [&json, addReference](std::string path)
+						{
+							json["path"] = path;
+							addReference(json);
+						}
+					);
+				}
+			}
+		}
+	}
+
+	void FindRecursiveJsonReference(nlohmann::json json, std::string uuid, std::string path, std::function<void(std::string path)> addReference)
+	{
+		if (json.is_object())
+		{
+			for (auto& [key, val] : json.items())
+			{
+				auto& j = json.at(key);
+				FindRecursiveJsonReference(j, uuid, path + "/" + key, addReference);
+			}
+		}
+		else if (json.is_array())
+		{
+			unsigned int size = static_cast<unsigned int>(json.size());
+			for (unsigned int i = 0; i < size; i++)
+			{
+				auto& j = json.at(i);
+				FindRecursiveJsonReference(j, uuid, path + "/" + std::to_string(i), addReference);
+			}
+		}
+		else if (json.is_string())
+		{
+			if (json.get_ref<std::string&>() == uuid)
+			{
+				addReference(path);
+			}
+		}
+	}
+
 #endif
 }

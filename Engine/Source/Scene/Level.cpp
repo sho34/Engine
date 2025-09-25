@@ -52,7 +52,7 @@ namespace Scene::Level {
 	}
 
 	template<typename T>
-	void LoadSceneObjects(nlohmann::json j, std::string type/*, std::function<std::shared_ptr<T>(std::shared_ptr<T>&)> loadCallback*/)
+	void LoadSceneObjects(nlohmann::json j, std::string type)
 	{
 		if (j.contains(type))
 		{
@@ -70,10 +70,10 @@ namespace Scene::Level {
 	{
 		Editor::levelModified = false;
 		Editor::defaultLevel = true;
-		LoadSceneObjects<Renderable>(DefaultLevel::GetDefaultLevelRenderables(), "renderables");
-		LoadSceneObjects<Camera>(DefaultLevel::GetDefaultLevelCameras(), "cameras");
-		LoadSceneObjects<Light>(DefaultLevel::GetDefaultLevelLights(), "lights");
-		LoadSceneObjects<SoundFX>(DefaultLevel::GetDefaultLevelSounds(), "sounds");
+		LoadSceneObjects<Renderable>(DefaultLevel::GetDefaultLevelRenderables(), SceneObjectTypeJsonContainer.at(SO_Renderables));
+		LoadSceneObjects<Camera>(DefaultLevel::GetDefaultLevelCameras(), SceneObjectTypeJsonContainer.at(SO_Cameras));
+		LoadSceneObjects<Light>(DefaultLevel::GetDefaultLevelLights(), SceneObjectTypeJsonContainer.at(SO_Lights));
+		LoadSceneObjects<SoundFX>(DefaultLevel::GetDefaultLevelSounds(), SceneObjectTypeJsonContainer.at(SO_SoundEffects));
 	}
 #endif
 
@@ -89,10 +89,10 @@ namespace Scene::Level {
 
 		DestroySceneObjects();
 
-		LoadSceneObjects<Renderable>(data, "renderables");
-		LoadSceneObjects<Camera>(data, "cameras");
-		LoadSceneObjects<Light>(data, "lights");
-		LoadSceneObjects<SoundFX>(data, "sounds");
+		LoadSceneObjects<Renderable>(data, SceneObjectTypeJsonContainer.at(SO_Renderables));
+		LoadSceneObjects<Camera>(data, SceneObjectTypeJsonContainer.at(SO_Cameras));
+		LoadSceneObjects<Light>(data, SceneObjectTypeJsonContainer.at(SO_Lights));
+		LoadSceneObjects<SoundFX>(data, SceneObjectTypeJsonContainer.at(SO_SoundEffects));
 
 		file.close();
 #if defined(_EDITOR)

@@ -53,6 +53,11 @@
 	refName = newName;\
 }
 
+#define TEMPDEF_DELETE(TemplateName) void Delete##TemplateName(std::string uuid)\
+{\
+	TemplateName##templates.erase(uuid);\
+}\
+
 #define TEMPDEF_FULL(TemplateName) \
 	TEMPDEF_TUPLE(TemplateName);\
 	TEMPDEF_GETTEMPLATES(TemplateName);\
@@ -65,7 +70,8 @@
 	TEMPDEF_WRITEJSON(TemplateName);\
 	TEMPDEF_RELEASE(TemplateName);\
 	TEMPDEF_EXIST(TemplateName);\
-	TEMPDEF_RENAME(TemplateName)
+	TEMPDEF_RENAME(TemplateName);\
+	TEMPDEF_DELETE(TemplateName)
 
 #define TEMPDEF_INSTANCECALLBACK(TemplateName,uuid) []\
 {\

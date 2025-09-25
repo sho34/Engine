@@ -798,7 +798,7 @@ namespace Editor {
 		ImGui::PopStyleVar();
 	}
 
-	void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void()> OnDelete, std::function<void()> OnCancel)
+	void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void(std::vector<nlohmann::json>)> OnDelete, std::function<void()> OnCancel)
 	{
 		deletePrompt.showing = true;
 		deletePrompt.references = references;

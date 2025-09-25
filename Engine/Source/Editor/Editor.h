@@ -76,7 +76,7 @@ struct DeletePrompt
 {
 	bool showing = false;
 	std::vector<nlohmann::json> references;
-	std::function<void()> OnDelete;
+	std::function<void(std::vector<nlohmann::json> references)> OnDelete;
 	std::function<void()> OnCancel;
 
 	void DrawPrompt(const char* prompTitle)
@@ -88,12 +88,12 @@ struct DeletePrompt
 		if (ImGui::BeginPopupModal(prompTitle, nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			std::string tableName = "delete-template-table";
-			if (ImGui::BeginTable(tableName.c_str(), 3, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersV))
+			if (ImGui::BeginTable(tableName.c_str(), 4, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersV))
 			{
-				ImGui::TableSetupColumn("resource", column_flags);
+				ImGui::TableSetupColumn("file", column_flags);
+				ImGui::TableSetupColumn("type", column_flags);
+				ImGui::TableSetupColumn("name", column_flags);
 				ImGui::TableSetupColumn("path", column_flags);
-				ImGui::TableSetupColumn("asset", column_flags);
-				//ImGui::TableSetupColumn("uuid", column_flags);
 
 				ImGui::TableHeadersRow();
 
@@ -101,24 +101,33 @@ struct DeletePrompt
 				{
 					ImGui::TableNextRow();
 					auto& nav = references.at(i);
-					std::string resource = nav.at("resource");
+
+					std::string type = nav.at("type");
+					if (type == "template")
+					{
+						ImGui::TableSetColumnIndex(1);
+						std::string templ = nav.at("template");
+						ImGui::Text(templ.c_str());
+					}
+					else
+					{
+						ImGui::TableSetColumnIndex(0);
+						std::string file = nav.at("filename");
+						ImGui::Text(file.c_str());
+
+						ImGui::TableSetColumnIndex(1);
+						std::string sceneObject = nav.at("sceneObject");
+						ImGui::Text(JsonContainerToString.at(sceneObject).c_str());
+					}
+
+					std::string name = nav.at("name");
 					std::string path = nav.at("path");
-					std::string asset = nav.at("asset");
-					//std::string uuid = nav.at("uuid");
-
-					ImGui::TableSetColumnIndex(0);
-					ImGui::Text(resource.c_str());
-
-					ImGui::TableSetColumnIndex(1);
-					ImGui::Text(path.c_str());
 
 					ImGui::TableSetColumnIndex(2);
-					ImGui::Text(asset.c_str());
+					ImGui::Text(name.c_str());
 
-					//ImGui::TableSetColumnIndex(3);
-					//ImGui::Text(uuid.c_str());
-
-					//OutputDebugStringA(std::string("found " + name + " in resource " + resource + " at path:" + path + "\n").c_str());
+					ImGui::TableSetColumnIndex(3);
+					ImGui::Text(path.c_str());
 				}
 
 				ImGui::EndTable();
@@ -126,7 +135,7 @@ struct DeletePrompt
 
 			if (ImGui::Button("Delete"))
 			{
-				OnDelete();
+				OnDelete(references);
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Cancel"))
@@ -160,7 +169,7 @@ namespace Editor {
 	void SaveLevelToFile(std::string levelFileName);
 	void SaveTemplates();
 	void DrawRightPanel();
-	void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void()> OnDelete, std::function<void()> OnCancel);
+	void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void(std::vector<nlohmann::json>)> OnDelete, std::function<void()> OnCancel);
 	void DrawDeletePrompt();
 	void CloseDeletionPrompt();
 

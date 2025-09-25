@@ -32,13 +32,29 @@ inline const std::map<std::string, SceneObjectType> StringToSceneObjectType = {
 };
 
 #if defined(_EDITOR)
-inline const std::map<SceneObjectType, const char* > SceneObjectsTypePanelMenuItems = {
+inline const std::map<SceneObjectType, const char*> SceneObjectsTypePanelMenuItems = {
 	{ SO_Renderables, ICON_FA_SNOWMAN "Renderables" },
 	{ SO_Lights, ICON_FA_LIGHTBULB "Lights" },
 	{ SO_Cameras, ICON_FA_CAMERA "Cameras" },
 	{ SO_SoundEffects, ICON_FA_MUSIC "SoundEffects" }
 };
 #endif
+
+inline const std::map<SceneObjectType, std::string> SceneObjectTypeJsonContainer =
+{
+	{ SO_Renderables, "renderables" },
+	{ SO_Lights, "lights" },
+	{ SO_Cameras, "cameras" },
+	{ SO_SoundEffects, "sounds" }
+};
+
+inline const std::map<std::string, std::string> JsonContainerToString =
+{
+	{ "renderables", "Renderables" },
+	{ "lights", "Lights" },
+	{ "cameras", "Cameras" },
+	{ "sounds", "SoundEffects" }
+};
 
 namespace Scene
 {

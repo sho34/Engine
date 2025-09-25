@@ -123,16 +123,19 @@ namespace Templates {
 	std::map<std::string, JEdvCreatorDrawerFunction> GetTemplateCreatorDrawers(TemplateType t);
 	std::map<std::string, JEdvCreatorValidatorFunction> GetTemplateValidators(TemplateType t);
 
+	TemplateType GetTemplateTypeFromFile(std::string file);
 	std::string GetTemplateName(TemplateType t, std::string uuid);
 	void CreateTemplate(TemplateType t, nlohmann::json json);
 	std::string GetTemplateFile(TemplateType t);
 	void DeleteTemplate(TemplateType t, std::string uuid);
 	void DeleteTemplate(std::string uuid);
+	void DeleteTemplateReferences(std::vector<nlohmann::json> references);
+	void DeleteTemplateReferencesInLevels(std::vector<nlohmann::json> references);
 
-	void RecursiveIterateArray(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue);
-	void RecursiveIterate(nlohmann::json object, const nlohmann::json& json, std::string uuid, std::function<void(nlohmann::json)> callkeyvalue);
-	void FindTemplateReferencesInLevels(std::vector<nlohmann::json>& references, std::string uuid, std::string name);
-	void FindTemplateReferencesInTemplates(std::vector<nlohmann::json>& references, std::string uuid, std::string name, std::set<std::string> skipTemplateFile);
+	void FindTemplatesReferencesInTemplates(std::string uuid, std::set<std::string> skipTemplateFile, std::function<void(nlohmann::json)> addReference);
+	void FindTemplatesReferencesInLevels(std::string uuid, std::function<void(nlohmann::json)> addReference);
+	void FindRecursiveJsonReference(nlohmann::json json, std::string uuid, std::string path, std::function<void(std::string path)> addReference);
+
 #endif
 
 }
