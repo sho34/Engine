@@ -147,7 +147,13 @@ namespace Templates
 
 			meshes.push_back(mesh);
 
-			materialUUIDs = mdl->materials();
+			auto mats = mdl->materials();
+			std::string fallbackMaterial = FindMaterialUUIDByName("BaseLighting");
+			std::transform(mats.begin(), mats.end(), std::back_inserter(materialUUIDs), [fallbackMaterial](std::string matUUID)
+				{
+					return (!matUUID.empty()) ? matUUID : fallbackMaterial;
+				}
+			);
 		}
 
 		importer.FreeScene();
