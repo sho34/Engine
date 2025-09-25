@@ -1096,21 +1096,24 @@ namespace Templates
 				std::copy_if(references.begin(), references.end(), std::back_inserter(templateReferences), [](auto& ref)
 					{
 						std::string type = ref.at("type");
-						return type == "template";
+						bool del = ref.at("delete");
+						return type == "template" && del;
 					}
 				);
 				std::vector<nlohmann::json> sceneObjectReferences;
 				std::copy_if(references.begin(), references.end(), std::back_inserter(sceneObjectReferences), [](auto& ref)
 					{
 						std::string type = ref.at("type");
-						return type == "sceneobject";
+						bool del = ref.at("delete");
+						return type == "sceneobject" && del;
 					}
 				);
 				std::vector<nlohmann::json> currentLevelReferences;
 				std::copy_if(references.begin(), references.end(), std::back_inserter(currentLevelReferences), [](auto& ref)
 					{
 						std::string type = ref.at("type");
-						return type == "currentlevel";
+						bool del = ref.at("delete");
+						return type == "currentlevel" && del;
 					}
 				);
 				DeleteTemplateReferences(templateReferences);
