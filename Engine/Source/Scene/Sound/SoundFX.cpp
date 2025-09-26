@@ -285,7 +285,6 @@ namespace Scene {
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 
-
 	void SoundFX::CreateBillboard()
 	{
 		if (!(instanceFlags() & SoundEffectInstance_Use3D)) return;

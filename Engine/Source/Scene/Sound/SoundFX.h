@@ -87,13 +87,6 @@ namespace Scene {
 		virtual void CreateBillboard();
 		virtual void UpdateBillboard();
 
-		/*
-		std::shared_ptr<Scene::Renderable> soundFXBillboard;
-		void CreateSoundFXBillboard();
-		void BindSoundFXBillboardToScene();
-		void DestroySoundFXBillboard();
-		void UpdateSoundFXBillboard();
-		*/
 		BoundingBox GetBoundingBox();
 #endif
 	};
