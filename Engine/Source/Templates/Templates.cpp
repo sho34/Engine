@@ -623,7 +623,8 @@ namespace Templates
 				{ "renderTargetFormats", { "R32G32B32A32_FLOAT" }},
 				{ "depthStencilFormat", "D32_FLOAT" },
 				{ "materialOverride", "None" },
-				{ "renderCallbackOverride", "None" }
+				{ "renderCallbackOverride", "None" },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "name", "toneMappingPass" },
@@ -633,7 +634,8 @@ namespace Templates
 				{ "renderTargetFormats", { "R8G8B8A8_UNORM" }},
 				{ "depthStencilFormat", "UNKNOWN" },
 				{ "materialOverride", "None" },
-				{ "renderCallbackOverride", "ToneMapping" }
+				{ "renderCallbackOverride", "ToneMapping" },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "name", "resolvePass" },
@@ -643,7 +645,8 @@ namespace Templates
 				{ "renderTargetFormats", { "R8G8B8A8_UNORM" }},
 				{ "depthStencilFormat", "UNKNOWN" },
 				{ "materialOverride", "None" },
-				{ "renderCallbackOverride", "Resolve" }
+				{ "renderCallbackOverride", "Resolve" },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "name", "simplePass" },
@@ -653,7 +656,8 @@ namespace Templates
 				{ "renderTargetFormats", { "R8G8B8A8_UNORM" }},
 				{ "depthStencilFormat", "D32_FLOAT" },
 				{ "materialOverride", "None" },
-				{ "renderCallbackOverride", "None" }
+				{ "renderCallbackOverride", "None" },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "name", "ShadowMap" },
@@ -663,7 +667,8 @@ namespace Templates
 				{ "renderTargetFormats", { }},
 				{ "depthStencilFormat", "D32_FLOAT" },
 				{ "materialOverride", "ShadowMap" },
-				{ "renderCallbackOverride", "None" }
+				{ "renderCallbackOverride", "None" },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "name", "PickingPass" },
@@ -673,7 +678,8 @@ namespace Templates
 				{ "renderTargetFormats", { "R32_UINT" }},
 				{ "depthStencilFormat", "D32_FLOAT" },
 				{ "materialOverride", "Picking" },
-				{ "renderCallbackOverride", "None" }
+				{ "renderCallbackOverride", "None" },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "name", "ShadowMapMinMaxChainPass" },
@@ -683,7 +689,8 @@ namespace Templates
 				{ "renderTargetFormats", { "R32_FLOAT", "R32_FLOAT" }},
 				{ "depthStencilFormat", "UNKNOWN" },
 				{ "materialOverride", "None" },
-				{ "renderCallbackOverride", "MinMaxChain" }
+				{ "renderCallbackOverride", "MinMaxChain" },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "name", "ShadowMapMinMaxChainResultPass" },
@@ -693,7 +700,8 @@ namespace Templates
 				{ "renderTargetFormats", { "R8G8B8A8_UNORM" }},
 				{ "depthStencilFormat", "UNKNOWN" },
 				{ "materialOverride", "None" },
-				{ "renderCallbackOverride", "MinMaxChainResult" }
+				{ "renderCallbackOverride", "MinMaxChainResult" },
+				{ "systemCreated" , true},
 			}
 		}
 	);
@@ -711,7 +719,8 @@ namespace Templates
 				{ "numFrames", 1 },
 				{ "type", "2D" },
 				{ "uuid", "fed123fa-e248-47cd-9662-20f73285ad0e" },
-				{ "width", 256 }
+				{ "width", 256 },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "format", "B8G8R8A8_UNORM_SRGB" },
@@ -724,7 +733,8 @@ namespace Templates
 				{ "numFrames", 1 },
 				{ "type", "2D" },
 				{ "uuid", "5e3cba75-a495-44d8-ba5b-2b888f812a2b" },
-				{ "width", 64 }
+				{ "width", 64 },
+				{ "systemCreated" , true}
 			},
 			{
 				{ "format", "B8G8R8A8_UNORM_SRGB" },
@@ -737,7 +747,8 @@ namespace Templates
 				{ "numFrames", 1 },
 				{ "type", "2D" },
 				{ "uuid", "2c207f54-9cdc-4c7e-a70a-60b373f2de79" },
-				{ "width", 64 }
+				{ "width", 64 },
+				{ "systemCreated" , true}
 			}
 		}
 	);
@@ -1154,6 +1165,7 @@ namespace Templates
 
 	void DeleteTemplateReferences(std::vector<nlohmann::json> references)
 	{
+		bool modified = false;
 		for (auto& ref : references)
 		{
 			std::string uuid = ref.at("uuid");
@@ -1170,7 +1182,9 @@ namespace Templates
 			};
 
 			j->patch_inplace(j_patch);
+			modified = true;
 		}
+		Editor::templatesModified |= modified;
 	}
 
 	void DeleteTemplateReferencesInLevels(std::vector<nlohmann::json> references)

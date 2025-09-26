@@ -6,6 +6,13 @@
 #include <IconsFontAwesome5.h>
 #endif
 
+#if defined(_EDITOR)
+namespace Editor
+{
+	extern bool templatesModified;
+};
+#endif
+
 enum TemplateType {
 	T_None,
 	T_Shaders,
@@ -51,5 +58,12 @@ namespace Templates
 	{
 		JTemplate(nlohmann::json json) :JObject(json) {}
 		virtual TemplateType JType() { return T_None; }
+		virtual void JUpdate(nlohmann::json p)
+		{
+#if defined(_EDITOR)
+			Editor::templatesModified = true;
+#endif
+			JObject::JUpdate(p);
+		}
 	};
 };

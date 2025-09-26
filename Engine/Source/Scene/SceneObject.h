@@ -9,6 +9,13 @@
 #endif
 #include <DirectXMath.h>
 
+#if defined(_EDITOR)
+namespace Editor
+{
+	extern bool levelModified;
+};
+#endif
+
 enum SceneObjectType {
 	SO_None,
 	SO_Renderables,
@@ -78,5 +85,12 @@ namespace Scene
 		virtual void Bind(std::shared_ptr<SceneObject> sceneObject) {}
 		virtual void Unbind(std::shared_ptr<SceneObject> sceneObject) {}
 		virtual SceneObjectType JType() { return SO_None; }
+		virtual void JUpdate(nlohmann::json p)
+		{
+#if defined(_EDITOR)
+			Editor::levelModified = true;
+#endif
+			JObject::JUpdate(p);
+		}
 	};
 };

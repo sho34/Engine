@@ -10,13 +10,6 @@ struct JObject;
 typedef std::function<void(std::shared_ptr<JObject>)> JObjectChangeCallback;
 typedef std::function<void(unsigned int, unsigned int)> JObjectChangePostCallback;
 
-#if defined(_EDITOR)
-namespace Editor
-{
-	extern bool levelModified;
-};
-#endif
-
 struct JObject : nlohmann::json
 {
 	virtual ~JObject() = default;
@@ -32,11 +25,8 @@ struct JObject : nlohmann::json
 		j.merge_patch(*this);
 		return j;
 	}
-	void JUpdate(nlohmann::json p)
+	virtual void JUpdate(nlohmann::json p)
 	{
-#if defined(_EDITOR)
-		Editor::levelModified = true;
-#endif
 		UpdatePrevValues.clear();
 		for (auto& [key, value] : p.items())
 		{

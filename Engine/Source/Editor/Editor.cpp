@@ -45,6 +45,7 @@ namespace Editor {
 
 	std::string currentLevelName = defaultLevelName;
 	bool levelModified = false;
+	bool templatesModified = false;
 	bool defaultLevel = true;
 
 	bool initialized = false;
@@ -351,6 +352,56 @@ namespace Editor {
 		ZeroMemory(&dragRect, sizeof(dragRect));
 		dragRect.bottom = ApplicationBarBottom;
 
+		auto quitEditor = []()
+			{
+				if ((Editor::levelModified && !Editor::defaultLevel) || Editor::templatesModified)
+				{
+					bool quitLevel = true;
+					bool quitTemplate = true;
+					if (Editor::levelModified)
+					{
+						int response = MessageBoxA(hWnd, "The level has been modified, do you wish to Save your work before leaving?", "Save before leaving?", MB_ICONWARNING | MB_YESNOCANCEL);
+						switch (response) {
+						case IDYES:
+						{
+							Editor::SaveLevelToFile(Editor::currentLevelName);
+						}
+						break;
+						case IDCANCEL:
+						{
+							quitLevel = false;
+						}
+						break;
+						}
+					}
+					if (Editor::templatesModified)
+					{
+						int response = MessageBoxA(hWnd, "The templates has been modified, do you wish to Save your work before leaving?", "Save before leaving?", MB_ICONWARNING | MB_YESNOCANCEL);
+						switch (response) {
+						case IDYES:
+						{
+							Editor::SaveTemplates();
+						}
+						break;
+						case IDCANCEL:
+						{
+							quitTemplate = false;
+						}
+						break;
+						}
+					}
+
+					if (quitLevel && quitTemplate)
+					{
+						PostMessageA(hWnd, WM_QUIT, 0, 0);
+					}
+				}
+				else
+				{
+					PostMessageA(hWnd, WM_QUIT, 0, 0);
+				}
+			};
+
 		if (ImGui::BeginMainMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -373,13 +424,17 @@ namespace Editor {
 					SaveLevelAs();
 				}
 				ImGui::Separator();
-				if (ImGui::MenuItem(ICON_FA_SAVE "Save Templates")) {
-					SaveTemplates();
-				}
+				ImGui::DrawItemWithEnabledState([]
+					{
+						if (ImGui::MenuItem(ICON_FA_SAVE "Save Templates")) {
+							SaveTemplates();
+						}
+					}, templatesModified
+				);
 				ImGui::Separator();
 				if (ImGui::MenuItem(ICON_FA_TIMES "Exit")) // It would be nice if this was a "X" like in the windows title bar set off to the far right
 				{
-					PostMessageA(hWnd, WM_QUIT, 0, 0);
+					quitEditor();
 				}
 				ImGui::EndMenu();
 
@@ -413,28 +468,8 @@ namespace Editor {
 				{
 					.label = ICON_FA_TIMES,
 					.x = viewport->WorkSize.x - 1.0f * 19.0f,
-					.onClick = []()
-				{
-					if (!Editor::levelModified || Editor::defaultLevel)
-					{
-						PostMessageA(hWnd,WM_QUIT,0,0);
-					}
-					else
-					{
-						int response = MessageBoxA(hWnd,"The level has been modified, do you wish to Save your work before leaving?","Save before leaving?",MB_ICONWARNING | MB_YESNOCANCEL);
-						switch (response) {
-						case IDYES:
-						{
-							Editor::SaveLevelToFile(Editor::currentLevelName);
-						}
-						case IDNO:
-						{
-							PostMessageA(hWnd, WM_QUIT, 0, 0);
-						}
-						break;
-						}
-					}
-				}},
+					.onClick = quitEditor
+				},
 				{
 					.label = ICON_FA_WINDOW_MAXIMIZE,
 					.x = viewport->WorkSize.x - 2.0f * 19.0f,
@@ -682,6 +717,7 @@ namespace Editor {
 		Templates::SaveTemplates(defaultTemplatesFolder, Sound::templateName, WriteSoundsJson);
 		Templates::SaveTemplates(defaultTemplatesFolder, Texture::templateName, WriteTexturesJson);
 		Templates::SaveTemplates(defaultTemplatesFolder, RenderPass::templateName, WriteRenderPasssJson);
+		templatesModified = false;
 	}
 
 	float separatorFactor = 0.0f;
