@@ -317,23 +317,23 @@ namespace Scene
 			}},
 			{ SO_Lights, [](nlohmann::json json) {
 				std::shared_ptr<Light> l = CreateAndBind<Light>(json);
-				if (l->lightBillboard)
+				if (l->billboard)
 				{
-					Editor::BindRenderableToPickingPass(l->lightBillboard);
+					Editor::BindRenderableToPickingPass(l->billboard);
 				}
 			}},
 			{ SO_Cameras, [](nlohmann::json json) {
 				std::shared_ptr<Camera> c = CreateAndBind<Camera>(json);
-				if (c->cameraBillboard)
+				if (c->billboard)
 				{
-					Editor::BindRenderableToPickingPass(c->cameraBillboard);
+					Editor::BindRenderableToPickingPass(c->billboard);
 				}
 			} },
 			{ SO_SoundEffects, [](nlohmann::json json) {
 				std::shared_ptr<SoundFX> s = CreateAndBind<SoundFX>(json);
-				if (s->soundFXBillboard)
+				if (s->billboard)
 				{
-					Editor::BindRenderableToPickingPass(s->soundFXBillboard);
+					Editor::BindRenderableToPickingPass(s->billboard);
 				}
 			}}
 		};

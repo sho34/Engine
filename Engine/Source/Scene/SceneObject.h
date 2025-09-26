@@ -73,11 +73,13 @@ inline const std::map<std::string, std::string> StringToJsonContainer =
 
 namespace Scene
 {
+	struct Renderable;
+
 	struct SceneObject : JObject
 	{
 		SceneObject(nlohmann::json json) :JObject(json) {}
-		virtual void Initialize() {};
-		virtual void BindToScene() {};
+		virtual void Initialize();
+		virtual void BindToScene();
 		virtual void UnbindFromScene() {};
 		virtual XMVECTOR rotationQ() { return XMQuaternionIdentity(); }
 		virtual XMMATRIX world() { return XMMatrixIdentity(); }
@@ -85,12 +87,15 @@ namespace Scene
 		virtual void Bind(std::shared_ptr<SceneObject> sceneObject) {}
 		virtual void Unbind(std::shared_ptr<SceneObject> sceneObject) {}
 		virtual SceneObjectType JType() { return SO_None; }
-		virtual void JUpdate(nlohmann::json p)
-		{
+		virtual void JUpdate(nlohmann::json p);
+
 #if defined(_EDITOR)
-			Editor::levelModified = true;
+		std::shared_ptr<Renderable> billboard;
+		virtual void CreateBillboard() {};
+		virtual void DestroyBillboard();
+		virtual void BindBillboardToScene();
+		virtual void UpdateBillboard();
+		void CreateBillboardFromMaterials(std::string material, std::string pickingMaterial);
 #endif
-			JObject::JUpdate(p);
-		}
 	};
 };

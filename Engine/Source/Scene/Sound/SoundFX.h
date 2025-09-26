@@ -84,11 +84,16 @@ namespace Scene {
 #if defined(_EDITOR)
 		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
 
+		virtual void CreateBillboard();
+		virtual void UpdateBillboard();
+
+		/*
 		std::shared_ptr<Scene::Renderable> soundFXBillboard;
 		void CreateSoundFXBillboard();
 		void BindSoundFXBillboardToScene();
 		void DestroySoundFXBillboard();
 		void UpdateSoundFXBillboard();
+		*/
 		BoundingBox GetBoundingBox();
 #endif
 	};

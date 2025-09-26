@@ -218,11 +218,9 @@ namespace Scene {
 
 		virtual std::function<bool(std::shared_ptr<JObject>)> GetAssetsConditioner();
 
-		std::shared_ptr<Scene::Renderable> lightBillboard;
-		void CreateLightBillboard();
-		void BindLightBillboardToScene();
-		void DestroyLightBillboard();
-		void UpdateLightBillboard();
+		virtual void CreateBillboard();
+		virtual void UpdateBillboard();
+
 		BoundingBox GetBoundingBox();
 #endif
 

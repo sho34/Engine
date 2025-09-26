@@ -86,7 +86,7 @@ namespace Scene
 			auto [uuid, cam] = pair;
 			//as a special case update the billboard
 #if defined(_EDITOR)
-			cam->UpdateCameraBillboard();
+			cam->UpdateBillboard();
 #endif
 			if (!cam->dirty(Camera::Update_useSwapChain)) continue;
 			cam->clean(Camera::Update_useSwapChain);
@@ -212,12 +212,7 @@ namespace Scene
 	{
 		std::shared_ptr<Camera> cam = FindInCameras(uuid);
 #if defined(_EDITOR)
-		if (cam->cameraBillboard)
-		{
-			DeleteSceneObject(cam->cameraBillboard->uuid());
-			cam->cameraBillboard->OnPick = [] {};
-			cam->cameraBillboard = nullptr;
-		}
+		cam->DestroyBillboard();
 #endif
 		cam->markedForDelete = true;
 	}
@@ -458,10 +453,7 @@ namespace Scene
 		CreateConstantsBuffer();
 		CreateRenderPasses();
 #if defined(_EDITOR)
-		/*
-		if (!lightCam)
-			CreateCameraBillboard();
-			*/
+		SceneObject::Initialize();
 #endif
 	}
 
@@ -476,9 +468,6 @@ namespace Scene
 		}
 		break;
 		}
-#if defined(_EDITOR)
-		//BindCameraBillboardToScene();
-#endif
 	}
 
 	void Camera::Unbind(std::shared_ptr<SceneObject> sceneObject)
@@ -501,7 +490,7 @@ namespace Scene
 #include <JEnd.h>
 
 #if defined(_EDITOR)
-		//BindCameraBillboardToScene();
+		SceneObject::BindToScene();
 #endif
 	}
 
@@ -596,6 +585,7 @@ namespace Scene
 	{
 		CameraAttributes atts{};
 
+		atts.view = view();
 		atts.viewProjection = XMMatrixMultiply(view(), projection());
 
 		XMVECTOR camPos = positionV();
@@ -608,6 +598,8 @@ namespace Scene
 		atts.eyeUp = *(XMFLOAT4*)camUp.m128_f32;
 		atts.eyeRight = *(XMFLOAT4*)camRight.m128_f32;
 		atts.white = white();
+		atts.widthHeight.x = projectionWidth();
+		atts.widthHeight.y = projectionHeight();
 
 		if (iblTextures.contains(TextureShaderUsage_IBLPreFilteredEnvironment))
 		{
@@ -804,62 +796,22 @@ namespace Scene
 	{
 	}
 
-	void Camera::CreateCameraBillboard()
+	void Camera::CreateBillboard()
 	{
-		if (this_ptr == GetMouseCameras().at(0)) return;
-		nlohmann::json jbillboard = nlohmann::json(
-			{
-				{ "meshMaterials",
-					{
-						{
-							{ "material", FindMaterialUUIDByName("Camera") },
-							{ "mesh", "7dec1229-075f-4599-95e1-9ccfad0d48b1" }
-						}
-					}
-				},
-				{ "castShadows", false },
-				{ "shadowed", false },
-				{ "name" , uuid() + "-billboard" },
-				{ "uuid" , getUUID() },
-				{ "position" , { 0.0f, 0.0f, 0.0f} },
-				{ "topology", "TRIANGLELIST"},
-				{ "rotation" , { 0.0, 0.0, 0.0 } },
-				{ "scale" , { 1.0f, 1.0f, 1.0f } },
-				{ "skipMeshes" , {}},
-				{ "visible" , true},
-				{ "hidden" , true},
-				{ "cameras", { GetMouseCameras().at(0)->uuid()}},
-				{ "passMaterialOverrides",
-					{
-						{
-							{ "meshIndex", 0 },
-							{ "renderPass", FindRenderPassUUIDByName("PickingPass") },
-							{ "material", FindMaterialUUIDByName("CameraPicking") }
-						}
-					}
-				}
-			}
-		);
-		cameraBillboard = CreateSceneObjectFromJson<Renderable>(jbillboard);
-		cameraBillboard->OnPick = [this] {Editor::SelectCamera(this_ptr); };
+		if (this_ptr == GetMouseCameras().at(0) || lightCam) return;
+
+		CreateBillboardFromMaterials("Camera", "CameraPicking");
+		billboard->OnPick = [this] {Editor::SelectCamera(this_ptr); };
+		UpdateBillboard();
 	}
 
-	void Camera::BindCameraBillboardToScene()
+	void Camera::UpdateBillboard()
 	{
-		if (!cameraBillboard) return;
-		cameraBillboard->BindToScene();
-	}
-
-	void Camera::DestroyCameraBillboard()
-	{
-	}
-
-	void Camera::UpdateCameraBillboard()
-	{
-		if (!cameraBillboard) return;
-		cameraBillboard->position(position());
+		if (!billboard) return;
+		billboard->position(position());
 		XMFLOAT3 baseColor = { 1.0f,1.0f,1.0f };
-		cameraBillboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
+		billboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
+		billboard->WriteConstantsBuffer(renderer->backBufferIndex);
 	}
 
 	BoundingBox Camera::GetBoundingBox()

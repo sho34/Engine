@@ -80,7 +80,7 @@ namespace Scene {
 			CreateShadowMap();
 		}
 #if defined(_EDITOR)
-		//CreateLightBillboard();
+		SceneObject::Initialize();
 #endif
 	}
 
@@ -93,7 +93,7 @@ namespace Scene {
 		BindRenderablesToShadowMapCamera();
 
 #if defined(_EDITOR)
-		//BindLightBillboardToScene();
+		SceneObject::BindToScene();
 #endif
 	}
 
@@ -168,6 +168,7 @@ namespace Scene {
 		for (auto& [uuid, l] : Lights)
 		{
 			//l->UpdateLightBillboard();
+			l->UpdateBillboard();
 
 			//if the light type changed
 			if (l->dirty(Light::Update_lightType))
@@ -372,12 +373,7 @@ namespace Scene {
 	{
 		std::shared_ptr<Light> l = FindInLights(uuid);
 #if defined(_EDITOR)
-		if (l->lightBillboard)
-		{
-			DeleteSceneObject(l->lightBillboard->uuid());
-			l->lightBillboard->OnPick = [] {};
-			l->lightBillboard = nullptr;
-		}
+		l->DestroyBillboard();
 #endif
 		l->markedForDelete = true;
 	}
@@ -458,64 +454,22 @@ namespace Scene {
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 
-	void Light::CreateLightBillboard()
+	void Light::CreateBillboard()
 	{
 		if (lightType() == LT_Ambient) return;
 
-		nlohmann::json jbillboard = nlohmann::json(
-			{
-				{ "meshMaterials",
-					{
-						{
-							{ "material", FindMaterialUUIDByName("LightBulb") },
-							{ "mesh", "7dec1229-075f-4599-95e1-9ccfad0d48b1" }
-						}
-					}
-				},
-				{ "castShadows", false },
-				{ "shadowed", false },
-				{ "name" , uuid() + "-billboard" },
-				{ "uuid" , getUUID() },
-				{ "position" , { 0.0f, 0.0f, 0.0f} },
-				{ "topology", "TRIANGLELIST"},
-				{ "rotation" , { 0.0, 0.0, 0.0 } },
-				{ "scale" , { 1.0f, 1.0f, 1.0f } },
-				{ "skipMeshes" , {}},
-				{ "visible" , true},
-				{ "hidden" , true},
-				{ "cameras", { GetMouseCameras().at(0)->uuid()}},
-				{ "passMaterialOverrides",
-					{
-						{
-							{ "meshIndex", 0 },
-							{ "renderPass", FindRenderPassUUIDByName("PickingPass") },
-							{ "material", FindMaterialUUIDByName("LightBulbPicking") }
-						}
-					}
-				}
-			}
-		);
-		lightBillboard = CreateSceneObjectFromJson<Renderable>(jbillboard);
-		lightBillboard->OnPick = [this] {Editor::SelectLight(this_ptr); };
+		CreateBillboardFromMaterials("LightBulb", "LightBulbPicking");
+		billboard->OnPick = [this] {Editor::SelectLight(this_ptr); };
+		UpdateBillboard();
 	}
 
-	void Light::DestroyLightBillboard()
+	void Light::UpdateBillboard()
 	{
-	}
-
-	void Light::UpdateLightBillboard()
-	{
-		if (!lightBillboard) return;
-		lightBillboard->position(position());
+		if (!billboard) return;
+		billboard->position(position());
 		XMFLOAT3 baseColor = color();
-		lightBillboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
-	}
-
-	void Light::BindLightBillboardToScene()
-	{
-		if (lightType() == LT_Ambient) return;
-
-		lightBillboard->BindToScene();
+		billboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
+		billboard->WriteConstantsBuffer(renderer->backBufferIndex);
 	}
 
 	BoundingBox Light::GetBoundingBox()

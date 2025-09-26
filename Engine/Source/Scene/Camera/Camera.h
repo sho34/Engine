@@ -37,11 +37,13 @@ inline static std::map<std::string, ProjectionsTypes> StringToProjectionsTypes =
 };
 
 struct CameraAttributes {
+	XMMATRIX view;
 	XMMATRIX viewProjection;
 	XMFLOAT4 eyePosition;
 	XMFLOAT4 eyeForward;
 	XMFLOAT4 eyeUp;
 	XMFLOAT4 eyeRight;
+	XMFLOAT4 widthHeight;
 	float white;
 	float IBLNumEnvLevels;
 };
@@ -186,11 +188,9 @@ namespace Scene {
 		virtual void EditorPreview(size_t flags);
 		virtual void DestroyEditorPreview();
 
-		std::shared_ptr<Scene::Renderable> cameraBillboard;
-		void CreateCameraBillboard();
-		void BindCameraBillboardToScene();
-		void DestroyCameraBillboard();
-		void UpdateCameraBillboard();
+		virtual void CreateBillboard();
+		virtual void UpdateBillboard();
+
 		BoundingBox GetBoundingBox();
 #endif
 	};
