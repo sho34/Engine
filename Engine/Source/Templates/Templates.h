@@ -49,7 +49,7 @@ namespace Templates {
 	inline std::string GetName(std::string uuid, auto getTemplates)
 	{
 		auto& templates = getTemplates();
-		return std::get<0>(templates.at(uuid));
+		return templates.contains(uuid) ? std::get<0>(templates.at(uuid)) : "";
 	}
 
 	std::string FindUUIDByName(std::string name, auto getTemplates)

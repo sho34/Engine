@@ -181,7 +181,8 @@ namespace Scene {
 						for (auto& uuid : delCams)
 						{
 							std::shared_ptr<Camera> cam = FindInCameras(uuid);
-							Scene::UnbindFromScene(r, cam);
+							if (cam)
+								Scene::UnbindFromScene(r, cam);
 						}
 						//add the camera to the renderable's binded camera set
 						for (auto& uuid : addCams)
@@ -332,7 +333,7 @@ namespace Scene {
 		auto cams = cameras();
 		for (auto& uuid : cams) {
 			std::shared_ptr<Camera> cam = FindInCameras(uuid);
-			assert(cam != nullptr);
+			if (cam == nullptr) continue;
 			BindCamera(cam);
 		}
 	}

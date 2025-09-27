@@ -4355,7 +4355,8 @@ inline JEdvEditorDrawerFunction DrawMap<TextureShaderUsage, std::string>() {
 						ImGui::TableSetColumnIndex(2);
 						UUIDName selected = std::make_tuple("", "");
 
-						if (allEqual(usage))
+						bool allEq = allEqual(usage);
+						if (allEq)
 						{
 							std::string& selectedUUID = std::get<0>(selected);
 							std::string& selectedName = std::get<1>(selected);
@@ -4366,6 +4367,15 @@ inline JEdvEditorDrawerFunction DrawMap<TextureShaderUsage, std::string>() {
 								selectedName = Templates::GetTextureName(selectedUUID);
 							}
 						}
+
+						//have a goto button to go to the selected item template//FIX this we might want to go to a scene object too
+						ImGui::DrawItemWithEnabledState([selected, usage]()
+							{
+								ImGui::PushID((std::string("goto-selected") + TextureShaderUsageToString.at(usage)).c_str());
+								ImGui::OpenTemplate(ICON_FA_IMAGE, selected);
+								ImGui::PopID();
+							}, std::get<0>(selected) != "" && allEq);
+						ImGui::SameLine();
 
 						ImGui::PushID(TextureShaderUsageToString.at(usage).c_str());
 						ImGui::DrawComboSelection(selected, texturesUUIDs, [setTexture, usage](UUIDName selection)

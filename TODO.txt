@@ -29,6 +29,9 @@ TODO:
 NICE TO HAVE:
 
 DONE:
+-manejar referencias rotas
+	-Renderable
+		-cameras
 -generalizar los billboards
 	-arreglar el shader para que el porte siempre sea fijo y no utilice ese hack feo
 -grabar templates

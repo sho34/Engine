@@ -148,6 +148,13 @@ namespace DeviceUtils {
 		const CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 		const CD3DX12_HEAP_PROPERTIES readBackHeapProperties(D3D12_HEAP_TYPE_READBACK);
 
+		//Create the memory footprint for the subresource 
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT footPrint = {};
+		UINT numRows = 0U;
+		UINT64 rowSizeInBytes = 0ULL;
+		UINT64 requiredSize = 0ULL;
+		device->GetCopyableFootprints(&desc, 0, 1, 0, &footPrint, &numRows, &rowSizeInBytes, &requiredSize);
+
 		// Readback resources must be buffers
 		D3D12_RESOURCE_DESC bufferDesc = {};
 		bufferDesc.DepthOrArraySize = 1;
@@ -155,7 +162,7 @@ namespace DeviceUtils {
 		bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 		bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
 		bufferDesc.Height = 1;
-		bufferDesc.Width = srcPitch * desc.Height;
+		bufferDesc.Width = requiredSize;
 		bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		bufferDesc.MipLevels = 1;
 		bufferDesc.SampleDesc.Count = 1;
@@ -242,14 +249,7 @@ namespace DeviceUtils {
 		TransitionResource(commandList, copySource, beforeState, D3D12_RESOURCE_STATE_COPY_SOURCE);
 
 		// Get the copy target location
-		D3D12_PLACED_SUBRESOURCE_FOOTPRINT bufferFootprint = {};
-		bufferFootprint.Footprint.Width = static_cast<UINT>(desc.Width);
-		bufferFootprint.Footprint.Height = desc.Height;
-		bufferFootprint.Footprint.Depth = 1;
-		bufferFootprint.Footprint.RowPitch = static_cast<UINT>(srcPitch);
-		bufferFootprint.Footprint.Format = desc.Format;
-
-		const CD3DX12_TEXTURE_COPY_LOCATION copyDest(pStaging, bufferFootprint);
+		const CD3DX12_TEXTURE_COPY_LOCATION copyDest(pStaging, footPrint);
 		const CD3DX12_TEXTURE_COPY_LOCATION copySrc(copySource, 0);
 
 		// Copy the texture

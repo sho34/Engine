@@ -88,7 +88,7 @@
 		);\
 		return v;\
 	}\
-	std::string FindNameIn##NAME(std::string uuid) { return NAME.at(uuid)->name(); }\
+	std::string FindNameIn##NAME(std::string uuid) { return NAME.contains(uuid)?NAME.at(uuid)->name():""; }\
 	void Insert##CLASS##Into##NAME(std::shared_ptr<CLASS> v)\
 	{\
 		if(LIMIT>0 && !NAME.contains(v->uuid()))\
