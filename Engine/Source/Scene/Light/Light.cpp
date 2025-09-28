@@ -21,6 +21,10 @@ extern std::shared_ptr<Renderer> renderer;
 namespace Editor
 {
 	extern void SelectLight(std::shared_ptr<Light> light);
+	extern std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	extern void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject);
+	extern std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject);
+	extern void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject);
 }
 #endif
 
@@ -80,7 +84,8 @@ namespace Scene {
 			CreateShadowMap();
 		}
 #if defined(_EDITOR)
-		SceneObject::Initialize();
+		if (lightType() != LT_Ambient)
+			Editor::RegisterBillboard(this_ptr);
 #endif
 	}
 
@@ -168,7 +173,7 @@ namespace Scene {
 		for (auto& [uuid, l] : Lights)
 		{
 			//l->UpdateLightBillboard();
-			l->UpdateBillboard();
+			l->UpdateBillboard(Editor::GetBillboard(l));
 
 			//if the light type changed
 			if (l->dirty(Light::Update_lightType))
@@ -373,7 +378,7 @@ namespace Scene {
 	{
 		std::shared_ptr<Light> l = FindInLights(uuid);
 #if defined(_EDITOR)
-		l->DestroyBillboard();
+		Editor::DestroyBillboard(l);
 #endif
 		l->markedForDelete = true;
 	}
@@ -454,16 +459,17 @@ namespace Scene {
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 
-	void Light::CreateBillboard()
+	std::shared_ptr<Renderable> Light::CreateBillboard()
 	{
-		if (lightType() == LT_Ambient) return;
+		if (lightType() == LT_Ambient) return nullptr;
 
-		CreateBillboardFromMaterials("LightBulb", "LightBulbPicking");
+		std::shared_ptr<Renderable> billboard = Editor::CreateBillboardFromMaterials(at("name"), "LightBulb", "LightBulbPicking");
 		billboard->OnPick = [this] {Editor::SelectLight(this_ptr); };
-		UpdateBillboard();
+		UpdateBillboard(billboard);
+		return billboard;
 	}
 
-	void Light::UpdateBillboard()
+	void Light::UpdateBillboard(std::shared_ptr<Renderable> billboard)
 	{
 		if (!billboard) return;
 		billboard->position(position());

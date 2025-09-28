@@ -69,6 +69,146 @@ namespace DeviceUtils {
 		commandList->ResourceBarrier(1, &barrier);
 	}
 
+	unsigned int CapturePickingPixelValue(CComPtr<ID3D12Device2> device, CComPtr<ID3D12CommandQueue> pCommandQ, CComPtr<ID3D12Resource> pSource, UINT64 srcPitch, const D3D12_RESOURCE_DESC& desc, CComPtr<ID3D12Resource>& pStaging, unsigned int pixelX, unsigned int pixelY, D3D12_RESOURCE_STATES beforeState, D3D12_RESOURCE_STATES afterState) noexcept
+	{
+		HRESULT hr;
+
+		// Create a command allocator
+		CComPtr<ID3D12CommandAllocator> commandAlloc;
+		hr = device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&commandAlloc));
+		if (FAILED(hr))
+			return hr;
+
+		commandAlloc->SetName(L"PixelGrab");
+
+		// Spin up a new command list
+		CComPtr<ID3D12GraphicsCommandList2> commandList;
+		hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, commandAlloc, nullptr, IID_PPV_ARGS(&commandList));
+		if (FAILED(hr))
+			return hr;
+
+		CCNAME_D3D12_OBJECT_N(commandList, std::string("PixelGrab"));
+		LogCComPtrAddress("PixelGrab", commandList);
+
+		// Create a fence
+		CComPtr<ID3D12Fence> fence;
+		hr = device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&fence));
+		if (FAILED(hr))
+			return hr;
+
+		CCNAME_D3D12_OBJECT_N(fence, std::string("PixelGrab"));
+		LogCComPtrAddress("PixelGrab", fence);
+
+		//create the heap properties
+		const CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+		const CD3DX12_HEAP_PROPERTIES readBackHeapProperties(D3D12_HEAP_TYPE_READBACK);
+
+		// Readback resources must be buffers and just 4 bytes(we are picking a single pixel this time)
+		D3D12_RESOURCE_DESC bufferDesc = {};
+		bufferDesc.DepthOrArraySize = 1;
+		bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+		bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+		bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+		bufferDesc.Height = 1;
+		bufferDesc.Width = 256;
+		bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+		bufferDesc.MipLevels = 1;
+		bufferDesc.SampleDesc.Count = 1;
+
+		CComPtr<ID3D12Resource> copySource(pSource);
+		D3D12_RESOURCE_STATES beforeStateSource = D3D12_RESOURCE_STATE_COPY_SOURCE;
+
+		// Create a staging texture
+		hr = device->CreateCommittedResource(
+			&readBackHeapProperties,
+			D3D12_HEAP_FLAG_NONE,
+			&bufferDesc,
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			nullptr,
+			IID_PPV_ARGS(&pStaging));
+		if (FAILED(hr))
+		{
+			if (pStaging)
+			{
+				pStaging = nullptr;
+			}
+			return hr;
+		}
+
+		CCNAME_D3D12_OBJECT_N(pStaging, std::string("PixelGrab staging"));
+		LogCComPtrAddress("PixelGrab staging", pStaging);
+
+		assert(pStaging);
+
+		// Transition the resource if necessary
+		TransitionResource(commandList, copySource, beforeState, D3D12_RESOURCE_STATE_COPY_SOURCE);
+
+		// Get the copy target location
+		D3D12_PLACED_SUBRESOURCE_FOOTPRINT destFootPrint{};
+		destFootPrint.Offset = 0ULL;
+		destFootPrint.Footprint.Format = DXGI_FORMAT_R32_UINT;
+		destFootPrint.Footprint.Width = 1U;
+		destFootPrint.Footprint.Height = 1U;
+		destFootPrint.Footprint.Depth = 1U;
+		destFootPrint.Footprint.RowPitch = 256;
+		const CD3DX12_TEXTURE_COPY_LOCATION copyDest(pStaging, destFootPrint);
+		const CD3DX12_TEXTURE_COPY_LOCATION copySrc(copySource, 0);
+
+		//set a d3d12box to copy a single pixel using the pixel coordinates
+		D3D12_BOX sourceRegion{};
+		sourceRegion.left = pixelX;
+		sourceRegion.top = pixelY;
+		sourceRegion.right = pixelX + 1;
+		sourceRegion.bottom = pixelY + 1;
+		sourceRegion.front = 0;
+		sourceRegion.back = 1;
+
+		// Copy the texture
+		commandList->CopyTextureRegion(&copyDest, 0, 0, 0, &copySrc, &sourceRegion);
+
+		// Transition the source resource to the next state
+		TransitionResource(commandList, pSource, beforeStateSource, afterState);
+
+		hr = commandList->Close();
+		if (FAILED(hr))
+		{
+			pStaging = nullptr;
+			//return hr;
+			return 0U;
+		}
+
+		// Execute the command list
+		//pCommandQ->ExecuteCommandLists(1, CommandListCast(&commandList));
+		ID3D12CommandList* const commandLists[] = { commandList };
+		pCommandQ->ExecuteCommandLists(_countof(commandLists), commandLists);
+
+		// Signal the fence
+		hr = pCommandQ->Signal(fence, 1);
+		if (FAILED(hr))
+		{
+			pStaging = nullptr;
+			//return hr;
+			return 0U;
+		}
+
+		// Block until the copy is complete
+		while (fence->GetCompletedValue() < 1)
+			SwitchToThread();
+
+		D3D12_RANGE readbackBufferRange{ 0, 256 };
+		unsigned int* pReadbackBufferData{};
+		pStaging->Map(0, &readbackBufferRange, reinterpret_cast<void**>(&pReadbackBufferData));
+
+		unsigned int value = *pReadbackBufferData;
+
+		D3D12_RANGE emptyRange{ 0, 0 };
+		pStaging->Unmap(0, &emptyRange);
+
+		pStaging = nullptr;
+
+		return value;
+	}
+
 	HRESULT CaptureTexture(CComPtr<ID3D12Device2> device,
 		CComPtr<ID3D12CommandQueue> pCommandQ,
 		CComPtr<ID3D12Resource> pSource,

@@ -14,6 +14,10 @@ extern std::shared_ptr<Renderer> renderer;
 namespace Editor
 {
 	extern void SelectSoundEffect(std::shared_ptr<SoundFX> soundEffect);
+	extern std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	extern void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject);
+	extern std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject);
+	extern void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject);
 }
 #endif
 
@@ -62,7 +66,8 @@ namespace Scene {
 #include <JEnd.h>
 
 #if defined(_EDITOR)
-		SceneObject::Initialize();
+		if (instanceFlags() & SoundEffectInstance_Use3D)
+			Editor::RegisterBillboard(this_ptr);
 #endif
 	}
 
@@ -214,7 +219,7 @@ namespace Scene {
 			{
 				sfx->Step(step);
 #if defined(_EDITOR)
-				sfx->UpdateBillboard();
+				sfx->UpdateBillboard(Editor::GetBillboard(sfx));
 #endif
 			}
 		);
@@ -285,16 +290,17 @@ namespace Scene {
 		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
 	}
 
-	void SoundFX::CreateBillboard()
+	std::shared_ptr<Renderable> SoundFX::CreateBillboard()
 	{
-		if (!(instanceFlags() & SoundEffectInstance_Use3D)) return;
+		if (!(instanceFlags() & SoundEffectInstance_Use3D)) return nullptr;
 
-		CreateBillboardFromMaterials("SoundEffect", "SoundEffectPicking");
+		std::shared_ptr<Renderable> billboard = Editor::CreateBillboardFromMaterials(at("name"), "SoundEffect", "SoundEffectPicking");
 		billboard->OnPick = [this] {Editor::SelectSoundEffect(this_ptr); };
-		UpdateBillboard();
+		UpdateBillboard(billboard);
+		return billboard;
 	}
 
-	void SoundFX::UpdateBillboard()
+	void SoundFX::UpdateBillboard(std::shared_ptr<Renderable> billboard)
 	{
 		if (!billboard) return;
 		billboard->position(position());
@@ -325,7 +331,7 @@ namespace Scene {
 	{
 		std::shared_ptr<SoundFX> sfx = FindInSoundEffects(uuid);
 #if defined(_EDITOR)
-		sfx->DestroyBillboard();
+		Editor::DestroyBillboard(sfx);
 #endif
 		sfx->markedForDelete = true;
 	}

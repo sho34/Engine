@@ -90,12 +90,8 @@ namespace Scene
 		virtual void JUpdate(nlohmann::json p);
 
 #if defined(_EDITOR)
-		std::shared_ptr<Renderable> billboard;
-		virtual void CreateBillboard() {};
-		virtual void DestroyBillboard();
-		virtual void BindBillboardToScene();
-		virtual void UpdateBillboard();
-		void CreateBillboardFromMaterials(std::string material, std::string pickingMaterial);
+		virtual std::shared_ptr<Renderable> CreateBillboard() { return nullptr; }
+		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard) {}
 #endif
 	};
 };

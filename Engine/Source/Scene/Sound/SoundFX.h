@@ -84,8 +84,8 @@ namespace Scene {
 #if defined(_EDITOR)
 		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
 
-		virtual void CreateBillboard();
-		virtual void UpdateBillboard();
+		virtual std::shared_ptr<Renderable> CreateBillboard();
+		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard);
 
 		BoundingBox GetBoundingBox();
 #endif

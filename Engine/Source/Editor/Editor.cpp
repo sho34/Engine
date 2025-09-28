@@ -56,6 +56,7 @@ namespace Editor {
 	int lastMouseY;
 
 	std::shared_ptr<Renderable> boundingBox = nullptr;
+	std::map<std::shared_ptr<SceneObject>, std::shared_ptr<Renderable>> billboardRegistry;
 
 	float titleBH = static_cast<float>(ApplicationBarBottom);
 	float panW = static_cast<float>(RightPanelWidth);
@@ -281,6 +282,7 @@ namespace Editor {
 		templateEdition.Destroy();
 
 		mousePicking.pickedObjects.clear();
+		DestroyBillboards();
 		DestroyPickingPass();
 		DestroyRenderableBoundingBox();
 
@@ -1685,31 +1687,20 @@ namespace Editor {
 
 		if (!mousePicking.pickingPass) return;
 
-		DeviceUtils::CaptureTexture(
+		unsigned int value = DeviceUtils::CapturePickingPixelValue(
 			renderer->d3dDevice,
 			renderer->commandQueue,
 			mousePicking.pickingPass->renderToTexturePass->renderToTexture[0]->renderToTexture,
 			mousePicking.pickingPass->renderToTexturePass->renderToTexture[0]->width * sizeof(unsigned int),
 			mousePicking.pickingPass->renderToTexturePass->renderToTexture[0]->resourceDesc,
 			mousePicking.pickingCpuBuffer,
+			mousePicking.pickingX,
+			mousePicking.pickingY,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE
 		);
 
-		size_t width = static_cast<size_t>(hWndRect.right - hWndRect.left);
-		size_t height = static_cast<size_t>(hWndRect.bottom - hWndRect.top);
-		size_t Begin = 0;
-		size_t End = width * height * sizeof(unsigned int);
-		size_t offset = (width * mousePicking.pickingY + mousePicking.pickingX);
-
-		D3D12_RANGE readbackBufferRange{ Begin, End };
-		unsigned int* pReadbackBufferData{};
-		mousePicking.pickingCpuBuffer->Map(0, &readbackBufferRange, reinterpret_cast<void**>(&pReadbackBufferData));
-
-		PickSceneObject(pReadbackBufferData[offset]);
-
-		D3D12_RANGE emptyRange{ 0, 0 };
-		mousePicking.pickingCpuBuffer->Unmap(0, &emptyRange);
+		PickSceneObject(value);
 	}
 
 	void PickSceneObject(unsigned int pickedObjectId)
@@ -1771,6 +1762,100 @@ namespace Editor {
 		templateModal.type = type;
 		templateModal.creating = true;
 		templateModal.onCreate = CreateTemplate;
+	}
+
+	std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial)
+	{
+		std::string jname = name;
+		jname += "-billboard";
+		nlohmann::json jbillboard = nlohmann::json(
+			{
+				{ "meshMaterials",
+					{
+						{
+							{ "material", FindMaterialUUIDByName(material) },
+							{ "mesh", "7dec1229-075f-4599-95e1-9ccfad0d48b1" }
+						}
+					}
+				},
+				{ "castShadows", false },
+				{ "shadowed", false },
+				{ "name" , jname },
+				{ "uuid" , getUUID() },
+				{ "position" , { 0.0f, 0.0f, 0.0f} },
+				{ "topology", "TRIANGLELIST"},
+				{ "rotation" , { 0.0, 0.0, 0.0 } },
+				{ "scale" , { 1.0f, 1.0f, 1.0f } },
+				{ "skipMeshes" , {}},
+				{ "visible" , true},
+				{ "hidden" , true},
+				{ "cameras", { GetMouseCameras().at(0)->uuid()}},
+				{ "passMaterialOverrides",
+					{
+						{
+							{ "meshIndex", 0 },
+							{ "renderPass", FindRenderPassUUIDByName("PickingPass") },
+							{ "material", FindMaterialUUIDByName(pickingMaterial) }
+						}
+					}
+				}
+			}
+		);
+		std::shared_ptr<Renderable> billboard = CreateSceneObjectFromJson<Renderable>(jbillboard);
+		return billboard;
+	}
+
+	void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject)
+	{
+		billboardRegistry.insert_or_assign(sceneObject, nullptr);
+	}
+
+	std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject)
+	{
+		return billboardRegistry.contains(sceneObject) ? billboardRegistry.at(sceneObject) : nullptr;
+	}
+
+	void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject)
+	{
+		if (billboardRegistry.contains(sceneObject))
+			billboardRegistry.erase(sceneObject);
+	}
+
+	void CreateRegisteredBillboards()
+	{
+		if (GetNumMouseCameras() == 0ULL) return;
+
+		for (auto it = billboardRegistry.begin(); it != billboardRegistry.end(); it++)
+		{
+			if (it->second) continue;
+
+			it->second = it->first->CreateBillboard();
+			if (it->second)
+			{
+				it->second->BindToScene();
+				Editor::BindRenderableToPickingPass(it->second);
+			}
+		}
+	}
+
+	bool PendingBillboards()
+	{
+		for (auto it = billboardRegistry.begin(); it != billboardRegistry.end(); it++)
+		{
+			if (!it->second) return true;
+		}
+		return false;
+	}
+
+	void DestroyBillboards()
+	{
+		for (auto it = billboardRegistry.begin(); it != billboardRegistry.end(); )
+		{
+			Editor::UnbindRenderableFromPickingPass(it->second);
+			EraseRenderableFromRenderables(it->second);
+			SafeDeleteSceneObject(it->second);
+			it = billboardRegistry.erase(it);
+		}
 	}
 };
 

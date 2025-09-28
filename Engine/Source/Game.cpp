@@ -462,6 +462,7 @@ void PlayModeLeave()
 
 void DestroyEditorModeBindings()
 {
+	DestroyBillboards();
 	DestroyRenderableBoundingBox();
 	DestroyPickingPass();
 }
@@ -692,7 +693,7 @@ void EditorModePostRender()
 	brdflut->Solution();
 #endif
 */
-	bool criticalFrame = (!PickingPassExists() || !RenderableBoundingBoxExists()) && GetNumSwapChainCameras() > 0ULL;
+	bool criticalFrame = (!PickingPassExists() || !RenderableBoundingBoxExists()) && GetNumSwapChainCameras() > 0ULL || Editor::PendingBillboards();
 
 	if (criticalFrame)
 	{
@@ -708,10 +709,13 @@ void EditorModePostRender()
 					}
 				}
 
-				if (!RenderableBoundingBoxExists())
+				if (GetNumMouseCameras() > 0ULL && !RenderableBoundingBoxExists())
 				{
 					CreateRenderableBoundingBox(GetMouseCameras().at(0));
 				}
+
+				if (Editor::PendingBillboards())
+					Editor::CreateRegisteredBillboards();
 			}
 		);
 	}

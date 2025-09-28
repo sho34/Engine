@@ -286,4 +286,13 @@ namespace Editor {
 	//JObjects Creation
 	void StartSceneObjectCreation(SceneObjectType type);
 	void StartTemplateCreation(TemplateType type);
+
+	//Billboards
+	std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject);
+	std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject);
+	void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject);
+	void CreateRegisteredBillboards();
+	bool PendingBillboards();
+	void DestroyBillboards();
 }

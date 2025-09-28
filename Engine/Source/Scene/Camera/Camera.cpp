@@ -24,6 +24,10 @@ extern std::shared_ptr<Renderer> renderer;
 namespace Editor
 {
 	extern void SelectCamera(std::shared_ptr<Camera> camera);
+	extern std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	extern void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject);
+	extern std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject);
+	extern void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject);
 }
 #endif
 namespace Scene
@@ -86,7 +90,7 @@ namespace Scene
 			auto [uuid, cam] = pair;
 			//as a special case update the billboard
 #if defined(_EDITOR)
-			cam->UpdateBillboard();
+			cam->UpdateBillboard(Editor::GetBillboard(cam));
 #endif
 			if (!cam->dirty(Camera::Update_useSwapChain)) continue;
 			cam->clean(Camera::Update_useSwapChain);
@@ -212,7 +216,7 @@ namespace Scene
 	{
 		std::shared_ptr<Camera> cam = FindInCameras(uuid);
 #if defined(_EDITOR)
-		cam->DestroyBillboard();
+		Editor::DestroyBillboard(cam);
 #endif
 		cam->markedForDelete = true;
 	}
@@ -453,7 +457,8 @@ namespace Scene
 		CreateConstantsBuffer();
 		CreateRenderPasses();
 #if defined(_EDITOR)
-		SceneObject::Initialize();
+		if (this_ptr != GetMouseCameras().at(0) && !lightCam)
+			Editor::RegisterBillboard(this_ptr);
 #endif
 	}
 
@@ -796,16 +801,17 @@ namespace Scene
 	{
 	}
 
-	void Camera::CreateBillboard()
+	std::shared_ptr<Renderable> Camera::CreateBillboard()
 	{
-		if (this_ptr == GetMouseCameras().at(0) || lightCam) return;
+		if (GetNumMouseCameras() == 0ULL || this_ptr == GetMouseCameras().at(0) || lightCam) return nullptr;
 
-		CreateBillboardFromMaterials("Camera", "CameraPicking");
+		std::shared_ptr<Renderable> billboard = Editor::CreateBillboardFromMaterials(at("name"), "Camera", "CameraPicking");
 		billboard->OnPick = [this] {Editor::SelectCamera(this_ptr); };
-		UpdateBillboard();
+		UpdateBillboard(billboard);
+		return billboard;
 	}
 
-	void Camera::UpdateBillboard()
+	void Camera::UpdateBillboard(std::shared_ptr<Renderable> billboard)
 	{
 		if (!billboard) return;
 		billboard->position(position());
