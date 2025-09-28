@@ -476,12 +476,18 @@ void EditorModeCreate()
 			//resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
 			LoadDefaultLevel();
-			//LoadLevel("pyramid");
-			//LoadLevel("twocams");
+			//LoadLevel("1");
+			//LoadLevel("2");
+			//LoadLevel("baseLevel");
+			//LoadLevel("family");
 			//LoadLevel("female");
 			//LoadLevel("knight");
+			//LoadLevel("pyramid");
+			//LoadLevel("she_bu_tou");
+			//LoadLevel("singlecam");
 			//LoadLevel("spartan");
-			//LoadLevel("family");
+			//LoadLevel("tavern");
+			//LoadLevel("twocams");
 			//LoadLevel("venom");
 			BindSceneObjects();
 

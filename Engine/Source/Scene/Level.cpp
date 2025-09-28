@@ -81,10 +81,11 @@ namespace Scene::Level {
 	{
 		Editor::levelModified = false;
 		Editor::defaultLevel = false;
-		std::string pathStr = (std::filesystem::exists(level) ? level.generic_string() : (defaultLevelsFolder + level.generic_string() + ".json"));
+		std::string pathStr = "" + (std::filesystem::exists(level) ? level.generic_string() : (defaultLevelsFolder + level.generic_string() + ".json"));
 		OutputDebugStringA(std::string("Loading level: " + pathStr + "\n").c_str());
 
 		std::ifstream file(pathStr);
+		bool isOpen = file.is_open();
 		nlohmann::json data = nlohmann::json::parse(file);
 
 		DestroySceneObjects();

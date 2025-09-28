@@ -365,7 +365,7 @@ namespace Templates
 	{
 		//used for creating
 		TextureJson texj = CreateBaseTextureJson(name, 0, format);
-		CreateTexture(texj);
+		CreateTexture(texj.json());
 
 		//used for referencing
 		std::shared_ptr<TextureJson> text = GetTextureTemplate(texj.uuid());

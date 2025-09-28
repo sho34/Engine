@@ -417,7 +417,7 @@ namespace Editor {
 						if (ImGui::MenuItem(ICON_FA_SAVE "Save")) {
 							SaveLevelToFile(currentLevelName);
 						}
-					}, currentLevelName != ""
+					}, currentLevelName != "" && levelModified
 				);
 
 				if (ImGui::MenuItem(ICON_FA_SAVE "Save As..")) {
