@@ -5,9 +5,6 @@ BUGS:
 
 TODO:
 -manejar referencias rotas
-	-Renderable
-		-model
-		-material
 	-SoundFX
 		-soundEffect
 	-Camera	
@@ -24,7 +21,7 @@ TODO:
 	-splash screen
 	-barra de carga
 	-mostrar nivel con un escenario
-		-town(sacar modelos de sketchfab) de 4 casas mediebales
+		-town(sacar modelos de sketchfab) de 4 casas medievales
 		-poner 5 personajes animados en esta taberna
 		-poder moverse utilizando el teclado y mouse en modo free fly
 		-poder utilizar el joystick en modo free fly
@@ -37,6 +34,8 @@ DONE:
 -manejar referencias rotas
 	-Renderable
 		-cameras
+		-model
+		-material
 -generalizar los billboards
 	-arreglar el shader para que el porte siempre sea fijo y no utilice ese hack feo
 -grabar templates
