@@ -354,6 +354,15 @@ namespace Scene
 	{
 		using namespace Templates;
 
+		//do not create the render passes of the camera if one of the renderpasses is broken. as we want to avoid a broken chain of passes
+		for (unsigned int i = 0; i < renderPasses().size(); i++)
+		{
+			std::string passUUID = renderPasses().at(i);
+			if (passUUID == "") continue;
+			std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(passUUID);
+			if (rp == nullptr) return;
+		}
+
 		for (unsigned int i = 0; i < renderPasses().size(); i++)
 		{
 			std::string passUUID = renderPasses().at(i);

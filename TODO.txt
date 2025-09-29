@@ -1,7 +1,6 @@
 BUGS:
 -si no existe una camara como mousecontroller se cae la creacion de billboards
 	-los billboards deben ser creados cuando cambia algo de la escena y no a partir del Initialize
--se perdio el preview de los renderpasses en las camaras
 
 TODO:
 -manejar referencias rotas
@@ -30,6 +29,7 @@ TODO:
 NICE TO HAVE:
 
 DONE:
+-se perdio el preview de los renderpasses en las camaras
 -arreglar los niveles
 -manejar referencias rotas
 	-Renderable

@@ -4611,24 +4611,23 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 				}
 
 				std::shared_ptr<Camera> cam = std::dynamic_pointer_cast<Camera>(json[0]);
-				std::vector<std::shared_ptr<RenderPassInstance>> passes;
-				std::copy_if(cam->cameraRenderPasses.begin(), cam->cameraRenderPasses.end(), std::back_inserter(passes), [](auto& pass)
+				unsigned int numPasses = static_cast<unsigned int>(cam->cameraRenderPasses.size());
+
+				std::set<unsigned int> previewAble;
+				std::set<unsigned int> shadowMapPass;
+				for (unsigned int i = 0; i < numPasses; i++)
+				{
+					auto& pass = cam->cameraRenderPasses.at(i);
+					if (pass->type == RenderPassType_SwapChainPass)
 					{
-						return pass->type != RenderPassType_SwapChainPass;
+						continue;
 					}
-				);
-				std::vector<bool> passIsShadowMap;
-				std::transform(passes.begin(), passes.end(), std::back_inserter(passIsShadowMap), [](auto& pass)
+					previewAble.insert(i);
+					if (pass->materialOverride == RenderPassMaterialOverride_ShadowMap)
 					{
-						return pass->materialOverride == RenderPassMaterialOverride_ShadowMap;
+						shadowMapPass.insert(i);
 					}
-				);
-				std::vector<std::shared_ptr<RenderToTexturePass>> rttPasses;
-				std::transform(passes.begin(), passes.end(), std::back_inserter(rttPasses), [](auto& pass)
-					{
-						return pass->renderToTexturePass;
-					}
-				);
+				}
 
 				ImGui::DrawItemWithEnabledState([cam]()
 					{
@@ -4652,40 +4651,30 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 							cam->previewRenderToTextureIndex = 0U;
 						}
 						ImGui::PopID();
-					}, cam->previewRenderPassIndex < (rttPasses.size() - 1));
+					}, cam->previewRenderPassIndex < (numPasses - 1));
 
 				unsigned int p = cam->previewRenderPassIndex;
+				if (!previewAble.contains(p)) return;
 
-				if (passIsShadowMap.size() < p && !passIsShadowMap[p])
+				auto& pass = cam->cameraRenderPasses.at(p);
+				if (!shadowMapPass.contains(p))
 				{
-					std::vector<std::string> selectables(rttPasses[p]->renderToTexture.size());
-					std::generate(selectables.begin(), selectables.end(), [n = 0]() mutable {return std::to_string(n + 1); });
-
-					ImGui::Text("RTT#");
-					ImGui::SameLine();
-					std::string selected = std::to_string(cam->previewRenderToTextureIndex + 1);
-					ImGui::DrawComboSelection(selected, selectables, [cam](std::string option)
-						{
-							cam->previewRenderToTextureIndex = atoi(option.c_str()) - 1;
-						}
-					);
-
 					unsigned int rt = cam->previewRenderToTextureIndex;
 
 					ImGui::DrawTextureImage(
 						(ImTextureID)
-						rttPasses[p]->renderToTexture[rt]->gpuTextureHandle.ptr,
-						rttPasses[p]->renderToTexture[rt]->width,
-						rttPasses[p]->renderToTexture[rt]->height
+						pass->renderToTexturePass->renderToTexture[rt]->gpuTextureHandle.ptr,
+						pass->renderToTexturePass->renderToTexture[rt]->width,
+						pass->renderToTexturePass->renderToTexture[rt]->height
 					);
 				}
-				else if (rttPasses.size() < p)
+				else
 				{
 					ImGui::DrawTextureImage(
 						(ImTextureID)
-						rttPasses[p]->gpuDepthStencilTextureHandle.ptr,
-						rttPasses[p]->scissorRect.right - rttPasses[p]->scissorRect.left,
-						rttPasses[p]->scissorRect.bottom - rttPasses[p]->scissorRect.top
+						pass->renderToTexturePass->gpuDepthStencilTextureHandle.ptr,
+						pass->renderToTexturePass->scissorRect.right - pass->renderToTexturePass->scissorRect.left,
+						pass->renderToTexturePass->scissorRect.bottom - pass->renderToTexturePass->scissorRect.top
 					);
 				}
 			}
