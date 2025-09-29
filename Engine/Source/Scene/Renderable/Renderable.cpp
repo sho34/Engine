@@ -510,6 +510,10 @@ namespace Scene {
 				);
 				auto& mesh = meshes.at(i);
 				std::string matUUID = mm.at(i).materialUUID;
+				if (GetMaterialTemplate(matUUID) == nullptr)
+				{
+					matUUID = FindMaterialUUIDByName("BaseLighting"); //fallback
+				}
 				std::shared_ptr<MaterialInstance> mi = rp->GetRenderPassMaterialInstance(
 					matUUID, mesh, shadowed(),
 					mpmo, uuid(), nullptr, onPostMaterialChange);
