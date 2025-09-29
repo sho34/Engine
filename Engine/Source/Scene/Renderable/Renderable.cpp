@@ -141,6 +141,12 @@ namespace Scene {
 						nlohmann::json patch = { {"meshMaterials", nlohmann::json::array({})} };
 						r->merge_patch(patch);
 						r->RebuildMeshMaterials();
+						if (r->animable)
+						{
+							AttachAnimation(r->this_ptr, r->model3D->animations);
+							r->StepAnimation(0.0f);
+							r->boundingBoxCompute = std::make_shared<RenderableBoundingBox>(r->this_ptr);
+						}
 						r->BindToScene();
 						r->clean(Renderable::Update_model);
 					}
@@ -426,7 +432,7 @@ namespace Scene {
 			);
 			CreateBoundingBox();
 		}
-		else if (model() != "")
+		else if (model() != "" && GetModel3DTemplate(model()) != nullptr)
 		{
 			model3D = GetModel3DInstance(model(), [this]
 				{
