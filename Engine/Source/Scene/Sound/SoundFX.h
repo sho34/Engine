@@ -70,8 +70,8 @@ namespace Scene {
 		bool Stop();
 		bool Pause();
 		bool Resume();
-		bool IsPlaying() { return GetInstance()->GetState() == DirectX::SoundState::PLAYING; }
-		bool IsPaused() { return GetInstance()->GetState() == DirectX::SoundState::PAUSED; }
+		bool IsPlaying() { return GetInstance() != nullptr && GetInstance()->GetState() == DirectX::SoundState::PLAYING; }
+		bool IsPaused() { return GetInstance() == nullptr || GetInstance()->GetState() == DirectX::SoundState::PAUSED; }
 		float Duration() { return (GetEffect()->GetSampleDurationMS() / 1000.0f); }
 		float time = 0.0f;
 		void Step(float step);

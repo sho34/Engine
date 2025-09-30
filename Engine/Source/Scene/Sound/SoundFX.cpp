@@ -77,6 +77,10 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
+		using namespace Templates;
+		std::shared_ptr<SoundJson> stmp = GetSoundTemplate(sound());
+		if (!stmp) return;
+
 		if (!sound().empty())
 		{
 			auto OnSoundChange = [this](std::shared_ptr<JObject> sound)

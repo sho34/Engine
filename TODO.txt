@@ -4,10 +4,7 @@ BUGS:
 
 TODO:
 -manejar referencias rotas
-	-SoundFX
-		-soundEffect
-	-Camera	
-		-renderPass
+	
 -Interaccion de Gizmos de ImGuizmo con la posibilidad de combinar todos los objetos que sean seleccionables
 	-Renderables: todos
 	-SoundFX: sonidos 3d
@@ -36,6 +33,10 @@ DONE:
 		-cameras
 		-model
 		-material
+	-Camera	
+		-renderPass
+	-SoundFX
+		-soundEffect
 -generalizar los billboards
 	-arreglar el shader para que el porte siempre sea fijo y no utilice ese hack feo
 -grabar templates
