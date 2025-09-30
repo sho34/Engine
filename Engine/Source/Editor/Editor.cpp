@@ -891,6 +891,7 @@ namespace Editor {
 	void MarkScenePanelAssetsAsDirty()
 	{
 		sceneObjectEdition.dirtyAssetsTree = true;
+		levelModified = true;
 	}
 
 	void DestroyEditorSceneObjectsReferences()
@@ -940,6 +941,7 @@ namespace Editor {
 	void MarkTemplatesPanelAssetsAsDirty()
 	{
 		templateEdition.dirtyAssetsTree = true;
+		templatesModified = true;
 	}
 
 	//JObject's Preview Panel

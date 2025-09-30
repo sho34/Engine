@@ -149,6 +149,8 @@ namespace Scene {
 		void BindRenderable(std::shared_ptr<Renderable> renderable);
 		void UnbindRenderable(std::shared_ptr<Renderable> renderable);
 
+		bool ResolvesToSwapChain();
+
 		void Render();
 
 		std::shared_ptr<Scene::Light> lightCam = nullptr;

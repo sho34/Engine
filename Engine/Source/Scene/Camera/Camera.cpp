@@ -466,7 +466,7 @@ namespace Scene
 		CreateConstantsBuffer();
 		CreateRenderPasses();
 #if defined(_EDITOR)
-		if (this_ptr != GetMouseCameras().at(0) && !lightCam)
+		if (GetNumMouseCameras() > 0 && this_ptr != GetMouseCameras().at(0) && !lightCam)
 			Editor::RegisterBillboard(this_ptr);
 #endif
 	}
@@ -537,6 +537,23 @@ namespace Scene
 		r->DestroyConstantsBuffersInstances(this_ptr);
 		r->DestroyRootSignatures(this_ptr);
 		r->DestroyPipelineStates(this_ptr);
+	}
+
+	bool Camera::ResolvesToSwapChain()
+	{
+		using namespace Templates;
+		if (useSwapChain()) return true;
+
+		for (auto i = 0; i < renderPasses().size(); i++)
+		{
+			std::shared_ptr<RenderPassJson> pass = GetRenderPassTemplate(renderPasses().at(i));
+			if (!pass) continue;
+
+			if (pass->type() == RenderPassType_SwapChainPass) return true;
+			if (pass->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve) return true;
+		}
+
+		return false;
 	}
 
 	void Camera::Render()

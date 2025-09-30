@@ -476,12 +476,13 @@ void EditorModeCreate()
 			//mainPass = CreateMainPass();
 			//resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
 
-			LoadDefaultLevel();
+			//LoadDefaultLevel();
 			//LoadLevel("1");
 			//LoadLevel("2");
 			//LoadLevel("baseLevel");
 			//LoadLevel("family");
 			//LoadLevel("female");
+			LoadLevel("hdrlevel");
 			//LoadLevel("knight");
 			//LoadLevel("pyramid");
 			//LoadLevel("she_bu_tou");

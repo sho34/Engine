@@ -8,9 +8,18 @@ extern std::shared_ptr<Renderer> renderer;
 
 OverridePass::~OverridePass()
 {
-	DestroyMeshInstance(fsQuad);
-	DestroyMaterialInstance(fsQuadMaterial);
-	DestroyConstantsBuffer(fsQuadConstantsBuffer);
+	if (fsQuad)
+	{
+		DestroyMeshInstance(fsQuad);
+	}
+	if (fsQuadMaterial)
+	{
+		DestroyMaterialInstance(fsQuadMaterial);
+	}
+	if (fsQuadConstantsBuffer)
+	{
+		DestroyConstantsBuffer(fsQuadConstantsBuffer);
+	}
 	camera = nullptr;
 	renderPassInstance = nullptr;
 	rootSignature = nullptr;
