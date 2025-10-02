@@ -132,7 +132,11 @@ namespace Templates
 				{
 					std::for_each(rebuildImages.begin(), rebuildImages.end(), [](auto tex)
 						{
-							CreateDDSFile(tex);
+							std::filesystem::path p = tex->name();
+							if (p.extension() != ".dds")
+							{
+								CreateDDSFile(tex);
+							}
 							tex->CreatePreviewTexture();
 							tex->clean(TextureJson::Update_images);
 						}
@@ -395,6 +399,11 @@ namespace Templates
 	{
 
 		std::filesystem::path ddsPath = tex->name();
+		if (ddsPath == "Assets/ibl/family/skybox_brdf_lut.dds")
+		{
+			int i = 0;
+		}
+
 		ddsPath.replace_extension(".dds");
 
 		if (!std::filesystem::exists(ddsPath))
@@ -752,11 +761,21 @@ namespace Templates
 		materialTexture = uuid;
 		std::shared_ptr<TextureJson> tex = GetTextureTemplate(uuid);
 		std::filesystem::path path = tex->name();
-		path.replace_extension(".dds");
 #if defined(_DEVELOPMENT)
-		if (!std::filesystem::exists(path))
+		if (path.extension() != ".dds")
 		{
-			CreateDDSFile(tex);
+			path.replace_extension(".dds");
+			if (!std::filesystem::exists(path))
+			{
+				CreateDDSFile(tex);
+			}
+		}
+		else if (tex->images().size() == 0ULL || tex->images().at(0) == "")
+		{
+			nlohmann::json update = { {"images", nlohmann::json::array({tex->name()}) } };
+			tex->JUpdate(update);
+			//tex->create_images({ tex->name() });
+			//tex->update
 		}
 #endif
 		std::string pathS = path.string();

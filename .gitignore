@@ -397,5 +397,6 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 /Engine/Target/imgui.ini
-/Engine/Target/WinPixEventRuntime.dll
+/Engine/Target/*.dll
 *.map
+/SDKs/assimp/assimp-5.4.3/build
