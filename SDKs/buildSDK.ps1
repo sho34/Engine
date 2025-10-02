@@ -31,3 +31,7 @@ cd $sdkfolder
 cd imguizmo
 & $msbuild ImGuizmo.sln /p:Configuration=Release /t:Rebuild
 & $msbuild ImGuizmo.sln /p:Configuration=Debug /t:Rebuild
+
+cd $sdkfolder
+copy ./assimp/assimp-5.4.3/build/bin/Debug/assimp-vc143-mtd.dll ../Engine/Target
+copy ./assimp/assimp-5.4.3/build/bin/Release/assimp-vc143-mt.dll ../Engine/Target
