@@ -123,6 +123,7 @@ namespace Templates {
 			const std::string uuid,
 			VertexClass vClass,
 			bool isShadowed,
+			bool hasIBL,
 			TextureShaderUsageMap overrideTextures = {},
 			std::string objectUUID = "",
 			JObjectChangeCallback cb = nullptr,
@@ -138,6 +139,7 @@ namespace Templates {
 
 		VertexClass vertexClass;
 		bool shadowed;
+		bool ibl;
 		MaterialVariablesMapping variablesMapping;
 		std::vector<size_t> variablesBufferSize;
 		std::vector<std::vector<byte>> variablesBuffer;

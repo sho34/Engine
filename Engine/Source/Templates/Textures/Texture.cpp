@@ -774,8 +774,6 @@ namespace Templates
 		{
 			nlohmann::json update = { {"images", nlohmann::json::array({tex->name()}) } };
 			tex->JUpdate(update);
-			//tex->create_images({ tex->name() });
-			//tex->update
 		}
 #endif
 		std::string pathS = path.string();

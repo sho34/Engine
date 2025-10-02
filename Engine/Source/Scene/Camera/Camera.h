@@ -155,8 +155,6 @@ namespace Scene {
 
 		std::shared_ptr<Scene::Light> lightCam = nullptr;
 		std::shared_ptr<ConstantsBuffer> cameraCbv;
-		std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> iblTextures;
-		std::map<TextureShaderUsage, unsigned int> iblTexturesFlags;
 
 		BoundingFrustum boundingFrustum;
 
@@ -180,6 +178,9 @@ namespace Scene {
 		void MoveLeft(float step);
 		void MoveRight(float step);
 
+		TextureUsageInstanceMap iblTextures;
+		bool HasIBL();
+		void CreateIBLTextures();
 		void SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
 
 #if defined(_EDITOR)

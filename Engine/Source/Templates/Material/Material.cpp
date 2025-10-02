@@ -95,6 +95,7 @@ namespace Templates {
 		const std::string uuid,
 		VertexClass vClass,
 		bool isShadowed,
+		bool hasIBL,
 		TextureShaderUsageMap overrideTextures,
 		std::string bindingUUID,
 		JObjectChangeCallback materialChangeCallback,
@@ -127,6 +128,7 @@ namespace Templates {
 
 		vertexClass = vClass;
 		shadowed = isShadowed;
+		ibl = hasIBL;
 		CreateMaterialShaderDefines();
 		CreateShaderInstances();
 		LoadVariablesMapping();
@@ -172,14 +174,13 @@ namespace Templates {
 		{
 			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_ShadowMaps));
 		}
-		/*
+
 		if (ibl)
 		{
 			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_IBLIrradiance));
 			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_IBLPreFilteredEnvironment));
 			defines.push_back(textureShaderUsageToShaderDefine.at(TextureShaderUsage_IBLBRDFLUT));
 		}
-		*/
 	}
 
 	void MaterialInstance::CreateShaderInstances()

@@ -462,7 +462,6 @@ namespace Scene
 		}
 
 		UpdateProjection();
-		CreateIBLTexturesInstances();
 		CreateConstantsBuffer();
 		CreateRenderPasses();
 #if defined(_EDITOR)
@@ -583,28 +582,6 @@ namespace Scene
 	void Camera::Destroy()
 	{
 
-	}
-
-	void Camera::CreateIBLTexturesInstances()
-	{
-		//if (std::any_of(iblJsonTextures.begin(), iblJsonTextures.end(), [this](auto& tup)
-		//	{
-		//		std::string& attName = std::get<0>(tup);
-		//		return json.at(attName) == "";
-		//	}
-		//))
-		//	return;
-		//
-		//std::map<TextureShaderUsage, std::string> textures;
-		//std::transform(iblJsonTextures.begin(), iblJsonTextures.end(), std::inserter(textures, textures.end()), [this](auto& tup)
-		//	{
-		//		std::string& attName = std::get<0>(tup);
-		//		TextureShaderUsage& usage = std::get<1>(tup);
-		//		return std::pair<TextureShaderUsage, std::string>(usage, json.at(attName));
-		//	}
-		//);
-		//
-		//iblTextures = GetTextures(textures);
 	}
 
 	void Camera::CreateConstantsBuffer()
@@ -802,11 +779,23 @@ namespace Scene
 		UpdateLightPosition();
 	}
 
+	bool Camera::HasIBL()
+	{
+		return !IBLIrradiance().empty() && !IBLPreFilteredEnvironment().empty() && !IBLBRDFLUT().empty();
+	}
+
+	void Camera::CreateIBLTextures()
+	{
+		iblTextures.insert_or_assign(TextureShaderUsage_IBLIrradiance, GetTextureInstance(IBLIrradiance()));
+		iblTextures.insert_or_assign(TextureShaderUsage_IBLPreFilteredEnvironment, GetTextureInstance(IBLPreFilteredEnvironment()));
+		iblTextures.insert_or_assign(TextureShaderUsage_IBLBRDFLUT, GetTextureInstance(IBLBRDFLUT()));
+	}
+
 	void Camera::SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
 	{
-		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLIrradiance)->gpuHandle);
-		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->gpuHandle);
-		//commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLBRDFLUT)->gpuHandle);
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLIrradiance)->gpuHandle);
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->gpuHandle);
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLBRDFLUT)->gpuHandle);
 	}
 
 #if defined(_EDITOR)

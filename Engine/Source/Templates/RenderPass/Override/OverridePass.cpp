@@ -34,7 +34,7 @@ void OverridePass::CreateFsQuadResources(std::string materialName, std::shared_p
 	VertexClass vertexClass = fsQuad->vertexClass;
 	fsQuadMaterial = GetMaterialInstance(fsQuadMaterialUUID, [fsQuadMaterialUUID, vertexClass]()
 		{
-			return std::make_shared<MaterialInstance>(fsQuadMaterialUUID, fsQuadMaterialUUID, vertexClass, false);
+			return std::make_shared<MaterialInstance>(fsQuadMaterialUUID, fsQuadMaterialUUID, vertexClass, false, false);
 		}
 	);
 

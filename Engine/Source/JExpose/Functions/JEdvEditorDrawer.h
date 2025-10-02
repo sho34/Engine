@@ -1740,6 +1740,15 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_sound>()
 }
 
 template<>
+inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_texture>()
+{
+	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+		{
+			DrawResourceSelection(attribute, json, Templates::GetTextureName, Templates::GetTexturesUUIDsNames, ICON_FA_IMAGE);
+		};
+}
+
+template<>
 inline JEdvEditorDrawerFunction DrawValue<bool, jedv_t_boolean>()
 {
 	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)

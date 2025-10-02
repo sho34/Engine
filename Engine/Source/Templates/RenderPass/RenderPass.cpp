@@ -137,6 +137,13 @@ namespace Templates
 		instance->materialOverride = rp->materialOverride();
 		instance->renderCallbackOverride = rp->renderCallbackOverride();
 		instance->overridePass = RenderCallbackOverriders.at(instance->renderCallbackOverride)(cam, renderPassIndex, instance);
+		if (instance->type == RenderPassType_RenderToTexturePass &&
+			instance->materialOverride == RenderPassMaterialOverride_None &&
+			instance->renderCallbackOverride == RenderPassRenderCallbackOverride_None &&
+			cam->HasIBL())
+		{
+			cam->CreateIBLTextures();
+		}
 
 		return instance;
 	}
@@ -207,13 +214,14 @@ namespace Templates
 	{
 		VertexClass vertexClass = mesh->vertexClass;
 		std::string vertexType = VertexClassToString.at(vertexClass);
+		bool hasIbl = camera ? camera->HasIBL() : false;
 
-		auto noOverride = [materialUUID, vertexClass, vertexType, shadowed, bindingUUID, materialChangeCallback, materialChangePostCallback]()
+		auto noOverride = [materialUUID, vertexClass, vertexType, shadowed, hasIbl, bindingUUID, materialChangeCallback, materialChangePostCallback]()
 			{
 				std::string instanceUUID = materialUUID + "-" + vertexType;
-				return GetMaterialInstance(instanceUUID, [instanceUUID, materialUUID, vertexClass, shadowed, bindingUUID, materialChangeCallback, materialChangePostCallback]()
+				return GetMaterialInstance(instanceUUID, [instanceUUID, materialUUID, vertexClass, shadowed, hasIbl, bindingUUID, materialChangeCallback, materialChangePostCallback]()
 					{
-						return std::make_shared<MaterialInstance>(instanceUUID, materialUUID, vertexClass, shadowed, TextureShaderUsageMap(),
+						return std::make_shared<MaterialInstance>(instanceUUID, materialUUID, vertexClass, shadowed, hasIbl, TextureShaderUsageMap(),
 							bindingUUID, materialChangeCallback, materialChangePostCallback);
 					}
 				);
@@ -231,7 +239,7 @@ namespace Templates
 				}
 				return GetMaterialInstance(instanceUUID, [instanceUUID, smMatUUID, vertexClass, overrideTextures]()
 					{
-						return std::make_shared<MaterialInstance>(instanceUUID, smMatUUID, vertexClass, false, overrideTextures);
+						return std::make_shared<MaterialInstance>(instanceUUID, smMatUUID, vertexClass, false, false, overrideTextures);
 					}
 				);
 			};
@@ -250,7 +258,7 @@ namespace Templates
 				std::string instanceUUID = pickMaterialUUID + "-" + vertexType;
 				return GetMaterialInstance(instanceUUID, [instanceUUID, pickMaterialUUID, vertexClass]()
 					{
-						return std::make_shared<MaterialInstance>(instanceUUID, pickMaterialUUID, vertexClass, false);
+						return std::make_shared<MaterialInstance>(instanceUUID, pickMaterialUUID, vertexClass, false, false);
 					}
 				);
 			};
