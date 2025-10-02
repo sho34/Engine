@@ -180,7 +180,13 @@ namespace Templates
 		std::filesystem::path ddsPath = json.name();
 		ddsPath.replace_extension(".dds");
 
-		std::filesystem::path image = json.images().at(0);
+		//in case there is no images(a broken ref) we load from the name
+		std::filesystem::path image = (json.images().size() > 0ULL) ? json.images().at(0) : json.name();
+		if (json.images().size() == 0ULL)
+		{
+			json.images_push_back(image.string());
+		}
+
 		std::string extension = image.extension().string();
 		nostd::ToLower(extension);
 
@@ -209,7 +215,13 @@ namespace Templates
 
 		std::filesystem::path ddsPath = json.name();
 		ddsPath.replace_extension(".dds");
-		std::filesystem::path image = json.images().at(0);
+
+		//in case there is no images(a broken ref) we load from the name
+		std::filesystem::path image = (json.images().size() > 0ULL) ? json.images().at(0) : json.name();
+		if (json.images().size() == 0ULL)
+		{
+			json.images_push_back(image.string());
+		}
 
 		//convert the gif to dds
 		AssembleArrayDDSFromGif(ddsPath, image);
@@ -284,7 +296,13 @@ namespace Templates
 
 		std::filesystem::path ddsPath = json.name();
 		ddsPath.replace_extension(".dds");
-		std::string image = json.images().at(0);
+
+		//in case there is no images(a broken ref) we load from the name
+		std::filesystem::path image = (json.images().size() > 0ULL) ? json.images().at(0) : json.name();
+		if (json.images().size() == 0ULL)
+		{
+			json.images_push_back(image.string());
+		}
 
 		AssembleCubeDDSFromSkybox(ddsPath, image);
 

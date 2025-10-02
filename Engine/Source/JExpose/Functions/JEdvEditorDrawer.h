@@ -1125,7 +1125,14 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_i
 							);
 						}
 						ImGui::SameLine();
-						ImGui::InputText("##", texture->images().at(0).data(), texture->images().at(0).size(), ImGuiInputTextFlags_ReadOnly);
+						if (texture->images().size() > 0ULL)
+						{
+							ImGui::InputText("##", texture->images().at(0).data(), texture->images().at(0).size(), ImGuiInputTextFlags_ReadOnly);
+						}
+						else
+						{
+							ImGui::InputText("##", std::string().data(), 0, ImGuiInputTextFlags_ReadOnly);
+						}
 						ImGui::SameLine();
 
 						ImGui::PopID();
