@@ -120,9 +120,14 @@ bool Remove##TemplateName##Instance(std::function<std::string()> getKey, std::sh
 	std::string uuid = getKey();\
 	return Remove##TemplateName##Instance(uuid,instance);\
 }\
+bool Remove##TemplateName##Instance(std::shared_ptr<TemplateName##Instance>& instance)\
+{\
+	std::string uuid = refTracker.FindKey(instance);\
+	return Remove##TemplateName##Instance(uuid, instance); \
+}\
 std::shared_ptr<TemplateName##Instance> Find##TemplateName##Instance(std::string uuid)\
 {\
-	if(refTracker.Has(uuid))\
+	if (refTracker.Has(uuid))\
 		return refTracker.FindValue(uuid); \
-	return nullptr;\
+	return nullptr; \
 }

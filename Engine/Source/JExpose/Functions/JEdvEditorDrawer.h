@@ -1717,7 +1717,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_shader>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			DrawResourceSelection(attribute, json, Templates::GetShaderName, Templates::GetShadersUUIDsNames, ICON_FA_FILE_CODE);
+			DrawResourceSelection(attribute, json, Templates::GetShaderName, SortUUIDNameByName(Templates::GetShadersUUIDsNames), ICON_FA_FILE_CODE);
 		};
 }
 
@@ -1726,7 +1726,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_model3d>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			DrawResourceSelection(attribute, json, Templates::GetModel3DName, Templates::GetModel3DsUUIDsNames, ICON_FA_CUBE);
+			DrawResourceSelection(attribute, json, Templates::GetModel3DName, SortUUIDNameByName(Templates::GetModel3DsUUIDsNames), ICON_FA_CUBE);
 		};
 }
 
@@ -1735,7 +1735,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_sound>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			DrawResourceSelection(attribute, json, Templates::GetSoundName, Templates::GetSoundsUUIDsNames, ICON_FA_MUSIC);
+			DrawResourceSelection(attribute, json, Templates::GetSoundName, SortUUIDNameByName(Templates::GetSoundsUUIDsNames), ICON_FA_MUSIC);
 		};
 }
 
@@ -1744,7 +1744,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_texture>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
 		{
-			DrawResourceSelection(attribute, json, Templates::GetTextureName, Templates::GetTexturesUUIDsNames, ICON_FA_IMAGE);
+			DrawResourceSelection(attribute, json, Templates::GetTextureName, SortUUIDNameByName(Templates::GetTexturesUUIDsNames), ICON_FA_IMAGE);
 		};
 }
 

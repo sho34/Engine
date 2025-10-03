@@ -115,7 +115,6 @@ namespace Templates
 		TextureInstance(std::string uuid, unsigned int startFrame);
 		~TextureInstance() {}
 		std::string materialTexture;
-		//unsigned int updateFlag = 0U;
 
 		//D3D12
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
@@ -124,14 +123,8 @@ namespace Templates
 		CComPtr<ID3D12Resource> texture;
 		CComPtr<ID3D12Resource> upload;
 		size_t bufferSize;
-		//std::string textureName;
-		//std::map<std::string, std::function<void()>> onChangeCallbacks;
-		//
-		//~TextureInstance();
-		//void Load(std::string uuid, unsigned int startFrame = 0);
 		void CreateTextureResource(std::string& path, DXGI_FORMAT format, TextureType type, unsigned int numFrames, unsigned int nMipMaps, unsigned int startFrame = 0U);
 		void ReleaseResources();
-		//void BindChangeCallback(std::string uuid, std::function<void()> cb);
 	};
 	TEMPDECL_REFTRACKER(Texture);
 };

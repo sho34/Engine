@@ -35,6 +35,7 @@
 	std::shared_ptr<TemplateName##Instance> Get##TemplateName##Instance(std::string uuid);\
 	bool Remove##TemplateName##Instance(std::string uuid, std::shared_ptr<TemplateName##Instance> &instance);\
 	bool Remove##TemplateName##Instance(std::function<std::string()> getKey, std::shared_ptr<TemplateName##Instance> &instance);\
+	bool Remove##TemplateName##Instance(std::shared_ptr<TemplateName##Instance>& instance);\
 	std::shared_ptr<TemplateName##Instance> Find##TemplateName##Instance(std::string uuid);
 
 #define TEMPLATE_DECL(TemplateName)\

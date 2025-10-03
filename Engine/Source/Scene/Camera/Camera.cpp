@@ -83,6 +83,16 @@ namespace Scene
 			}
 		);
 
+		//build a set of cameras for which ibl settings changed
+		std::set<std::shared_ptr<Camera>> camsIBL;
+		std::copy_if(cams.begin(), cams.end(), std::inserter(camsIBL, camsIBL.begin()), [](const auto& cam)
+			{
+				return cam->dirty(Camera::Update_IBLIrradiance) || cam->dirty(Camera::Update_IBLPreFilteredEnvironment) ||
+					cam->dirty(Camera::Update_IBLBRDFLUT);
+
+			}
+		);
+
 		//go through all cameras checking updates of the swapchain
 		std::map<std::string, std::shared_ptr<Camera>> allCams(Cameras.begin(), Cameras.end());
 		for (auto& pair : allCams)
@@ -124,6 +134,7 @@ namespace Scene
 			}
 		}
 
+		//update projection attributes
 		for (auto& pair : allCams)
 		{
 			auto [uuid, cam] = pair;
@@ -138,6 +149,40 @@ namespace Scene
 			cam->clean(Camera::Update_orthographic);
 			cam->clean(Camera::Update_fitWindow);
 			cam->UpdateProjection();
+		}
+
+		//rebuild ibl attributes if needed
+		if (camsIBL.size() > 0ULL)
+		{
+			renderer->Flush();
+			renderer->RenderCriticalFrame([&camsIBL]
+				{
+					for (auto& cam : camsIBL)
+					{
+						std::set<std::shared_ptr<Renderable>> renderables = cam->renderables;
+
+						for (auto& r : renderables)
+						{
+							cam->UnbindRenderable(r);
+						}
+
+						cam->DestroyIBLTextures();
+						cam->DestroyRenderPasses();
+						DestroyConstantsBuffer(cam->cameraCbv);
+
+						cam->CreateConstantsBuffer();
+						cam->CreateRenderPasses();
+
+						for (auto& r : renderables)
+						{
+							cam->BindRenderable(r);
+						}
+
+						cam->clean(Camera::Update_IBLIrradiance);
+						cam->clean(Camera::Update_IBLPreFilteredEnvironment);
+						cam->clean(Camera::Update_IBLBRDFLUT);
+					}
+				});
 		}
 
 		std::set<std::shared_ptr<Camera>> delCams;
@@ -524,6 +569,7 @@ namespace Scene
 
 		lightCam = nullptr;
 		Scene::UnbindFromScene(this_ptr);
+		DestroyIBLTextures();
 		DestroyRenderPasses();
 		DestroyConstantsBuffer(cameraCbv);
 	}
@@ -581,7 +627,6 @@ namespace Scene
 
 	void Camera::Destroy()
 	{
-
 	}
 
 	void Camera::CreateConstantsBuffer()
@@ -789,6 +834,15 @@ namespace Scene
 		iblTextures.insert_or_assign(TextureShaderUsage_IBLIrradiance, GetTextureInstance(IBLIrradiance()));
 		iblTextures.insert_or_assign(TextureShaderUsage_IBLPreFilteredEnvironment, GetTextureInstance(IBLPreFilteredEnvironment()));
 		iblTextures.insert_or_assign(TextureShaderUsage_IBLBRDFLUT, GetTextureInstance(IBLBRDFLUT()));
+	}
+
+	void Camera::DestroyIBLTextures()
+	{
+		for (auto& [_, t] : iblTextures)
+		{
+			RemoveTextureInstance(t);
+		}
+		iblTextures.clear();
 	}
 
 	void Camera::SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
