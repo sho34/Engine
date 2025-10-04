@@ -370,7 +370,6 @@
     <ClInclude Include="JExpose\Templates\SoundAtt.h" />
     <ClInclude Include="JExpose\Templates\TextureAtt.h" />
     <ClInclude Include="Templates\Shader\ShaderInstance.h" />
-    <ClInclude Include="Utils\Utils.h" />
     <ClInclude Include="Utils\ImageConvert.h" />
     <ClInclude Include="pch\Command.h" />
     <ClInclude Include="pch\DDSTextures.h" />
@@ -623,7 +622,6 @@
     </ClCompile>
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="Primitives\Sphere.cpp" />
-    <ClCompile Include="Utils\Utils.cpp" />
     <ClCompile Include="Utils\ImageConvert.cpp" />
     <ClCompile Include="Shaders\Compute\Renderable\RenderableBoundingBox.cpp" />
     <ClCompile Include="Renderer\VertexFormats.cpp" />
