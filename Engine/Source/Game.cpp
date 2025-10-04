@@ -14,16 +14,7 @@ using namespace Editor;
 #include <DeviceUtils/Resources/Resources.h>
 #include <DirectXHelper.h>
 #include <StepTimer.h>
-//#include <HDR/LuminanceHistogram.h>
-//#include <HDR/LuminanceHistogramAverage.h>
 
-//#define RUN_TEST
-
-#if defined(RUN_TEST)
-#include <IBL/DiffuseIrradianceMap.h>
-#include <IBL/PreFilteredEnvironmentMap.h>
-#include <IBL/BRDFLUT.h>
-#endif
 #include <RenderPass/RenderPass.h>
 #include <Renderable/Renderable.h>
 #include <Level.h>
@@ -33,25 +24,12 @@ using namespace DeviceUtils;
 using namespace ComputeShader;
 using namespace Editor;
 
-//extern RECT hWndRect;
 extern std::unique_ptr<DirectX::Mouse> mouse;
-
-//std::shared_ptr<DeviceUtils::DescriptorHeap> mainPassHeap;
-//std::shared_ptr<SwapChainPass> resolvePass;
-//std::shared_ptr<RenderToTexturePass> mainPass;
-//std::shared_ptr<LuminanceHistogram> hdrHistogram;
-//std::shared_ptr<LuminanceHistogramAverage> luminanceHistogramAverage;
-#if defined(RUN_TEST)
-std::shared_ptr<DiffuseIrradianceMap> diffuseIrradianceMap;
-std::shared_ptr<PreFilteredEnvironmentMap> preFilteredEnvironmentMap;
-std::shared_ptr<BRDFLUT> brdflut;
-#endif
 
 GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
 std::shared_ptr<Renderable> bootScreen;
 std::shared_ptr<Renderable> loadingScreenBar;
-//std::shared_ptr<Renderable> toneMapQuad;
 std::shared_ptr<Camera> UICamera;
 std::shared_ptr<Camera> mainPassCamera;
 
@@ -473,99 +451,10 @@ void EditorModeCreate()
 		{
 			using namespace Scene::Level;
 
-			//mainPass = CreateMainPass();
-			//resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
-
-			//LoadDefaultLevel();
-			//LoadLevel("1");
-			//LoadLevel("2");
-			//LoadLevel("baseLevel");
-			//LoadLevel("family");
-			//LoadLevel("female");
-			LoadLevel("hdrlevel");
-			//LoadLevel("knight");
-			//LoadLevel("pyramid");
-			//LoadLevel("she_bu_tou");
-			//LoadLevel("singlecam");
-			//LoadLevel("spartan");
-			//LoadLevel("tavern");
-			//LoadLevel("twocams");
-			//LoadLevel("venom");
+			LoadDefaultLevel();
 			BindSceneObjects();
-
-			//hdrHistogram = std::make_shared<LuminanceHistogram>(mainPass->renderToTexture[0]);
-			//hdrHistogram->UpdateLuminanceHistogramParams(mainPass->renderToTexture[0]->width, mainPass->renderToTexture[0]->height, -2.0f, 10.0f);
-			//
-			//luminanceHistogramAverage = std::make_shared<LuminanceHistogramAverage>(hdrHistogram->resultCpuHandle, hdrHistogram->resultGpuHandle);
-			//luminanceHistogramAverage->UpdateLuminanceHistogramAverageParams(
-			//	mainPass->renderToTexture[0]->width * mainPass->renderToTexture[0]->height,
-			//	-2.0f, 10.0f,
-			//	0.016f,
-			//	1.1f
-			//);
-
-#if defined(RUN_TEST)
-			//diffuseIrradianceMap = std::make_shared<DiffuseIrradianceMap>("3a6c21c2-362b-4048-b03e-7b36dcf56f43", "Assets/ibl/family/skybox_irradiance.dds");
-			//preFilteredEnvironmentMap = std::make_shared<PreFilteredEnvironmentMap>("3a6c21c2-362b-4048-b03e-7b36dcf56f43", "Assets/ibl/family/skybox_prefiltered_env.dds");
-			//brdflut = std::make_shared<BRDFLUT>("Assets/ibl/family/skybox_brdf_lut.dds");
-#endif
-
-			//BindSwapChainCamera();
-			//CreatePickingPass(swapChainCamera);
-			//BindPickingRenderables();
-
-			//toneMapQuad = CreateRenderable(
-			//	{
-			//		{ "meshMaterials" ,
-			//			{
-			//				{
-			//					{ "material", FindMaterialUUIDByName("ToneMap") },
-			//					{ "mesh", FindMeshUUIDByName("decal") }
-			//				}
-			//			}
-			//		},
-			//		{ "uniqueMaterialInstance", true },
-			//		{ "meshShadowMapMaterials", {} },
-			//		{ "name", "toneMapQuad" },
-			//		{ "uuid", getUUID() },
-			//		{ "hidden", true },
-			//		{ "castShadows", false },
-			//		{ "visible", false },
-			//		{ "position", { 0.0, 0.0, 0.0 } },
-			//		{ "rotation", { 0.0, 0.0, 0.0 } },
-			//		{ "scale", { 1.0, 1.0, 1.0 } } ,
-			//		{ "skipMeshes", {} },
-			//		{ "pipelineState" ,
-			//			{
-			//				{ "renderTargetsFormats", { "R8G8B8A8_UNORM" } },
-			//				{ "depthStencilFormat", "UNKNOWN" }
-			//			}
-			//		}
-			//	}
-			//);
-			//
-			//std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
-			//toneMapMaterial->textures.insert_or_assign(TextureShaderUsage_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
-			//toneMapMaterial->textures.insert_or_assign(TextureShaderUsage_AverageLuminance, GetTextureFromGPUHandle("averageLuminance", luminanceHistogramAverage->averageReadGpuHandle));
-			//
-			//toneMapQuad->onMaterialsRebuilt = []()
-			//	{
-			//		std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
-			//		toneMapMaterial->textures.insert_or_assign(TextureShaderUsage_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
-			//		toneMapMaterial->textures.insert_or_assign(TextureShaderUsage_AverageLuminance, GetTextureFromGPUHandle("averageLuminance", luminanceHistogramAverage->averageReadGpuHandle));
-			//	};
-			//
-
-			//BindMouseCamera();
-			//CreateRenderableBoundingBox(swapChainCamera);
-			//CreateRenderablesCameraBinding();
 		}
 	);
-
-	//mainPassCamera = GetCameraByName("cam.0");
-	//mainPassCamera->BindDestruction([] { mainPassCamera = nullptr; });
-	//mainPassCamera->PushRenderPass(mainPass);
-	//Editor::MapPickingRenderables();
 }
 
 void EditorModeStep()
@@ -625,75 +514,10 @@ void EditorModeRender()
 		PIXEndEvent(renderer->commandList.p);
 #endif
 	}
-
-	/*
-	if (mainPassCamera != nullptr)
-	{
-		WriteConstantsBuffers();
-
-		Editor::RenderPickingPass(mainPassCamera);
-
-		RenderSceneShadowMaps();
-
-		RenderSelectedLightShadowMapChain();
-
-		mainPass->Pass([](size_t passHash)
-			{
-				RenderSceneObjects(passHash, mainPassCamera);
-			}
-		);
-
-		hdrHistogram->UpdateLuminanceHistogramParams(mainPass->renderToTexture[0]->width, mainPass->renderToTexture[0]->height, mainPassCamera->minLogLuminance(), mainPassCamera->maxLogLuminance());
-		luminanceHistogramAverage->UpdateLuminanceHistogramAverageParams(
-			mainPass->renderToTexture[0]->width * mainPass->renderToTexture[0]->height,
-			mainPassCamera->minLogLuminance(), mainPassCamera->maxLogLuminance(),
-			static_cast<float>(timer.GetElapsedSeconds()),
-			mainPassCamera->tau()
-		);
-		hdrHistogram->Compute();
-		luminanceHistogramAverage->Compute();
-#if defined(RUN_TEST)
-		preFilteredEnvironmentMap->Compute();
-		diffuseIrradianceMap->Compute();
-		brdflut->Compute();
-#endif
-
-		resolvePass->Pass([](size_t passHash)
-			{
-				toneMapQuad->visible(true);
-				DeviceUtils::UAVResource(renderer->commandList, luminanceHistogramAverage->average);
-				DeviceUtils::TransitionResource(renderer->commandList, luminanceHistogramAverage->average,
-					D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_UNORDERED_ACCESS
-				);
-				toneMapQuad->Render(passHash, mainPassCamera);
-				DeviceUtils::TransitionResource(renderer->commandList, luminanceHistogramAverage->average,
-					D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON
-				);
-				toneMapQuad->visible(false);
-				DrawEditor(mainPassCamera);
-			}
-		);
-	}
-	else
-	{
-		resolvePass->Pass([](size_t passHash)
-			{
-				DrawEditor();
-			}
-		);
-	}
-	*/
 }
 
 void EditorModePostRender()
 {
-	/*
-#if defined(RUN_TEST)
-	diffuseIrradianceMap->Solution();
-	preFilteredEnvironmentMap->Solution();
-	brdflut->Solution();
-#endif
-*/
 	bool criticalFrame = (!PickingPassExists() || !RenderableBoundingBoxExists()) && GetNumSwapChainCameras() > 0ULL || Editor::PendingBillboards();
 
 	if (criticalFrame)
@@ -730,18 +554,6 @@ void EditorModeLeave()
 		{
 			DestroyRenderableBoundingBox();
 			DestroyPickingPass();
-			/*
-			Editor::DestroyPickingPass();
-#if defined(RUN_TEST)
-			diffuseIrradianceMap = nullptr;
-			preFilteredEnvironmentMap = nullptr;
-			brdflut = nullptr;
-#endif
-			luminanceHistogramAverage = nullptr;
-			hdrHistogram = nullptr;
-			mainPass = nullptr;
-			mainPassCamera = nullptr;
-			*/
 		}
 	);
 }

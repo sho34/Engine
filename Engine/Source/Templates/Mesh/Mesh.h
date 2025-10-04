@@ -45,8 +45,3 @@ namespace Templates {
 
 	//EDITOR
 };
-
-//MeshInstance to RootSignature
-//typedef std::map<std::shared_ptr<Templates::MeshInstance>, HashedRootSignature> MeshHashedRootSignatureMap;
-//MeshInstance to PipelineState
-//typedef std::map<std::shared_ptr<Templates::MeshInstance>, HashedPipelineState> MeshHashedPipelineStateMap;
