@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "ImageConvert.h"
-#include "Utils.h"
 #include <DirectXTex.h>
 #include <texdiag.h>
 #include <texassemble.h>
