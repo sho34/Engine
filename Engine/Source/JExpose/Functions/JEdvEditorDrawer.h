@@ -4667,7 +4667,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 							cam->previewRenderToTextureIndex = 0U;
 						}
 						ImGui::PopID();
-					}, cam->previewRenderPassIndex < (numPasses - 1));
+					}, cam->previewRenderPassIndex < (numPasses - 1) && numPasses>0);
 
 				unsigned int p = cam->previewRenderPassIndex;
 				if (!previewAble.contains(p)) return;
