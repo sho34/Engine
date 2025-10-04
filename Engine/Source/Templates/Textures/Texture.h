@@ -86,22 +86,9 @@ namespace Templates
 	void CreateArrayDDSFile(TextureJson& json);
 	void CreateCubeDDSFile(TextureJson& json);
 	void CreateCubeDDSFileFromSkyBox(TextureJson& json);
-	//void CreateDDSFile(TextureJson& json, bool overwrite);
-	//void RebuildTexture(std::string uuid);
-	//void CreateTexturesTemplatesFromMaterial(nlohmann::json json);
 	void CreateTextureFromJsonDefinition(nlohmann::json json);
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format);
 	void CreateDDSFile(std::shared_ptr<TextureJson>& tex);
-
-	//DESTROY
-	//void DestroyTexture(std::string uuid);
-	//void ReleaseTexturesTemplates();
-
-	//std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> GetTextures(const std::map<TextureShaderUsage, std::string>& textures);
-	//std::shared_ptr<TextureInstance> GetTextureFromGPUHandle(const std::string& texture, CD3DX12_GPU_DESCRIPTOR_HANDLE gpuHandle);
-	//void DestroyTextureInstance(std::shared_ptr<TextureInstance>& texture);
-	//void ReloadTextureInstances();
-
 	void PreviewTexturesStep(float delta);
 	void ReloadPreviewTextures();
 
