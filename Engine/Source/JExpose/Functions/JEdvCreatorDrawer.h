@@ -646,9 +646,16 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_filepath_
 
 			TextureType newType = StringToTextureType.at(json.at("type"));
 
+			if (!json.contains("createIrradiance")) json["createIrradiance"] = false;
+			if (!json.contains("createPrefilteredEnv")) json["createPrefilteredEnv"] = false;
+			if (!json.contains("createBRDFLut")) json["createBRDFLut"] = false;
+
 			if (newType != oldType || json.at("images").size() == 0ULL)
 			{
 				json.at("name") = "";
+				json["createIrradiance"] = false;
+				json["createPrefilteredEnv"] = false;
+				json["createBRDFLut"] = false;
 				switch (newType)
 				{
 				case TextureType_Cube:
@@ -706,6 +713,35 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_filepath_
 				}
 			}
 			break;
+			}
+
+			switch (newType)
+			{
+			case TextureType_Skybox:
+			case TextureType_Cube:
+
+				ImGui::PushID("createIrradiance");
+				{
+					ImGui::Text("irradiance");
+					ImGui::DrawJsonCheckBox(json, "createIrradiance");
+				}
+				ImGui::PopID();
+
+				ImGui::PushID("createPrefilteredEnv");
+				{
+					ImGui::Text("prefiltered env");
+					ImGui::DrawJsonCheckBox(json, "createPrefilteredEnv");
+				}
+				ImGui::PopID();
+
+				ImGui::PushID("createBRDFLut");
+				{
+					ImGui::Text("BRDF LUT");
+					ImGui::DrawJsonCheckBox(json, "createBRDFLut");
+				}
+				ImGui::PopID();
+
+				break;
 			}
 		};
 }

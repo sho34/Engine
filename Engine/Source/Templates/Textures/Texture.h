@@ -82,10 +82,6 @@ namespace Templates
 		inline static const std::string templateName = "textures.json";
 	}
 
-#if defined(_EDITOR)
-	void ResetTexturePopupIBLParameters();
-#endif
-
 	void Create2DDDSFile(TextureJson& json);
 	void CreateArrayDDSFile(TextureJson& json);
 	void CreateCubeDDSFile(TextureJson& json);

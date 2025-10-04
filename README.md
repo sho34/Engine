@@ -6,7 +6,12 @@ Culpeo Game Engine
 ### Table of Content
 
 1. Installation
-2. Architecture
+2. Dependencies
+    1. Assimp
+    2. nlohmann::json
+    3. imgui
+    4. ImGuizmo
+3. Architecture
     1. JSON
 		1. nlohmann::json integration
 		2. Macros magic
@@ -14,10 +19,21 @@ Culpeo Game Engine
     2. Templates
         1. Location
         2. List of available templates
+            1. Model3D
+            2. Material
+            3. Texture
+            4. RenderPass
+            5. Shader
+            6. Sound
+            7. *Mesh
         3. Instances
     3. Scene Objects
         1. Location
         2. List of available scene objects
+            1. Renderable
+            2. Camera
+            3. Light
+            4. SoundFX
     3. Rendering
         1. Shaders
         2. Pipeline State building

@@ -9,13 +9,18 @@
 
 extern std::shared_ptr<Renderer> renderer;
 
+namespace Templates
+{
+	extern void CreateTexture(nlohmann::json json);
+};
+
 using namespace DeviceUtils;
+using namespace Templates;
 
 namespace ComputeShader
 {
 	BRDFLUT::BRDFLUT(std::filesystem::path iblBRDFLUTPath) : ComputeInterface("IBLBRDFLUT_cs")
 	{
-		/*
 		outputFile = iblBRDFLUTPath;
 
 		//create the uav resource for the calculation results (U0)
@@ -37,21 +42,17 @@ namespace ComputeShader
 		};
 		//renderer->d3dDevice->CreateUnorderedAccessView(resource, nullptr, &uavDesc, resultCpuHandle);
 		renderer->d3dDevice->CreateUnorderedAccessView(resource, nullptr, nullptr, resultCpuHandle);
-		*/
 	}
 
 	BRDFLUT::~BRDFLUT()
 	{
-		/*
 		DeviceUtils::FreeCSUDescriptor(resultCpuHandle, resultGpuHandle);
 		resource = nullptr;
 		readBackResource = nullptr;
-		*/
 	}
 
 	void BRDFLUT::Compute()
 	{
-		/*
 		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
 
 #if defined(_DEVELOPMENT)
@@ -66,12 +67,10 @@ namespace ComputeShader
 #if defined(_DEVELOPMENT)
 		PIXEndEvent(commandList.p);
 #endif
-*/
 	}
 
 	void BRDFLUT::Solution()
 	{
-		/*
 		DeviceUtils::CaptureTexture(
 			renderer->d3dDevice,
 			renderer->commandQueue,
@@ -95,12 +94,24 @@ namespace ComputeShader
 		D3D12_RANGE emptyRange{ 0, 0 };
 		readBackResource->Unmap(0, &emptyRange);
 		readBackResource = nullptr;
-		*/
+
+		nlohmann::json json =
+		{
+			{ "format", DXGI_FORMATToString.at(dataFormat) },
+			{ "height", faceHeight },
+			{ "images", { outputFile.string() } },
+			{ "mipLevels", 1 },
+			{ "name", outputFile.string() },
+			{ "numFrames",  1 },
+			{ "type", TextureTypeToString.at(TextureType_2D) },
+			{ "uuid", getUUID() },
+			{ "width", faceWidth }
+		};
+		CreateTexture(json);
 	}
 
 	void BRDFLUT::WriteFile(XMFLOAT4* data) const
 	{
-		/*
 		using namespace DirectX;
 
 		std::vector<Image> imgs;
@@ -129,6 +140,5 @@ namespace ComputeShader
 		};
 
 		DX::ThrowIfFailed(SaveToDDSFile(imgs.data(), imgs.size(), meta, DDS_FLAGS_NONE, outputFile.wstring().c_str()));
-		*/
 	}
 };

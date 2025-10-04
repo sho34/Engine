@@ -46,6 +46,12 @@ namespace Templates
 
 #if defined(_EDITOR)
 	std::shared_ptr<TextureInstance> texturePreview = nullptr;
+
+	namespace Texture
+	{
+		bool createIbl = false;
+		nlohmann::json iblJson;
+	}
 #endif
 
 	TextureJson::TextureJson(nlohmann::json json) : JTemplate(json)
@@ -122,6 +128,65 @@ namespace Templates
 					tex->dirty(TextureJson::Update_numFrames);
 			}
 		);
+
+		if (Texture::createIbl)
+		{
+			Texture::createIbl = false;
+			using namespace ComputeShader;
+
+			std::string envMapUUID = FindTextureUUIDByName(Texture::iblJson.at("name"));
+
+			auto getIBLFile = [](auto attribute, auto name)
+				{
+					std::filesystem::path path = Texture::iblJson.at("name");
+					std::string stem = path.stem().string() + "_" + name;
+					path = path.relative_path().parent_path() / (stem + ".dds");
+					path = nostd::normalize_path(path.string());
+					return path;
+				};
+
+			if (Texture::iblJson.contains("createIrradiance") && bool(Texture::iblJson.at("createIrradiance")))
+			{
+				std::filesystem::path irradiance = getIBLFile("createIrradiance", "irradiance");
+				std::shared_ptr<DiffuseIrradianceMap> diffuseIrradianceMap;
+				renderer->Flush();
+				renderer->RenderCriticalFrame([&diffuseIrradianceMap, envMapUUID, irradiance]
+					{
+						diffuseIrradianceMap = std::make_shared<DiffuseIrradianceMap>(envMapUUID, irradiance);
+						diffuseIrradianceMap->Compute();
+					}
+				);
+				diffuseIrradianceMap->Solution();
+			}
+			if (Texture::iblJson.contains("createPrefilteredEnv") && bool(Texture::iblJson.at("createPrefilteredEnv")))
+			{
+				std::filesystem::path prefiltered_env = getIBLFile("createPrefilteredEnv", "prefiltered_env");
+				std::shared_ptr<PreFilteredEnvironmentMap> preFilteredEnvironmentMap;
+				renderer->Flush();
+				renderer->RenderCriticalFrame([&preFilteredEnvironmentMap, envMapUUID, prefiltered_env]
+					{
+						preFilteredEnvironmentMap = std::make_shared<PreFilteredEnvironmentMap>(envMapUUID, prefiltered_env);
+						preFilteredEnvironmentMap->Compute();
+					}
+				);
+				preFilteredEnvironmentMap->Solution();
+			}
+			if (Texture::iblJson.contains("createBRDFLut") && bool(Texture::iblJson.at("createBRDFLut")))
+			{
+				std::filesystem::path brdflut = getIBLFile("createBRDFLut", "brdf_lut");
+				std::shared_ptr<BRDFLUT> lut;
+				renderer->Flush();
+				renderer->RenderCriticalFrame([&lut, brdflut]
+					{
+						lut = std::make_shared<BRDFLUT>(brdflut);
+						lut->Compute();
+					}
+				);
+				lut->Solution();
+			}
+
+			Editor::MarkTemplatesPanelAssetsAsDirty();
+		}
 
 		bool criticalFrame = rebuildImages.size() > 0ULL || changedAttributes.size() > 0ULL;
 
@@ -379,7 +444,22 @@ namespace Templates
 		break;
 		}
 
-		CreateTexture(texJson.json());
+		nlohmann::json createJson = texJson.json();
+		Texture::createIbl = false;
+		Texture::iblJson = createJson;
+
+		auto atts = { "createIrradiance", "createPrefilteredEnv", "createBRDFLut" };
+		bool createIbl = false;
+		for (auto att : atts)
+		{
+			if (createJson.contains(att))
+			{
+				Texture::createIbl |= bool(createJson.at(att));
+				createJson.erase(att);
+			}
+		}
+
+		CreateTexture(createJson);
 		Editor::MarkTemplatesPanelAssetsAsDirty();
 	}
 

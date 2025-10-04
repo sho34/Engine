@@ -12,27 +12,6 @@ using namespace Templates;
 
 namespace ShaderCompiler {
 
-	std::map<ShaderType, std::wstring> shaderEntryPoint =
-	{
-		{	VERTEX_SHADER, L"main_vs"	},
-		{	PIXEL_SHADER, L"main_ps"	},
-		{	COMPUTE_SHADER, L"main_cs"	},
-	};
-
-	std::map<ShaderType, std::wstring> shaderTarget =
-	{
-		{	VERTEX_SHADER, L"vs_6_5"	},
-		{	PIXEL_SHADER, L"ps_6_5" },
-		{	COMPUTE_SHADER, L"cs_6_5" },
-	};
-
-	std::map<ShaderType, std::wstring> shaderDefine =
-	{
-		{	VERTEX_SHADER, L"_VERTEX_SHADER"	},
-		{	PIXEL_SHADER, L"_PIXEL_SHADER" },
-		{	COMPUTE_SHADER, L"_COMPUTE_SHADER" },
-	};
-
 	static std::mutex compileMutex;
 	bool Compile(ShaderInstance& shaderInstance, Source params, ShaderIncludesDependencies& dependencies)
 	{
@@ -53,7 +32,7 @@ namespace ShaderCompiler {
 		arguments.push_back(L"-E");// -E for the entry point (eg. 'main')
 		arguments.push_back(shaderEntryPoint[params.shaderType].c_str());
 		arguments.push_back(L"-T");// -T for the target profile (eg. 'ps_6_6')
-		arguments.push_back(shaderTarget[params.shaderType].c_str());
+		arguments.push_back(params.shaderTarget.c_str());
 
 #ifndef _DEBUG
 		arguments.push_back(L"-Qstrip_debug"); //remove debug info(PDB)

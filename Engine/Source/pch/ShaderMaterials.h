@@ -29,12 +29,13 @@ inline static std::map<std::string, ShaderType> StrToShaderType = {
 //shader compilation source (it's shader type, the hlsl path, the uuid and defines)
 struct Source {
 	ShaderType shaderType;
+	std::wstring shaderTarget;
 	std::string shaderUUID;
 	std::vector<std::string> defines;
 
 	bool operator<(const Source& other) const
 	{
-		return std::tie(shaderType, shaderUUID, defines) < std::tie(other.shaderType, other.shaderUUID, other.defines);
+		return std::tie(shaderType, shaderTarget, shaderUUID, defines) < std::tie(other.shaderType, other.shaderTarget, other.shaderUUID, other.defines);
 	}
 
 	std::string to_string()

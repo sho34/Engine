@@ -186,8 +186,8 @@ namespace Templates {
 	void MaterialInstance::CreateShaderInstances()
 	{
 		using namespace ShaderCompiler;
-		Source compVS = { .shaderType = VERTEX_SHADER, .shaderUUID = vertexShaderUUID, .defines = defines };
-		Source compPS = { .shaderType = PIXEL_SHADER, .shaderUUID = pixelShaderUUID, .defines = defines };
+		Source compVS = { .shaderType = VERTEX_SHADER, .shaderTarget = shaderTarget.at(VERTEX_SHADER),.shaderUUID = vertexShaderUUID, .defines = defines };
+		Source compPS = { .shaderType = PIXEL_SHADER, .shaderTarget = shaderTarget.at(PIXEL_SHADER), .shaderUUID = pixelShaderUUID, .defines = defines };
 		std::string vertexShaderInstanceUUID = vertexShaderUUID + std::to_string(std::hash<Source>()(compVS));
 		std::string pixelShaderInstanceUUID = pixelShaderUUID + std::to_string(std::hash<Source>()(compPS));
 		auto onVSShaderChange = [this](std::shared_ptr<JObject> vsShader)
