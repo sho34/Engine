@@ -897,6 +897,12 @@ namespace Editor {
 	void DestroyEditorSceneObjectsReferences()
 	{
 		sceneObjectEdition.Destroy();
+		sceneObjectEdition.dirtyAssetsTree = true;
+		sceneObjectEdition.selectedTab = sceneObjectEdition.detailAbleTabs.at(0);
+		sceneObjectEdition.selected.clear();
+		sceneObjectEdition.editables.clear();
+		sceneObjectEdition.drawersOrder.clear();
+		sceneObjectEdition.drawers.clear();
 	}
 
 	//Templates Panel
