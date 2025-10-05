@@ -120,6 +120,7 @@ namespace Templates {
 	std::map<std::string, JEdvEditorDrawerFunction> GetTemplatePreviewers(TemplateType t);
 	std::vector<std::string> GetTemplateRequiredAttributes(TemplateType t);
 	nlohmann::json GetTemplateJson(TemplateType t);
+	nlohmann::json GetTemplateCreationModalProperties(TemplateType t);
 	std::map<std::string, JEdvCreatorDrawerFunction> GetTemplateCreatorDrawers(TemplateType t);
 	std::map<std::string, JEdvCreatorValidatorFunction> GetTemplateValidators(TemplateType t);
 

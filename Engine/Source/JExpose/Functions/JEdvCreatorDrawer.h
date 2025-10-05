@@ -14,7 +14,7 @@ JEdvCreatorDrawerFunction DrawCreatorEnum(
 	std::map<std::string, E>& StoE
 ) {
 	if (J == jedv_t_hidden) return nullptr;
-	return [&EtoS, &StoE](std::string attribute, nlohmann::json& json)
+	return [&EtoS, &StoE](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			auto update = [attribute, &json](auto value)
 				{
@@ -42,7 +42,7 @@ JEdvCreatorDrawerFunction DrawCreatorEnum(
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_string>()
 {
-	return[](std::string attribute, nlohmann::json& json)
+	return[](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			ImGui::PushID(attribute.c_str());
 			{
@@ -55,7 +55,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_string>()
 
 inline JEdvCreatorDrawerFunction DrawUniqueName(std::string objectName, auto getNames)
 {
-	return[objectName, getNames](std::string attribute, nlohmann::json& json)
+	return[objectName, getNames](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			auto names = getNames();
 			std::set<std::string> namesSet(names.begin(), names.end());
@@ -93,7 +93,7 @@ template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<bool, jedv_t_boolean>()
 {
-	return[](std::string attribute, nlohmann::json& json)
+	return[](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			ImGui::PushID(attribute.c_str());
 			{
@@ -107,7 +107,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<bool, jedv_t_boolean>()
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<unsigned int, jedv_t_sound_instance_flags>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			unsigned int currentValue = json.at(attribute);
 
@@ -169,67 +169,61 @@ inline void EditorCreatorDrawTemplateSelector(
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_shader>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetShaderName, Templates::GetShadersUUIDsNames);
-
 		};
 }
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_sound>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetSoundName, Templates::GetSoundsUUIDsNames);
-
 		};
 }
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_material>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetMaterialName, Templates::GetMaterialsUUIDsNames);
-
 		};
 }
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_model3d>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetModel3DName, Templates::GetModel3DsUUIDsNames);
-
 		};
 }
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_renderpass>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetRenderPassName, Templates::GetRenderPasssUUIDsNames);
-
 		};
 }
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_texture>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			EditorCreatorDrawTemplateSelector(attribute, json, Templates::GetTextureName, Templates::GetTexturesUUIDsNames);
-
 		};
 }
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorVector<MeshMaterial, jedv_t_vector>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			unsigned int size = static_cast<unsigned int>(json.at("meshMaterials").size());
 			bool hasModel = json.contains("model") && json.at("model") != "";
@@ -341,7 +335,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<MeshMaterial, jedv_t_vector>(
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_so_camera_vector>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			unsigned int size = static_cast<unsigned int>(json.at(attribute).size());
 			std::set<std::string> currentUUIDs;
@@ -410,7 +404,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_so_camera
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorVector<DXGI_FORMAT, jedv_t_dxgi_format_vector>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			unsigned int size = static_cast<unsigned int>(json.at(attribute).size());
 
@@ -455,9 +449,9 @@ inline JEdvCreatorDrawerFunction DrawCreatorEnum<LightType, jedv_t_lighttype>(
 	std::map<LightType, std::string>& EtoS,
 	std::map<std::string, LightType>& StoE
 ) {
-	return [&EtoS, &StoE](std::string attribute, nlohmann::json& json)
+	return [&EtoS, &StoE](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
-			DrawCreatorValue<std::string, jedv_t_so_light_name>()("name", json);
+			DrawCreatorValue<std::string, jedv_t_so_light_name>()("name", json, modalProperties);
 
 			auto update = [attribute, &json, &StoE](auto value)
 				{
@@ -522,7 +516,7 @@ inline bool EditorCreatorDrawFilePath(
 	nlohmann::json& json,
 	std::string attText,
 	const char* buttonIcon,
-	const std::string defaultFolder,
+	nlohmann::json& modalProperties,
 	std::vector<std::string> filterName,
 	std::vector<std::string> filterPattern
 )
@@ -539,6 +533,9 @@ inline bool EditorCreatorDrawFilePath(
 			ret = true;
 		};
 
+	std::string defaultFolder = modalProperties.at("assetsFolder");
+	std::string fileFolder = modalProperties.at("fileFolder");
+
 	ImGui::PushID(attribute.c_str());
 	{
 		ImGui::Text(attText.c_str());
@@ -546,12 +543,13 @@ inline bool EditorCreatorDrawFilePath(
 
 		if (ImGui::Button(buttonIcon))
 		{
-			ImGui::OpenFile([setFilePath, defaultFolder](std::filesystem::path p)
+			ImGui::OpenFile([setFilePath, defaultFolder, &modalProperties](std::filesystem::path p)
 				{
 					std::filesystem::path absfilepath = std::filesystem::current_path().append(defaultFolder);
 					std::filesystem::path rel = std::filesystem::relative(p, absfilepath);
 					setFilePath(rel.generic_string());
-				}, defaultFolder, filterName, filterPattern);
+					modalProperties.at("fileFolder") = rel.parent_path().generic_string();
+				}, fileFolder, filterName, filterPattern);
 		}
 		ImGui::SameLine();
 		ImGui::InputText("##", path.string().data(), path.string().size(), ImGuiInputTextFlags_ReadOnly);
@@ -566,7 +564,7 @@ inline bool EditorCreatorDrawFilePath(
 	unsigned int attIndex,
 	std::string attText,
 	const char* buttonIcon,
-	const std::string defaultFolder,
+	nlohmann::json& modalProperties,
 	std::vector<std::string> filterName,
 	std::vector<std::string> filterPattern
 )
@@ -582,6 +580,9 @@ inline bool EditorCreatorDrawFilePath(
 			ret = true;
 		};
 
+	std::string defaultFolder = modalProperties.at("assetsFolder");
+	std::string fileFolder = modalProperties.at("fileFolder");
+
 	ImGui::PushID(attribute.c_str());
 	{
 		ImGui::Text(attText.c_str());
@@ -589,12 +590,13 @@ inline bool EditorCreatorDrawFilePath(
 
 		if (ImGui::Button(buttonIcon))
 		{
-			ImGui::OpenFile([setFilePath, defaultFolder](std::filesystem::path p)
+			ImGui::OpenFile([setFilePath, defaultFolder, &modalProperties](std::filesystem::path p)
 				{
 					std::filesystem::path absfilepath = std::filesystem::current_path().append(defaultFolder);
 					std::filesystem::path rel = std::filesystem::relative(p, absfilepath);
 					setFilePath(rel.generic_string());
-				}, defaultFolder, filterName, filterPattern);
+					modalProperties.at("fileFolder") = rel.parent_path().generic_string();
+				}, fileFolder, filterName, filterPattern);
 		}
 		ImGui::SameLine();
 		ImGui::InputText("##", path.string().data(), path.string().size(), ImGuiInputTextFlags_ReadOnly);
@@ -606,18 +608,18 @@ inline bool EditorCreatorDrawFilePath(
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_shaders_filepath>()
 {
-	return[](std::string attribute, nlohmann::json& json)
+	return[](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
-			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_FILE_CODE, defaultShadersFolder, { "HLSL files. (*.hlsl)" }, { "*.hlsl" });
+			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_FILE_CODE, modalProperties, { "HLSL files. (*.hlsl)" }, { "*.hlsl" });
 		};
 }
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_sounds_filepath>()
 {
-	return[](std::string attribute, nlohmann::json& json)
+	return[](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
-			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_FILE_AUDIO, defaultSoundsFolder,
+			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_FILE_AUDIO, modalProperties,
 				{ "WAV files. (*.wav)", "MP3 files. (*.mp3)", "OGG files. (*.ogg)" },
 				{ "*.wav", "*.mp3", "*.ogg" });
 		};
@@ -626,16 +628,16 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_sounds_fil
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_model3d_filepath>()
 {
-	return[](std::string attribute, nlohmann::json& json)
+	return[](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
-			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_CUBE, default3DModelsFolder, { "3D Models files. (*.gltf)" }, { "*.gltf" });
+			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_CUBE, modalProperties, { "3D Models files. (*.gltf)" }, { "*.gltf" });
 		};
 }
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_filepath_vector_image>()
 {
-	return [](std::string attribute, nlohmann::json& json)
+	return [](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
 			TextureType oldType = StringToTextureType.at(json.at("type"));
 
@@ -683,7 +685,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_filepath_
 				ImGui::InputText("##", name.data(), name.size(), ImGuiInputTextFlags_ReadOnly);
 				ImGui::PopID();
 				ImGui::PushID(std::string(attribute + "-pick-file-0").c_str());
-				if (EditorCreatorDrawFilePath(attribute, json, 0, attribute, ICON_FA_FILE_IMAGE, "./",
+				if (EditorCreatorDrawFilePath(attribute, json, 0, attribute, ICON_FA_FILE_IMAGE, modalProperties,
 					(newType != TextureType_Array) ? defaultTexturesFilters : defaultAnimatedTexturesFilters,
 					(newType != TextureType_Array) ? defaultTexturesExtensions : defaultAnimatedTexturesExtensions
 				))
@@ -702,7 +704,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_filepath_
 				for (unsigned int i = 0; i < 6U; i++)
 				{
 					ImGui::PushID(std::string(attribute + "-pick-file-" + std::to_string(i)).c_str());
-					if (EditorCreatorDrawFilePath(attribute, json, i, cubeTextureAxesNames.at(i), ICON_FA_FILE_IMAGE, "./", defaultTexturesFilters, defaultTexturesExtensions))
+					if (EditorCreatorDrawFilePath(attribute, json, i, cubeTextureAxesNames.at(i), ICON_FA_FILE_IMAGE, modalProperties, defaultTexturesFilters, defaultTexturesExtensions))
 					{
 						if (i == 0)
 						{

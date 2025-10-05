@@ -1,7 +1,6 @@
 BUGS:
 -si no existe una camara como mousecontroller se cae la creacion de billboards
 	-los billboards deben ser creados cuando cambia algo de la escena y no a partir del Initialize
--el navegador de render passes de la camara no tiene limites positivos
 
 TODO:
 -Interaccion de Gizmos de ImGuizmo con la posibilidad de combinar todos los objetos que sean seleccionables
@@ -23,6 +22,7 @@ TODO:
 NICE TO HAVE:
 
 DONE:
+-el navegador de render passes de la camara no tiene limites positivos
 -Revivir el IBL
 	-cambiar las texturas de ibl para que provengan de la camara
 	-ibl toggle

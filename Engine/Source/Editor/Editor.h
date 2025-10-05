@@ -33,6 +33,7 @@ struct CreatorModal {
 	bool creating = false;
 	T type;
 	nlohmann::json json;
+	nlohmann::json modalProperties;
 	std::vector<std::string> atts;
 	std::map<std::string, JEdvCreatorDrawerFunction> drawers;
 	std::map<std::string, JEdvCreatorValidatorFunction> validators;
@@ -47,7 +48,7 @@ struct CreatorModal {
 		{
 			for (auto& att : atts)
 			{
-				if (drawers.at(att)) drawers.at(att)(att, json);
+				if (drawers.at(att)) drawers.at(att)(att, json, modalProperties);
 			}
 			bool valid = true;
 			for (auto& att : atts)

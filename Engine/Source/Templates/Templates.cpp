@@ -987,6 +987,44 @@ namespace Templates
 		return GetTJson.at(t)();
 	}
 
+	nlohmann::json GetTemplateCreationModalProperties(TemplateType t)
+	{
+		const std::map<TemplateType, std::function<nlohmann::json()>> GetTJson =
+		{
+			{ T_Materials, [] { return nlohmann::json(
+				{
+					{ "assetsFolder" , defaultAssetsFolder },
+					{ "fileFolder" , defaultAssetsFolder }
+				}); }},
+			{ T_Models3D, [] { return nlohmann::json(
+				{
+					{ "assetsFolder" , default3DModelsFolder },
+					{ "fileFolder" , default3DModelsFolder }
+				}); }},
+			{ T_Shaders, [] { return nlohmann::json(
+				{
+					{ "assetsFolder" , defaultShadersFolder},
+					{ "fileFolder" , defaultShadersFolder }
+				}); }},
+			{ T_Sounds, [] { return nlohmann::json(
+				{
+					{ "assetsFolder" , defaultSoundsFolder },
+					{ "fileFolder" , defaultSoundsFolder }
+				}); }},
+			{ T_Textures, [] { return nlohmann::json(
+				{
+					{ "assetsFolder" , "./"},
+					{ "fileFolder" , defaultAssetsFolder }
+				}); }},
+			{ T_RenderPasses, [] { return nlohmann::json(
+				{
+					{ "assetsFolder" , defaultAssetsFolder },
+					{ "fileFolder" , defaultAssetsFolder }
+				}); }}
+		};
+		return GetTJson.at(t)();
+	}
+
 	std::map<std::string, JEdvCreatorDrawerFunction> GetTemplateCreatorDrawers(TemplateType t)
 	{
 		const std::map<TemplateType, std::function<std::map<std::string, JEdvCreatorDrawerFunction>()>> GetTDrawers =

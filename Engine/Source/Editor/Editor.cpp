@@ -1764,6 +1764,7 @@ namespace Editor {
 	void StartTemplateCreation(TemplateType type)
 	{
 		templateModal.json = GetTemplateJson(type);
+		templateModal.modalProperties = GetTemplateCreationModalProperties(type);
 		templateModal.atts = GetTemplateRequiredAttributes(type);
 		templateModal.drawers = GetTemplateCreatorDrawers(type);
 		templateModal.validators = GetTemplateValidators(type);
