@@ -892,6 +892,9 @@ namespace Editor {
 
 	void DestroyEditorSceneObjectsReferences()
 	{
+		ClearSceneObjectsSelection();
+		gizmoOperation = ImGuizmo::TRANSLATE;
+		gizmoMode = ImGuizmo::WORLD;
 		sceneObjectEdition.Destroy();
 		sceneObjectEdition.dirtyAssetsTree = true;
 		sceneObjectEdition.selectedTab = sceneObjectEdition.detailAbleTabs.at(0);
