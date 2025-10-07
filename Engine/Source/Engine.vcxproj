@@ -281,6 +281,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Editor\EditorMouseCamera.h" />
     <ClInclude Include="Editor\MousePicking.h" />
     <ClInclude Include="Editor\RightPanelComponent.h" />
     <ClInclude Include="JExpose\Attributes\JExpose.h" />
@@ -583,6 +584,7 @@
       </ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Editor\DefaultLevel.cpp" />
+    <ClCompile Include="Editor\EditorMouseCamera.cpp" />
     <ClCompile Include="Editor\ImEditor.cpp" />
     <ClCompile Include="Editor\MousePicking.cpp" />
     <ClCompile Include="Editor\RightPanelComponent.cpp" />

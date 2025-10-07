@@ -355,16 +355,6 @@ namespace ImGui
 				if (path.empty()) return;
 
 				onFileSelected(path);
-				/*
-				std::wstring pszName = nostd::StringToWString(filterName);
-				std::wstring pszSpec = nostd::StringToWString(filterPattern);
-				COMDLG_FILTERSPEC filters[] = { {.pszName = pszName.c_str(), .pszSpec = pszSpec.c_str() } };
-				std::pair<COMDLG_FILTERSPEC*, int> filter_info = std::make_pair<COMDLG_FILTERSPEC*, int>(filters, _countof(filters));
-				if (!OpenFileDialog(path, std::filesystem::absolute(directory), L"", &filter_info)) return;
-				if (path.empty()) return;
-
-				onFileSelected(path);
-				*/
 			}
 		);
 		if (detach)

@@ -17,6 +17,9 @@
 #include <NoMath.h>
 #include <SceneObject.h>
 #include <JTypes.h>
+#if defined(_EDITOR)
+#include <ImGuizmo.h>
+#endif
 
 namespace Scene { struct Camera; struct Light; };
 namespace ComputeShader { struct RenderableBoundingBox; };
@@ -158,7 +161,9 @@ namespace Scene
 		//UPDATE
 #if defined(_EDITOR)
 		std::function<void()> OnPick;
-		void ReloadModel3D();
+
+		//Gizmo
+		virtual bool CanInteractWithGizmo(ImGuizmo::OPERATION operation) { return true; }
 #endif
 		void WriteMaterialVariablesToConstantsBufferSpace(std::shared_ptr<MaterialInstance>& material, std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int cbvFrameIndex);
 		template<typename T>

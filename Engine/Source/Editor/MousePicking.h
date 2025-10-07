@@ -11,8 +11,8 @@ struct MousePicking
 	unsigned int pickingX = 0U;
 	unsigned int pickingY = 0U;
 	bool doPicking = false;
-	nostd::VectorSet<std::shared_ptr<SceneObject>> pickedObjects;
-	SceneObjectType pickedType;
+	//nostd::VectorSet<std::shared_ptr<SceneObject>> pickedObjects;
+	//SceneObjectType pickedType;
 	void Reset();
 	void StartPicking(DirectX::Mouse::State state);
 	bool CanPick(DirectX::Mouse::State state) const;

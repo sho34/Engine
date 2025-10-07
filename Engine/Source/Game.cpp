@@ -451,7 +451,9 @@ void EditorModeCreate()
 		{
 			using namespace Scene::Level;
 
-			LoadDefaultLevel();
+			//LoadDefaultLevel();
+			LoadLevel("gizmotest");
+			//LoadLevel("tavern");
 			BindSceneObjects();
 		}
 	);

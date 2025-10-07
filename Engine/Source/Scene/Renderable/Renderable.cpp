@@ -441,6 +441,8 @@ namespace Scene {
 			);
 			meshes = model3D->meshes;
 			animable = (model3D->animations) ? model3D : nullptr;
+			if (!animable)
+				CreateBoundingBox();
 		}
 	}
 
@@ -742,12 +744,6 @@ namespace Scene {
 		BoundingBox bbw;
 		bb.Transform(bbw, world());
 		return bbw;
-	}
-
-	void Renderable::ReloadModel3D()
-	{
-		//renderableUpdateFlags |= RenderableFlags_RebuildMeshesFromModel3D;
-		//model3DSwap = json.at("model");
 	}
 
 	void Renderable::WriteMaterialVariablesToConstantsBufferSpace(std::shared_ptr<MaterialInstance>& material, std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int cbvFrameIndex)

@@ -318,6 +318,11 @@ namespace Scene {
 	{
 		return BoundingBox(position(), { 0.1f,0.1f,0.1f });
 	}
+
+	bool SoundFX::CanInteractWithGizmo(ImGuizmo::OPERATION operation)
+	{
+		return nostd::bytesHas(instanceFlags(), SoundEffectInstance_Use3D);
+	}
 #endif
 
 	void DestroySoundEffects()

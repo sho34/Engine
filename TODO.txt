@@ -3,11 +3,6 @@ BUGS:
 	-los billboards deben ser creados cuando cambia algo de la escena y no a partir del Initialize
 
 TODO:
--Interaccion de Gizmos de ImGuizmo con la posibilidad de combinar todos los objetos que sean seleccionables
-	-Renderables: todos
-	-SoundFX: sonidos 3d
-	-Luces: spot, point
-	-Cameras: todas
 -Cargar modelos GLB
 -Revivir GameMode(No Editor)
 	-splash screen
@@ -22,6 +17,11 @@ TODO:
 NICE TO HAVE:
 
 DONE:
+-Interaccion de Gizmos de ImGuizmo con la posibilidad de combinar todos los objetos que sean seleccionables
+	-Renderables: todos
+	-SoundFX: sonidos 3d
+	-Luces: spot, point
+	-Cameras: todas
 -el navegador de render passes de la camara no tiene limites positivos
 -Revivir el IBL
 	-cambiar las texturas de ibl para que provengan de la camara

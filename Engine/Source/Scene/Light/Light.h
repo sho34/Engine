@@ -222,6 +222,9 @@ namespace Scene {
 		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard);
 
 		BoundingBox GetBoundingBox();
+
+		//Gizmo
+		virtual bool CanInteractWithGizmo(ImGuizmo::OPERATION operation);
 #endif
 
 		//UPDATE

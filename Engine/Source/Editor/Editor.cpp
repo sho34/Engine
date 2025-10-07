@@ -28,6 +28,7 @@
 #include <Mouse.h>
 #include <Keyboard.h>
 #include <MousePicking.h>
+#include <EditorMouseCamera.h>
 
 extern HWND hWnd;
 extern RECT hWndRect;
@@ -79,34 +80,29 @@ namespace Editor {
 	};
 	MouseGameAreaMode currentMouseMode = MOUSE_GAMEAREA_MODE_NONE;
 	MousePicking mousePicking;
+	EditorMouseCamera mouseCamera;
 
-	struct
-	{
-		bool leftButton = false;
-		bool rightButton = false;
-		bool wheelCaptured = false;
-		bool wheelMode = false;
-		int wheel = 0;
-		int mouseX = 0;
-		int mouseY = 0;
-		void Reset()
-		{
-			leftButton = false;
-			rightButton = false;
-			wheelCaptured = false;
-			wheelMode = false;
-			wheel = 0;
-			mouseX = 0;
-			mouseY = 0;
-		}
-	} mouseCamera;
-
+	//Gizmos
 	ImGuizmo::OPERATION gizmoOperation(ImGuizmo::TRANSLATE);
 	ImGuizmo::MODE gizmoMode(ImGuizmo::WORLD);
+	XMFLOAT4X4 gizmoCentroidMx;
+	bool gizmoApplyOp = false;
+	std::map<std::shared_ptr<SceneObject>, XMFLOAT3> soRotation;
+	std::map<std::shared_ptr<SceneObject>, XMFLOAT3> soScale;
+	std::map<std::shared_ptr<SceneObject>, XMFLOAT3> so2bb;
+	std::map<std::shared_ptr<SceneObject>, XMFLOAT3> bb2gizmo;
+	XMFLOAT3 gizmoRotation;
+	XMFLOAT3 gizmoPosition;
+	XMFLOAT3 gizmoScale;
 
+	//Modals
 	CreatorModal<SceneObjectType> sceneObjectModal;
 	CreatorModal<TemplateType> templateModal;
 	DeletePrompt deletePrompt;
+
+	//SceneObject selection
+	std::map<std::string, std::shared_ptr<SceneObject>> selectedSceneObjectsMap;
+	std::set<std::shared_ptr<SceneObject>> selectedSceneObjects;
 
 	//Editor LifeCycle
 	void InitEditor()
@@ -281,7 +277,7 @@ namespace Editor {
 		sceneObjectEdition.Destroy();
 		templateEdition.Destroy();
 
-		mousePicking.pickedObjects.clear();
+		//mousePicking.pickedObjects.clear();
 		DestroyBillboards();
 		DestroyPickingPass();
 		DestroyRenderableBoundingBox();
@@ -972,33 +968,228 @@ namespace Editor {
 	}
 
 	//Gizmos
+	void ResetGizmoVariableWorkers()
+	{
+		gizmoApplyOp = false;
+		soRotation.clear();
+		soScale.clear();
+		so2bb.clear();
+		bb2gizmo.clear();
+		gizmoRotation = XMFLOAT3();
+		gizmoPosition = XMFLOAT3();
+		gizmoScale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	}
+
+	bool InteractWithGizmos(std::set<std::shared_ptr<SceneObject>>& objects2Gizmo)
+	{
+		std::copy_if(selectedSceneObjects.begin(), selectedSceneObjects.end(), std::inserter(objects2Gizmo, objects2Gizmo.begin()), [](auto& so)
+			{
+				return so->CanInteractWithGizmo(gizmoOperation);
+			}
+		);
+		return !objects2Gizmo.empty();
+	}
+
 	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera)
 	{
-		if (mousePicking.pickedObjects.size() == 0ULL) return;
+		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
+		{
+			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+			ResetGizmoVariableWorkers();
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_R)) // r key
+		{
+			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
+			gizmoMode = ImGuizmo::MODE::WORLD;
+			ResetGizmoVariableWorkers();
+		}
+		if (ImGui::IsKeyPressed(ImGuiKey_S)) // s Key
+		{
+			gizmoOperation = ImGuizmo::OPERATION::SCALE;
+			gizmoMode = ImGuizmo::MODE::LOCAL;
+			ResetGizmoVariableWorkers();
+		}
 
-		switch (mousePicking.pickedType)
+		std::set<std::shared_ptr<SceneObject>> objects2Gizmo;
+		if (!InteractWithGizmos(objects2Gizmo))
+			return;
+
+		auto translateObjects = [&objects2Gizmo](XMFLOAT4X4 view, XMFLOAT4X4 proj)
+			{
+				if (!gizmoApplyOp)
+				{
+					gizmoCentroidMx = GetBoundindBoxesCentroid(objects2Gizmo);
+				}
+				XMFLOAT4X4 delta;
+				ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *gizmoCentroidMx.m, *delta.m, NULL, NULL, NULL);
+				XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
+				XMVECTOR XMtranslation, XMrotation, XMscale;
+				XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
+
+				XMVECTOR len = XMVector3Length(XMtranslation);
+				if (len.m128_f32[0] < g_XMEpsilon.f[0])
+					return;
+
+				gizmoApplyOp = true;
+				for (auto& o : objects2Gizmo)
+				{
+					if (!o->contains("position")) continue;
+					XMFLOAT3 p = ToXMFLOAT3(o->at("position"));
+					p.x += XMtranslation.m128_f32[0];
+					p.y += XMtranslation.m128_f32[1];
+					p.z += XMtranslation.m128_f32[2];
+					nlohmann::json patch = { {"position", FromXMFLOAT3(p) } };
+					o->JUpdate(patch);
+				}
+			};
+		auto rotateObjects = [&objects2Gizmo](XMFLOAT4X4 view, XMFLOAT4X4 proj)
+			{
+				//if the rotation gizmo has not been initialized, create a map of the initial rotations
+				//vector from the bounding box to the object's position
+				//and vector from the bounding box to the gizmo position
+				if (!gizmoApplyOp)
+				{
+					gizmoCentroidMx = GetBoundindBoxesCentroid(objects2Gizmo);
+					gizmoPosition = { gizmoCentroidMx._41, gizmoCentroidMx._42, gizmoCentroidMx._43 };
+					gizmoApplyOp = true;
+
+					for (auto& o : objects2Gizmo)
+					{
+						XMFLOAT3 p = ToXMFLOAT3(o->at("position"));
+						XMFLOAT3 r = o->contains("rotation") ? ToXMFLOAT3(o->at("rotation")) : XMFLOAT3();
+						BoundingBox bb = o->GetBoundingBox();
+
+						soRotation.insert_or_assign(o, r);
+						so2bb.insert_or_assign(o, p - bb.Center);
+						bb2gizmo.insert_or_assign(o, bb.Center - gizmoPosition);
+					}
+				}
+
+				XMFLOAT4X4 delta;
+				ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *gizmoCentroidMx.m, *delta.m, NULL, NULL, NULL);
+				XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
+				XMVECTOR XMtranslation, XMrotation, XMscale;
+				XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
+
+				gizmoRotation.x += XMConvertToDegrees(2.0f * XMrotation.m128_f32[0]);
+				gizmoRotation.y += XMConvertToDegrees(2.0f * XMrotation.m128_f32[1]);
+				gizmoRotation.z += XMConvertToDegrees(2.0f * XMrotation.m128_f32[2]);
+
+				XMVECTOR rotQ = XMQuaternionRotationRollPitchYaw(
+					XMConvertToRadians(gizmoRotation.x),
+					XMConvertToRadians(gizmoRotation.y),
+					XMConvertToRadians(gizmoRotation.z)
+				);
+
+				auto rotateXM3 = [](XMFLOAT3 v, XMVECTOR q)
+					{
+						XMMATRIX R = XMMatrixRotationQuaternion(q);
+						XMMATRIX T = XMMatrixTranslation(v.x, v.y, v.z);
+						XMMATRIX TR = XMMatrixMultiply(T, R);
+						XMVECTOR s, r, t;
+						XMMatrixDecompose(&s, &r, &t, TR);
+						XMFLOAT3 nv;
+						XMStoreFloat3(&nv, t);
+						return nv;
+					};
+
+				for (auto& o : objects2Gizmo)
+				{
+					XMFLOAT3 s2b = so2bb.at(o);
+					XMFLOAT3 b2g = bb2gizmo.at(o);
+
+					XMFLOAT3 ds2b = rotateXM3(s2b, rotQ);
+					XMFLOAT3 db2g = rotateXM3(b2g, rotQ);
+
+					XMFLOAT3 p = gizmoPosition + ds2b + db2g;
+					XMFLOAT3 r = soRotation.at(o) + gizmoRotation;
+
+					nlohmann::json patch = { { "position", FromXMFLOAT3(p) } };
+					if (o->contains("rotation"))
+						patch["rotation"] = FromXMFLOAT3(r);
+
+					o->JUpdate(patch);
+				}
+			};
+		auto scaleObjects = [&objects2Gizmo](XMFLOAT4X4 view, XMFLOAT4X4 proj)
+			{
+				if (!gizmoApplyOp)
+				{
+					gizmoCentroidMx = GetBoundindBoxesCentroid(objects2Gizmo);
+				}
+				XMFLOAT4X4 delta;
+				ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *gizmoCentroidMx.m, *delta.m, NULL, NULL, NULL);
+				XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
+				XMVECTOR XMtranslation, XMrotation, XMscale;
+				XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
+
+				XMVECTOR len = XMVector3Length(XMscale);
+				if (len.m128_f32[0] < g_XMEpsilon.f[0])
+					return;
+
+				if (!gizmoApplyOp)
+				{
+					gizmoApplyOp = true;
+					for (auto& o : objects2Gizmo)
+					{
+						XMFLOAT3 p = ToXMFLOAT3(o->at("position"));
+						XMFLOAT3 s = o->contains("scale") ? ToXMFLOAT3(o->at("scale")) : XMFLOAT3(1.0f, 1.0f, 1.0f);
+						BoundingBox bb = o->GetBoundingBox();
+
+						soScale.insert_or_assign(o, s);
+						so2bb.insert_or_assign(o, p - bb.Center);
+						bb2gizmo.insert_or_assign(o, bb.Center - gizmoPosition);
+					}
+				}
+
+				gizmoScale.x *= XMscale.m128_f32[0];
+				gizmoScale.y *= XMscale.m128_f32[1];
+				gizmoScale.z *= XMscale.m128_f32[2];
+
+				auto scaleXM3 = [](XMFLOAT3 v, XMFLOAT3 s)
+					{
+						XMMATRIX S = XMMatrixScaling(s.x, s.y, s.z);
+						XMMATRIX T = XMMatrixTranslation(v.x, v.y, v.z);
+						XMMATRIX TS = XMMatrixMultiply(T, S);
+						XMVECTOR sc, r, t;
+						XMMatrixDecompose(&sc, &r, &t, TS);
+						XMFLOAT3 nv;
+						XMStoreFloat3(&nv, t);
+						return nv;
+					};
+
+				for (auto& o : objects2Gizmo)
+				{
+					XMFLOAT3 s2b = so2bb.at(o);
+					XMFLOAT3 b2g = bb2gizmo.at(o);
+
+					XMFLOAT3 ds2b = scaleXM3(s2b, gizmoScale);
+					XMFLOAT3 db2g = scaleXM3(b2g, gizmoScale);
+
+					XMFLOAT3 p = gizmoPosition + ds2b + db2g;
+					XMFLOAT3 s = soScale.at(o) * gizmoScale;
+
+					nlohmann::json patch = { { "position", FromXMFLOAT3(p) } };
+					if (o->contains("scale"))
+						patch["scale"] = FromXMFLOAT3(s);
+
+					o->JUpdate(patch);
+				}
+			};
+
+		std::map<ImGuizmo::OPERATION, std::function<void(XMFLOAT4X4, XMFLOAT4X4)>> operators =
 		{
-		case SO_Renderables:
-		{
-			DrawRenderableGizmo(camera);
-		}
-		break;
-		case SO_Lights:
-		{
-			DrawPickedLightGizmo(camera);
-		}
-		break;
-		case SO_Cameras:
-		{
-			DrawCameraGizmo(camera);
-		}
-		break;
-		case SO_SoundEffects:
-		{
-			DrawSoundEffectGizmo(camera);
-		}
-		break;
-		}
+			{ ImGuizmo::OPERATION::TRANSLATE, translateObjects },
+			{ ImGuizmo::OPERATION::ROTATE, rotateObjects},
+			{ ImGuizmo::OPERATION::SCALE, scaleObjects }
+		};
+
+		BeginGizmoInteraction(camera, [&operators](XMFLOAT4X4 view, XMFLOAT4X4 proj)
+			{
+				operators.at(gizmoOperation)(view, proj);
+			}
+		);
 	}
 
 	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(XMFLOAT4X4 view, XMFLOAT4X4 proj)> interaction)
@@ -1020,214 +1211,7 @@ namespace Editor {
 		interaction(view, proj);
 	}
 
-	void DrawRenderableGizmo(std::shared_ptr<Camera> camera)
-	{
-		/*
-		auto translateObjects = [](XMVECTOR translation)
-			{
-				XMVECTOR len = XMVector3Length(translation);
-				if (len.m128_f32[0] < g_XMEpsilon.f[0]) return;
-				for (auto& o : mousePicking.pickedObjects)
-				{
-					if (!o->contains("position")) continue;
-
-					XMFLOAT3 pos = ToXMFLOAT3(o->at("position"));
-					pos.x += translation.m128_f32[0];
-					pos.y += translation.m128_f32[1];
-					pos.z += translation.m128_f32[2];
-					nlohmann::json patch = { {"position",FromXMFLOAT3(pos)} };
-					o->JUpdate(patch);
-				}
-			};
-		*/
-		/*
-		auto rotateObjects = [](XMFLOAT4X4 transformation)
-			{
-				XMFLOAT3 p0 = ToXMFLOAT3((*mousePicking.pickedObjects.begin())->at("position"));
-				XMFLOAT4 vp0 = { p0.x,p0.y,p0.z,0.0f };
-				XMVECTOR pf032 = XMLoadFloat4(&vp0);
-
-				XMFLOAT3 rotDelta = DX::GetPitchYawRoll(transformation);
-
-				for (auto& o : mousePicking.pickedObjects)
-				{
-					if (!o->contains("rotation")) continue;
-
-					XMFLOAT3 rot = ToXMFLOAT3(o->at("rotation"));
-					rot.x += rotDelta.x;
-					rot.y += rotDelta.y;
-					rot.z += rotDelta.z;
-
-					if (o != *mousePicking.pickedObjects.begin())
-					{
-						XMFLOAT3 p = ToXMFLOAT3(o->at("position"));
-						XMFLOAT4 vp = { p.x,p.y,p.z,0.0f };
-						XMVECTOR pf32 = XMLoadFloat4(&vp);
-						XMVECTOR diff = XMVectorSubtract(pf32, pf032);
-						XMVECTOR newPos = XMVector3Transform(diff, XMLoadFloat4x4(&transformation));
-						newPos = XMVectorAdd(newPos, pf032);
-
-						nlohmann::json patch = {
-							{ "position", FromXMFLOAT3(*(XMFLOAT3*)newPos.m128_f32) },
-							{ "rotation", FromXMFLOAT3(rot) }
-						};
-						o->JUpdate(patch);
-					}
-					else
-					{
-						nlohmann::json patch = { { "rotation",FromXMFLOAT3(rot) } };
-						o->JUpdate(patch);
-					}
-				}
-			};
-		*/
-		/*
-		auto scaleObjects = [](XMVECTOR XMscale, XMFLOAT4X4 transformation)
-			{
-				XMFLOAT3 p0 = ToXMFLOAT3((*mousePicking.pickedObjects.begin())->at("position"));
-				XMFLOAT4 vp0 = { p0.x,p0.y,p0.z,0.0f };
-				XMVECTOR pf032 = XMLoadFloat4(&vp0);
-
-				for (auto& o : mousePicking.pickedObjects)
-				{
-					if (!o->contains("scale")) continue;
-
-					XMFLOAT3 scl = ToXMFLOAT3(o->at("scale"));
-					scl.x *= XMscale.m128_f32[0];
-					scl.y *= XMscale.m128_f32[1];
-					scl.z *= XMscale.m128_f32[2];
-
-					if (o != *mousePicking.pickedObjects.begin())
-					{
-						XMFLOAT3 p = ToXMFLOAT3(o->at("position"));
-						XMFLOAT4 vp = { p.x,p.y,p.z,0.0f };
-						XMVECTOR pf32 = XMLoadFloat4(&vp);
-						XMVECTOR diff = XMVectorSubtract(pf32, pf032);
-						XMVECTOR newPos = XMVector3Transform(diff, XMLoadFloat4x4(&transformation));
-						newPos = XMVectorAdd(newPos, pf032);
-
-						nlohmann::json patch = {
-							{ "position", FromXMFLOAT3(*(XMFLOAT3*)newPos.m128_f32) },
-							{ "scale", FromXMFLOAT3(scl) }
-						};
-						o->JUpdate(patch);
-					}
-					else
-					{
-						nlohmann::json patch = { { "scale",FromXMFLOAT3(scl) } };
-						o->JUpdate(patch);
-					}
-				}
-			};
-		*/
-
-		/*
-		ImGuizmo::BeginFrame();
-		ImGuizmo::SetOrthographic(false);
-		ImGuizmo::AllowAxisFlip(false);
-
-		ImGuiIO& io = ImGui::GetIO();
-		ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-
-		ImGuizmo::SetID(0);
-
-		XMFLOAT4X4 w;
-		XMFLOAT4X4 view;
-		XMFLOAT4X4 proj;
-		XMStoreFloat4x4(&w, (*mousePicking.pickedObjects.begin())->world());
-		XMStoreFloat4x4(&view, camera->view());
-		XMStoreFloat4x4(&proj, camera->perspectiveProjection.projectionMatrix);
-
-		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
-		{
-			gizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
-			gizmoMode = ImGuizmo::MODE::WORLD;
-		}
-		if (ImGui::IsKeyPressed(ImGuiKey_R)) // r key
-		{
-			gizmoOperation = ImGuizmo::OPERATION::ROTATE;
-			gizmoMode = ImGuizmo::MODE::WORLD;
-		}
-		if (ImGui::IsKeyPressed(ImGuiKey_S)) // s Key
-		{
-			gizmoOperation = ImGuizmo::OPERATION::SCALE;
-			gizmoMode = ImGuizmo::MODE::LOCAL;
-		}
-
-		XMFLOAT4X4 delta;
-		ImGuizmo::Manipulate(*view.m, *proj.m, gizmoOperation, gizmoMode, *w.m, *delta.m, NULL, NULL, NULL);
-
-		XMMATRIX XMdelta = XMLoadFloat4x4(&delta);
-		XMVECTOR XMtranslation;
-		XMVECTOR XMrotation;
-		XMVECTOR XMscale;
-		XMMatrixDecompose(&XMscale, &XMrotation, &XMtranslation, XMdelta);
-
-		if (gizmoOperation == ImGuizmo::OPERATION::TRANSLATE)
-		{
-			translateObjects(XMtranslation);
-		}
-		else if (gizmoOperation == ImGuizmo::OPERATION::ROTATE)
-		{
-			rotateObjects(delta);
-		}
-		else if (gizmoOperation == ImGuizmo::OPERATION::SCALE)
-		{
-			scaleObjects(XMscale, delta);
-			//XMFLOAT3 newScale = boundingBox->scale();
-			//newScale.x *= XMscale.m128_f32[0];
-			//newScale.y *= XMscale.m128_f32[1];
-			//newScale.z *= XMscale.m128_f32[2];
-			//scale(newScale);
-		}
-		*/
-	}
-
-	void DrawPickedLightGizmo(std::shared_ptr<Camera> camera)
-	{
-		std::shared_ptr<Light> light = std::dynamic_pointer_cast<Light>((*mousePicking.pickedObjects.begin()));
-		switch (light->lightType())
-		{
-		case LT_Directional:
-		{
-			BeginGizmoInteraction(camera, [&camera, light](XMFLOAT4X4 view, XMFLOAT4X4 proj)
-				{
-					XMMATRIX world = camera->world();
-					XMVECTOR forward = XMVectorScale(camera->forward(), 10.0f);
-					XMMATRIX forwardM = XMMatrixTranslationFromVector(forward);
-					world = XMMatrixMultiply(world, forwardM);
-					XMFLOAT4X4 w;
-					XMStoreFloat4x4(&w, world);
-
-					XMFLOAT4X4 delta;
-					ImGuizmo::Manipulate(*view.m, *proj.m, ImGuizmo::OPERATION::ROTATE, ImGuizmo::MODE::WORLD, *w.m, *delta.m, NULL, NULL, NULL);
-
-					XMFLOAT3 delRotation = DX::GetPitchYawRoll(delta);
-					XMFLOAT3 curRotation = light->rotation();
-					curRotation.x += delRotation.x;
-					curRotation.y += delRotation.y;
-					curRotation.z += delRotation.z;
-
-					nlohmann::json patch = { { "rotation", FromXMFLOAT3(curRotation) } };
-					light->JUpdate(patch);
-				}
-			);
-		}
-		break;
-		}
-	}
-
-	void DrawCameraGizmo(std::shared_ptr<Camera> camera)
-	{
-	}
-
-	void DrawSoundEffectGizmo(std::shared_ptr<Camera> camera)
-	{
-	}
-
 	//SceneObject Selection
-	std::map<std::string, std::shared_ptr<SceneObject>> selectedSceneObjectsMap;
-	std::set<std::shared_ptr<SceneObject>> selectedSceneObjects;
 	void SelectSceneObject(std::string uuid)
 	{
 		if (uuid == "" || (boundingBox && boundingBox->uuid() == uuid))
@@ -1333,6 +1317,7 @@ namespace Editor {
 			selectedSceneObjectsMap.erase(uuid);
 			selectedSceneObjects.erase(so);
 		}
+		gizmoApplyOp = false;
 	}
 
 	void InsertSceneObjectToSelection(std::shared_ptr<SceneObject> sceneObject)
@@ -1353,6 +1338,7 @@ namespace Editor {
 	{
 		selectedSceneObjectsMap.clear();
 		selectedSceneObjects.clear();
+		ResetGizmoVariableWorkers();
 	}
 
 	//BoundingBox
@@ -1405,25 +1391,7 @@ namespace Editor {
 			return;
 		}
 
-		//OutputDebugStringA("UpdateBoundingBox\n");
-		BoundingBox bb;
-		bool bbfirst = true;
-		for (auto& so : objects)
-		{
-			//OutputDebugStringA(std::string(std::string(so->at("name")) + "\n").c_str());
-			if (bbfirst)
-			{
-				bb = so->GetBoundingBox();
-				bbfirst = false;
-			}
-			else
-			{
-				BoundingBox sobb = so->GetBoundingBox();
-				BoundingBox mbb;
-				bb.CreateMerged(mbb, sobb, bb);
-				bb = mbb;
-			}
-		}
+		BoundingBox bb = GetContainedBoundingBox(objects);
 		boundingBox->visible(true);
 		boundingBox->scale(bb.Extents);
 		boundingBox->position(bb.Center);
@@ -1493,27 +1461,20 @@ namespace Editor {
 			if (state.rightButton)
 			{
 				currentMouseMode = MOUSE_GAMEAREA_MODE_CAMERA;
-				mouseCamera.rightButton = true;
-				mouseCamera.mouseX = state.x;
-				mouseCamera.mouseY = state.y;
+				mouseCamera.RickClick(state.x, state.y);
 			}
-			if (!mouseCamera.wheelCaptured)
+			if (!mouseCamera.WheelCaptured())
 			{
-				mouseCamera.wheel = state.scrollWheelValue;
-				mouseCamera.wheelCaptured = true;
+				mouseCamera.CaptureWheel(state.scrollWheelValue);
 			}
 			else
 			{
-				if (mouseCamera.wheel != state.scrollWheelValue)
+				if (mouseCamera.Wheel() != state.scrollWheelValue)
 				{
-					mouseCamera.mouseX = state.x;
-					mouseCamera.mouseY = state.y;
-					mouseCamera.wheel = state.scrollWheelValue;
-					mouseCamera.wheelMode = true;
+					mouseCamera.UpdateWheelMode(state.scrollWheelValue, state.x, state.y);
 					currentMouseMode = MOUSE_GAMEAREA_MODE_CAMERA;
 				}
 			}
-
 		}
 		break;
 		case MOUSE_GAMEAREA_MODE_PICKING:
@@ -1525,9 +1486,7 @@ namespace Editor {
 			else if (mousePicking.MouseMoved(state))
 			{
 				currentMouseMode = MOUSE_GAMEAREA_MODE_CAMERA;
-				mouseCamera.leftButton = true;
-				mouseCamera.mouseX = state.x;
-				mouseCamera.mouseY = state.y;
+				mouseCamera.LeftClick(state.x, state.y);
 			}
 			else if (!state.leftButton)
 			{
@@ -1545,10 +1504,10 @@ namespace Editor {
 		break;
 		case MOUSE_GAMEAREA_MODE_CAMERA:
 		{
-			if (mouseCamera.wheelMode)
+			if (mouseCamera.WheelMode())
 			{
-				int wheelDelta = state.scrollWheelValue - mouseCamera.wheel;
-				mouseCamera.wheel = state.scrollWheelValue;
+				int wheelDelta = state.scrollWheelValue - mouseCamera.Wheel();
+				mouseCamera.Wheel(state.scrollWheelValue);
 				if (wheelDelta != 0)
 				{
 					//do something like settings.at("camera").at("speed").at("fw");
@@ -1563,12 +1522,10 @@ namespace Editor {
 			}
 			else
 			{
-				int mousedx = state.x - mouseCamera.mouseX;
-				int mousedy = state.y - mouseCamera.mouseY;
-				mouseCamera.mouseX = state.x;
-				mouseCamera.mouseY = state.y;
+				int mousedx, mousedy;
+				mouseCamera.UpdateMouseXY(state.x, state.y, mousedx, mousedy);
 
-				if (mouseCamera.leftButton)
+				if (mouseCamera.LeftButton())
 				{
 					if (state.leftButton)
 					{
@@ -1581,7 +1538,7 @@ namespace Editor {
 						resetMouseProcessing();
 					}
 				}
-				if (mouseCamera.rightButton)
+				if (mouseCamera.RightButton())
 				{
 					if (state.rightButton)
 					{
@@ -1731,7 +1688,6 @@ namespace Editor {
 
 			if (pickedObjectId == objectId)
 			{
-				//OutputDebugStringA(("PickSceneObject:" + r->name() + ":" + std::to_string(objectId) + "\n").c_str());
 				SelectSceneObject(r->uuid());
 				break;
 			}

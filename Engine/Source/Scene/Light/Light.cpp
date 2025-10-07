@@ -482,5 +482,10 @@ namespace Scene {
 	{
 		return BoundingBox(position(), { 0.1f,0.1f,0.1f });
 	}
+
+	bool Light::CanInteractWithGizmo(ImGuizmo::OPERATION operation)
+	{
+		return lightType() != LT_Ambient;
+	}
 #endif
 }

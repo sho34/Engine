@@ -1,12 +1,9 @@
 #pragma once
 #include <Scene.h>
 #include <wrl.h>
-//#include <Camera/Camera.h>
-//#include <Renderable/Renderable.h>
-//#include <Sound/SoundFX.h>
-//#include <Light/Light.h>
 #include <JObject.h>
 #include <Templates.h>
+#include <DirectXMath.h>
 
 enum SceneObjectType;
 enum TemplateType;
@@ -220,7 +217,6 @@ namespace Editor {
 	void SaveTemplates();
 	void DrawRightPanel();
 	void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void(std::vector<nlohmann::json>)> OnDelete, std::function<void()> OnCancel);
-	void DrawDeletePrompt();
 	void CloseDeletionPrompt();
 
 	//SceneObjects Panel
@@ -241,12 +237,10 @@ namespace Editor {
 	void SendEditorDestroyPreview(std::string uuid, auto GetJObject);
 
 	//Gizmos
+	void ResetGizmoVariableWorkers();
+	bool InteractWithGizmos(std::set<std::shared_ptr<SceneObject>>& objects2Gizmo);
 	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera);
 	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4)> interaction = [](DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4) {});
-	void DrawRenderableGizmo(std::shared_ptr<Camera> camera);
-	void DrawPickedLightGizmo(std::shared_ptr<Camera> camera);
-	void DrawCameraGizmo(std::shared_ptr<Camera> camera);
-	void DrawSoundEffectGizmo(std::shared_ptr<Camera> camera);
 
 	//SceneObject Selection
 	void SelectSceneObject(std::string uuid);

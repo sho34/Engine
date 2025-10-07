@@ -6,6 +6,7 @@
 #include <ImGuizmo.h>
 #if defined(_EDITOR)
 #include <IconsFontAwesome5.h>
+#include <ImGuizmo.h>
 #endif
 #include <DirectXMath.h>
 
@@ -92,6 +93,7 @@ namespace Scene
 #if defined(_EDITOR)
 		virtual std::shared_ptr<Renderable> CreateBillboard() { return nullptr; }
 		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard) {}
+		virtual bool CanInteractWithGizmo(ImGuizmo::OPERATION operation) { return false; }
 #endif
 	};
 };

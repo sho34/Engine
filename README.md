@@ -1,43 +1,44 @@
-# Engine
-Culpeo Game Engine
+# Culpeo Game Engine
 
-![Icon](https://media.githubusercontent.com/media/vicenteconejerosdelacruz/Engine/refs/heads/main/Engine/Target/Assets/ui/icon.png)
+<img src="https://media.githubusercontent.com/media/vicenteconejerosdelacruz/Engine/refs/heads/main/Engine/Target/Assets/ui/icon.png" 
+        alt="Picture" 
+        width="800" 
+        height="600" 
+        style="display: block; margin: 0 auto" />
 
-### Table of Content
-
-1. Installation
-2. Dependencies
-    1. Assimp
-    2. nlohmann::json
-    3. imgui
-    4. ImGuizmo
-3. Architecture
-    1. JSON
-		1. nlohmann::json integration
-		2. Macros magic
-		3. JObject as base object
-    2. Templates
-        1. Location
-        2. List of available templates
-            1. Model3D
-            2. Material
-            3. Texture
-            4. RenderPass
-            5. Shader
-            6. Sound
-            7. *Mesh
-        3. Instances
-    3. Scene Objects
-        1. Location
-        2. List of available scene objects
-            1. Renderable
-            2. Camera
-            3. Light
-            4. SoundFX
-    3. Rendering
-        1. Shaders
-        2. Pipeline State building
-        3. Special materials
-    4. Audio/Sound
-        1. 2D Sounds
-        2. 3D Sounds    
+- [Installation](#install)
+- [Dependencies](#deps)
+  - [Assimp](#deps-assimp)
+  - [nlohmann::json](#deps-nlohmann-json)
+  - [imgui](#deps-imgui)
+  - [ImGuizmo](#deps-imguizmo)
+- [Architecture](#arch)
+  - [JSON](#arch-json)
+    - [nlohmann::json integration](#arch-json-integration)
+    - [Macros magic](#arch-json-macros)
+    - [JObject as base object](#arch-json-jobject)
+  - [Templates](#arch-templates)
+    - [Location](#arch-templates-location)
+    - [List of available templates](#arch-templates-list)
+      - [Model3D](#arch-templates-list-model3d)
+      - [Material](#arch-templates-list-material)
+      - [Texture](#arch-templates-list-textures)
+      - [RenderPass](#arch-templates-list-renderpass)
+      - [Shader](#arch-templates-list-shader)
+      - [Sound](#arch-templates-list-sound)
+      - [*Mesh](#arch-templates-list-mesh)
+    - [Instances](#arch-templates-instances)
+  - [Scene Objects](#arch-so)
+    - [Location](#arch-so-location)
+    - [List of available scene objects](#arch-so-list)
+      - [Renderable](#arch-so-list-renderable)
+      - [Camera](#arch-so-list-camera)
+      - [Light](#arch-so-list-light)
+      - [SoundFX](#arch-so-list-soundfx)
+  - [Rendering](#arch-rendering)
+    - [Shaders](#arch-rendering-shaders)
+    - [Pipeline State building](#arch-rendering-pipeline)
+    - [Special materials](#arch-rendering-materials)
+  - [Audio/Sound](#arch-audio)
+    - [2D Sounds](#arch-audio-2d)
+    - [3D Sounds](#arch-audio-3d)
