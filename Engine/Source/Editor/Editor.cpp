@@ -1134,6 +1134,8 @@ namespace Editor {
 				if (!gizmoApplyOp)
 				{
 					gizmoApplyOp = true;
+					gizmoPosition = { gizmoCentroidMx._41, gizmoCentroidMx._42, gizmoCentroidMx._43 };
+
 					for (auto& o : objects2Gizmo)
 					{
 						XMFLOAT3 p = ToXMFLOAT3(o->at("position"));
@@ -1224,54 +1226,6 @@ namespace Editor {
 
 		std::shared_ptr<Renderable> r = FindInRenderables(uuid);
 		r->OnPick();
-
-		/*
-		std::map<std::tuple<bool, bool>, std::function<void()>> actions =
-		{
-			{ std::make_tuple(false,false), [] //no shift, selecting nothing
-				{
-					mousePicking.pickedObjects.clear();
-					sceneObjectEdition.selected.clear();
-				}
-			},
-			{ std::make_tuple(false,true), [uuid] //no shift, selecting something
-				{
-					mousePicking.pickedObjects.clear();
-					sceneObjectEdition.selected.clear();
-					mousePicking.pickedObjects.insert(GetSceneObject(uuid));
-					sceneObjectEdition.selected.insert(uuid);
-					gizmoOperation = ImGuizmo::TRANSLATE;
-					gizmoMode = ImGuizmo::WORLD;
-				}
-			},
-			{ std::make_tuple(true,false), [] //shift, selecthing nothing. this wil undo last selection
-				{
-					if (mousePicking.pickedObjects.size() > 1ULL)
-					{
-						std::shared_ptr<SceneObject> last = mousePicking.pickedObjects.back();
-						std::string uuid = last->at("uuid");
-						mousePicking.pickedObjects.erase_back();
-						sceneObjectEdition.selected.erase(uuid);
-					}
-					else
-					{
-						mousePicking.pickedObjects.clear();
-						sceneObjectEdition.selected.clear();
-					}
-				}
-			},
-			{ std::make_tuple(true,true), [uuid]
-				{
-					gizmoOperation = ImGuizmo::TRANSLATE;
-					gizmoMode = ImGuizmo::WORLD;
-					mousePicking.pickedObjects.insert(GetSceneObject(uuid));
-					sceneObjectEdition.selected.insert(uuid);
-				}
-			},
-		};
-
-		actions.at(std::make_tuple(keyboard->GetState().LeftShift, uuid != ""))();
-		*/
 	}
 
 	void SelectRenderable(std::shared_ptr<Renderable> renderable)
