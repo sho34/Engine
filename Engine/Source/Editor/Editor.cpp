@@ -1305,6 +1305,7 @@ namespace Editor {
 		{
 			EraseSceneObjectFromSelection(sceneObject);
 		}
+		ResetGizmoVariableWorkers();
 	}
 
 	void SetSceneObjectSelection(std::string uuid, bool selected)
