@@ -609,11 +609,47 @@ namespace Scene
 	{
 		WriteConstantsBuffer(renderer->backBufferIndex);
 
-		auto draw = [this](std::shared_ptr<RenderPassInstance> rp)
+		//first make a set of objects which are not meant to be rendered first
+		std::set<std::shared_ptr<Renderable>> nonRoot;
+		for (auto r : renderables)
+		{
+			std::vector<std::string> uuids = r->renderNext();
+			for (std::string& uuid : uuids)
 			{
-				for (auto r : renderables)
+				std::shared_ptr<Renderable> child = FindInRenderables(uuid);
+				if (child)
+					nonRoot.insert(child);
+			}
+		}
+
+		//create the renderable set recursivelly 
+		nostd::VectorSet<std::shared_ptr<Renderable>> renVecSet;
+		std::function<void(std::shared_ptr<Renderable>)> addToRenderablesVecSet;
+		addToRenderablesVecSet = [&addToRenderablesVecSet, &renVecSet](std::shared_ptr<Renderable> r)
+			{
+				renVecSet.insert(r);
+				std::vector<std::string> uuids = r->renderNext();
+				for (std::string& uuid : uuids)
 				{
-					r->Render(rp, this_ptr);
+					std::shared_ptr<Renderable> child = FindInRenderables(uuid);
+					if (child)
+						addToRenderablesVecSet(child);
+				}
+			};
+
+		//add the objects to the vecset only if are root objects
+		for (auto r : renderables)
+		{
+			if (nonRoot.contains(r))
+				continue;
+			addToRenderablesVecSet(r);
+		}
+
+		auto draw = [this, &renVecSet](std::shared_ptr<RenderPassInstance> rp)
+			{
+				for (auto it = renVecSet.begin(); it != renVecSet.end(); it++)
+				{
+					(*it)->Render(rp, this_ptr);
 				}
 			};
 

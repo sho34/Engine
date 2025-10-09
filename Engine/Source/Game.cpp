@@ -112,24 +112,6 @@ GameStatesMachine<GameStates> gsm =
 
 void RunRender()
 {
-	/*
-	using namespace Scene;
-
-	if (!resolvePass) return;
-
-	if (!GetNumCameras())
-	{
-		resolvePass->Pass([](size_t passHash)
-			{
-#if defined(_EDITOR)
-				DrawEditor();
-#endif
-			}
-		);
-		return;
-	}
-	*/
-
 	gsm.Render();
 }
 
@@ -189,9 +171,12 @@ void RunPostRenderComputeShaders()
 
 //Booting
 float bootScreenAlpha = 0.0f;
-std::shared_ptr<tween> bootScreenAlphaTween;
+float loadingProgress = 0.0f;
+std::shared_ptr<tween> bootAlphaTween;
+std::shared_ptr<tween> loadingProgressTween;
 std::shared_ptr<Renderable> bootScreen;
-//std::shared_ptr<Renderable> loadingScreenBar;
+std::shared_ptr<Renderable> loadingBar;
+
 void BootScreenCreate()
 {
 	renderer->RenderCriticalFrame([]
@@ -204,12 +189,16 @@ void BootScreenCreate()
 	);
 
 	bootScreen = FindInRenderablesByName("logo");
-	bootScreenAlphaTween = std::make_shared<tween>(tween(0.0f, 1.0f, 1000, tween::easing::linear));
+	loadingBar = FindInRenderablesByName("loadingBar");
+	bootAlphaTween = std::make_shared<tween>(tween(0.0f, 1.0f, 1000, tween::easing::linear));
+	loadingProgressTween = std::make_shared<tween>(tween(0.0f, 1.0f, 4000, tween::easing::linear));
 }
 
 void BootScreenStep()
 {
-	bootScreenAlpha = bootScreenAlphaTween->step();
+	bootScreenAlpha = bootAlphaTween->step();
+	loadingProgress = loadingProgressTween->step();
+
 	/*
 	if (bootScreenAlpha == 1.0f) {
 		bootScreenAlphaTween = nullptr;
@@ -223,7 +212,17 @@ void BootScreenRender()
 	using namespace Scene;
 	if (GetNumSwapChainCameras() > 0ULL)
 	{
+		XMFLOAT2 pos(0.0f, -0.8f);
+		XMFLOAT2 scale(0.8f, 0.02f);
+		auto red = DirectX::Colors::Red;
+		auto blue = DirectX::Colors::Blue;
+
 		bootScreen->WriteConstantsBuffer("alpha", bootScreenAlpha, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<XMFLOAT2>("pos", pos, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<XMVECTORF32>("color1", red, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<XMVECTORF32>("color2", blue, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<float>("progress", loadingProgress, renderer->backBufferIndex);
 		WriteConstantsBuffers();
 		RenderSceneShadowMaps();
 		RenderSceneCameras();
@@ -236,8 +235,6 @@ void BootScreenLeave()
 }
 
 //Loading
-std::shared_ptr<tween> loadingScreenProgressTween;
-float loadingScreenProgress;
 void LoadingScreenCreate()
 {
 	/*
@@ -377,7 +374,8 @@ void EditorModeCreate()
 		{
 			using namespace Scene::Level;
 
-			LoadDefaultLevel();
+			//LoadDefaultLevel();
+			LoadLevel("bootscreen");
 			BindSceneObjects();
 		}
 	);
@@ -416,12 +414,55 @@ void EditorModeRender()
 	using namespace Scene;
 	if (GetNumSwapChainCameras() > 0ULL)
 	{
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "EditorModeRender");
+#endif
+
 		WriteConstantsBuffers();
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "RenderPickingPass");
+#endif
 		RenderPickingPass(GetSwapChainCameras().at(0));
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "RenderSceneShadowMaps");
+#endif
 		RenderSceneShadowMaps();
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "RenderShadowMapMinMaxChain");
+#endif
 		RenderShadowMapMinMaxChain();
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "RenderSceneCameras");
+#endif
 		RenderSceneCameras();
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "DrawEditor");
+#endif
 		DrawEditor(GetSwapChainCameras().at(0));
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
 	}
 	else
 	{

@@ -466,7 +466,14 @@ void Render()
 	renderer->SetCSUDescriptorHeap();
 
 	RunPreRenderComputeShaders();
+	auto commandList = renderer->commandList;
+#if defined(_DEVELOPMENT)
+	PIXBeginEvent(commandList.p, 0, "RunRender");
+#endif
 	RunRender();
+#if defined(_DEVELOPMENT)
+	PIXEndEvent(commandList.p);
+#endif
 	RunPostRenderComputeShaders();
 
 	renderer->ExecuteCommands();

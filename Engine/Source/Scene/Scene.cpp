@@ -159,7 +159,13 @@ namespace Scene
 		cameras.erase(newIt, cameras.end());
 
 		std::vector<std::shared_ptr<Camera>> nonSwapChainCams;
-		std::copy_if(cameras.begin(), cameras.end(), std::back_inserter(nonSwapChainCams), [](std::shared_ptr<Camera> cam) {return !cam->useSwapChain(); });
+		std::copy_if(cameras.begin(), cameras.end(), std::back_inserter(nonSwapChainCams), [](std::shared_ptr<Camera> cam)
+			{
+				if (!cam->useSwapChain()) return false;
+				if (cam->cameraRenderPasses.size() > 0ULL && cam->cameraRenderPasses.back()->type == RenderPassType_SwapChainPass) return false;
+				return true;
+			}
+		);
 
 		for (auto& cam : nonSwapChainCams)
 		{

@@ -567,28 +567,6 @@ namespace Templates
 				{ "uuid" , "8291ba82-165d-464b-be15-d9fa6d7b9a7c"}
 			},
 			{
-				{ "name","LoadingBar"},
-				{ "shader_vs" , "d0192f97-a56a-469d-b6f1-07d403ae331a"},
-				{ "shader_ps" , "b5ef5d53-2174-4d12-b231-5e07a7f5a7f8"},
-				{ "systemCreated" , true},
-				{ "rasterizerState",
-					{
-						{ "FillMode", "SOLID" },
-						{ "CullMode", "NONE" },
-						{ "FrontCounterClockwise", false},
-						{ "DepthBias", 0},
-						{ "DepthBiasClamp", 0.0},
-						{ "SlopeScaledDepthBias", 0.0},
-						{ "DepthClipEnable", true},
-						{ "MultisampleEnable", false},
-						{ "AntialiasedLineEnable", false},
-						{ "ForcedSampleCount", 0},
-						{ "ConservativeRaster", "OFF" }
-					}
-				},
-				{ "uuid" , "28c4d879-6d21-408f-acbb-120f9fdc05b0"}
-			},
-			{
 				{ "name","Picking"},
 				{ "shader_vs" , "79568541-34c8-4464-bec1-77debde975e0"},
 				{ "shader_ps" , "e32c5e9c-26a5-4f2b-8d0c-5899c67f1def"},

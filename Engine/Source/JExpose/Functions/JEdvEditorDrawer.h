@@ -1713,6 +1713,17 @@ inline void DrawResourceSelection(
 }
 
 template<>
+inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_so_renderable>()
+{
+	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+		{
+			DrawResourceSelection(attribute, json, Scene::FindNameInRenderables, SortUUIDNameByName(Scene::GetRenderablesUUIDNames), ICON_FA_SNOWMAN);
+			//EditorDrawVector(attribute, json, ICON_FA_SNOWMAN, Scene::GetRenderablesUUIDNames, Scene::FindNameInRenderables, ImGui::OpenSceneObject);
+		};
+}
+
+
+template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_shader>()
 {
 	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
@@ -3387,7 +3398,7 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 					for (auto& j : json)
 					{
 						nlohmann::json cpy = j->at(attribute);
-						cpy.at(index).at("value") = j->at(attribute).at(0).at("value");
+						cpy.at(index).at("value") = j->at(attribute).at(index).at("value");
 						nlohmann::json patch = { {attribute,cpy} };
 						j->JUpdate(patch);
 						//j->at(attribute).at(index).at("value") = j->at(attribute).at(0).at("value");
