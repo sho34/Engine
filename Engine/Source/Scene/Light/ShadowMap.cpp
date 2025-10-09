@@ -4,6 +4,7 @@
 #include <d3dx12.h>
 #include <DirectXHelper.h>
 #include <Renderer.h>
+#include <Scene.h>
 #include <RenderPass/RenderToTexturePass.h>
 #include <DeviceUtils/D3D12Device/Builder.h>
 #include <DeviceUtils/D3D12Device/Interop.h>
@@ -365,80 +366,6 @@ namespace Scene {
 			shadowMapChainGpuHandle1 = chainPass->renderPassInstance->renderToTexturePass->renderToTexture.at(0)->gpuTextureHandle;
 			shadowMapChainGpuHandle2 = chainPass->renderPassInstance->renderToTexturePass->renderToTexture.at(1)->gpuTextureHandle;
 
-			//rpInstance->overridePass->prevPassRTT = prevPassRTT;
-			//prevPassRTT = rpInstance->rendererToTexturePass->renderToTexture.at(0);
-			//push a render pass for the current chain depth
-			/*
-			std::string ShadowMinMaxChainRenderPassName = "ShadowMapMinMaxChainRenderPass[" + std::to_string(max(2U, width)) + "," + std::to_string(max(2U, height)) + "]";
-			OutputDebugStringA((ShadowMinMaxChainRenderPassName + "\n").c_str());
-
-			shadowMapMinMaxChainRenderPass.push_back(
-				CreateRenderPass(
-					ShadowMinMaxChainRenderPassName,
-					{ DXGI_FORMAT_R32_FLOAT , DXGI_FORMAT_R32_FLOAT },
-					DXGI_FORMAT_UNKNOWN,
-					max(2U, width),
-					max(2U, height)
-				)
-			);
-			*/
-			/*
-			//push a renderable for the current
-			shadowMapMinMaxChainRenderable.push_back(
-				CreateRenderable(
-					{
-						{ "meshMaterials" ,
-							{
-								{
-									{ "material", FindMaterialUUIDByName("DepthMinMax") },
-									{ "mesh", FindMeshUUIDByName("decal") }
-								}
-							}
-						},
-						{ "uniqueMaterialInstance", true },
-						{ "meshShadowMapMaterials", {} },
-						{ "name", "ShadowMapMinMaxChainQuad" },
-						{ "uuid", getUUID() },
-						{ "hidden", true},
-						{ "visible", false},
-						{ "position", {0.0, 0.0, 0.0} },
-						{ "rotation",{0.0, 0.0, 0.0 } },
-						{ "scale", { 1.0, 1.0, 1.0} },
-						{ "skipMeshes", {} },
-						{ "pipelineState" ,
-							{
-								{ "renderTargetsFormats", { "R32_FLOAT","R32_FLOAT" } },
-								{ "depthStencilFormat" , "UNKNOWN" }
-							}
-						}
-					}
-				)
-			);
-			*/
-			/*
-			//write the TexelInvSize to constants buffers
-			for (unsigned int i = 0; i < renderer->numFrames; i++)
-			{
-				shadowMapMinMaxChainRenderable.back()->WriteConstantsBuffer("texelInvSize", TexelInvSize, i);
-			}
-			*/
-			/*
-			//get the material instance of the renderable and push the gpu handles 1&2 of the chain
-			std::shared_ptr<MaterialInstance>& shadowMapMinMaxChainMaterial = shadowMapMinMaxChainRenderable.back()->meshMaterials.begin()->second;
-
-			std::string ShadowMapMinMaxChainMat1 = "ShadowMapMinMaxChainMat1[" + std::to_string(max(2U, width)) + "," + std::to_string(max(2U, height)) + "]";
-			std::string ShadowMapMinMaxChainMat2 = "ShadowMapMinMaxChainMat2[" + std::to_string(max(2U, width)) + "," + std::to_string(max(2U, height)) + "]";
-			shadowMapMinMaxChainMaterial->textures.insert_or_assign(TextureShaderUsage_MinTexture, GetTextureFromGPUHandle(ShadowMapMinMaxChainMat1, shadowMapChainGpuHandle1));
-			shadowMapMinMaxChainMaterial->textures.insert_or_assign(TextureShaderUsage_MaxTexture, GetTextureFromGPUHandle(ShadowMapMinMaxChainMat2, shadowMapChainGpuHandle1));
-
-			//get the new gpu handles 1&2 for the next chain
-			std::shared_ptr<RenderToTexturePass>& pass = shadowMapMinMaxChainRenderPass.back();
-			shadowMapChainGpuHandle1 = pass->renderToTexture[0]->gpuTextureHandle;
-			shadowMapChainGpuHandle2 = pass->renderToTexture[1]->gpuTextureHandle;
-
-			//calculate the next TexelInvSize
-			*/
-
 			//calculate the next width and height
 			width = max(1U, width >> 1);
 			height = max(1U, height >> 1);
@@ -456,60 +383,6 @@ namespace Scene {
 		resultPass->shadowMapChainGpuHandle1 = last->renderToTexturePass->renderToTexture.at(0)->gpuTextureHandle;
 		resultPass->shadowMapChainGpuHandle2 = last->renderToTexturePass->renderToTexture.at(1)->gpuTextureHandle;
 		resultPass->CreateFSQuad((lightType() != LT_Spot) ? "DepthMinMaxToRGBA" : "DepthMinMaxToRGBASpot");
-
-		/*
-		//create the end result render pass
-		shadowMapMinMaxChainResultRenderPass = CreateRenderPass(
-			"ShadowMinMaxChainRenderPassResult",
-			{ DXGI_FORMAT_R8G8B8A8_UNORM },
-			DXGI_FORMAT_UNKNOWN,
-			static_cast<unsigned int>(texWidth),
-			static_cast<unsigned int>(texHeight)
-		);
-		*/
-
-		//create the end result renderable
-		/*
-		shadowMapMinMaxChainResultRenderable = CreateRenderable(
-			{
-				{ "meshMaterials" ,
-					{
-						{
-							{ "material", (lightType() != LT_Spot) ? FindMaterialUUIDByName("DepthMinMaxToRGBA") : FindMaterialUUIDByName("DepthMinMaxToRGBASpot") },
-							{ "mesh", FindMeshUUIDByName("decal") }
-						}
-					}
-				},
-				{ "uniqueMaterialInstance", true },
-				{ "meshShadowMapMaterials", {} },
-				{ "name", "ShadowMapMinMaxChainQuadResult" },
-				{ "uuid", getUUID() },
-				{ "hidden", true },
-				{ "visible", false },
-				{ "position", { 0.0, 0.0, 0.0 } },
-				{ "rotation", { 0.0, 0.0, 0.0 } },
-				{ "scale", { 1.0, 1.0, 1.0 } } ,
-				{ "skipMeshes", {} },
-				{ "pipelineState" ,
-					{
-						{ "renderTargetsFormats", { "R8G8B8A8_UNORM" } },
-						{ "depthStencilFormat", "UNKNOWN" }
-					}
-				}
-			}
-		);
-		*/
-		/*
-		std::shared_ptr<RenderToTexturePass>& lastMinMaxPass = shadowMapMinMaxChainRenderPass.back();
-		std::shared_ptr<MaterialInstance>& shadowMapMinMaxChainResultMaterial = shadowMapMinMaxChainResultRenderable->meshMaterials.begin()->second;
-
-		std::string ShadowMapResultChainMat1 = "ShadowMapMinMaxResult1";
-		std::string ShadowMapResultChainMat2 = "ShadowMapMinMaxResult2";
-		std::string ShadowMapResultChainMat3 = "ShadowMapMinMaxResult3";
-		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_DepthTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat1, shadowMapChainGpuHandle));
-		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_MinTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat2, lastMinMaxPass->renderToTexture[0]->gpuTextureHandle));
-		shadowMapMinMaxChainResultMaterial->textures.insert_or_assign(TextureShaderUsage_MaxTexture, GetTextureFromGPUHandle(ShadowMapResultChainMat3, lastMinMaxPass->renderToTexture[1]->gpuTextureHandle));
-		*/
 	}
 
 	void Light::DestroyShadowMapMinMaxChain()

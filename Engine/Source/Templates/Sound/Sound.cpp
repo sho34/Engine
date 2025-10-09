@@ -8,15 +8,15 @@
 #include <Sound/SoundFX.h>
 #include <NoStd.h>
 #include <Application.h>
-#if defined(_EDITOR)
 #include <TemplateDef.h>
-#endif
 
 using namespace AudioSystem;
 using namespace DirectX;
 
 namespace Templates
 {
+#if defined(_EDITOR)
+
 #include <Editor/JDrawersDef.h>
 #include <SoundAtt.h>
 #include <JEnd.h>
@@ -36,6 +36,8 @@ namespace Templates
 #include <Creator/JValidatorDef.h>
 #include <SoundAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	namespace Sound
 	{

@@ -3,10 +3,11 @@
 #include <Renderer.h>
 #include <Material/Material.h>
 #include <Shader/Shader.h>
+#include <Camera/Camera.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
-ResolvePass::ResolvePass(std::shared_ptr<Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) : OverridePass(cam, rpI, rp)
+ResolvePass::ResolvePass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) : OverridePass(cam, rpI, rp)
 {
 	std::shared_ptr<RenderPassJson> prevPassJ = GetRenderPassTemplate(cam->renderPasses().at(rpI - 1));
 	mode = ResolveMode_CopyFromRenderToTexture;

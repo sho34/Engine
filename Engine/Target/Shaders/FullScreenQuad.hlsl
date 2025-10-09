@@ -1,34 +1,3 @@
-struct VertexShaderInput
-{
-	float3 pos : POSITION;
-	float2 uv : TEXCOORD;
-};
-
-struct PixelShaderInput
-{
-	float4 pos : SV_POSITION;
-	float2 uv0 : TEXCOORD0;
-};
-
-Texture2D BaseTexture : register(t0);
-SamplerState samp0 : register(s0);
-
-cbuffer renderable : register(b0)
-{
-	#include "CBVars/FullScreenQuad.h"
-}
-
-PixelShaderInput main_vs(VertexShaderInput input)
-{
-	PixelShaderInput output;
-
-	output.pos = float4(input.pos.xy,1.0f.xx);
-	output.uv0 = input.uv;
-
-	return output;
-}
-
-float4 main_ps(PixelShaderInput input) : SV_TARGET
-{
-	return float4(BaseTexture.Sample(samp0, input.uv0.xy).rgb*alpha,1.0f);
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:cbb474eadadb5d1fb7c03a3a816f8d6f198d8bb1d46ff1e964b36efaa128f634
+size 637

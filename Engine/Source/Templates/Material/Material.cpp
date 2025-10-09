@@ -15,7 +15,9 @@
 #include <VertexFormats.h>
 #endif
 
-namespace Templates {
+namespace Templates
+{
+#if defined(_EDITOR)
 
 #include <Editor/JDrawersDef.h>
 #include <MaterialAtt.h>
@@ -36,6 +38,8 @@ namespace Templates {
 #include <Creator/JValidatorDef.h>
 #include <MaterialAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	MaterialJson::MaterialJson(nlohmann::json json) : JTemplate(json)
 	{

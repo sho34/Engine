@@ -13,6 +13,8 @@
 
 namespace Templates {
 
+#if defined(_EDITOR)
+
 #include <Editor/JDrawersDef.h>
 #include <ShaderAtt.h>
 #include <JEnd.h>
@@ -32,6 +34,8 @@ namespace Templates {
 #include <Creator/JValidatorDef.h>
 #include <ShaderAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	namespace Shader
 	{
@@ -67,6 +71,7 @@ namespace Templates {
 	TEMPDEF_FULL(Shader);
 	TEMPDEF_REFTRACKER(Shader);
 
+#if defined(_DEVELOPMENT)
 	void ShaderJsonStep()
 	{
 		std::set<std::shared_ptr<ShaderJson>> shaders;
@@ -227,6 +232,7 @@ namespace Templates {
 		monitor.detach();
 		changesPropagator.detach();
 	}
+#endif
 
 	ShaderInstance::ShaderInstance(
 		std::string instance_uuid,

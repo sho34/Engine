@@ -3,17 +3,20 @@
 #include <Renderer.h>
 #include <StepTimer.h>
 #include <DeviceUtils/Resources/Resources.h>
+#include <Camera/Camera.h>
+#include <HDR/LuminanceHistogram.h>
+#include <HDR/LuminanceHistogramAverage.h>
 
 extern std::shared_ptr<Renderer> renderer;
 
-ToneMappingPass::ToneMappingPass(std::shared_ptr<Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) : OverridePass(cam, rpI, rp)
+ToneMappingPass::ToneMappingPass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) : OverridePass(cam, rpI, rp)
 {
 	auto prevPassRTT = GetPrevPassRenderToTexture();
 
-	hdrHistogram = std::make_shared<LuminanceHistogram>(prevPassRTT);
+	hdrHistogram = std::make_shared<ComputeShader::LuminanceHistogram>(prevPassRTT);
 	hdrHistogram->UpdateLuminanceHistogramParams(prevPassRTT->width, prevPassRTT->height, cam->minLogLuminance(), cam->maxLogLuminance());
 
-	luminanceHistogramAverage = std::make_shared<LuminanceHistogramAverage>(hdrHistogram->resultCpuHandle, hdrHistogram->resultGpuHandle);
+	luminanceHistogramAverage = std::make_shared<ComputeShader::LuminanceHistogramAverage>(hdrHistogram->resultCpuHandle, hdrHistogram->resultGpuHandle);
 	luminanceHistogramAverage->UpdateLuminanceHistogramAverageParams(prevPassRTT->width * prevPassRTT->height,
 		cam->minLogLuminance(), cam->maxLogLuminance(), 0.016f, cam->tau()
 	);

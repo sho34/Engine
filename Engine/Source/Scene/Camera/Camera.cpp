@@ -32,15 +32,20 @@ namespace Editor
 #endif
 namespace Scene
 {
+	using namespace DeviceUtils;
+	using namespace DirectX;
+
+#include <TrackUUID/JDef.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
+
+#if defined(_EDITOR)
+
 #include <Editor/JDrawersDef.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
 
 #include <Editor/JPreviewDef.h>
-#include <CameraAtt.h>
-#include <JEnd.h>
-
-#include <TrackUUID/JDef.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
 
@@ -56,8 +61,7 @@ namespace Scene
 #include <CameraAtt.h>
 #include <JEnd.h>
 
-	using namespace DeviceUtils;
-	using namespace DirectX;
+#endif
 
 	Camera::Camera(nlohmann::json json) :SceneObject(json)
 	{

@@ -3,6 +3,7 @@
 #include <Renderer.h>
 #include <Material/Material.h>
 #include <Shader/Shader.h>
+#include <Camera/Camera.h>
 
 extern std::shared_ptr<Renderer> renderer;
 

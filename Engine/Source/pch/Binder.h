@@ -3,10 +3,16 @@
 #include <SceneObject.h>
 #include <map>
 
-struct Binder {
-	std::multimap<std::shared_ptr<SceneObject>, std::shared_ptr<SceneObject>> binding;
+namespace Scene
+{
+	struct SceneObject;
+};
 
-	void insert(std::shared_ptr<SceneObject> soA, std::shared_ptr<SceneObject> soB)
+struct Binder {
+
+	std::multimap<std::shared_ptr<Scene::SceneObject>, std::shared_ptr<Scene::SceneObject>> binding;
+
+	void insert(std::shared_ptr<Scene::SceneObject> soA, std::shared_ptr<Scene::SceneObject> soB)
 	{
 		bool AtoB = false;
 		auto rangeAtoB = binding.equal_range(soA);
@@ -41,9 +47,9 @@ struct Binder {
 		}
 	}
 
-	void erase(std::shared_ptr<SceneObject> soA)
+	void erase(std::shared_ptr<Scene::SceneObject> soA)
 	{
-		std::set<std::shared_ptr<SceneObject>> soBs;
+		std::set<std::shared_ptr<Scene::SceneObject>> soBs;
 		auto rangeA = binding.equal_range(soA);
 		for (auto it = rangeA.first; it != rangeA.second; it++)
 		{
@@ -67,7 +73,7 @@ struct Binder {
 		}
 	}
 
-	void erase(std::shared_ptr<SceneObject> soA, std::shared_ptr<SceneObject> soB)
+	void erase(std::shared_ptr<Scene::SceneObject> soA, std::shared_ptr<Scene::SceneObject> soB)
 	{
 		soA->Unbind(soB);
 		soB->Unbind(soA);

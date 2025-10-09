@@ -39,16 +39,20 @@ namespace Editor
 };
 #endif
 
-namespace Scene {
+namespace Scene
+{
+
+#include <TrackUUID/JDef.h>
+#include <RenderableAtt.h>
+#include <JEnd.h>
+
+#if defined(_EDITOR)
+
 #include <Editor/JDrawersDef.h>
 #include <RenderableAtt.h>
 #include <JEnd.h>
 
 #include <Editor/JPreviewDef.h>
-#include <RenderableAtt.h>
-#include <JEnd.h>
-
-#include <TrackUUID/JDef.h>
 #include <RenderableAtt.h>
 #include <JEnd.h>
 
@@ -63,6 +67,8 @@ namespace Scene {
 #include <Creator/JValidatorDef.h>
 #include <RenderableAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	//UPDATE
 	void RenderablesStep()
@@ -697,7 +703,9 @@ namespace Scene {
 	void Renderable::RebuildMeshMaterials()
 	{
 		renderException = false;
+#if defined(_EDITOR)
 		Editor::UnbindRenderableFromPickingPass(this_ptr);
+#endif
 		Destroy();
 		try
 		{
@@ -709,7 +717,9 @@ namespace Scene {
 				CreateRootSignatures(cam);
 				CreatePipelineStates(cam);
 			}
+#if defined(_EDITOR)
 			Editor::BindRenderableToPickingPass(this_ptr);
+#endif
 		}
 		catch (...)
 		{

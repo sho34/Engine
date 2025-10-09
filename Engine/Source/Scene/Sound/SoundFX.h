@@ -14,6 +14,8 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
+#if defined(_EDITOR)
+
 #include <Attributes/JOrder.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>
@@ -41,6 +43,8 @@ namespace Scene {
 #include <Creator/JValidatorDecl.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	struct SoundFX : SceneObject
 	{

@@ -24,6 +24,7 @@ namespace Editor {
 
 namespace Templates
 {
+#if defined(_EDITOR)
 #include <Editor/JDrawersDef.h>
 #include <TextureAtt.h>
 #include <JEnd.h>
@@ -43,6 +44,7 @@ namespace Templates
 #include <Creator/JValidatorDef.h>
 #include <TextureAtt.h>
 #include <JEnd.h>
+#endif
 
 #if defined(_EDITOR)
 	std::shared_ptr<TextureInstance> texturePreview = nullptr;
@@ -69,6 +71,7 @@ namespace Templates
 	TEMPDEF_FULL(Texture);
 	TEMPDEF_REFTRACKER(Texture);
 
+#if defined(_EDITOR)
 	void TextureJson::EditorPreview(size_t flags)
 	{
 		if (flags & (1 << Update_images))
@@ -103,7 +106,6 @@ namespace Templates
 		reloadPreview = false;
 	}
 
-#if defined(_EDITOR)
 	void TextureJsonsStep()
 	{
 		std::set<std::shared_ptr<TextureJson>> texs;
@@ -417,6 +419,7 @@ namespace Templates
 		));
 	}
 
+#if defined(_EDITOR)
 	void CreateTextureFromJsonDefinition(nlohmann::json json)
 	{
 		TextureJson texJson(json);
@@ -462,6 +465,7 @@ namespace Templates
 		CreateTexture(createJson);
 		Editor::MarkTemplatesPanelAssetsAsDirty();
 	}
+#endif
 
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format)
 	{
@@ -477,7 +481,6 @@ namespace Templates
 
 	void CreateDDSFile(std::shared_ptr<TextureJson>& tex)
 	{
-
 		std::filesystem::path ddsPath = tex->name();
 		ddsPath.replace_extension(".dds");
 
@@ -507,10 +510,12 @@ namespace Templates
 			break;
 			}
 		}
+#if defined(_EDITOR)
 		Editor::MarkTemplatesPanelAssetsAsDirty();
-
+#endif
 	}
 
+#if defined(_EDITOR)
 	void PreviewTexturesStep(float elapsedSeconds)
 	{
 		std::vector<std::shared_ptr<TextureJson>> previewsToPlay;
@@ -579,6 +584,7 @@ namespace Templates
 			}
 		);
 	}
+#endif
 
 	TextureInstance::TextureInstance(std::string uuid) :
 		TextureInstance(uuid, 0U) {

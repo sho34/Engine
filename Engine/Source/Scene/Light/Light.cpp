@@ -4,6 +4,7 @@
 #include <d3dx12.h>
 #include <DirectXHelper.h>
 #include <Renderer.h>
+#include <Scene.h>
 #include <DeviceUtils/D3D12Device/Builder.h>
 #include <DeviceUtils/D3D12Device/Interop.h>
 #include <DeviceUtils/RootSignature/RootSignature.h>
@@ -28,16 +29,20 @@ namespace Editor
 }
 #endif
 
-namespace Scene {
+namespace Scene
+{
+
+#include <TrackUUID/JDef.h>
+#include <LightAtt.h>
+#include <JEnd.h>
+
+#if defined(_EDITOR)
+
 #include <Editor/JDrawersDef.h>
 #include <LightAtt.h>
 #include <JEnd.h>
 
 #include <Editor/JPreviewDef.h>
-#include <LightAtt.h>
-#include <JEnd.h>
-
-#include <TrackUUID/JDef.h>
 #include <LightAtt.h>
 #include <JEnd.h>
 
@@ -52,6 +57,8 @@ namespace Scene {
 #include <Creator/JValidatorDef.h>
 #include <LightAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	using namespace DeviceUtils;
 

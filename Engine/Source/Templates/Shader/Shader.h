@@ -17,6 +17,8 @@
 
 namespace Templates
 {
+#if defined(_EDITOR)
+
 #include <Attributes/JOrder.h>
 #include <ShaderAtt.h>
 #include <JEnd.h>
@@ -44,9 +46,12 @@ namespace Templates
 #include <Creator/JValidatorDecl.h>
 #include <ShaderAtt.h>
 #include <JEnd.h>
+#endif
 
+#if defined(_DEVELOPMENT)
 	void ShaderJsonStep();
 	void MonitorShaderChanges(std::string folder);
+#endif
 
 	namespace Shader
 	{

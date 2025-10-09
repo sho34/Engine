@@ -3,9 +3,7 @@ BUGS:
 	-los billboards deben ser creados cuando cambia algo de la escena y no a partir del Initialize
 
 TODO:
--Cargar modelos GLB
 -Revivir GameMode(No Editor)
-	-splash screen
 	-barra de carga
 	-mostrar nivel con un escenario
 		-town(sacar modelos de sketchfab) de 4 casas medievales
@@ -17,6 +15,8 @@ TODO:
 NICE TO HAVE:
 
 DONE:
+-Revivir GameMode(No Editor)
+	-splash screen
 -Interaccion de Gizmos de ImGuizmo con la posibilidad de combinar todos los objetos que sean seleccionables
 	-Renderables: todos
 	-SoundFX: sonidos 3d

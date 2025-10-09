@@ -56,7 +56,9 @@ inline nlohmann::json FromTextureShaderUsagePair(TextureShaderUsagePair m)
 	return j;
 }
 
-namespace Templates {
+namespace Templates
+{
+#if defined(_EDITOR)
 
 #include <Attributes/JOrder.h>
 #include <MaterialAtt.h>
@@ -85,6 +87,8 @@ namespace Templates {
 #include <Creator/JValidatorDecl.h>
 #include <MaterialAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	void MaterialJsonStep();
 

@@ -44,6 +44,8 @@ namespace Scene
 #include <RenderableAtt.h>
 #include <JEnd.h>
 
+#if defined(_EDITOR)
+
 #include <Attributes/JOrder.h>
 #include <RenderableAtt.h>
 #include <JEnd.h>
@@ -71,6 +73,8 @@ namespace Scene
 #include <Creator/JValidatorDecl.h>
 #include <RenderableAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	//UPDATE
 	void RenderablesStep();

@@ -26,7 +26,7 @@
 #include <ppltasks.h>	// Para create_task
 //#include <agile.h>
 
-#if defined(_EDITOR)
+#if defined(_DEVELOPMENT)
 #include <DirectXTex.h>
 #endif
 #include <DirectXMath.h>
@@ -131,8 +131,9 @@ using namespace Concurrency;
 #include "pch/ShaderMaterials.h"
 #include "pch/RefTracker.h"
 #include "pch/NoMath.h"
-#if defined(_EDITOR)
+#include "pch/Binder.h"
 #include "pch/DDSTextures.h"
+#if defined(_EDITOR)
 #include "pch/Command.h"
 #include "pch/JExposeEditor.h"
 #endif

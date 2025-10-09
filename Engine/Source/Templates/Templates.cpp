@@ -853,12 +853,13 @@ namespace Templates
 	void TemplatesStep(DX::StepTimer& timer)
 	{
 		ShaderJsonStep();
+#if defined(_EDITOR)
 		TextureJsonsStep();
 		PreviewTexturesStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
 		ReloadPreviewTextures();
+#endif
 		MaterialJsonStep();
 		SoundJsonStep();
-		//ReloadTextureInstances();
 	}
 
 #if defined(_EDITOR)

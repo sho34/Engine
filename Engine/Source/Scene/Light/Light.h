@@ -137,6 +137,8 @@ namespace Scene {
 #include <LightAtt.h>
 #include <JEnd.h>
 
+#if defined(_EDITOR)
+
 #include <Attributes/JOrder.h>
 #include <LightAtt.h>
 #include <JEnd.h>
@@ -164,6 +166,8 @@ namespace Scene {
 #include <Creator/JValidatorDecl.h>
 #include <LightAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	struct Light : SceneObject
 	{

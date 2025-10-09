@@ -6,7 +6,7 @@
 
 extern std::shared_ptr<Renderer> renderer;
 
-MinMaxChainPass::MinMaxChainPass(std::shared_ptr<Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) : OverridePass(cam, rpI, rp)
+MinMaxChainPass::MinMaxChainPass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) : OverridePass(cam, rpI, rp)
 {
 	CreateFsQuadResources("DepthMinMax", GetRenderPassTemplate(rp->renderPassUUID), [this, rp](std::string name, ShaderConstantsBufferVariable& var)
 		{

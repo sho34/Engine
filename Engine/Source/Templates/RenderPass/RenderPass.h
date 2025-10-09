@@ -90,6 +90,8 @@ inline static std::map<std::string, RenderPassRenderCallbackOverride> StringToRe
 
 namespace Templates
 {
+#if defined(_EDITOR)
+
 #include <Attributes/JOrder.h>
 #include <RenderPassAtt.h>
 #include <JEnd.h>
@@ -117,6 +119,8 @@ namespace Templates
 #include <Creator/JValidatorDecl.h>
 #include <RenderPassAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	struct RenderPassJson : public JTemplate
 	{

@@ -1,6 +1,10 @@
 #pragma once
 
 #include "OverridePass.h"
+namespace Scene
+{
+	struct Camera;
+};
 
 struct ResolvePass : public OverridePass
 {
@@ -12,7 +16,7 @@ struct ResolvePass : public OverridePass
 
 	ResolveMode mode;
 
-	ResolvePass(std::shared_ptr<Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp);
+	ResolvePass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp);
 	virtual void Pass();
 	void Render();
 };

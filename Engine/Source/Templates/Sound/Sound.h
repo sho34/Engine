@@ -19,6 +19,7 @@ namespace Templates
 	{
 		inline static const std::string templateName = "sounds.json";
 	}
+#if defined(_EDITOR)
 
 #include <Attributes/JOrder.h>
 #include <SoundAtt.h>
@@ -47,6 +48,8 @@ namespace Templates
 #include <Creator/JValidatorDecl.h>
 #include <SoundAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	struct SoundJson : JTemplate
 	{

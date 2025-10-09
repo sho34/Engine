@@ -10,6 +10,7 @@
 #include <JTypes.h>
 #include <Binder.h>
 #include <SceneObject.h>
+#include <DirectXHelper.h>
 
 namespace DX { class StepTimer; }
 

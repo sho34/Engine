@@ -14,6 +14,8 @@ enum TextureType;
 
 namespace Templates
 {
+#if defined(_EDITOR)
+
 #include <Attributes/JOrder.h>
 #include <TextureAtt.h>
 #include <JEnd.h>
@@ -43,6 +45,8 @@ namespace Templates
 #include <JEnd.h>
 
 	void TextureJsonsStep();
+
+#endif
 
 	struct TextureInstance;
 	struct TextureJson : public JTemplate
@@ -86,11 +90,15 @@ namespace Templates
 	void CreateArrayDDSFile(TextureJson& json);
 	void CreateCubeDDSFile(TextureJson& json);
 	void CreateCubeDDSFileFromSkyBox(TextureJson& json);
+#if defined(_EDITOR)
 	void CreateTextureFromJsonDefinition(nlohmann::json json);
+#endif
 	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format);
 	void CreateDDSFile(std::shared_ptr<TextureJson>& tex);
+#if defined(_EDITOR)
 	void PreviewTexturesStep(float delta);
 	void ReloadPreviewTextures();
+#endif
 
 	struct TextureInstance
 	{
@@ -114,10 +122,10 @@ namespace Templates
 
 inline auto ToTextureJson(std::vector<std::shared_ptr<JObject>>& json)
 {
-	std::vector<std::shared_ptr<TextureJson>> textures;
+	std::vector<std::shared_ptr<Templates::TextureJson>> textures;
 	std::transform(json.begin(), json.end(), std::back_inserter(textures), [](auto& j)
 		{
-			return std::dynamic_pointer_cast<TextureJson>(j);
+			return std::dynamic_pointer_cast<Templates::TextureJson>(j);
 		}
 	);
 	return textures;

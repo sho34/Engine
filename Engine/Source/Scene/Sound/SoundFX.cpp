@@ -22,17 +22,19 @@ namespace Editor
 #endif
 
 using namespace Templates;
-namespace Scene {
+namespace Scene
+{
+#include <TrackUUID/JDef.h>
+#include <SoundFXAtt.h>
+#include <JEnd.h>
+
+#if defined(_EDITOR)
 
 #include <Editor/JDrawersDef.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
 #include <Editor/JPreviewDef.h>
-#include <SoundFXAtt.h>
-#include <JEnd.h>
-
-#include <TrackUUID/JDef.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
@@ -47,6 +49,8 @@ namespace Scene {
 #include <Creator/JValidatorDef.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	SoundFX::SoundFX(nlohmann::json json) : SceneObject(json)
 	{

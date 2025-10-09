@@ -10,10 +10,8 @@
 #include <nlohmann/json.hpp>
 #include <Application.h>
 #include <NoStd.h>
-#if defined(_EDITOR)
 #include <Textures/Texture.h>
 #include <Material/Material.h>
-#endif
 #if defined(_DEVELOPMENT)
 #include <Command.h>
 #endif
@@ -32,6 +30,7 @@ namespace Editor
 
 namespace Templates
 {
+#if defined(_EDITOR)
 #include <Editor/JDrawersDef.h>
 #include <Model3DAtt.h>
 #include <JEnd.h>
@@ -51,6 +50,8 @@ namespace Templates
 #include <Creator/JValidatorDef.h>
 #include <Model3DAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	Model3DJson::Model3DJson(nlohmann::json json) : JTemplate(json)
 	{
@@ -200,7 +201,9 @@ namespace Templates
 		}
 		if (dirtyTemplatesPanel)
 		{
+#if defined(_EDITOR) //economic
 			Editor::MarkTemplatesPanelAssetsAsDirty();
+#endif
 		}
 	}
 

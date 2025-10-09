@@ -22,16 +22,11 @@ using namespace Editor;
 using namespace Scene;
 using namespace DeviceUtils;
 using namespace ComputeShader;
-using namespace Editor;
 
 extern std::unique_ptr<DirectX::Mouse> mouse;
 
 GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
-std::shared_ptr<Renderable> bootScreen;
-std::shared_ptr<Renderable> loadingScreenBar;
-std::shared_ptr<Camera> UICamera;
-std::shared_ptr<Camera> mainPassCamera;
 
 extern std::shared_ptr<Renderer> renderer;
 
@@ -114,15 +109,6 @@ GameStatesMachine<GameStates> gsm =
 	}
 };
 
-/*
-std::shared_ptr<RenderToTexturePass> CreateMainPass()
-{
-	unsigned int width = static_cast<unsigned int>(hWndRect.right - hWndRect.left);
-	unsigned int height = static_cast<unsigned int>(hWndRect.bottom - hWndRect.top);
-
-	return CreateRenderPass("mainPass", { DXGI_FORMAT_R32G32B32A32_FLOAT }, DXGI_FORMAT_D32_FLOAT, width, height);
-}
-*/
 
 void RunRender()
 {
@@ -160,20 +146,10 @@ void GameStep()
 void GameDestroy()
 {
 	gsm.ChangeState(GS_Destroy);
-	/*
-	DestroyRenderable(bootScreen);
-	DestroyRenderable(loadingScreenBar);
-	DestroyRenderable(toneMapQuad);
-	DestroyCamera(UICamera);
-	resolvePass = nullptr;
-	*/
 }
 
 void GetAudioListenerVectors(std::function<void(XMFLOAT3, XMVECTOR)> audioListenerCallback)
 {
-	if (!mainPassCamera) return;
-
-	audioListenerCallback(mainPassCamera->position(), mainPassCamera->rotationQ());
 }
 
 void WindowResizeReleaseResources()
@@ -214,71 +190,27 @@ void RunPostRenderComputeShaders()
 //Booting
 float bootScreenAlpha = 0.0f;
 std::shared_ptr<tween> bootScreenAlphaTween;
+std::shared_ptr<Renderable> bootScreen;
+//std::shared_ptr<Renderable> loadingScreenBar;
 void BootScreenCreate()
 {
-	/*
 	renderer->RenderCriticalFrame([]
 		{
-			resolvePass = CreateRenderPass("resolvePass", mainPassHeap);
+			using namespace Scene::Level;
 
-			bootScreen = CreateRenderable(nlohmann::json(
-				{
-					{ "uuid", getUUID() },
-					{ "name" ,"bootScreen" },
-					{ "meshMaterials",
-						{
-							{
-								{ "material", FindMaterialUUIDByName("FullScreenQuad") },
-								{ "mesh", FindMeshUUIDByName("decal") },
-								{ "textures",
-									{
-										{
-											"BaseTexture" ,
-											{
-												{ "path", "Assets/ui/logo.dds" },
-												{ "format", "B8G8R8A8_UNORM_SRGB" },
-												{ "numFrames", 0 }
-											}
-										}
-									}
-								}
-							}
-						}
-					},
-					{ "depthStencilFormat", "UNKNOWN" }
-				}
-			));
-
-			UICamera = CreateCamera(nlohmann::json(
-				{
-					{ "uuid", getUUID() },
-					{ "name", "bootCamera" },
-					{ "fitWindow", true },
-					{ "perspective", {
-							{ "farZ", 100.0 },
-							{ "fovAngleY", 1.222f },
-							{ "height", 920 },
-							{ "nearZ", 0.01f },
-							{ "width", 1707 },
-						}
-					},
-					{ "position", { -5.7f, 2.2f, 3.8f } },
-					{ "projectionType", "Perspective" },
-					{ "rotation", { 1.6f, -0.2f, 0.0 } },
-					{ "speed", 0.05f }
-				}
-			));
+			LoadLevel("bootscreen");
+			BindSceneObjects();
 		}
 	);
 
+	bootScreen = FindInRenderablesByName("logo");
 	bootScreenAlphaTween = std::make_shared<tween>(tween(0.0f, 1.0f, 1000, tween::easing::linear));
-	*/
 }
 
 void BootScreenStep()
 {
-	/*
 	bootScreenAlpha = bootScreenAlphaTween->step();
+	/*
 	if (bootScreenAlpha == 1.0f) {
 		bootScreenAlphaTween = nullptr;
 		gsm.ChangeState(GS_Loading);
@@ -288,25 +220,19 @@ void BootScreenStep()
 
 void BootScreenRender()
 {
-	/*
-	resolvePass->Pass([](size_t passHash)
-		{
-			bootScreen->WriteConstantsBuffer<float>("alpha", bootScreenAlpha, renderer->backBufferIndex);
-			bootScreen->Render(passHash, UICamera);
-		}
-	);
-	*/
+	using namespace Scene;
+	if (GetNumSwapChainCameras() > 0ULL)
+	{
+		bootScreen->WriteConstantsBuffer("alpha", bootScreenAlpha, renderer->backBufferIndex);
+		WriteConstantsBuffers();
+		RenderSceneShadowMaps();
+		RenderSceneCameras();
+	}
 }
 
 void BootScreenLeave()
 {
-	/*
-	renderer->RenderCriticalFrame([]
-		{
-			DestroyRenderable(bootScreen);
-		}
-	);
-	*/
+	bootScreen = nullptr;
 }
 
 //Loading
@@ -451,9 +377,7 @@ void EditorModeCreate()
 		{
 			using namespace Scene::Level;
 
-			//LoadDefaultLevel();
-			LoadLevel("gizmotest");
-			//LoadLevel("tavern");
+			LoadDefaultLevel();
 			BindSceneObjects();
 		}
 	);
@@ -493,17 +417,11 @@ void EditorModeRender()
 	if (GetNumSwapChainCameras() > 0ULL)
 	{
 		WriteConstantsBuffers();
-#if defined(_EDITOR)
 		RenderPickingPass(GetSwapChainCameras().at(0));
-#endif
 		RenderSceneShadowMaps();
-#if defined(_EDITOR)
 		RenderShadowMapMinMaxChain();
-#endif
 		RenderSceneCameras();
-#if defined(_EDITOR)
 		DrawEditor(GetSwapChainCameras().at(0));
-#endif
 	}
 	else
 	{
@@ -520,7 +438,7 @@ void EditorModeRender()
 
 void EditorModePostRender()
 {
-	bool criticalFrame = (!PickingPassExists() || !RenderableBoundingBoxExists()) && GetNumSwapChainCameras() > 0ULL || Editor::PendingBillboards();
+	bool criticalFrame = (!PickingPassExists() || !RenderableBoundingBoxExists()) && GetNumSwapChainCameras() > 0ULL || Editor::PendingBillboards() || Editor::PendingBillboardsDestruction();
 
 	if (criticalFrame)
 	{
@@ -543,6 +461,9 @@ void EditorModePostRender()
 
 				if (Editor::PendingBillboards())
 					Editor::CreateRegisteredBillboards();
+
+				if (Editor::PendingBillboardsDestruction())
+					Editor::DestroyPendingBillboards();
 			}
 		);
 	}

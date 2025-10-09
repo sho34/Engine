@@ -17,6 +17,8 @@ namespace Templates { struct TextureJson; struct MaterialJson; };
 
 namespace Templates
 {
+#if defined(_EDITOR)
+
 #include <Attributes/JOrder.h>
 #include <Model3DAtt.h>
 #include <JEnd.h>
@@ -44,6 +46,8 @@ namespace Templates
 #include <Creator/JValidatorDecl.h>
 #include <Model3DAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	struct Model3DJson : public JTemplate
 	{

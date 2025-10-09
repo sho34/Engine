@@ -3,7 +3,6 @@
 #include <map>
 #include <JObject.h>
 #include <nlohmann/json.hpp>
-#include <ImGuizmo.h>
 #if defined(_EDITOR)
 #include <IconsFontAwesome5.h>
 #include <ImGuizmo.h>

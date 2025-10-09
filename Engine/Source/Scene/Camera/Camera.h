@@ -53,11 +53,25 @@ namespace DeviceUtils { struct RenderToTexturePass; };
 
 using namespace Scene::CameraProjections;
 
+enum TextureShaderUsage;
+
+typedef std::map<TextureShaderUsage, std::shared_ptr<Templates::TextureInstance>> TextureUsageInstanceMap;
+
 namespace Scene {
+	struct Light;
+	struct Renderable;
+	struct Camera;
+
+	using namespace DeviceUtils;
+	using namespace Templates;
+
+	inline static const std::string CameraConstantBufferName = "camera";
+
 #include <TrackUUID/JDecl.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
 
+#if defined(_EDITOR)
 #include <Attributes/JOrder.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
@@ -86,14 +100,7 @@ namespace Scene {
 #include <CameraAtt.h>
 #include <JEnd.h>
 
-	struct Light;
-	struct Renderable;
-	struct Camera;
-
-	using namespace DeviceUtils;
-	using namespace Templates;
-
-	inline static const std::string CameraConstantBufferName = "camera";
+#endif
 
 	void CamerasStep();
 	void DestroyCameras();

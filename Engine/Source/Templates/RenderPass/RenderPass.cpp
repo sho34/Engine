@@ -19,6 +19,8 @@ using namespace Scene;
 
 namespace Templates
 {
+#if defined(_EDITOR)
+
 #include <Editor/JDrawersDef.h>
 #include <RenderPassAtt.h>
 #include <JEnd.h>
@@ -38,6 +40,8 @@ namespace Templates
 #include <Creator/JValidatorDef.h>
 #include <RenderPassAtt.h>
 #include <JEnd.h>
+
+#endif
 
 	namespace RenderPass
 	{
