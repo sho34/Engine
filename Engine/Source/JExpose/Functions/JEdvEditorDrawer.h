@@ -3384,9 +3384,6 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 				};
 			auto updateValue = [attribute, &json](unsigned int index)
 				{
-					if (index <= 0)
-						return;
-
 					for (auto& j : json)
 					{
 						nlohmann::json cpy = j->at(attribute);
@@ -3461,9 +3458,8 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 					auto& j = json.at(0)->at(attribute);
 					size_t size = j.size();
 
-					auto& jvar = j.at(index);
-					std::string name = jvar.at("variable");
-					std::string type = jvar.at("variableType");
+					std::string name = json.at(0)->at(attribute).at(index).at("variable");
+					std::string type = json.at(0)->at(attribute).at(index).at("variableType");
 
 					std::string tableName = "tables-" + attribute + "-" + std::to_string(index) + "-table";
 					if (ImGui::BeginTable(tableName.c_str(), 3, defaultTableFlags))
@@ -3539,7 +3535,7 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 						ImGui::EndTable();
 					}
 
-					if (MaterialVariablesTypesDrawers.at(StringToMaterialVariablesTypes.at(type))(index, jvar))
+					if (MaterialVariablesTypesDrawers.at(StringToMaterialVariablesTypes.at(type))(index, json.at(0)->at(attribute).at(index)))
 					{
 						updateValue(index);
 					}
@@ -3557,6 +3553,11 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 				for (unsigned int i = 0; i < sz; i++)
 				{
 					drawSelectable(i, selectables);
+				}
+
+				if (ImGui::Button(ICON_FA_PLUS, ImVec2(ImGui::GetContentRegionAvail().x, 20.0f)))
+				{
+					append(sz);
 				}
 			}
 
