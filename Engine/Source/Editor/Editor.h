@@ -289,5 +289,7 @@ namespace Editor {
 	void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject);
 	void CreateRegisteredBillboards();
 	bool PendingBillboards();
+	bool PendingBillboardsDestruction();
+	void DestroyPendingBillboards();
 	void DestroyBillboards();
 }

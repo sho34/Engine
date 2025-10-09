@@ -58,6 +58,7 @@ namespace Editor {
 
 	std::shared_ptr<Renderable> boundingBox = nullptr;
 	std::map<std::shared_ptr<SceneObject>, std::shared_ptr<Renderable>> billboardRegistry;
+	std::set<std::shared_ptr<Renderable>> billboardsToDestroy;
 
 	float titleBH = static_cast<float>(ApplicationBarBottom);
 	float panW = static_cast<float>(RightPanelWidth);
@@ -404,9 +405,14 @@ namespace Editor {
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				ImGui::MenuItem(ICON_FA_FILE "New");
+				if (ImGui::MenuItem(ICON_FA_FILE "New"))
+				{
+					Level::SetDefaultLevelToLoad();
+				}
+
 				ImGui::Separator();
-				if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "Open")) {
+				if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "Open"))
+				{
 					OpenLevelFile();
 				}
 
@@ -1740,8 +1746,11 @@ namespace Editor {
 
 	void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject)
 	{
-		if (billboardRegistry.contains(sceneObject))
-			billboardRegistry.erase(sceneObject);
+		std::shared_ptr<Renderable> billboard = GetBillboard(sceneObject);
+		if (billboard == nullptr)
+			return;
+		billboardsToDestroy.insert(billboard);
+		billboardRegistry.erase(sceneObject);
 	}
 
 	void CreateRegisteredBillboards()
@@ -1768,6 +1777,23 @@ namespace Editor {
 			if (!it->second) return true;
 		}
 		return false;
+	}
+
+	bool Editor::PendingBillboardsDestruction()
+	{
+		return billboardsToDestroy.size() > 0ULL;
+	}
+
+	void Editor::DestroyPendingBillboards()
+	{
+		for (auto& b : billboardsToDestroy)
+		{
+			std::shared_ptr<Renderable> billboard = b;
+			Editor::UnbindRenderableFromPickingPass(billboard);
+			EraseRenderableFromRenderables(billboard);
+			SafeDeleteSceneObject(billboard);
+		}
+		billboardsToDestroy.clear();
 	}
 
 	void DestroyBillboards()

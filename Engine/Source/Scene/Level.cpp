@@ -32,23 +32,48 @@ namespace Scene::Level {
 	using namespace Scene;
 
 	std::filesystem::path levelToLoad;
+#if defined(_EDITOR)
+	bool loadDefaultLevel = false;
+#endif
 
 	void SetLevelToLoad(std::string levelName)
 	{
 		levelToLoad = levelName;
 	}
 
+#if defined(_EDITOR)
+	void SetDefaultLevelToLoad()
+	{
+		loadDefaultLevel = true;
+	}
+#endif
+
 	bool PendingLevelToLoad()
 	{
+#if defined(_EDITOR)
+		return !levelToLoad.empty() || loadDefaultLevel;
+#else
 		return !levelToLoad.empty();
+#endif
 	}
 
 	void LoadPendingLevel()
 	{
+#if defined(_EDITOR)
 		DestroyEditorSceneObjectsReferences();
+#endif
 		DestroySceneObjects();
+#if defined(_EDITOR)
+		if (!loadDefaultLevel)
+			LoadLevel(levelToLoad);
+		else
+			LoadDefaultLevel();
+		loadDefaultLevel = false;
+#else
 		LoadLevel(levelToLoad);
+#endif
 		levelToLoad = "";
+
 	}
 
 	template<typename T>
@@ -79,8 +104,10 @@ namespace Scene::Level {
 
 	void LoadLevel(std::filesystem::path level)
 	{
+#if defined(_EDITOR)
 		Editor::levelModified = false;
 		Editor::defaultLevel = false;
+#endif
 		std::string pathStr = "" + (std::filesystem::exists(level) ? level.generic_string() : (defaultLevelsFolder + level.generic_string() + ".json"));
 		OutputDebugStringA(std::string("Loading level: " + pathStr + "\n").c_str());
 
