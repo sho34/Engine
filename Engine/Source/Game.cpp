@@ -191,23 +191,62 @@ void BootScreenCreate()
 	bootScreen = FindInRenderablesByName("logo");
 	loadingBar = FindInRenderablesByName("loadingBar");
 	bootAlphaTween = std::make_shared<tween>(tween(0.0f, 1.0f, 1000, tween::easing::linear));
-	loadingProgressTween = std::make_shared<tween>(tween(0.0f, 1.0f, 4000, tween::easing::linear));
 }
 
 void BootScreenStep()
 {
 	bootScreenAlpha = bootAlphaTween->step();
-	loadingProgress = loadingProgressTween->step();
 
-	/*
 	if (bootScreenAlpha == 1.0f) {
-		bootScreenAlphaTween = nullptr;
 		gsm.ChangeState(GS_Loading);
 	}
-	*/
 }
 
 void BootScreenRender()
+{
+	using namespace Scene;
+	if (GetNumSwapChainCameras() > 0ULL)
+	{
+		bootScreen->WriteConstantsBuffer("alpha", bootScreenAlpha, renderer->backBufferIndex);
+
+		//hide the loading bar
+		XMFLOAT2 scale(0.0f, 0.0f);
+		loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
+
+		WriteConstantsBuffers();
+		RenderSceneShadowMaps();
+		RenderSceneCameras();
+	}
+}
+
+void BootScreenLeave()
+{
+	bootScreen = nullptr;
+	bootAlphaTween = nullptr;
+}
+
+//Loading
+void LoadingScreenCreate()
+{
+	loadingProgressTween = std::make_shared<tween>(tween(0.0f, 1.0f, 4000, tween::easing::linear));
+}
+
+void LoadingScreenLeave()
+{
+	loadingBar = nullptr;
+	loadingProgressTween = nullptr;
+}
+
+void LoadingScreenStep()
+{
+	loadingProgress = loadingProgressTween->step();
+	if (loadingProgress == 1.0f)
+	{
+		gsm.ChangeState(GS_Playing);
+	}
+}
+
+void LoadingScreenRender()
 {
 	using namespace Scene;
 	if (GetNumSwapChainCameras() > 0ULL)
@@ -217,7 +256,6 @@ void BootScreenRender()
 		auto red = DirectX::Colors::Red;
 		auto blue = DirectX::Colors::Blue;
 
-		bootScreen->WriteConstantsBuffer("alpha", bootScreenAlpha, renderer->backBufferIndex);
 		loadingBar->WriteConstantsBuffer<XMFLOAT2>("pos", pos, renderer->backBufferIndex);
 		loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
 		loadingBar->WriteConstantsBuffer<XMVECTORF32>("color1", red, renderer->backBufferIndex);
@@ -229,86 +267,17 @@ void BootScreenRender()
 	}
 }
 
-void BootScreenLeave()
-{
-	bootScreen = nullptr;
-}
-
-//Loading
-void LoadingScreenCreate()
-{
-	/*
-	renderer->RenderCriticalFrame([]
-		{
-			loadingScreenBar = CreateRenderable(nlohmann::json(
-				{
-					{ "uuid", getUUID() },
-					{ "name", "loadingScreenBar" },
-					{ "depthStencilFormat", "UNKNOWN" },
-					{ "meshMaterials",
-						{
-							{
-								{ "material", FindMaterialUUIDByName("LoadingBar") },
-								{ "mesh", FindMeshUUIDByName("decal") }
-							}
-						}
-					}
-				}
-			));
-		}
-	);
-
-	loadingScreenProgressTween = std::make_shared<tween>(tween(0.0f, 1.0f, 4000, tween::easing::linear));
-	*/
-}
-
-void LoadingScreenLeave()
-{
-	/*
-	renderer->RenderCriticalFrame([]
-		{
-			DestroyRenderable(loadingScreenBar);
-			DestroyCamera(UICamera);
-		}
-	);
-	loadingScreenProgressTween = nullptr;
-	*/
-}
-
-void LoadingScreenStep()
-{
-	/*
-	loadingScreenProgress = loadingScreenProgressTween->step();
-	if (loadingScreenProgress == 1.0f)
-	{
-		gsm.ChangeState(GS_Playing);
-	}
-	*/
-}
-
-void LoadingScreenRender()
-{
-	/*
-	resolvePass->Pass([](size_t passHash)
-		{
-			XMFLOAT2 pos(0.0f, -0.8f);
-			XMFLOAT2 scale(0.8f, 0.02f);
-			auto red = DirectX::Colors::Red;
-			auto blue = DirectX::Colors::Blue;
-			loadingScreenBar->WriteConstantsBuffer<XMFLOAT2>("pos", pos, renderer->backBufferIndex);
-			loadingScreenBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
-			loadingScreenBar->WriteConstantsBuffer<XMVECTORF32>("color1", red, renderer->backBufferIndex);
-			loadingScreenBar->WriteConstantsBuffer<XMVECTORF32>("color2", blue, renderer->backBufferIndex);
-			loadingScreenBar->WriteConstantsBuffer<float>("progress", loadingScreenProgress, renderer->backBufferIndex);
-			loadingScreenBar->Render(passHash, UICamera);
-		}
-	);
-	*/
-}
-
 //Playing
 void PlayModeCreate()
 {
+	renderer->RenderCriticalFrame([]
+		{
+			using namespace Scene::Level;
+
+			LoadLevel("venom");
+			BindSceneObjects();
+		}
+	);
 	/*
 	renderer->RenderCriticalFrame([]
 		{
@@ -327,6 +296,13 @@ void PlayModeStep()
 
 void PlayModeRender()
 {
+	using namespace Scene;
+	if (GetNumSwapChainCameras() > 0ULL)
+	{
+		WriteConstantsBuffers();
+		RenderSceneShadowMaps();
+		RenderSceneCameras();
+	}
 	/*
 	WriteConstantsBuffers();
 
