@@ -14,6 +14,7 @@ using namespace AudioSystem;
 //#include <DecalLoop.h>
 //#include <LightOscilation.h>
 #include <Renderer.h>
+#include <Controller.h>
 #if defined(_EDITOR)
 #include <Editor.h>
 #include <DefaultLevel.h>
@@ -59,6 +60,10 @@ namespace Scene::Level {
 
 	void LoadPendingLevel()
 	{
+		using namespace Game;
+
+		DestroyControllers();
+
 #if defined(_EDITOR)
 		DestroyEditorSceneObjectsReferences();
 #endif

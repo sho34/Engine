@@ -630,7 +630,10 @@ inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_model3d_fi
 {
 	return[](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{
-			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_CUBE, modalProperties, { "3D Models files. (*.gltf)" }, { "*.gltf" });
+			EditorCreatorDrawFilePath(attribute, json, attribute, ICON_FA_CUBE, modalProperties,
+				{ "Gltf files. (*.gltf)", "Glb files. (*.glb)" },
+				{ "*.gltf", "*.glb" }
+			);
 		};
 }
 

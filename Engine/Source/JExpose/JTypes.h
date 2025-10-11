@@ -80,6 +80,8 @@ enum JsonToEditorValueType
 	jedv_t_te_texture,
 	jedv_t_te_texture_name,
 	jedv_t_te_texture_vector,
+	jedv_t_controller,
+	jedv_t_controller_vector,
 	jedv_draw_renderpass_vector,
 };
 

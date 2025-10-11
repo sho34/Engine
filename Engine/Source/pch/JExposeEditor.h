@@ -46,6 +46,11 @@ namespace Editor
 	extern void MarkScenePanelAssetsAsDirty();
 };
 
+namespace Game
+{
+	extern std::vector<std::string> GetGameControllers();
+};
+
 const int defaultTableFlags = ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_NoPadOuterX | ImGuiTableFlags_NoPadInnerX;
 
 inline void drawAnimationController(

@@ -18,49 +18,21 @@ using namespace Editor;
 #include <RenderPass/RenderPass.h>
 #include <Renderable/Renderable.h>
 #include <Level.h>
+#include <VenomController.h>
+#include <CameraController.h>
+#include <GameStateMachine.h>
 
 using namespace Scene;
 using namespace DeviceUtils;
 using namespace ComputeShader;
 
 extern std::unique_ptr<DirectX::Mouse> mouse;
+extern DX::StepTimer timer;
 
 GameStates gameState = GameStates::GS_None;
 std::string gameAppTitle = "Culpeo Test Game";
 
 extern std::shared_ptr<Renderer> renderer;
-
-template<typename T>
-struct GameStatesMachine {
-	T currentState;
-	std::map<T, std::function<void()>> onEnter;
-	std::map<T, std::function<void()>> onLeave;
-	std::map<T, std::function<void()>> onStep;
-	std::map<T, std::function<void()>> onRender;
-	std::map<T, std::function<void()>> onPostRender;
-
-	void ChangeState(T newState)
-	{
-		if (onLeave.contains(currentState)) { onLeave.at(currentState)(); }
-		currentState = newState;
-		if (onEnter.contains(currentState)) { onEnter.at(currentState)(); }
-	}
-
-	void Step()
-	{
-		if (onStep.contains(currentState)) { onStep.at(currentState)(); }
-	}
-
-	void Render()
-	{
-		if (onRender.contains(currentState)) { onRender.at(currentState)(); }
-	}
-
-	void PostRender()
-	{
-		if (onPostRender.contains(currentState)) { onPostRender.at(currentState)(); }
-	}
-};
 
 GameStatesMachine<GameStates> gsm =
 {
@@ -278,19 +250,11 @@ void PlayModeCreate()
 			BindSceneObjects();
 		}
 	);
-	/*
-	renderer->RenderCriticalFrame([]
-		{
-			LoadLevel("family");
-			mainPass = CreateMainPass();
-		}
-	);
-	mainPassCamera = GetCameraByName("cam.0");
-	*/
 }
 
 void PlayModeStep()
 {
+	Game::StepControllers(static_cast<float>(timer.GetElapsedSeconds() / 1000.0f));
 
 }
 
@@ -303,35 +267,10 @@ void PlayModeRender()
 		RenderSceneShadowMaps();
 		RenderSceneCameras();
 	}
-	/*
-	WriteConstantsBuffers();
-
-	RenderSceneShadowMaps();
-
-	mainPass->Pass([](size_t passHash)
-		{
-			RenderSceneObjects(passHash, mainPassCamera);
-		}
-	);
-
-	resolvePass->Pass([](size_t passHash)
-		{
-			resolvePass->CopyFromRenderToTexture(mainPass->renderToTexture[0]);
-		}
-	);
-	*/
 }
 
 void PlayModeLeave()
 {
-	/*
-	renderer->RenderCriticalFrame([]
-		{
-			mainPass = nullptr;
-			mainPassCamera = nullptr;
-		}
-	);
-	*/
 }
 
 //Editor
@@ -351,7 +290,8 @@ void EditorModeCreate()
 			using namespace Scene::Level;
 
 			//LoadDefaultLevel();
-			LoadLevel("bootscreen");
+			//LoadLevel("bootscreen");
+			LoadLevel("venom");
 			BindSceneObjects();
 		}
 	);
@@ -382,9 +322,10 @@ void EditorModeStep()
 	{
 		GameAreaMouseProcessing(mouse, GetMouseCameras().at(0));
 	}
+
+	Game::StepControllers(static_cast<float>(timer.GetElapsedSeconds() / 1000.0f));
 }
 
-extern DX::StepTimer timer;
 void EditorModeRender()
 {
 	using namespace Scene;
@@ -499,3 +440,23 @@ void EditorModeLeave()
 }
 
 #endif
+
+namespace Game
+{
+	std::map<std::string, std::function<std::shared_ptr<Game::Controller>()>> controllers =
+	{
+		{ "venom", []() { return std::make_shared<Game::VenomController>(); }},
+		{ "camera", []() { return std::make_shared<Game::CameraController>(); }},
+	};
+
+	std::vector<std::string> GetGameControllers()
+	{
+		return nostd::GetKeysFromMap(controllers);
+	}
+
+	std::shared_ptr<Game::Controller> GetGameController(std::string name)
+	{
+
+		return (controllers.contains(name)) ? controllers.at(name)() : nullptr;
+	}
+};

@@ -31,6 +31,7 @@ namespace Scene
 		std::for_each(sceneObjects.begin(), sceneObjects.end(), [](std::shared_ptr<SceneObject> so)
 			{
 				so->BindToScene();
+				so->BindControllers();
 			}
 		);
 	}

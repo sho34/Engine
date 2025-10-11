@@ -88,6 +88,8 @@ namespace Scene
 		virtual void Unbind(std::shared_ptr<SceneObject> sceneObject) {}
 		virtual SceneObjectType JType() { return SO_None; }
 		virtual void JUpdate(nlohmann::json p);
+		virtual void BindControllers();
+		virtual std::shared_ptr<SceneObject> ThisPtr() { return nullptr; }
 
 #if defined(_EDITOR)
 		virtual std::shared_ptr<Renderable> CreateBillboard() { return nullptr; }

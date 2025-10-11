@@ -1,22 +1,25 @@
 BUGS:
 -si no existe una camara como mousecontroller se cae la creacion de billboards
 	-los billboards deben ser creados cuando cambia algo de la escena y no a partir del Initialize
+-si parto modo juego y maximizo durante la carga, no se reajusta
 
 TODO:
 -Revivir GameMode(No Editor)
-	-barra de carga
 	-mostrar nivel con un escenario
-		-town(sacar modelos de sketchfab) de 4 casas medievales
-		-poner 5 personajes animados en esta taberna
-		-poder moverse utilizando el teclado y mouse en modo free fly
-		-poder utilizar el joystick en modo free fly
-
+		-usar a venom
+			-saltar (Jump_Start_F_C -> Jump_Land_C)
 
 NICE TO HAVE:
 
 DONE:
 -Revivir GameMode(No Editor)
 	-splash screen
+	-barra de carga
+	-mostrar nivel con un escenario
+		-usar a venom
+			-idle (Idle_C)
+			-caminar en 4 ejes (Walk_Fwd_C)
+			-correr (Run_Fwd_C)
 -Interaccion de Gizmos de ImGuizmo con la posibilidad de combinar todos los objetos que sean seleccionables
 	-Renderables: todos
 	-SoundFX: sonidos 3d

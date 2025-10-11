@@ -506,6 +506,7 @@ void ResizeWindow()
 void DestroyInstance()
 {
 	using namespace Scene::Level;
+	using namespace Game;
 
 	if (destroyed) return;
 	renderer->Flush();
@@ -515,6 +516,7 @@ void DestroyInstance()
 	DestroyTemplatesReferences();
 #endif
 
+	DestroyControllers();
 	GameDestroy();
 	DestroySceneObjects();
 	DestroyLightsResources();

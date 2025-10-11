@@ -5,6 +5,7 @@
 #include <Camera/Camera.h>
 #endif
 #include <Scene.h>
+#include <Controller.h>
 
 namespace Scene
 {
@@ -22,5 +23,21 @@ namespace Scene
 		Editor::levelModified = true;
 #endif
 		JObject::JUpdate(p);
+	}
+
+	void SceneObject::BindControllers()
+	{
+		using namespace Game;
+
+		if (!contains("controllers")) return;
+
+		auto controllers = at("controllers");
+		for (auto it = controllers.begin(); it != controllers.end(); it++)
+		{
+			std::shared_ptr<Controller> controller = GetGameController(*it);
+			if (!controller) continue;
+
+			Game::RegisterController(controller, ThisPtr());
+		}
 	}
 }

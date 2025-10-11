@@ -71,11 +71,6 @@ namespace Templates
 		inline static const std::string defaultNormalMap = "Assets/textures/bumpmapflat.dds";
 	}
 
-	//EDITOR
-#if defined(_EDITOR)
-	void WriteModel3DsJson(nlohmann::json& json);
-#endif
-
 	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index);
 	std::string GetModel3DMaterialInstanceUUID(std::string uuid, unsigned int index);
 	std::string GetModel3DMaterialInstanceName(std::string uuid, unsigned int index);

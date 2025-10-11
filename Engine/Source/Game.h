@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameDecl.h"
+#include "Controllers/Controller.h"
 
 enum GameStates {
 	GS_None,
@@ -40,3 +41,7 @@ void EditorModeRender();
 void EditorModePostRender();
 void EditorModeLeave();
 #endif
+
+//Controller
+std::vector<std::string> Game::GetGameControllers();
+std::shared_ptr<Game::Controller> Game::GetGameController(std::string name);
