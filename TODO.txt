@@ -7,8 +7,12 @@ TODO:
 -Revivir GameMode(No Editor)
 	-mostrar nivel con un escenario
 		-usar a venom
-			-saltar (Jump_Start_F_C -> Jump_Land_C)
-
+			-saltar
+				-A: (Jump_Start_F_C -> Jump_Land_C)
+			-atacar
+				-X:(103511_Attack01 <-> 103511_Attack02)
+				-Y:(103511_Attack03)
+				
 NICE TO HAVE:
 
 DONE:
