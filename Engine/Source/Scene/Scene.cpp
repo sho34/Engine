@@ -162,7 +162,7 @@ namespace Scene
 		std::vector<std::shared_ptr<Camera>> nonSwapChainCams;
 		std::copy_if(cameras.begin(), cameras.end(), std::back_inserter(nonSwapChainCams), [](std::shared_ptr<Camera> cam)
 			{
-				if (!cam->useSwapChain()) return false;
+				if (cam->useSwapChain()) return false;
 				if (cam->cameraRenderPasses.size() > 0ULL && cam->cameraRenderPasses.back()->type == RenderPassType_SwapChainPass) return false;
 				return true;
 			}
@@ -170,12 +170,35 @@ namespace Scene
 
 		for (auto& cam : nonSwapChainCams)
 		{
+#if defined(_DEVELOPMENT)
+			PIXBeginEvent(renderer->commandList.p, 0, std::string("nonSwapChain:" + cam->name()).c_str());
+#endif
 			cam->Render();
+#if defined(_DEVELOPMENT)
+			PIXEndEvent(renderer->commandList.p);
+#endif
 		}
 
-		if (GetNumSwapChainCameras() > 0ULL)
+		bool resolvedToSwapchain = std::any_of(nonSwapChainCams.begin(), nonSwapChainCams.end(), [](std::shared_ptr<Camera> cam)
+			{
+				return std::any_of(cam->cameraRenderPasses.begin(), cam->cameraRenderPasses.end(), [](auto& pass)
+					{
+						return pass->renderCallbackOverride == RenderPassRenderCallbackOverride_Resolve;
+					}
+				);
+			}
+		);
+
+		if (GetNumSwapChainCameras() > 0ULL && !resolvedToSwapchain)
 		{
-			GetSwapChainCameras().at(0)->Render();
+			auto cam = GetSwapChainCameras().at(0);
+#if defined(_DEVELOPMENT)
+			PIXBeginEvent(renderer->commandList.p, 0, std::string("SwapChain:" + cam->name()).c_str());
+#endif
+			cam->Render();
+#if defined(_DEVELOPMENT)
+			PIXEndEvent(renderer->commandList.p);
+#endif
 		}
 	}
 
