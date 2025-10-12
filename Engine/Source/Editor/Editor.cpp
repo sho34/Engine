@@ -115,7 +115,7 @@ namespace Editor {
 		ImGuiIO& io = ImGui::GetIO();
 		io.Fonts->AddFontDefault();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
 		float baseFontSize = 13.0f;
 		float iconFontSize = baseFontSize * 2.0f / 3.0f;
