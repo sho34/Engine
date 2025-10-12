@@ -149,9 +149,8 @@ namespace Scene
 		//ANIMATION
 		std::shared_ptr<Model3DInstance> animable = nullptr;
 		Animation::BonesTransformations bonesTransformation;
-		//float currentAnimationTime = 0.0f;
-		//float animationTimeFactor = 1.0f;
-		//bool playingAnimation = false;
+		std::vector<std::string> animations;
+		int animationIndex = -1;
 
 		BoundingBox boundingBox;
 		std::shared_ptr<RenderableBoundingBox> boundingBoxCompute; //used for animables
@@ -201,7 +200,9 @@ namespace Scene
 		void WriteAnimationConstantsBuffer(unsigned int backbufferIndex);
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
 		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
+		void SetCurrentAnimation(std::vector<std::string> anims, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void StepAnimation(double elapsedSeconds);
+		bool AnimationEnded();
 
 		//DESTROY
 		bool markedForDelete = false;

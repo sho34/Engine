@@ -782,7 +782,14 @@ namespace Scene
 
 	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop)
 	{
-		animation(anim);
+		SetCurrentAnimation(std::vector({ anim }), startTime, timeFactor, play, loop);
+	}
+
+	void Renderable::SetCurrentAnimation(std::vector<std::string> anims, float startTime, float timeFactor, bool play, bool loop)
+	{
+		animations = anims;
+		animationIndex = 0;
+		animation(animations.at(animationIndex));
 		animationTime(startTime);
 		animationTimeFactor(timeFactor);
 		animationPlay(play);
@@ -800,18 +807,48 @@ namespace Scene
 			if (animationTimeFactor() > 0.0f)
 			{
 				if (currentAnimationTime >= animationLength)
+				{
+					if (animationIndex < (animations.size() - 1))
+					{
+						animationIndex++;
+						animation(animations.at(animationIndex));
+						currentAnimationTime = 0.0f;
+					}
+					else if (animationLoop())
+					{
+						animationIndex = 0;
+						animation(animations.at(animationIndex));
+						currentAnimationTime = 0.0f;
+					}
+					currentAnimationTime = std::min(currentAnimationTime, animationLength);
+				}
+				/*
+				if (currentAnimationTime >= animationLength)
 					currentAnimationTime = animationLoop() ? fmodf(currentAnimationTime, animationLength) : animationLength;
+				*/
 			}
 			else if (animationTimeFactor() < 0.0f)
 			{
+				/*
 				if (currentAnimationTime < 0.0f)
 					currentAnimationTime = animationLoop() ? (animationLength - fmodf(currentAnimationTime, animationLength)) : 0.0f;
+				*/
 			}
 			animationTime(currentAnimationTime);
 		}
 
 		using namespace Animation;
 		TraverseMultiplycationQueue(currentAnimationTime, animation(), animable->animations, bonesTransformation);
+	}
+
+	bool Renderable::AnimationEnded()
+	{
+		if (!animationPlay()) return false;
+		if (animationLoop()) return false;
+		if (animationIndex < (animations.size() - 1)) return false;
+		float animationLength = animable->animations->animationsLength[animation()];
+		float currentAnimationTime = animationTime();
+		return (currentAnimationTime >= animationLength);
 	}
 
 	//DESTROY

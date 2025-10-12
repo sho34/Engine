@@ -23,6 +23,7 @@ namespace Game
 		GameStatesMachine<VenomStates> vsm;
 
 		std::shared_ptr<Scene::Renderable> venom;
+		std::shared_ptr<Scene::Camera> camera;
 		XMVECTOR fw;
 
 		virtual void Map(std::shared_ptr<Scene::SceneObject> so);
@@ -32,10 +33,12 @@ namespace Game
 		XMVECTOR GetLeftStickVector();
 		void SetRotation(XMVECTOR fw) const;
 		void MoveForward(float step) const;
+		bool Jump();
 		virtual void Step(float delta);
 
 		void Idle();
 		void Walking();
 		void Running();
+		void Jumping();
 	};
 }

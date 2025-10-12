@@ -5,6 +5,7 @@
 #include <Mouse.h>
 #include <Keyboard.h>
 #include <GamePad.h>
+#include <Camera/Camera.h>
 
 //Mouse
 extern std::unique_ptr<DirectX::Mouse> mouse;
@@ -25,6 +26,7 @@ namespace Game
 	static const XMVECTOR baseForward = { 0.0f, 0.0f, -1.0f, 0.0f };
 	static const float walkSpeed = 3.0f;
 	static const float runSpeed = 10.0f;
+	static XMFLOAT2 zBounds = { -4.7f ,1.7f };
 
 	void VenomController::Map(std::shared_ptr<Scene::SceneObject> so)
 	{
@@ -33,6 +35,7 @@ namespace Game
 		{
 			venom = std::dynamic_pointer_cast<Scene::Renderable>(so);
 		}
+		camera = GetMouseCameras().size() > 0ULL ? GetMouseCameras().at(0) : nullptr;
 	}
 
 	void VenomController::Unmap()
@@ -41,6 +44,10 @@ namespace Game
 		if (venom != nullptr)
 		{
 			venom = nullptr;
+		}
+		if (camera != nullptr)
+		{
+			camera = nullptr;
 		}
 	}
 
@@ -52,12 +59,15 @@ namespace Game
 				{ VS_Idle, [this]() { venom->SetCurrentAnimation("Idle_C",0.0f,1.0f,true,true); }},
 				{ VS_Walking, [this]() { venom->SetCurrentAnimation("Walk_Fwd_C",0.0f,1.0f,true,true); }},
 				{ VS_Running, [this]() { venom->SetCurrentAnimation("Run_Fwd_C",0.0f,1.0f,true,true); }},
+				{ VS_Jumping, [this]() { venom->SetCurrentAnimation("Jump_Start_F_C",0.0f,1.0f,true,false); }},
+				//{ VS_Jumping, [this]() { venom->SetCurrentAnimation(std::vector<std::string>({"Jump_Start_F_C","Jump_Falling_F_C","Jump_Land_F_C"}),0.0f,0.05f,true,false); }}
 			},
 			.onStep = {
 				{ VS_None, [this]() { vsm.ChangeState(VS_Idle); }},
 				{ VS_Idle, [this]() { Idle(); }},
 				{ VS_Walking, [this]() { Walking(); }},
 				{ VS_Running, [this]() { Running(); }},
+				{ VS_Jumping, [this]() { Jumping(); }}
 			}
 		};
 	}
@@ -91,7 +101,7 @@ namespace Game
 
 	void VenomController::MoveForward(float step) const
 	{
-		float delta = timer.GetElapsedSeconds() * step;
+		float delta = static_cast<float>(timer.GetElapsedSeconds() * step);
 
 		XMFLOAT3 p = venom->position();
 		XMVECTOR pos = XMLoadFloat3(&p);
@@ -99,13 +109,32 @@ namespace Game
 		XMVECTOR dp = XMVectorScale(fw, delta);
 		pos = XMVectorAdd(pos, dp);
 		XMStoreFloat3(&p, pos);
+		p.z = std::clamp(p.z, zBounds.x, zBounds.y);
 		venom->position(p);
+	}
+
+	bool VenomController::Jump()
+	{
+		auto pad = gamePad->GetState(0);
+		if (!pad.IsConnected()) return false;
+
+		if (pad.IsAPressed())
+		{
+			vsm.ChangeState(VS_Jumping);
+			venom->StepAnimation(0.0f);
+			return true;
+		}
+		return false;
 	}
 
 	void VenomController::Step(float delta)
 	{
 		vsm.Step();
 		venom->StepAnimation(timer.GetElapsedSeconds());
+		XMFLOAT3 vpos = venom->position();
+		XMFLOAT3 cpos = camera->position();
+		cpos.x = vpos.x;
+		camera->position(cpos);
 	}
 
 	void VenomController::Idle()
@@ -121,6 +150,10 @@ namespace Game
 		else if (l > walkThreshold)
 		{
 			vsm.ChangeState(VS_Walking);
+		}
+		else
+		{
+			Jump();
 		}
 	}
 
@@ -141,6 +174,10 @@ namespace Game
 		{
 			vsm.ChangeState(VS_Idle);
 		}
+		else
+		{
+			Jump();
+		}
 	}
 
 	void VenomController::Running()
@@ -159,6 +196,48 @@ namespace Game
 		else if (l < runThreshold)
 		{
 			vsm.ChangeState(VS_Walking);
+		}
+		else
+		{
+			Jump();
+		}
+	}
+
+	void VenomController::Jumping()
+	{
+		XMVECTOR stick = GetLeftStickVector();
+		XMVECTOR len = XMVector3Length(stick);
+		float l = len.m128_f32[0];
+
+		SetRotation(stick);
+
+		bool animEnded = venom->AnimationEnded();
+
+		if (l > runThreshold)
+		{
+			MoveForward(runSpeed);
+			if (animEnded)
+			{
+				vsm.ChangeState(VS_Running);
+				venom->StepAnimation(0.0f);
+			}
+		}
+		else if (l > walkThreshold)
+		{
+			MoveForward(walkSpeed);
+			if (animEnded)
+			{
+				vsm.ChangeState(VS_Walking);
+				venom->StepAnimation(0.0f);
+			}
+		}
+		else if (animEnded)
+		{
+			if (!Jump())
+			{
+				vsm.ChangeState(VS_Idle);
+				venom->StepAnimation(0.0f);
+			}
 		}
 	}
 }

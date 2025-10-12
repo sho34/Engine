@@ -19,7 +19,6 @@ using namespace Editor;
 #include <Renderable/Renderable.h>
 #include <Level.h>
 #include <VenomController.h>
-#include <CameraController.h>
 #include <GameStateMachine.h>
 
 using namespace Scene;
@@ -446,7 +445,6 @@ namespace Game
 	std::map<std::string, std::function<std::shared_ptr<Game::Controller>()>> controllers =
 	{
 		{ "venom", []() { return std::make_shared<Game::VenomController>(); }},
-		{ "camera", []() { return std::make_shared<Game::CameraController>(); }},
 	};
 
 	std::vector<std::string> GetGameControllers()
