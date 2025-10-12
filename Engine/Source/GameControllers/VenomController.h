@@ -5,6 +5,7 @@
 namespace Scene
 {
 	struct Renderable;
+	struct Camera;
 };
 
 namespace Game
@@ -24,7 +25,6 @@ namespace Game
 
 		std::shared_ptr<Scene::Renderable> venom;
 		std::shared_ptr<Scene::Camera> camera;
-		XMVECTOR fw;
 
 		virtual void Map(std::shared_ptr<Scene::SceneObject> so);
 		virtual void Unmap();
