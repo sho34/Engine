@@ -26,7 +26,7 @@ namespace Game
 	static const XMVECTOR baseForward = { 0.0f, 0.0f, -1.0f, 0.0f };
 	static const float walkSpeed = 3.0f;
 	static const float runSpeed = 10.0f;
-	static XMFLOAT2 zBounds = { -4.7f ,1.7f };
+	static XMFLOAT2 zBounds = { -4.1f ,1.7f };
 
 	void VenomController::Map(std::shared_ptr<Scene::SceneObject> so)
 	{

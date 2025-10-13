@@ -38,6 +38,22 @@ struct JObject : nlohmann::json
 		}
 		merge_patch(p);
 	}
+	virtual void JPatch(nlohmann::json p)
+	{
+		UpdatePrevValues.clear();
+		for (auto& [index, value] : p.items())
+		{
+			std::string path = value.at("path");
+			std::vector<std::string> parts = nostd::split(path, "\\/");
+			std::string key = parts[1];
+			UpdatePrevValues.insert_or_assign(key, at(key));
+			bool update = std::get<1>(UpdateFlagsMap.at(key));
+			if (!update) continue;
+			size_t flag = std::get<0>(UpdateFlagsMap.at(key));
+			updateFlag |= flag;
+		}
+		patch_inplace(p);
+	}
 
 	bool dirty(size_t flag) const
 	{

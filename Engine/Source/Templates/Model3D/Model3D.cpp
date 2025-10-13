@@ -85,6 +85,12 @@ namespace Templates
 	{
 		std::string uuid = model3D->model3DUUID;
 
+		for (auto m : model3D->meshes)
+		{
+			DestroyMeshInstance(m);
+			model3D->meshes.clear();
+		}
+
 		using namespace Model3D;
 		refTracker.RemoveRef(uuid, model3D);
 	}
@@ -180,7 +186,7 @@ namespace Templates
 			auto aMesh = aiModel->mMeshes[meshIndex];
 			aiMaterial* aiMat = aiModel->mMaterials[aMesh->mMaterialIndex];
 
-			nlohmann::json texturesMaterialJson = GetAssimpTexturesMaterialJson(path.relative_path(), aiMat);
+			nlohmann::json texturesMaterialJson = GetAssimpTexturesMaterialJson(path.relative_path(), aiModel, aiMat);
 
 			std::string materialUUID = GetModel3DMaterialInstanceUUID(model3DUUID, meshIndex);
 
@@ -224,23 +230,48 @@ namespace Templates
 		boundingBox = BoundingBox(center, extents);
 	}
 
-	nlohmann::json Model3DInstance::GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, aiMaterial* material)
+	nlohmann::json Model3DInstance::GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, const aiScene* aiModel, aiMaterial* material)
 	{
 		using namespace Templates::Model3D;
 
 		nlohmann::json mat(nlohmann::json({}));
 
+		//process diffuse texture
 		aiString diffuseName;
 		material->Get(AI_MATKEY_TEXTURE(aiTextureType_DIFFUSE, 0), diffuseName);
-		PushAssimpTextureToJson(mat, TextureShaderUsage_Base, relativePath, diffuseName, defaultBaseTexture);
+		const aiTexture* embeddedDiffuse = aiModel->GetEmbeddedTexture(diffuseName.C_Str());
+		if (!embeddedDiffuse || std::string(diffuseName.C_Str()).empty())
+		{
+			PushAssimpTextureToJson(mat, TextureShaderUsage_Base, relativePath, diffuseName, defaultBaseTexture);
+		}
+		else
+		{
+			PushEmbeddedAsimpTextureToJson(mat, embeddedDiffuse, TextureShaderUsage_Base, relativePath, diffuseName);
+		}
 
 		aiString normalMapName;
 		material->Get(AI_MATKEY_TEXTURE(aiTextureType_NORMALS, 0), normalMapName);
-		PushAssimpTextureToJson(mat, TextureShaderUsage_NormalMap, relativePath, normalMapName, defaultNormalMap, DXGI_FORMAT_R8G8B8A8_UNORM);
+		const aiTexture* embeddedNormalMap = aiModel->GetEmbeddedTexture(normalMapName.C_Str());
+		if (!embeddedNormalMap || std::string(normalMapName.C_Str()).empty())
+		{
+			PushAssimpTextureToJson(mat, TextureShaderUsage_NormalMap, relativePath, normalMapName, defaultNormalMap, DXGI_FORMAT_R8G8B8A8_UNORM);
+		}
+		else
+		{
+			PushEmbeddedAsimpTextureToJson(mat, embeddedNormalMap, TextureShaderUsage_NormalMap, relativePath, normalMapName, DXGI_FORMAT_R8G8B8A8_UNORM);
+		}
 
 		aiString metallicRoughnessName;
 		material->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &metallicRoughnessName);
-		PushAssimpTextureToJson(mat, TextureShaderUsage_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
+		const aiTexture* embeddedMetallicRoughness = aiModel->GetEmbeddedTexture(metallicRoughnessName.C_Str());
+		if (!embeddedMetallicRoughness || std::string(metallicRoughnessName.C_Str()).empty())
+		{
+			PushAssimpTextureToJson(mat, TextureShaderUsage_MetallicRoughness, relativePath, metallicRoughnessName, "", DXGI_FORMAT_R8G8B8A8_UNORM);
+		}
+		else
+		{
+			PushEmbeddedAsimpTextureToJson(mat, embeddedMetallicRoughness, TextureShaderUsage_MetallicRoughness, relativePath, metallicRoughnessName, DXGI_FORMAT_R8G8B8A8_UNORM);
+		}
 
 		return mat;
 	}
@@ -271,6 +302,42 @@ namespace Templates
 			}
 			m["textures"][TextureShaderUsageToString.at(textureType)] = texUUID;
 		}
+	}
+
+	void Model3DInstance::PushEmbeddedAsimpTextureToJson(nlohmann::json& m, const aiTexture* embeddedTexture, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, DXGI_FORMAT fallbackFormat)
+	{
+		DXGI_FORMAT textureJsonFormat = fallbackFormat;
+
+		std::string fileName = aiTextureName.C_Str();
+		fileName = TextureShaderUsageToString.at(textureType) + "_" + std::regex_replace(fileName, std::regex("\\*"), "");
+		std::filesystem::path textureJsonPath = nostd::normalize_path(
+			relativePath.parent_path().append("textures/").append(fileName).replace_extension(embeddedTexture->achFormatHint).string()
+		);
+
+		if (!std::filesystem::exists(textureJsonPath))
+		{
+			//first create the directory if needed
+			std::filesystem::path directory = textureJsonPath.parent_path();
+			std::filesystem::create_directory(directory);
+
+			//then write the image file
+			std::ofstream file;
+			file.open(textureJsonPath, std::ios::app | std::ios::binary);
+			file.write(reinterpret_cast<const char*>(&embeddedTexture->pcData[0].b), embeddedTexture->mWidth);
+			file.close();
+		}
+
+		std::string texUUID = FindTextureUUIDByName(textureJsonPath.string());
+		if (texUUID.empty())
+		{
+			texUUID = CreateTextureTemplate(textureJsonPath.string(), textureJsonFormat);
+		}
+		//m.textures_insert(textureType, texUUID);
+		if (!m.contains("textures"))
+		{
+			m["textures"] = nlohmann::json::object({});
+		}
+		m["textures"][TextureShaderUsageToString.at(textureType)] = texUUID;
 	}
 
 	MaterialJson Model3DInstance::CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, aiMaterial* material)

@@ -65,5 +65,12 @@ namespace Templates
 #endif
 			JObject::JUpdate(p);
 		}
+		virtual void JPatch(nlohmann::json p)
+		{
+#if defined(_EDITOR)
+			Editor::templatesModified = true;
+#endif
+			JObject::JPatch(p);
+		}
 	};
 };

@@ -558,6 +558,11 @@ namespace Editor {
 		}
 	}
 
+	void DrawGameController()
+	{
+
+	}
+
 	void OpenLevelFile()
 	{
 		using namespace Scene::Level;

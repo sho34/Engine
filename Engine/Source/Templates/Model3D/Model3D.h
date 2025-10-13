@@ -83,9 +83,10 @@ namespace Templates
 		void LoadModel3DInstance();
 		void CreateModel3DMaterialsTemplates(const aiScene* aiModel);
 		void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh);
-		nlohmann::json GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, aiMaterial* material);
+		nlohmann::json GetAssimpTexturesMaterialJson(std::filesystem::path relativePath, const aiScene* aiModel, aiMaterial* material);
 #if defined(_DEVELOPMENT)
 		void PushAssimpTextureToJson(nlohmann::json& j, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT fallbackFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
+		void PushEmbeddedAsimpTextureToJson(nlohmann::json& m, const aiTexture* embeddedTexture, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, DXGI_FORMAT fallbackFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 		MaterialJson CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, aiMaterial* material);
 #endif
 		VertexClass vertexClass;

@@ -210,6 +210,7 @@ namespace Editor {
 	void DrawEditor(std::shared_ptr<Camera> camera);
 	void DrawApplicationBar();
 	void HandleApplicationDragTitleBar(RECT& dragRect);
+	void DrawGameController();
 	void OpenLevelFile();
 	void SaveLevelAs();
 	bool SaveFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr);

@@ -318,6 +318,7 @@ namespace Scene
 		break;
 		}
 	}
+
 	void Renderable::Unbind(std::shared_ptr<SceneObject> sceneObject)
 	{
 		switch (sceneObject->JType())
@@ -417,7 +418,6 @@ namespace Scene
 		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
 		return XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
 	}
-
 
 	void Renderable::CreateMeshInstances()
 	{
@@ -798,6 +798,9 @@ namespace Scene
 
 	void Renderable::StepAnimation(double elapsedSeconds)
 	{
+		if (!animation().empty() && animations.empty())
+			animations = { animation() };
+
 		float animationLength = animable->animations->animationsLength[animation()];
 		float currentAnimationTime = animationTime();
 		if (animationLength > 0.0f)
@@ -877,7 +880,10 @@ namespace Scene
 
 		auto destroyMeshInstance = [](auto& vec) { for (auto& mesh : vec) { DestroyMeshInstance(mesh); } };
 
-		destroyMeshInstance(meshes);
+		if (model3D == nullptr)
+		{
+			destroyMeshInstance(meshes);
+		}
 		meshes.clear();
 
 		if (model3D)

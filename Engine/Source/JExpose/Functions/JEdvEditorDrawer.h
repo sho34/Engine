@@ -4324,13 +4324,17 @@ inline JEdvEditorDrawerFunction DrawMap<TextureShaderUsage, std::string>() {
 			auto remove = [&json](TextureShaderUsage usage)
 				{
 					std::string strUsage = TextureShaderUsageToString.at(usage);
+					nlohmann::json patch = nlohmann::json::array(
+						{
+							{
+								{ "op", "remove"},
+								{ "path", std::string("/textures/" + strUsage) }
+							}
+						}
+					);
 					for (auto& j : json)
 					{
-						nlohmann::json cpy = (*j)["textures"];
-						cpy.erase(strUsage);
-						nlohmann::json patch = { {"textures",cpy} };
-						j->JUpdate(patch);
-						//j->at("textures").erase(strUsage);
+						j->JPatch(patch);
 					}
 				};
 			auto add = [&json](TextureShaderUsage usage)

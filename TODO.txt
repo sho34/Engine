@@ -4,6 +4,9 @@ BUGS:
 -si parto modo juego y maximizo durante la carga, no se reajusta
 
 TODO:
+-Editor
+	-Agegar Modo PlayInEditor
+	-Quitar una textura de un material no funciona
 -Revivir GameMode(No Editor)
 	-mostrar nivel con un escenario
 		-usar a venom

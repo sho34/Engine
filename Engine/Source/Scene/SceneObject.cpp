@@ -25,6 +25,14 @@ namespace Scene
 		JObject::JUpdate(p);
 	}
 
+	void SceneObject::JPatch(nlohmann::json p)
+	{
+#if defined(_EDITOR)
+		Editor::levelModified = true;
+#endif
+		JObject::JPatch(p);
+	}
+
 	void SceneObject::BindControllers()
 	{
 		using namespace Game;
