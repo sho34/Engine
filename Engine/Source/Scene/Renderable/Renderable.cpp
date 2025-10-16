@@ -363,6 +363,7 @@ namespace Scene
 #include <JEnd.h>
 
 		UnbindMaterialsChangesCallback();
+		UnbindModelChangesCallback();
 		Scene::UnbindFromScene(this_ptr);
 		boundingBoxCompute = nullptr;
 	}
@@ -397,6 +398,15 @@ namespace Scene
 				std::shared_ptr<MaterialJson> matJ = GetMaterialTemplate(mat->materialUUID);
 				matJ->UnbindChangeCallback(uuid());
 			}
+		}
+	}
+
+	void Renderable::UnbindModelChangesCallback()
+	{
+		if (!model().empty())
+		{
+			std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(model());
+			mdl->UnbindChangeCallback(uuid());
 		}
 	}
 
@@ -442,13 +452,22 @@ namespace Scene
 		{
 			model3D = GetModel3DInstance(model(), [this]
 				{
-					return std::make_shared<Model3DInstance>(model());
+					return std::make_shared<Model3DInstance>(model(), uuid(), [this](std::shared_ptr<JObject> model)
+						{
+							if (model->dirty(Model3DJson::Update_animationSequences))
+							{
+								RebuildAnimationSequences();
+							}
+						}
+					);
 				}
 			);
 			meshes = model3D->meshes;
 			animable = (model3D->animations) ? model3D : nullptr;
 			if (!animable)
 				CreateBoundingBox();
+			else
+				CreateAnimationSequences();
 		}
 	}
 
@@ -727,6 +746,50 @@ namespace Scene
 		}
 	}
 
+	void Renderable::CreateAnimationSequences()
+	{
+		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(model());
+		animationsSequences = mdl->animationSequences();
+		for (auto& [name, _] : animable->animations->animationsLength)
+		{
+			int totalFrames = static_cast<int>(animable->animations->animationsLength.at(name) * 60);
+			totalFrames /= 1000;
+			animationsSequences.sequences.insert_or_assign(
+				name,
+				Sequence(
+					name,
+					totalFrames
+				)
+			);
+		}
+	}
+
+	void Renderable::RebuildAnimationSequences()
+	{
+		if (currentSequence == nullptr)
+			return CreateAnimationSequences();
+
+		std::string currentSequenceStr;
+		for (auto it = animationsSequences.sequences.begin(); it != animationsSequences.sequences.end(); it++)
+		{
+			if (currentSequence == &(it->second))
+			{
+				currentSequenceStr = it->first;
+				break;
+			}
+		}
+
+		CreateAnimationSequences();
+		if (currentSequenceStr.empty()) return;
+
+		for (auto it = animationsSequences.sequences.begin(); it != animationsSequences.sequences.end(); it++)
+		{
+			if (currentSequenceStr != it->first) continue;
+			currentSequence = &(it->second);
+			return;
+		}
+	}
+
 	void Renderable::CreateBoundingBox()
 	{
 		bool extend = false;
@@ -803,7 +866,7 @@ namespace Scene
 		if (!currentSequence)
 		{
 			TraverseMultiplycationQueue(0.0f, "", animable->animations, bonesTransformation);
-			animation("#none");
+			animation("");
 			animationFrame(0);
 			return;
 		}
@@ -812,11 +875,6 @@ namespace Scene
 		float currentAnimationTime = animationTime();
 		currentAnimationTime += animationPlay() ? animationTimeFactor() * static_cast<float>(elapsedSeconds) * 1000.0f : 0.0f;
 		int currentFrame = static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * currentAnimationTime / 1000.0f);
-
-		//OutputDebugStringA(std::string(std::string("elapsedSeconds:") + std::to_string(elapsedSeconds) + "\n").c_str());
-		//OutputDebugStringA(std::string(std::string("currentAnimationTime:") + std::to_string(currentAnimationTime) + "\n").c_str());
-		//OutputDebugStringA(std::string(std::string("currentFrame:") + std::to_string(currentFrame) + "\n").c_str());
-		//OutputDebugStringA("--------------\n");
 
 		//handle end of animation
 		if (currentFrame >= currentSequence->totalFrames)
@@ -846,7 +904,7 @@ namespace Scene
 		if (channels.size() == 0ULL)
 		{
 			TraverseMultiplycationQueue(0.0f, "", animable->animations, bonesTransformation);
-			animation("#none");
+			animation("");
 			animationFrame(0);
 			return;
 		}

@@ -835,6 +835,7 @@ namespace Templates
 		TextureJsonsStep();
 		PreviewTexturesStep(static_cast<FLOAT>(timer.GetElapsedSeconds()));
 		ReloadPreviewTextures();
+		Model3DJsonStep();
 #endif
 		MaterialJsonStep();
 		SoundJsonStep();

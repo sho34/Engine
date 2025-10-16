@@ -8,6 +8,7 @@
 #include <UUID.h>
 #include <NoStd.h>
 #include <nlohmann/json.hpp>
+#include <map>
 
 #if defined(_EDITOR)
 
@@ -29,6 +30,37 @@ namespace ImGui
 		Default = Left,
 	};
 
+	template<typename T>
+	bool DrawComboSelection(T& selected, std::map<std::string, T> selectables, std::function<void(std::string)> onSelect, std::string label = "##")
+	{
+		bool ret = false;
+		std::string currentStr;
+		for (auto it = selectables.begin(); it != selectables.end(); it++)
+		{
+			if (it->second == selected)
+			{
+				currentStr = it->first;
+				break;
+			}
+		}
+		if (ImGui::BeginCombo(label.c_str(), currentStr.c_str()))
+		{
+			Editor::NonGameMode = true;
+			for (auto it = selectables.begin(); it != selectables.end(); it++)
+			{
+				if (ImGui::Selectable((it->first == "") ? "##" : it->first.c_str(), (currentStr == it->first) ? ImGuiSelectableFlags_Highlight : 0)) {
+					ret = true;
+					onSelect(it->first);
+				}
+				if (currentStr == it->first)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+		return ret;
+	}
 	bool DrawComboSelection(UUIDName selected, std::vector<UUIDName> selectables, std::function<void(UUIDName)> onSelect, std::string label = "##");
 	bool DrawComboSelection(std::string selected, std::vector<std::string> selectables, std::function<void(std::string)> onSelect, std::string label = "##");
 	bool DrawComboSelection(nlohmann::json& json, std::string attribute, std::vector<std::string> selectables, std::string label = "##");
@@ -36,142 +68,6 @@ namespace ImGui
 	void ItemLabel(std::string_view title, ItemLabelFlag flags);
 
 	void DrawItemWithEnabledState(std::function<void()> draw, bool enabled);
-
-	/*
-	template<typename T>
-	inline bool ImDrawColorEdit3(std::string tableName, T& Tcolor, std::function<void(T)> onChange)
-	{
-		bool ret = false;
-		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
-		{
-			std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
-			ImGui::PushID(tableId.c_str());
-			{
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				std::string label = tableId.substr(tableId.find_first_of("-") + 1);
-				ImGui::Text(label.c_str());
-
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-
-				if (ImGui::ColorEdit3(label.c_str(), (float*)&Tcolor)) {
-					onChange(Tcolor);
-					ret = true;
-				}
-			}
-			ImGui::PopID();
-			ImGui::EndTable();
-		}
-		return ret;
-	}
-	*/
-
-	/*
-	template<typename T>
-	inline bool ImDrawColorEdit4(std::string tableName, T& Tcolor, std::function<void(T)> onChange)
-	{
-		bool ret = false;
-		if (ImGui::BeginTable(tableName.c_str(), 1, ImGuiTableFlags_NoSavedSettings))
-		{
-			std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
-			ImGui::PushID(tableId.c_str());
-			{
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				std::string label = tableId.substr(tableId.find_first_of("-") + 1);
-				ImGui::Text(label.c_str());
-
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-
-				if (ImGui::ColorEdit4(label.c_str(), (float*)&Tcolor)) {
-					onChange(Tcolor);
-					ret = true;
-				}
-			}
-			ImGui::PopID();
-			ImGui::EndTable();
-		}
-		return ret;
-	}
-	*/
-
-	/*
-	template<typename T>
-	inline bool ImDrawDegreesValues(std::string tableName, std::vector<std::string> componentsLabel, T& rot, std::function<void(T)> onChange, float minDeg = -180.0f, float maxDeg = 180.0f)
-	{
-		bool ret = false;
-		if (ImGui::BeginTable(tableName.c_str(), static_cast<int>(componentsLabel.size()) + 1, ImGuiTableFlags_NoSavedSettings))
-		{
-			std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
-			ImGui::PushID(tableId.c_str());
-			{
-				T rads;
-				for (int i = 0; i < componentsLabel.size(); i++) {
-					*(((float*)&rads) + i) = XMConvertToRadians(*(((float*)&rot) + i));
-				}
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				std::string label = tableId.substr(tableId.find_first_of("-") + 1);
-				ImGui::Text(label.c_str());
-
-				ImGui::PushID("sliders");
-				{
-					for (int i = 0; i < componentsLabel.size(); i++) {
-						ImGui::TableSetColumnIndex(i + 1);
-						if (ImGui::SliderAngle(componentsLabel[i].c_str(), (((float*)&rads) + i), minDeg, maxDeg, "%.2f", ImGuiSliderFlags_AlwaysClamp))
-						{
-							*(((float*)&rot) + i) = XMConvertToDegrees(*(((float*)&rads) + i));
-							onChange(rot);
-							ret = true;
-							}
-					}
-				}
-				ImGui::PopID();
-			}
-			ImGui::PopID();
-			ImGui::EndTable();
-		}
-		return ret;
-	}
-	*/
-
-	/*
-	template<typename T>
-	inline bool ImDrawFloatValues(std::string tableName, std::vector<std::string> componentsLabel, T& values, std::function<void(T)> onChange)
-	{
-		bool ret = false;
-		if (ImGui::BeginTable(tableName.c_str(), static_cast<int>(componentsLabel.size()) + 1, ImGuiTableFlags_NoSavedSettings))
-		{
-			std::string tableId = tableName.substr(tableName.find_first_of("-") + 1);
-			ImGui::PushID(tableId.c_str());
-			{
-				ImGui::TableNextRow();
-				ImGui::TableSetColumnIndex(0);
-				std::string label = tableId.substr(tableId.find_first_of("-") + 1);
-				ImGui::Text(label.c_str());
-
-				ImGui::PushID("floats");
-				{
-					for (int i = 0; i < componentsLabel.size(); i++) {
-						ImGui::TableSetColumnIndex(i + 1);
-						if (ImGui::InputFloat(componentsLabel[i].c_str(), ((float*)&values) + i))
-						{
-							onChange(values);
-							ret = true;
-						}
-					}
-				}
-				ImGui::PopID();
-
-			}
-			ImGui::PopID();
-			ImGui::EndTable();
-		}
-		return ret;
-	}
-	*/
 
 	void DrawTextureImage(ImTextureID textureId, unsigned int textureWidth, unsigned int textureHeight);
 
@@ -213,5 +109,26 @@ namespace ImGui
 	void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::vector<std::string> filterName = { "JSON files. (*.json)" }, std::vector<std::string> filterPattern = { "*.json" }, bool detach = false);
 	void OpenTemplate(const char* iconCode, UUIDName uuidName);
 	void OpenSceneObject(const char* iconCode, UUIDName uuidName);
+
+	void DrawAnimationController(
+		std::function<bool()> animationsArePlaying,
+		std::function<void(bool)> setPlayAnimation,
+		std::function<void(float)> setAnimationTime,
+		std::function<float()> getAnimationTimeFactor,
+		std::function<void(float)> setAnimationTimeFactor,
+		std::function<void()> gotoPrevAnimation,
+		std::function<void()> gotoNextAnimation,
+		std::function<bool()> animationsAreLooping,
+		std::function<void(bool)> setAnimationLoop
+	);
+	void DrawAudioController(
+		std::function<bool()> isPlaying,
+		std::function<bool()> isPaused,
+		std::function<void()> play,
+		std::function<void()> stop,
+		std::function<void()> pause,
+		std::function<float()> getTime,
+		std::function<float()> getDuration
+	);
 }
 #endif

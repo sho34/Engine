@@ -67,6 +67,35 @@ namespace Templates
 	TEMPDEF_FULL(Model3D);
 	TEMPDEF_REFTRACKER(Model3D);
 
+#if defined(_EDITOR)
+	void Model3DJsonStep()
+	{
+		std::set<std::shared_ptr<Model3DJson>> models;
+		std::transform(Model3Dtemplates.begin(), Model3Dtemplates.end(), std::inserter(models, models.begin()), [](auto& mdl)
+			{
+				auto& mdlJ = std::get<1>(mdl.second);
+				return mdlJ;
+			}
+		);
+
+		std::set<std::shared_ptr<Model3DJson>> seqMdls;
+		std::copy_if(models.begin(), models.end(), std::inserter(seqMdls, seqMdls.begin()), [](auto& mdl)
+			{
+				return mdl->dirty(Model3DJson::Update_animationSequences);
+			}
+		);
+
+		if (seqMdls.size() > 0ULL)
+		{
+			JObject::RunChangesCallback(seqMdls, [](auto mdl)
+				{
+					mdl->clean(Model3DJson::Update_animationSequences);
+				}
+			);
+		}
+	}
+#endif
+
 	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index) {
 		return "mesh-" + uuid + "-" + std::to_string(index);
 	}
@@ -95,9 +124,11 @@ namespace Templates
 		refTracker.RemoveRef(uuid, model3D);
 	}
 
-	Model3DInstance::Model3DInstance(std::string uuid)
+	Model3DInstance::Model3DInstance(std::string uuid, std::string objectUUID, JObjectChangeCallback cb, JObjectChangePostCallback postCb)
 	{
 		model3DUUID = uuid;
+		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(model3DUUID);
+		mdl->BindChangeCallback(objectUUID, cb, postCb);
 		LoadModel3DInstance();
 	}
 

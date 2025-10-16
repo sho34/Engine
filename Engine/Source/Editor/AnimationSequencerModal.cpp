@@ -153,6 +153,13 @@ void AnimationSequencerModal::DestroySceneObjects()
 	ambientLight = nullptr;
 	camera = nullptr;
 	model3D = nullptr;
+	model3dUUID.clear();
+	animations.clear();
+	selectedSequence.clear();
+	expandedChannels.clear();
+	addNewSequence = false;
+	newSequenceName.clear();
+
 }
 
 void AnimationSequencerModal::Step()
@@ -321,7 +328,7 @@ void AnimationSequencerModal::DrawTimelineController(ImVec2 curPos, ImVec2 size)
 	float loopCheckboxWidth = 30.0f;
 	float timeWidth = ImGui::CalcTextSize(std::string(std::string("time:") + std::format("{:.2f}", renderable->animationTime() / 1000.0f) + "s").c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f + 30.0f;
 	float frameWidth = ImGui::CalcTextSize(std::string(std::string("frame:") + std::to_string(renderable->animationFrame())).c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f + 30.0f;
-	float animationWidth = ImGui::CalcTextSize(std::string(std::string("animation:") + renderable->animation()).c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f + 30.0f;
+	float animationWidth = ImGui::CalcTextSize(std::string(std::string("animation:") + std::string((renderable->animation() != "") ? renderable->animation() : "#none")).c_str()).x + ImGui::GetStyle().FramePadding.x * 2.0f + 30.0f;
 	float total_width =
 		nFramesWidth +
 		inputNumFramesWidth +
@@ -372,7 +379,7 @@ void AnimationSequencerModal::DrawTimelineController(ImVec2 curPos, ImVec2 size)
 			{
 				auto it = animationsSequences.sequences.find(selectedSequence);
 				bool isAnim = it != animationsSequences.sequences.end();
-				renderable->SetCurrentAnimation(isAnim ? &(it->second) : nullptr, 0.0f, 1.0f, false, false);
+				renderable->SetCurrentAnimation(isAnim ? &(it->second) : nullptr, 0.0f, 1.0f, false, renderable->animationLoop());
 
 			}
 			renderable->animationPlay(true);
@@ -411,7 +418,7 @@ void AnimationSequencerModal::DrawTimelineController(ImVec2 curPos, ImVec2 size)
 
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(animationWidth);
-	ImGui::Text(std::string(std::string("animation:") + renderable->animation()).c_str());
+	ImGui::Text(std::string(std::string("animation:") + std::string((renderable->animation() != "") ? renderable->animation() : "#none")).c_str());
 }
 
 void AnimationSequencerModal::DrawSequencer(ImVec2 curPos, ImVec2 size, int& currentFrame, bool& expanded, int& selectedEntry, int& firstFrame)
@@ -451,6 +458,7 @@ void AnimationSequencerModal::DrawSaveAndExitButtons(ImVec2 curPos, ImVec2 size)
 					destroying = true;
 					showing = false;
 					model3D->animationSequences(animationsSequences);
+					model3D->flag(Model3DJson::Update_animationSequences);
 					Editor::templatesModified = true;
 				}
 			}
@@ -503,14 +511,20 @@ void AnimationSequencerModal::DrawAddNewSequencePopup(ImVec2 curPos, ImVec2 size
 				if (ImGui::Button("Add"))
 				{
 					addNewSequence = false;
+					int totalFrames = static_cast<int>(renderable->animable->animations->animationsLength.at(animations.at(0)) * 60);
+					totalFrames /= 1000;
 					animationsSequences.sequences.insert_or_assign(
 						newSequenceName,
 						Sequence(
-							animations.at(0)
+							animations.at(0),
+							totalFrames
 						)
 					);
 					expandedChannels.insert_or_assign(newSequenceName, std::vector<bool>({ false }));
 					selectedSequence = newSequenceName;
+					auto it = animationsSequences.sequences.find(selectedSequence);
+					bool isAnim = it != animationsSequences.sequences.end();
+					renderable->SetCurrentAnimation(isAnim ? &(it->second) : nullptr, 0.0f, 0.0f, false, renderable->animationLoop());
 				}
 			}
 		, !existingSequences.contains(newSequenceName));

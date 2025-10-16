@@ -65,6 +65,14 @@ struct SequenceChannel
 		);
 		return j;
 	}
+
+	bool operator==(const SequenceChannel& other) const {
+		if (type != other.type) return false;
+		if (animation != other.animation) return false;
+		if (frameStart != other.frameStart) return false;
+		if (frameEnd != other.frameEnd) return false;
+		return true;
+	}
 };
 
 inline static SequenceChannel ToSequenceChannel(nlohmann::json j)
@@ -92,11 +100,12 @@ struct Sequence
 		loop = false;
 	};
 
-	Sequence(std::string animation) : Sequence()
+	Sequence(std::string animation, int numFrames) : Sequence()
 	{
 		SequenceChannel seqC;
 		seqC.animation = animation;
-		seqC.frameEnd = totalFrames - 1;
+		seqC.frameEnd = numFrames - 1;
+		totalFrames = numFrames;
 		channels.push_back(seqC);
 	}
 
@@ -127,6 +136,15 @@ struct Sequence
 			}
 		);
 		return j;
+	}
+
+	bool operator==(const Sequence& other) const {
+
+		if (framesPerSecond != other.framesPerSecond) return false;
+		if (totalFrames != other.totalFrames) return false;
+		if (loop != other.loop) return false;
+
+		return std::equal(channels.begin(), channels.end(), other.channels.begin());
 	}
 };
 
@@ -209,6 +227,8 @@ namespace Templates
 #include <Model3DAtt.h>
 #include <JEnd.h>
 
+	void Model3DJsonStep();
+
 #endif
 
 	struct Model3DJson : public JTemplate
@@ -241,7 +261,12 @@ namespace Templates
 	{
 		std::string model3DUUID;
 
-		Model3DInstance(std::string uuid);
+		Model3DInstance(std::string uuid) { assert(!!!"do not use"); }
+		explicit Model3DInstance(
+			std::string uuid,
+			std::string objectUUID,
+			JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {},
+			JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {});
 		void LoadModel3DInstance();
 		void CreateModel3DMaterialsTemplates(const aiScene* aiModel);
 		void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh);

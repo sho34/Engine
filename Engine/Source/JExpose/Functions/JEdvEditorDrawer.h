@@ -1158,7 +1158,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_i
 					if (texture->type() == TextureType_Array)
 					{
 						ImGui::PushID(std::string(texture->uuid() + "-controller").c_str());
-						drawAnimationController(
+						ImGui::DrawAnimationController(
 							[&texture] { return texture->previewIsPlaying; },
 							[&texture](auto play) { texture->previewIsPlaying = play; },
 							[&texture](float time) { texture->previewTime = time; },
@@ -1384,7 +1384,7 @@ inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_sound_instance_fl
 					ImGui::TableNextRow();
 					ImGui::TableSetColumnIndex(1);
 
-					drawAudioController(
+					ImGui::DrawAudioController(
 						[sfx]() {return sfx->IsPlaying(); },
 						[sfx]() {return sfx->IsPaused(); },
 						[sfx]() { sfx->Play(); },
@@ -1823,217 +1823,131 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 			auto animables = getAnimables();
 			if (animables.size() == 0ULL) return;
 
-			auto getAvailableAnimations = [&animables]()
+			auto setAnim = [](auto animable, auto it)
 				{
-					std::map<std::string, unsigned int> animsCount;
-
-					for (auto& r : animables)
-					{
-						std::vector<std::string> anims = nostd::GetKeysFromMap(r->animable->animations->animationsLength);
-						for (auto& name : anims)
-						{
-							animsCount[name] = animsCount.contains(name) ? (animsCount[name] + 1) : 1;
-						}
-					}
-					size_t jsz = animables.size();
-
-					std::map<std::string, unsigned int> animations = { {"",0} };
-					std::copy_if(animsCount.begin(), animsCount.end(), std::inserter(animations, animations.end()), [jsz](const auto& count)
-						{
-							auto& [_, c] = count;
-							return c == jsz;
-						}
+					animable->SetCurrentAnimation(
+						&(it->second), 0.0f,
+						animable->animationTimeFactor(),
+						animable->animationPlay(),
+						animable->animationLoop()
 					);
-					return nostd::GetKeysFromMap(animations);
-				};
-			auto getSelectedAnimation = [&animables]()
-				{
-					std::set<std::string> animations;
-					for (auto& r : animables)
-					{
-						animations.insert(r->animation());
-						if (animations.size() > 1ULL) return std::string();
-					}
-					return *animations.begin();
-				};
-			auto setAnimation = [&animables](auto value)
-				{
-					for (auto& r : animables)
-					{
-						r->animation(value);
-					}
 				};
 
-			auto animations = getAvailableAnimations();
-			auto selected = getSelectedAnimation();
+			auto gotoPrevAnim = [setAnim](auto animable)
+				{
+					if (animable->currentSequence == nullptr)
+					{
+						auto it = animable->animationsSequences.sequences.end();
+						it--;
+						setAnim(animable, it);
+						return;
+					}
 
-			auto animationsArePlaying = [&animables]()
-				{
-					std::set<bool> playing;
-					for (auto& j : animables)
+					for (auto it = animable->animationsSequences.sequences.begin(); it != animable->animationsSequences.sequences.end(); it++)
 					{
-						std::shared_ptr<Renderable> r = std::dynamic_pointer_cast<Renderable>(j);
-						playing.insert(r->animationPlay());
+						if (animable->currentSequence == &(it->second))
+						{
+							if (it == animable->animationsSequences.sequences.begin())
+							{
+								it = animable->animationsSequences.sequences.end();
+							}
+							it--;
+							setAnim(animable, it);
+							return;
+						}
 					}
-					return (playing.size() == 1) ? *playing.begin() : false;
+					auto it = animable->animationsSequences.sequences.end();
+					it--;
+					setAnim(animable, it);
 				};
-			auto setPlayAnimation = [&animables](auto value)
+			auto gotoNextAnim = [setAnim](auto animable)
 				{
-					for (auto& r : animables)
+					if (animable->currentSequence == nullptr)
 					{
-						r->animationPlay(value);
+						auto it = animable->animationsSequences.sequences.begin();
+						it++;
+						setAnim(animable, it);
+						return;
 					}
-				};
-			auto getAnimationTime = [&animables]()
-				{
-					std::set<float> times;
-					for (auto& r : animables)
-					{
-						times.insert(r->animationTime());
-						if (times.size() > 1ULL) return 0.0f;
-					}
-					return *times.begin();
-				};
-			auto setAnimationTime = [&animables](auto value)
-				{
-					for (auto& r : animables)
-					{
-						r->animationTime(value);
-					}
-				};
-			auto getAnimationTimeFactor = [&animables]()
-				{
-					std::set<float> timeFactors;
-					for (auto& r : animables)
-					{
-						timeFactors.insert(r->animationTimeFactor());
-						if (timeFactors.size() > 1ULL) return 0.0f;
-					}
-					return *timeFactors.begin();
-				};
-			auto setAnimationTimeFactor = [&animables](auto value)
-				{
-					for (auto& r : animables)
-					{
-						r->animationTimeFactor(value);
-					}
-				};
-			auto allAnimationDurationEqual = [&animables, selected]()
-				{
-					std::set<float> lengths;
-					for (auto& r : animables)
-					{
-						lengths.insert(r->animable->animations->animationsLength[selected]);
-						if (lengths.size() > 1ULL) return false;
-					}
-					return true;
-				};
-			auto animationsAreLooping = [&animables]()
-				{
-					std::set<bool> loops;
-					for (auto& r : animables)
-					{
-						loops.insert(r->animationLoop());
-						if (loops.size() > 1ULL) return false;
-					}
-					return *loops.begin();
-				};
-			auto setAnimationLoop = [&animables](auto value)
-				{
-					for (auto& r : animables)
-					{
-						r->animationLoop(value);
-					}
-				};
 
-			auto gotoPrevAnim = [animations, selected, setAnimation]()
-				{
-					auto current_item = static_cast<int>(std::find(animations.begin(), animations.end(), selected) - animations.begin());
-					if (current_item <= 0)
-						setAnimation(animations[animations.size() - 1]);
-					else
-						setAnimation(animations[current_item - 1]);
-				};
-			auto gotoNextAnimation = [animations, selected, setAnimation]()
-				{
-					auto current_item = static_cast<int>(std::find(animations.begin(), animations.end(), selected) - animations.begin());
-					if (current_item >= animations.size())
-						setAnimation(animations[0]);
-					else
-						setAnimation(animations[current_item + 1]);
-				};
-
-			auto getAnimationsProgress = [&animables]()
-				{
-					std::map<std::shared_ptr<Renderable>, float> progress;
-					for (auto& r : animables)
+					for (auto it = animable->animationsSequences.sequences.begin(); it != animable->animationsSequences.sequences.end(); it++)
 					{
-						float len = r->animable->animations->animationsLength[r->animation()];
-						float curr = r->animationTime();
-						progress.insert_or_assign(r, curr / len);
+						if (animable->currentSequence == &(it->second))
+						{
+							it++;
+							if (it != animable->animationsSequences.sequences.end())
+							{
+								setAnim(animable, it);
+							}
+							else
+							{
+								setAnim(animable, animable->animationsSequences.sequences.begin());
+							}
+							return;
+						}
 					}
-					return progress;
-				};
-			auto animationsProgress = getAnimationsProgress();
-			auto allAnimationsProgressAreEqual = [&animationsProgress]()
-				{
-					std::set<float> progress;
-					for (auto [r, p] : animationsProgress)
-					{
-						progress.insert(p);
-						if (progress.size() > 1ULL) return false;
-					}
-					return true;
-				};
-			auto setAnimationTimeByProgress = [&animables](auto value)
-				{
-					for (auto& r : animables)
-					{
-						float len = r->animable->animations->animationsLength[r->animation()];
-						float time = value * len;
-						r->animationTime(time);
-					}
+					setAnim(animable, animable->animationsSequences.sequences.begin());
 				};
 
 			ImGui::Text(attribute.c_str());
 
-			std::string tableName = "animation-controller";
-			if (ImGui::BeginTable(tableName.c_str(), 2, defaultTableFlags))
+			for (size_t i = 0ULL; i < animables.size(); i++)
 			{
-				ImGui::TableNextRow();
+				std::shared_ptr<Renderable> animable = animables.at(i);
 
-				ImGui::TableSetColumnIndex(0);
-				drawAnimationController(
-					animationsArePlaying,
-					setPlayAnimation,
-					setAnimationTime,
-					getAnimationTimeFactor,
-					setAnimationTimeFactor,
-					gotoPrevAnim,
-					gotoNextAnimation,
-					animationsAreLooping,
-					setAnimationLoop
-				);
+				std::string tableName = "animation-controller-" + std::to_string(i);
 
-				ImGui::TableSetColumnIndex(1);
-				ImGui::DrawComboSelection(selected, animations, [&animables, setAnimation](std::string value)
-					{
-						setAnimation(value);
-					}
-				);
-
-				ImGui::EndTable();
-			}
-
-			bool allProgressEqual = allAnimationsProgressAreEqual();
-			if (allProgressEqual && selected != "")
-			{
-				float sliderTime = animationsProgress.begin()->second;
-				ImGui::Text("time");
-				ImGui::SameLine();
-				if (ImGui::SliderFloat("##", &sliderTime, 0.0f, 1.0f))
+				if (ImGui::BeginTable(tableName.c_str(), 2, defaultTableFlags))
 				{
-					setAnimationTimeByProgress(sliderTime);
+					ImGui::TableNextRow();
+
+					if (animables.size() > 1ULL)
+					{
+						ImGui::TableSetColumnIndex(0);
+						ImGui::Text(std::string(animables.at(i)->at("name")).c_str());
+					}
+
+					ImGui::TableSetColumnIndex(1);
+
+					Sequence* currentSequence = animable->currentSequence;
+					Sequence& sequence = (currentSequence != nullptr) ? *currentSequence : animable->animationsSequences.sequences.at("");
+					ImGui::DrawComboSelection<Sequence>(
+						sequence,
+						animable->animationsSequences.sequences,
+						[animable](std::string value)
+						{
+							auto it = animable->animationsSequences.sequences.find(value);
+							bool isAnim = it != animable->animationsSequences.sequences.end();
+							animable->SetCurrentAnimation(
+								isAnim ? &(it->second) : nullptr,
+								0.0f,
+								animable->animationTimeFactor(),
+								animable->animationPlay(),
+								animable->animationLoop()
+							);
+						}
+					);
+
+					ImGui::EndTable();
+				}
+
+				ImGui::PushID(std::string(std::string("animation-controller-") + std::to_string(i)).c_str());
+				ImGui::DrawAnimationController(
+					[animable] { return animable->animationPlay(); },
+					[animable](auto value) { animable->animationPlay(value); },
+					[animable](auto value) { animable->animationTime(value); },
+					[animable]() { return animable->animationTimeFactor(); },
+					[animable](auto value) { animable->animationTimeFactor(value); },
+					[animable, gotoPrevAnim]() { gotoPrevAnim(animable); },
+					[animable, gotoNextAnim]() { gotoNextAnim(animable); },
+					[animable]() { return animable->animationLoop(); },
+					[animable](auto value) { animable->animationLoop(value); }
+				);
+				ImGui::PopID();
+
+				if (animables.size() > 1ULL)
+				{
+					ImGui::Separator();
 				}
 			}
 		};

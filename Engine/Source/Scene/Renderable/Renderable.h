@@ -149,9 +149,11 @@ namespace Scene
 		//ANIMATION
 		std::shared_ptr<Model3DInstance> animable = nullptr;
 		Animation::BonesTransformations bonesTransformation;
-		//std::vector<std::string> animations;
-		//int animationIndex = -1;
 		Sequence* currentSequence = nullptr;
+		AnimationSequences animationsSequences;
+
+		void CreateAnimationSequences();
+		void RebuildAnimationSequences();
 
 		BoundingBox boundingBox;
 		std::shared_ptr<RenderableBoundingBox> boundingBoxCompute; //used for animables
@@ -211,5 +213,6 @@ namespace Scene
 		bool renderException = false;
 		void Render(std::shared_ptr<RenderPassInstance> renderPass, std::shared_ptr<Camera> camera = nullptr);
 		void UnbindMaterialsChangesCallback();
+		void UnbindModelChangesCallback();
 	};
 }
