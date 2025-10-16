@@ -284,11 +284,14 @@
     </ClInclude>
     <ClInclude Include="Controllers\Controller.h" />
     <ClInclude Include="Controllers\GameStateMachine.h" />
+    <ClInclude Include="Editor\CreatorModal.h" />
+    <ClInclude Include="Editor\DeletePrompt.h" />
     <ClInclude Include="Editor\EditorMouseCamera.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Editor\ExImSequencer.h" />
     <ClInclude Include="Editor\MousePicking.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
@@ -299,6 +302,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Editor\AnimationSequencerModal.h" />
     <ClInclude Include="GameControllers\VenomController.h" />
     <ClInclude Include="JExpose\Attributes\JExpose.h" />
     <ClInclude Include="JExpose\Creator\JDrawersDecl.h" />
@@ -604,16 +608,19 @@
       </ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Controllers\Controller.cpp" />
+    <ClCompile Include="Editor\AnimationSequencerModal.cpp" />
     <ClCompile Include="Editor\DefaultLevel.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Editor\DeletePrompt.cpp" />
     <ClCompile Include="Editor\EditorMouseCamera.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Editor\ExImSequencer.cpp" />
     <ClCompile Include="Editor\ImEditor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>

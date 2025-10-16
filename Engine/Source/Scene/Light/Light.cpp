@@ -451,21 +451,6 @@ namespace Scene
 		}
 	}
 
-	void Light::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
-	{
-		if (lightType() == LT_Ambient || lightType() == LT_Directional)
-		{
-			bbox->position(XMFLOAT3({ 0.0f ,0.0f,0.0f }));
-		}
-		else
-		{
-			bbox->position(position());
-		}
-
-		bbox->scale(XMFLOAT3({ 0.5f, 0.5f, 0.5f }));
-		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
-	}
-
 	std::shared_ptr<Renderable> Light::CreateBillboard()
 	{
 		if (lightType() == LT_Ambient) return nullptr;

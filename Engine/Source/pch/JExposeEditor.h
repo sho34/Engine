@@ -44,6 +44,7 @@ namespace Editor
 {
 	extern void MarkTemplatesPanelAssetsAsDirty();
 	extern void MarkScenePanelAssetsAsDirty();
+	extern void OpenAnimationSequencer(std::string uuid);
 };
 
 namespace Game

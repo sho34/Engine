@@ -149,8 +149,9 @@ namespace Scene
 		//ANIMATION
 		std::shared_ptr<Model3DInstance> animable = nullptr;
 		Animation::BonesTransformations bonesTransformation;
-		std::vector<std::string> animations;
-		int animationIndex = -1;
+		//std::vector<std::string> animations;
+		//int animationIndex = -1;
+		Sequence* currentSequence = nullptr;
 
 		BoundingBox boundingBox;
 		std::shared_ptr<RenderableBoundingBox> boundingBoxCompute; //used for animables
@@ -158,10 +159,7 @@ namespace Scene
 		void CreateBoundingBox();
 		BoundingBox GetBoundingBox();
 
-		//READ&GET
-		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
-
-		//UPDATE
+		//UPDATEs
 #if defined(_EDITOR)
 		std::function<void()> OnPick;
 
@@ -199,6 +197,7 @@ namespace Scene
 		};
 		void WriteAnimationConstantsBuffer(unsigned int backbufferIndex);
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
+		void SetCurrentAnimation(Sequence* sequence, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void SetCurrentAnimation(std::vector<std::string> anims, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void StepAnimation(double elapsedSeconds);

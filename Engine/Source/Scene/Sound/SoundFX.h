@@ -86,8 +86,6 @@ namespace Scene {
 		void UpdateEmmiter();
 
 #if defined(_EDITOR)
-		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
-
 		virtual std::shared_ptr<Renderable> CreateBillboard();
 		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard);
 

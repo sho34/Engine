@@ -737,17 +737,6 @@ namespace Scene
 		}
 	}
 
-	void Renderable::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
-	{
-		BoundingBox bb = animable ? boundingBoxCompute->boundingBox : boundingBox;
-		XMVECTOR center = { bb.Center.x, bb.Center.y, bb.Center.z, 1.0f };
-		XMVECTOR bbpos = XMVector3Transform(center, world());
-
-		bbox->scale(bb.Extents * scale());
-		bbox->rotation(rotation());
-		bbox->position(*((XMFLOAT3*)bbpos.m128_f32));
-	}
-
 	BoundingBox Renderable::GetBoundingBox()
 	{
 		BoundingBox& bb = animable ? boundingBoxCompute->boundingBox : boundingBox;
@@ -780,78 +769,106 @@ namespace Scene
 		WriteConstantsBuffer("world", w, backbufferIndex);
 	}
 
-	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop)
+	void Renderable::SetCurrentAnimation(Sequence* sequence, float startTime, float timeFactor, bool play, bool loop)
 	{
-		SetCurrentAnimation(std::vector({ anim }), startTime, timeFactor, play, loop);
-	}
-
-	void Renderable::SetCurrentAnimation(std::vector<std::string> anims, float startTime, float timeFactor, bool play, bool loop)
-	{
-		animations = anims;
-		animationIndex = 0;
-		animation(animations.at(animationIndex));
+		currentSequence = sequence;
 		animationTime(startTime);
 		animationTimeFactor(timeFactor);
 		animationPlay(play);
 		animationLoop(loop);
+		animationFrame(0);
+		animation("");
+	}
+
+	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop)
+	{
+		//SetCurrentAnimation(std::vector({ anim }), startTime, timeFactor, play, loop);
+	}
+
+	void Renderable::SetCurrentAnimation(std::vector<std::string> anims, float startTime, float timeFactor, bool play, bool loop)
+	{
+		//animations = anims;
+		//animationIndex = 0;
+		//animation(animations.at(animationIndex));
+		//animationTime(startTime);
+		//animationTimeFactor(timeFactor);
+		//animationPlay(play);
+		//animationLoop(loop);
 	}
 
 	void Renderable::StepAnimation(double elapsedSeconds)
 	{
-		if (!animation().empty() && animations.empty())
-			animations = { animation() };
-
-		float animationLength = animable->animations->animationsLength[animation()];
-		float currentAnimationTime = animationTime();
-		if (animationLength > 0.0f)
+		using namespace Animation;
+		//no animation? no problem. just go T pose
+		if (!currentSequence)
 		{
-			currentAnimationTime += animationPlay() ? animationTimeFactor() * static_cast<float>(elapsedSeconds) * 1000.0f : 0.0f;
-
-			if (animationTimeFactor() > 0.0f)
-			{
-				if (currentAnimationTime >= animationLength)
-				{
-					if (animationIndex < (animations.size() - 1))
-					{
-						animationIndex++;
-						animation(animations.at(animationIndex));
-						currentAnimationTime = 0.0f;
-					}
-					else if (animationLoop())
-					{
-						animationIndex = 0;
-						animation(animations.at(animationIndex));
-						currentAnimationTime = 0.0f;
-					}
-					currentAnimationTime = std::min(currentAnimationTime, animationLength);
-				}
-				/*
-				if (currentAnimationTime >= animationLength)
-					currentAnimationTime = animationLoop() ? fmodf(currentAnimationTime, animationLength) : animationLength;
-				*/
-			}
-			else if (animationTimeFactor() < 0.0f)
-			{
-				/*
-				if (currentAnimationTime < 0.0f)
-					currentAnimationTime = animationLoop() ? (animationLength - fmodf(currentAnimationTime, animationLength)) : 0.0f;
-				*/
-			}
-			animationTime(currentAnimationTime);
+			TraverseMultiplycationQueue(0.0f, "", animable->animations, bonesTransformation);
+			animation("#none");
+			animationFrame(0);
+			return;
 		}
 
-		using namespace Animation;
-		TraverseMultiplycationQueue(currentAnimationTime, animation(), animable->animations, bonesTransformation);
+		float totalTime = 1000.0f * static_cast<float>(currentSequence->totalFrames) / static_cast<float>(currentSequence->framesPerSecond);
+		float currentAnimationTime = animationTime();
+		currentAnimationTime += animationPlay() ? animationTimeFactor() * static_cast<float>(elapsedSeconds) * 1000.0f : 0.0f;
+		int currentFrame = static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * currentAnimationTime / 1000.0f);
+
+		//OutputDebugStringA(std::string(std::string("elapsedSeconds:") + std::to_string(elapsedSeconds) + "\n").c_str());
+		//OutputDebugStringA(std::string(std::string("currentAnimationTime:") + std::to_string(currentAnimationTime) + "\n").c_str());
+		//OutputDebugStringA(std::string(std::string("currentFrame:") + std::to_string(currentFrame) + "\n").c_str());
+		//OutputDebugStringA("--------------\n");
+
+		//handle end of animation
+		if (currentFrame >= currentSequence->totalFrames)
+		{
+			//are we looping?
+			if (animationLoop())
+			{
+				currentAnimationTime = fmodf(currentAnimationTime, totalTime);
+				currentFrame = static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * currentAnimationTime / 1000.0f);
+			}
+			else
+			{
+				currentAnimationTime = totalTime;
+				currentFrame = currentSequence->totalFrames - 1;
+			}
+		}
+		animationTime(currentAnimationTime);
+
+		std::vector<SequenceChannel> channels;
+		std::copy_if(currentSequence->channels.begin(), currentSequence->channels.end(), std::back_inserter(channels), [currentFrame](SequenceChannel& ch)
+			{
+				return currentFrame >= ch.frameStart && currentFrame <= ch.frameEnd;
+			}
+		);
+
+		//no animations? fallback to T-Pose, yes!
+		if (channels.size() == 0ULL)
+		{
+			TraverseMultiplycationQueue(0.0f, "", animable->animations, bonesTransformation);
+			animation("#none");
+			animationFrame(0);
+			return;
+		}
+
+		//now here is the tricky part, pick the last animation in the hierarchy
+		SequenceChannel& last = channels.back();
+		float animationLength = animable->animations->animationsLength[last.animation];
+		float time = animationLength * static_cast<float>(currentFrame - last.frameStart) / static_cast<float>(last.frameEnd - last.frameStart - 1);
+		animation(last.animation);
+		animationFrame(currentFrame);
+		TraverseMultiplycationQueue(time, last.animation, animable->animations, bonesTransformation);
 	}
 
 	bool Renderable::AnimationEnded()
 	{
-		if (!animationPlay()) return false;
-		if (animationLoop()) return false;
-		if (animationIndex < (animations.size() - 1)) return false;
-		float animationLength = animable->animations->animationsLength[animation()];
-		float currentAnimationTime = animationTime();
-		return (currentAnimationTime >= animationLength);
+		return true;
+		//if (!animationPlay()) return false;
+		//if (animationLoop()) return false;
+		//if (animationIndex < (animations.size() - 1)) return false;
+		//float animationLength = animable->animations->animationsLength[animation()];
+		//float currentAnimationTime = animationTime();
+		//return (currentAnimationTime >= animationLength);
 	}
 
 	//DESTROY

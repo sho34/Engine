@@ -290,14 +290,6 @@ namespace Scene
 	}
 
 #if defined(_EDITOR)
-
-	void SoundFX::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
-	{
-		bbox->position(position());
-		bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
-		bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
-	}
-
 	std::shared_ptr<Renderable> SoundFX::CreateBillboard()
 	{
 		if (!(instanceFlags() & SoundEffectInstance_Use3D)) return nullptr;

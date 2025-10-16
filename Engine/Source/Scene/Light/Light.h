@@ -247,8 +247,6 @@ namespace Scene {
 
 		//RENDER
 		void RenderShadowMap(std::function<void(unsigned int)> renderScene);
-
-		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
 	};
 
 	//CREATE

@@ -83,6 +83,7 @@ enum JsonToEditorValueType
 	jedv_t_controller,
 	jedv_t_controller_vector,
 	jedv_draw_renderpass_vector,
+	jedv_draw_animator_sequencer
 };
 
 typedef std::function<void(std::string attribute, std::vector<std::shared_ptr<JObject>>& json)> JEdvEditorDrawerFunction;

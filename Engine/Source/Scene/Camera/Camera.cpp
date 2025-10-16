@@ -893,13 +893,6 @@ namespace Scene
 	}
 
 #if defined(_EDITOR)
-	void Camera::FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox)
-	{
-		//bbox->position(json.at("position"));
-		//bbox->scale(XMFLOAT3({ 0.3f, 0.3f, 0.3f }));
-		//bbox->rotation(XMFLOAT3({ 0.0f, 0.0f, 0.0f }));
-	}
-
 	void Camera::EditorPreview(size_t flags)
 	{
 		previewRenderPassIndex = 0U;

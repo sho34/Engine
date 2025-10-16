@@ -29,6 +29,9 @@
 #include <Keyboard.h>
 #include <MousePicking.h>
 #include <EditorMouseCamera.h>
+#include <CreatorModal.h>
+#include <DeletePrompt.h>
+#include <AnimationSequencerModal.h>
 
 extern HWND hWnd;
 extern RECT hWndRect;
@@ -42,8 +45,8 @@ extern RECT GetMaximizedAreaSize();
 // Forward declare message handler from imgui_impl_win32.cpp
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-namespace Editor {
-
+namespace Editor
+{
 	std::string currentLevelName = defaultLevelName;
 	bool levelModified = false;
 	bool templatesModified = false;
@@ -100,6 +103,7 @@ namespace Editor {
 	CreatorModal<SceneObjectType> sceneObjectModal;
 	CreatorModal<TemplateType> templateModal;
 	DeletePrompt deletePrompt;
+	AnimationSequencerModal animationSequencer;
 
 	//SceneObject selection
 	std::map<std::string, std::shared_ptr<SceneObject>> selectedSceneObjectsMap;
@@ -335,6 +339,16 @@ namespace Editor {
 			templateModal.DrawCreationPopup(TemplateTypePanelMenuItems.at(templateModal.type));
 		if (deletePrompt.showing)
 			deletePrompt.DrawPrompt("Delete Template");
+		if (animationSequencer.showing)
+		{
+
+			static const float seqAdj = 8.0f;
+
+			const ImGuiViewport* viewport = ImGui::GetMainViewport();
+			ImVec2 seqPos = ImVec2(viewport->WorkSize.x / seqAdj, viewport->WorkSize.y / seqAdj);
+			ImVec2 seqSize = ImVec2(viewport->WorkSize.x * (1.0f - (2.0f / seqAdj)), viewport->WorkSize.y * (1.0f - (2.0f / seqAdj)));
+			animationSequencer.DrawSequencer("Animation Sequencer", seqPos, seqSize);
+		}
 
 		// Rendering
 		ImGui::Render();
@@ -981,6 +995,41 @@ namespace Editor {
 		j->DestroyEditorPreview();
 	}
 
+	//Model3D Animation Sequencer
+	void OpenAnimationSequencer(std::string uuid)
+	{
+		animationSequencer.Initialize(uuid);
+	}
+
+	bool PendingAnimationSequencer()
+	{
+		return animationSequencer.initializing;
+	}
+
+	bool PendingAnimationSequencerDestruction()
+	{
+		return animationSequencer.destroying;
+	}
+
+	void LoadAnimationSequencer()
+	{
+		animationSequencer.LoadSceneObjects();
+		animationSequencer.initializing = false;
+	}
+
+	void StepAnimationSequencer()
+	{
+		if (!animationSequencer.showing || animationSequencer.initializing || animationSequencer.destroying) return;
+
+		animationSequencer.Step();
+	}
+
+	void DestroyAnimationSequencer()
+	{
+		animationSequencer.DestroySceneObjects();
+		animationSequencer.destroying = false;
+	}
+
 	//Gizmos
 	void ResetGizmoVariableWorkers()
 	{
@@ -1384,7 +1433,7 @@ namespace Editor {
 
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera)
 	{
-		if (sceneObjectModal.creating || templateModal.creating || deletePrompt.showing) return;
+		if (sceneObjectModal.creating || templateModal.creating || deletePrompt.showing || animationSequencer.showing) return;
 
 		DirectX::Mouse::State state = mouse->GetState();
 

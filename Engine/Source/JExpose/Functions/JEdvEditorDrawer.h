@@ -4935,3 +4935,19 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 			}
 		};
 }
+
+template <>
+inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_animator_sequencer>()
+{
+	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+		{
+			if (json.size() > 1ULL) return;
+
+			ImGui::Text("open sequencer");
+			ImGui::SameLine();
+			if (ImGui::Button(ICON_FA_RUNNING))
+			{
+				Editor::OpenAnimationSequencer(json.at(0)->at("uuid"));
+			}
+		};
+}

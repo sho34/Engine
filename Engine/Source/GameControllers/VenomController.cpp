@@ -60,6 +60,7 @@ namespace Game
 				{ VS_Walking, [this]() { venom->SetCurrentAnimation("Walk_Fwd_C",0.0f,1.0f,true,true); }},
 				{ VS_Running, [this]() { venom->SetCurrentAnimation("Run_Fwd_C",0.0f,1.0f,true,true); }},
 				{ VS_Jumping, [this]() { venom->SetCurrentAnimation("Jump_Start_F_C",0.0f,1.0f,true,false); }},
+				{ VS_Attack_1,[this]() { EnterAttack1(); }}
 				//{ VS_Jumping, [this]() { venom->SetCurrentAnimation(std::vector<std::string>({"Jump_Start_F_C","Jump_Falling_F_C","Jump_Land_F_C"}),0.0f,0.05f,true,false); }}
 			},
 			.onStep = {
@@ -67,7 +68,8 @@ namespace Game
 				{ VS_Idle, [this]() { Idle(); }},
 				{ VS_Walking, [this]() { Walking(); }},
 				{ VS_Running, [this]() { Running(); }},
-				{ VS_Jumping, [this]() { Jumping(); }}
+				{ VS_Jumping, [this]() { Jumping(); }},
+				{ VS_Attack_1, [this]() { Attacking1(); }}
 			}
 		};
 	}
@@ -115,10 +117,7 @@ namespace Game
 
 	bool VenomController::Jump()
 	{
-		auto pad = gamePad->GetState(0);
-		if (!pad.IsConnected()) return false;
-
-		if (pad.IsAPressed())
+		if (buttons.a == GamePad::ButtonStateTracker::PRESSED)
 		{
 			vsm.ChangeState(VS_Jumping);
 			venom->StepAnimation(0.0f);
@@ -127,8 +126,34 @@ namespace Game
 		return false;
 	}
 
+	void VenomController::Attack1()
+	{
+		if (buttons.x == GamePad::ButtonStateTracker::PRESSED)
+		{
+			vsm.ChangeState(VS_Attack_1);
+			venom->StepAnimation(0.0f);
+		}
+	}
+
+	void VenomController::EnterAttack1()
+	{
+		auto& animControl = Attack1Animations.at(currentAttack1Animation);
+		venom->SetCurrentAnimation(animControl.animation, 0.0f, animControl.speed, true, false);
+		currentAttack1Animation = (currentAttack1Animation + 1) % Attack1Animations.size();
+
+	}
+
 	void VenomController::Step(float delta)
 	{
+		auto state = gamePad->GetState(0);
+		if (state.IsConnected())
+		{
+			buttons.Update(state);
+		}
+		else
+		{
+			buttons.Reset();
+		}
 		vsm.Step();
 		venom->StepAnimation(timer.GetElapsedSeconds());
 		XMFLOAT3 vpos = venom->position();
@@ -154,6 +179,7 @@ namespace Game
 		else
 		{
 			Jump();
+			Attack1();
 		}
 	}
 
@@ -177,6 +203,7 @@ namespace Game
 		else
 		{
 			Jump();
+			Attack1();
 		}
 	}
 
@@ -200,6 +227,7 @@ namespace Game
 		else
 		{
 			Jump();
+			Attack1();
 		}
 	}
 
@@ -212,6 +240,45 @@ namespace Game
 		SetRotation(stick);
 
 		bool animEnded = venom->AnimationEnded();
+
+		if (l > runThreshold)
+		{
+			MoveForward(runSpeed);
+			if (animEnded)
+			{
+				vsm.ChangeState(VS_Running);
+				venom->StepAnimation(0.0f);
+			}
+		}
+		else if (l > walkThreshold)
+		{
+			MoveForward(walkSpeed);
+			if (animEnded)
+			{
+				vsm.ChangeState(VS_Walking);
+				venom->StepAnimation(0.0f);
+			}
+		}
+		else if (animEnded)
+		{
+			if (!Jump())
+			{
+				vsm.ChangeState(VS_Idle);
+				venom->StepAnimation(0.0f);
+			}
+		}
+	}
+
+	void VenomController::Attacking1()
+	{
+		bool animEnded = venom->AnimationEnded();
+		if (!animEnded) return;
+
+		XMVECTOR stick = GetLeftStickVector();
+		XMVECTOR len = XMVector3Length(stick);
+		float l = len.m128_f32[0];
+
+		SetRotation(stick);
 
 		if (l > runThreshold)
 		{

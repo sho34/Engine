@@ -52,7 +52,7 @@ namespace Scene::CameraProjections {
 		p.farZ = static_cast<float>(j.at("farZ"));
 		p.fovAngleY = static_cast<float>(j.at("fovAngleY"));
 		if (j.contains("width")) p.width = static_cast<float>(j.at("width"));
-		if (j.contains("height")) p.width = static_cast<float>(j.at("height"));
+		if (j.contains("height")) p.height = static_cast<float>(j.at("height"));
 		return p;
 	}
 

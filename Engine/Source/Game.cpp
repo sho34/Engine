@@ -288,9 +288,9 @@ void EditorModeCreate()
 		{
 			using namespace Scene::Level;
 
-			//LoadDefaultLevel();
+			LoadDefaultLevel();
 			//LoadLevel("bootscreen");
-			LoadLevel("venom");
+			//LoadLevel("venom");
 			BindSceneObjects();
 		}
 	);
@@ -321,6 +321,8 @@ void EditorModeStep()
 	{
 		GameAreaMouseProcessing(mouse, GetMouseCameras().at(0));
 	}
+
+	StepAnimationSequencer();
 
 	Game::StepControllers(static_cast<float>(timer.GetElapsedSeconds() / 1000.0f));
 }
@@ -395,7 +397,13 @@ void EditorModeRender()
 
 void EditorModePostRender()
 {
-	bool criticalFrame = (!PickingPassExists() || !RenderableBoundingBoxExists()) && GetNumSwapChainCameras() > 0ULL || Editor::PendingBillboards() || Editor::PendingBillboardsDestruction();
+	bool criticalFrame = (
+		!PickingPassExists() ||
+		!RenderableBoundingBoxExists()) && GetNumSwapChainCameras() > 0ULL ||
+		PendingBillboards() ||
+		PendingBillboardsDestruction() ||
+		PendingAnimationSequencer() ||
+		PendingAnimationSequencerDestruction();
 
 	if (criticalFrame)
 	{
@@ -416,11 +424,17 @@ void EditorModePostRender()
 					CreateRenderableBoundingBox(GetMouseCameras().at(0));
 				}
 
-				if (Editor::PendingBillboards())
-					Editor::CreateRegisteredBillboards();
+				if (PendingBillboards())
+					CreateRegisteredBillboards();
 
-				if (Editor::PendingBillboardsDestruction())
-					Editor::DestroyPendingBillboards();
+				if (PendingBillboardsDestruction())
+					DestroyPendingBillboards();
+
+				if (PendingAnimationSequencer())
+					LoadAnimationSequencer();
+
+				if (PendingAnimationSequencerDestruction())
+					DestroyAnimationSequencer();
 			}
 		);
 	}

@@ -192,8 +192,6 @@ namespace Scene {
 		void SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
 
 #if defined(_EDITOR)
-		void FillRenderableBoundingBox(std::shared_ptr<Renderable>& bbox);
-
 		unsigned int previewRenderPassIndex = 0U;
 		unsigned int previewRenderToTextureIndex = 0U;
 		virtual void EditorPreview(size_t flags);
