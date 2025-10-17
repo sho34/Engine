@@ -329,6 +329,7 @@ namespace Editor
 		}
 
 		DrawApplicationBar();
+		DrawGameController();
 		DrawRightPanel();
 		if (camera)
 			DrawPickedObjectsGizmo(camera);
@@ -572,9 +573,62 @@ namespace Editor
 		}
 	}
 
+	static ImVec2 gameControllerSize(200, 18);
+	RECT GetGameControllerRect()
+	{
+		const ImGuiViewport* viewport = ImGui::GetMainViewport();
+		ImVec2 panPos = ImVec2(viewport->WorkSize.x - panW, viewport->WorkPos.y);
+
+		RECT r;
+		r.left = static_cast<LONG>((panPos.x - gameControllerSize.x) * 0.5f);
+		r.right = r.left + static_cast<LONG>(gameControllerSize.x);
+		r.top = static_cast<LONG>(panPos.y);
+		r.bottom = r.top + static_cast<LONG>(gameControllerSize.y);
+		return r;
+	}
+
 	void DrawGameController()
 	{
+		RECT r = GetGameControllerRect();
+		ImVec2 controllerPos(static_cast<float>(r.left), static_cast<float>(r.top));
+		ImVec2 controllerSize(static_cast<float>(r.right - r.left), static_cast<float>(r.bottom - r.top));
 
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, controllerSize);
+		ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_Border, 0);
+		ImGui::SetNextWindowPos(controllerPos, ImGuiCond_Always);
+		ImGui::SetNextWindowSize(controllerSize, ImGuiCond_Always);
+		ImGui::Begin(
+			"gamecontroller",
+			(bool*)1,
+			ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+			ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+			ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings
+		);
+		{
+			float play_width = ImGui::CalcTextSize(ICON_FA_PLAY).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+			float stop_width = ImGui::CalcTextSize(ICON_FA_STOP).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+			float buttons_width = play_width + stop_width;
+			float cursorX = 0.5f * (controllerSize.x - buttons_width);
+			ImGui::SetCursorPosX(cursorX);
+			if (ImGui::Button(ICON_FA_PLAY))
+			{
+
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(ICON_FA_STOP))
+			{
+
+			}
+		}
+		ImGui::End();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
 	}
 
 	void OpenLevelFile()
@@ -1419,6 +1473,11 @@ namespace Editor
 	//Mouse Processing
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse)
 	{
+		auto coordsInArea = [](int x, int y, RECT area)
+			{
+				return (x > area.left && x<area.right && y > area.top && y < area.bottom);
+			};
+
 		const ImGuiViewport* viewport = ImGui::GetMainViewport();
 
 		RECT gameArea;
@@ -1428,7 +1487,10 @@ namespace Editor
 		gameArea.right = static_cast<LONG>(viewport->Size.x - panW);
 		int x = mouse->GetState().x;
 		int y = mouse->GetState().y;
-		return (x > gameArea.left && x<gameArea.right && y > gameArea.top && y < gameArea.bottom);
+
+		RECT controllersArea = GetGameControllerRect();
+
+		return coordsInArea(x, y, gameArea) && !coordsInArea(x, y, controllersArea);
 	}
 
 	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera)

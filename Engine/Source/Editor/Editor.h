@@ -41,6 +41,7 @@ namespace Editor {
 	void DrawEditor(std::shared_ptr<Camera> camera);
 	void DrawApplicationBar();
 	void HandleApplicationDragTitleBar(RECT& dragRect);
+	RECT GetGameControllerRect();
 	void DrawGameController();
 	void OpenLevelFile();
 	void SaveLevelAs();
