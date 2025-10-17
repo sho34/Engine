@@ -109,6 +109,10 @@ namespace Editor
 	std::map<std::string, std::shared_ptr<SceneObject>> selectedSceneObjectsMap;
 	std::set<std::shared_ptr<SceneObject>> selectedSceneObjects;
 
+	//Game Interaction
+	bool isPlaying = false;
+	bool isPaused = false;
+
 	//Editor LifeCycle
 	void InitEditor()
 	{
@@ -613,15 +617,30 @@ namespace Editor
 			float buttons_width = play_width + stop_width;
 			float cursorX = 0.5f * (controllerSize.x - buttons_width);
 			ImGui::SetCursorPosX(cursorX);
-			if (ImGui::Button(ICON_FA_PLAY))
+			if (!IsPaused())
 			{
-
+				if (ImGui::Button(ICON_FA_PLAY))
+				{
+					SwitchToPlayMode();
+				}
+			}
+			else
+			{
+				if (ImGui::Button(ICON_FA_PAUSE))
+				{
+					SwitchToPauseMode();
+				}
 			}
 			ImGui::SameLine();
-			if (ImGui::Button(ICON_FA_STOP))
-			{
-
-			}
+			ImGui::DrawItemWithEnabledState([]
+				{
+					if (ImGui::Button(ICON_FA_STOP))
+					{
+						SwitchToNonPlayMode();
+					}
+				},
+				IsPlaying()
+			);
 		}
 		ImGui::End();
 		ImGui::PopStyleColor();
@@ -1921,6 +1940,32 @@ namespace Editor
 			SafeDeleteSceneObject(it->second);
 			it = billboardRegistry.erase(it);
 		}
+	}
+
+	bool IsPlaying()
+	{
+		return isPlaying;
+	}
+
+	bool IsPaused()
+	{
+		return isPaused;
+	}
+
+	void SwitchToPlayMode()
+	{
+		isPlaying = true;
+	}
+
+	void SwitchToPauseMode()
+	{
+		isPaused = true;
+	}
+
+	void SwitchToNonPlayMode()
+	{
+		isPlaying = false;
+		isPaused = false;
 	}
 };
 

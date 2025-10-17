@@ -51,7 +51,7 @@ namespace ExImSequencer
 		return overDel;
 	}
 
-	bool Sequencer(SequenceInterface* sequence, int* currentFrame, bool* expanded, int* selectedEntry, int* firstFrame, int sequenceOptions)
+	bool Sequencer(SequenceInterface* sequence, int* currentFrame, std::function<void(int frame)> onMoveCurrentFrame, bool* expanded, int* selectedEntry, int* firstFrame, int sequenceOptions)
 	{
 		bool ret = false;
 		ImGuiIO& io = ImGui::GetIO();
@@ -185,6 +185,7 @@ namespace ExImSequencer
 						*currentFrame = sequence->GetFrameMin();
 					if (*currentFrame >= sequence->GetFrameMax())
 						*currentFrame = sequence->GetFrameMax();
+					onMoveCurrentFrame(*currentFrame);
 				}
 				if (!io.MouseDown[0])
 					MovingCurrentFrame = false;

@@ -20,6 +20,7 @@ void AnimationSequencerModal::Initialize(std::string uuid)
 	showing = true;
 	initializing = true;
 	model3dUUID = uuid;
+	currentFrame = 0;
 	model3D = GetModel3DTemplate(uuid);
 	animationsSequences = model3D->animationSequences();
 }
@@ -216,7 +217,7 @@ void AnimationSequencerModal::DrawSequencer(const char* title, ImVec2 pos, ImVec
 		static int selectedEntry = -1;
 		static int firstFrame = 0;
 		static bool expanded = true;
-		static int currentFrame = 100;
+		//static int currentFrame = 100;
 		if (!selectedSequence.empty())
 		{
 			DrawSequencer(sequencerPos, sequencerSize, currentFrame, expanded, selectedEntry, firstFrame);
@@ -419,6 +420,11 @@ void AnimationSequencerModal::DrawTimelineController(ImVec2 curPos, ImVec2 size)
 	ImGui::SameLine();
 	ImGui::SetNextItemWidth(animationWidth);
 	ImGui::Text(std::string(std::string("animation:") + std::string((renderable->animation() != "") ? renderable->animation() : "#none")).c_str());
+
+	if (renderable->animationPlay() && renderable->animationTimeFactor() > 0.0f)
+	{
+		currentFrame = renderable->GetCurrentAnimationFrame();
+	}
 }
 
 void AnimationSequencerModal::DrawSequencer(ImVec2 curPos, ImVec2 size, int& currentFrame, bool& expanded, int& selectedEntry, int& firstFrame)
@@ -432,7 +438,7 @@ void AnimationSequencerModal::DrawSequencer(ImVec2 curPos, ImVec2 size, int& cur
 	ImGui::SetNextWindowPos(curPos, 0);
 	ImGui::BeginChild("sequencer", size, 0);
 	{
-		ExImSequencer::Sequencer(this, &currentFrame, &expanded, &selectedEntry, &firstFrame, ExImSequencer::SEQUENCER_EDIT_STARTEND | ExImSequencer::SEQUENCER_ADD | ExImSequencer::SEQUENCER_DEL | ExImSequencer::SEQUENCER_COPYPASTE | ExImSequencer::SEQUENCER_CHANGE_FRAME);
+		ExImSequencer::Sequencer(this, &currentFrame, [&](int frame) { OnCurrentFrameChanged(frame); }, &expanded, &selectedEntry, &firstFrame, ExImSequencer::SEQUENCER_EDIT_STARTEND | ExImSequencer::SEQUENCER_ADD | ExImSequencer::SEQUENCER_DEL | ExImSequencer::SEQUENCER_COPYPASTE | ExImSequencer::SEQUENCER_CHANGE_FRAME);
 	}
 	ImGui::EndChild();
 
@@ -539,6 +545,11 @@ void AnimationSequencerModal::DrawAddNewSequencePopup(ImVec2 curPos, ImVec2 size
 	}
 	ImGui::PopStyleVar();
 	ImGui::PopStyleVar();
+}
+
+void AnimationSequencerModal::OnCurrentFrameChanged(int frame)
+{
+	renderable->SetCurrentAnimationFrame(frame);
 }
 
 int AnimationSequencerModal::GetFrameMin() const

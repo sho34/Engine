@@ -926,6 +926,12 @@ namespace Scene
 		return currentSequence->totalFrames;
 	}
 
+	void Renderable::SetCurrentAnimationFrame(int frame)
+	{
+		float time = 1000.0f * static_cast<float>(frame) / static_cast<float>(currentSequence->framesPerSecond);
+		animationTime(time);
+	}
+
 	bool Renderable::AnimationEnded()
 	{
 		if (!animationPlay()) return false;

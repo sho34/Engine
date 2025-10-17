@@ -26,6 +26,7 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 
 struct ImDrawList;
 struct ImRect;
@@ -71,6 +72,6 @@ namespace ExImSequencer
 
 
 	// return true if selection is made
-	bool Sequencer(SequenceInterface* sequence, int* currentFrame, bool* expanded, int* selectedEntry, int* firstFrame, int sequenceOptions);
+	bool Sequencer(SequenceInterface* sequence, int* currentFrame, std::function<void(int frame)> onMoveCurrentFrame, bool* expanded, int* selectedEntry, int* firstFrame, int sequenceOptions);
 
 }

@@ -204,6 +204,7 @@ namespace Scene
 		void StepAnimation(double elapsedSeconds);
 		int GetCurrentAnimationFrame();
 		int GetCurrentAnimationNumFrames() const;
+		void SetCurrentAnimationFrame(int frame);
 		bool AnimationEnded();
 
 		//DESTROY

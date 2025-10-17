@@ -121,6 +121,8 @@ struct AnimationSequencerModal : public ExImSequencer::SequenceInterface
 	bool addNewSequence;
 	std::string newSequenceName;
 
+	int currentFrame = 0;
+
 	void Initialize(std::string uuid);
 	void LoadSceneObjects();
 	void DestroySceneObjects();
@@ -132,6 +134,9 @@ struct AnimationSequencerModal : public ExImSequencer::SequenceInterface
 	void DrawSequencer(ImVec2 curPos, ImVec2 size, int& currentFrame, bool& expanded, int& selectedEntry, int& firstFrame);
 	void DrawSaveAndExitButtons(ImVec2 curPos, ImVec2 size);
 	void DrawAddNewSequencePopup(ImVec2 pos, ImVec2 size);
+
+	//callbacks from ImSequencer
+	void OnCurrentFrameChanged(int frame);
 
 	// interface with sequencer
 

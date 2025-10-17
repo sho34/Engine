@@ -133,4 +133,11 @@ namespace Editor {
 	bool PendingBillboardsDestruction();
 	void DestroyPendingBillboards();
 	void DestroyBillboards();
+
+	//Game Mode Activation
+	bool IsPlaying();
+	bool IsPaused();
+	void SwitchToPlayMode();
+	void SwitchToPauseMode();
+	void SwitchToNonPlayMode();
 }
