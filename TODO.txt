@@ -4,6 +4,9 @@ BUGS:
 -si parto modo juego y maximizo durante la carga, no se reajusta
 
 TODO:
+-Hacer que las luces esten atachadas a una camara
+	-si no tienen attachment pasar a todas las camaras
+	-si tienen attachment solo filtrar por la camara que se va a hacer rendering
 -Editor
 	-Agegar Modo PlayInEditor
 	-Quitar una textura de un material no funciona
@@ -19,6 +22,9 @@ TODO:
 NICE TO HAVE:
 
 DONE:
+-Editor
+	-Agregar secuenciador de animaciones
+		-que permita modificar escalar las animaciones
 -Revivir GameMode(No Editor)
 	-splash screen
 	-barra de carga

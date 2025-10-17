@@ -298,7 +298,14 @@ namespace Scene
 		if (animable)
 		{
 			AttachAnimation(this_ptr, model3D->animations);
-			StepAnimation(0.0f);
+			if (!animation().empty() && animationPlay())
+			{
+				SetCurrentAnimation(animation(), 0.0f, animationTimeFactor(), animationPlay(), animationLoop());
+			}
+			else
+			{
+				StepAnimation(0.0f); //take an empty T-Pose step so the skinning can be performed
+			}
 			boundingBoxCompute = std::make_shared<RenderableBoundingBox>(this_ptr);
 		}
 #if defined(_EDITOR)
@@ -845,18 +852,9 @@ namespace Scene
 
 	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop)
 	{
-		//SetCurrentAnimation(std::vector({ anim }), startTime, timeFactor, play, loop);
-	}
-
-	void Renderable::SetCurrentAnimation(std::vector<std::string> anims, float startTime, float timeFactor, bool play, bool loop)
-	{
-		//animations = anims;
-		//animationIndex = 0;
-		//animation(animations.at(animationIndex));
-		//animationTime(startTime);
-		//animationTimeFactor(timeFactor);
-		//animationPlay(play);
-		//animationLoop(loop);
+		auto it = animationsSequences.sequences.find(anim);
+		if (it == animationsSequences.sequences.end()) return;
+		SetCurrentAnimation(&(it->second), startTime, timeFactor, play, loop);
 	}
 
 	void Renderable::StepAnimation(double elapsedSeconds)
@@ -918,15 +916,22 @@ namespace Scene
 		TraverseMultiplycationQueue(time, last.animation, animable->animations, bonesTransformation);
 	}
 
+	int Renderable::GetCurrentAnimationFrame()
+	{
+		return static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * animationTime() / 1000.0f);
+	}
+
+	int Renderable::GetCurrentAnimationNumFrames() const
+	{
+		return currentSequence->totalFrames;
+	}
+
 	bool Renderable::AnimationEnded()
 	{
-		return true;
-		//if (!animationPlay()) return false;
-		//if (animationLoop()) return false;
-		//if (animationIndex < (animations.size() - 1)) return false;
-		//float animationLength = animable->animations->animationsLength[animation()];
-		//float currentAnimationTime = animationTime();
-		//return (currentAnimationTime >= animationLength);
+		if (!animationPlay()) return false;
+		if (animationLoop()) return false;
+		if (!currentSequence) return false;
+		return (GetCurrentAnimationNumFrames() - GetCurrentAnimationFrame()) <= 1;
 	}
 
 	//DESTROY

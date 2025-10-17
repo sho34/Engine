@@ -201,8 +201,9 @@ namespace Scene
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
 		void SetCurrentAnimation(Sequence* sequence, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
-		void SetCurrentAnimation(std::vector<std::string> anims, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void StepAnimation(double elapsedSeconds);
+		int GetCurrentAnimationFrame();
+		int GetCurrentAnimationNumFrames() const;
 		bool AnimationEnded();
 
 		//DESTROY
