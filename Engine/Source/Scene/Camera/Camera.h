@@ -188,6 +188,15 @@ namespace Scene {
 #endif
 	};
 
+	void CreateLightsResources();
+	ConstantsBufferUUID GetLightsConstantsBuffer();
+
+	void DestroyLightsResources();
+
+	void WriteConstantsBufferNumLights(unsigned int backbufferIndex, unsigned int numLights);
+	void WriteConstantsBufferLightAttributes(LightUUID light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex = 0U);
+	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex);
+
 	SODECL_FULL(Camera);
 
 #include <TrackUUID/JDecl.h>

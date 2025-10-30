@@ -52,13 +52,7 @@ namespace Scene
 
 	using namespace DeviceUtils;
 
-	static ConstantsBufferUUID lightsCbv; //CBV for lights pool
-
 	//CREATE
-	void CreateLightsResources() {
-		lightsCbv = CreateConstantsBuffer(sizeof(LightPool), "lightsCbv");
-	}
-
 	void DestroyLights()
 	{
 		auto uuids = nostd::GetUUIDS(LightsceneObjects);
@@ -153,9 +147,7 @@ namespace Scene
 	}
 
 	//READ&GET
-	ConstantsBufferUUID GetLightsConstantsBuffer() {
-		return lightsCbv;
-	}
+
 
 	//UPDATE
 	void LightsStep()
@@ -309,74 +301,7 @@ namespace Scene
 #endif
 	}
 
-	void WriteConstantsBufferNumLights(unsigned int backbufferIndex, unsigned int numLights)
-	{
-		size_t offset = lightsCbv->alignedConstantBufferSize * backbufferIndex;
-		LightPool* lpool = (LightPool*)(lightsCbv->mappedConstantBuffer + offset);
-		lpool->numLights.D[0] = numLights;
-	}
-
-	void WriteConstantsBufferLightAttributes(LightUUID light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex)
-	{
-		LightAttributes atts{};
-		ZeroMemory(&atts, sizeof(atts));
-		atts.lightType = light->lightType();
-
-		switch (light->lightType())
-		{
-		case LT_Ambient:
-		{
-			atts.lightColor = light->color() * light->brightness();
-		}
-		break;
-		case LT_Directional:
-		{
-			atts.lightColor = light->color() * light->brightness();
-			XMVECTOR lightDir = light->fw();
-			atts.atts1 = *((XMFLOAT4*)&lightDir.m128_f32[0]);
-			atts.hasShadowMap = light->hasShadowMaps();
-			atts.shadowMapIndex = light->shadowMapIndex;
-		}
-		break;
-		case LT_Spot:
-		{
-			XMFLOAT3 pos = light->position();
-			XMFLOAT3 atte = light->attenuation();
-			atts.lightColor = light->color() * light->brightness();
-			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
-			XMVECTOR lightDir = light->fw();
-			atts.atts2 = *((XMFLOAT4*)&lightDir.m128_f32[0]);
-			atts.atts2.w = cosf(XMConvertToRadians(light->coneAngle()));
-			atts.atts3 = { atte.x, atte.y, atte.z };
-			atts.hasShadowMap = light->hasShadowMaps();
-			atts.shadowMapIndex = light->shadowMapIndex;
-		}
-		break;
-		case LT_Point:
-		{
-			XMFLOAT3 pos = light->position();
-			XMFLOAT3 atte = light->attenuation();
-			atts.lightColor = light->color() * light->brightness();
-			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
-			atts.atts2 = { atte.x, atte.y, atte.z, 0.0f };
-			atts.hasShadowMap = light->hasShadowMaps();
-			atts.shadowMapIndex = light->shadowMapIndex;
-		}
-		break;
-		}
-
-		size_t offset = lightsCbv->alignedConstantBufferSize * backbufferIndex;
-		offset += sizeof(LightPool::numLights);
-		offset += sizeof(atts) * lightIndex;
-		memcpy(lightsCbv->mappedConstantBuffer + offset, &atts, sizeof(atts));
-	}
-
 	//DESTROY
-	void DestroyLightsResources()
-	{
-		DestroyConstantsBuffer(lightsCbv());
-	}
-
 	void DeleteLight(JUUID uuid)
 	{
 		LightUUID  l = uuid;
@@ -385,14 +310,6 @@ namespace Scene
 #endif
 		l->markedForDelete = true;
 	}
-
-	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex)
-	{
-		size_t offset = lightsCbv->alignedConstantBufferSize * backbufferIndex;
-		LightPool* lpool = (LightPool*)(lightsCbv->mappedConstantBuffer + offset);
-		ZeroMemory(lpool, sizeof(LightPool));
-	}
-
 
 	//EDITOR
 #if defined(_EDITOR)

@@ -246,20 +246,12 @@ namespace Scene {
 #include <JEnd.h>
 
 	//CREATE
-	void CreateLightsResources();
 
 	//READ&GET
-	ConstantsBufferUUID GetLightsConstantsBuffer();
-
 	void LightsStep();
-	void WriteConstantsBufferNumLights(unsigned int backbufferIndex, unsigned int numLights);
-	void WriteConstantsBufferLightAttributes(LightUUID light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex = 0U);
 
 	//DELETE
-	void DestroyLightsResources();
-
 	void DeleteLight(JUUID uuid);
-	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex);
 	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex);
 
 	//EDITOR

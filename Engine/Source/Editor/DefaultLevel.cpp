@@ -89,6 +89,7 @@ namespace Editor::DefaultLevel {
 				{ "uuid", "fa0f8e67-db28-411d-a042-de3a84f203f2" }
 			},
 			{
+				{ "cameras" , {"06de4a6c-0393-42b1-91ab-1d2389cb2cbc"} },
 				{ "color", { 1.0, 1.0, 1.0} },
 				{ "farZ" , 1000.0},
 				{ "nearZ", 0.009999999776482582},
@@ -96,7 +97,7 @@ namespace Editor::DefaultLevel {
 				{ "shadowMapWidth", 4096},
 				{ "viewHeight", 32.0},
 				{ "viewWidth", 32.0},
-				{ "hasShadowMaps", true},
+				{ "hasShadowMaps", false},
 				{ "rotation", {40.31087875366211, -0.30000039935112, 0.0} },
 				{ "lightType", "Directional"},
 				{ "name", "light.1.dir"},
