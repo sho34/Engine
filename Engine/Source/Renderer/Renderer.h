@@ -1,11 +1,9 @@
 #pragma once
 
-#include <RenderPass/RenderPass.h>
 #include <dxgi1_6.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
-using namespace Templates;
 
 struct Renderer : public std::enable_shared_from_this<Renderer>
 {
@@ -51,7 +49,7 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 	bool d32FSupported;
 
 	//the swap chain pass
-	std::shared_ptr<RenderPassInstance> swapChainPass;
+	RenderPassInstanceUUID swapChainPass;
 
 	//CREATE
 	void Initialize(HWND hwnd);
@@ -66,7 +64,7 @@ struct Renderer : public std::enable_shared_from_this<Renderer>
 	void ResetCommands() const;
 	void SetCSUDescriptorHeap() const;
 	void CloseCommandsAndFlush();
-	void RenderCriticalFrame(std::function<void()> callback = []() {});
+	void RenderCriticalFrame(std::function<void()> callback = []() {}, bool flush = true);
 	void ExecuteCommands() const;
 	void Present();
 	void Flush();

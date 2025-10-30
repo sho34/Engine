@@ -5,7 +5,7 @@
 #include <DeviceUtils/RootSignature/RootSignature.h>
 #include <DeviceUtils/PipelineState/PipelineState.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 namespace ComputeShader
 {
@@ -14,24 +14,24 @@ namespace ComputeShader
 		using namespace DeviceUtils;
 
 		//Get an instance of the BoundingBox Compute shader
-		std::string csShaderInstanceUUID = FindShaderUUIDByName(shaderName);
-		Source compCS = { .shaderType = COMPUTE_SHADER, .shaderTarget = target, .shaderUUID = csShaderInstanceUUID };
-		shader = GetShaderInstance(csShaderInstanceUUID, [csShaderInstanceUUID, compCS]
+		shader = GetShaderUUIDByName(shaderName);
+		Source compCS = { .shaderType = COMPUTE_SHADER, .shaderTarget = target, .shaderUUID = shader };
+		auto& shaderIns = CreateShaderInstance(shader, [compCS]
 			{
-				return std::make_shared<ShaderInstance>(compCS.shaderUUID, compCS.shaderUUID, compCS);
+				return std::make_unique<ShaderInstance>(compCS.shaderUUID, compCS.shaderUUID, compCS);
 			}
 		);
 
 		//Build the shader's root signature
-		auto& vsCBparams = shader->constantsBuffersParameters;
-		auto& psCBparams = shader->constantsBuffersParameters;
-		auto& uavParams = shader->uavParameters;
-		auto& psSRVCSparams = shader->srvCSParameters;
-		auto& psSRVTexparams = shader->srvTexParameters;
-		auto& psSamplersParams = shader->samplersParameters;
+		auto& vsCBparams = shaderIns->constantsBuffersParameters;
+		auto& psCBparams = shaderIns->constantsBuffersParameters;
+		auto& uavParams = shaderIns->uavParameters;
+		auto& psSRVCSparams = shaderIns->srvCSParameters;
+		auto& psSRVTexparams = shaderIns->srvTexParameters;
+		auto& psSamplersParams = shaderIns->samplersParameters;
 
 		rootSignature = CreateRootSignature(std::string("rootSignature:" + shaderName), vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
-		pipelineState = CreateComputePipelineState(std::string("pipelineState:" + shaderName), shader->byteCode, rootSignature);
+		pipelineState = CreateComputePipelineState(std::string("pipelineState:" + shaderName), shaderIns->byteCode, rootSignature);
 	}
 
 	void ComputeShader::SetComputeState()

@@ -3,25 +3,37 @@
 #include <Renderer.h>
 #include <StepTimer.h>
 #include <DeviceUtils/Resources/Resources.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
+#include <DeviceUtils/RenderToTexture/RenderToTexture.h>
+#include <RenderPass/RenderPass.h>
 #include <Camera/Camera.h>
 #include <HDR/LuminanceHistogram.h>
 #include <HDR/LuminanceHistogramAverage.h>
+#include <Mesh/Mesh.h>
+#if defined(_EDITOR)
+#include <Editor.h>
+#endif
 
-extern std::shared_ptr<Renderer> renderer;
 
-ToneMappingPass::ToneMappingPass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) : OverridePass(cam, rpI, rp)
+extern std::unique_ptr<Renderer> renderer;
+
+ToneMappingPass::ToneMappingPass(JUUID cam, unsigned int rpI, JUUID rp) : OverridePass(cam, rpI, rp)
 {
-	auto prevPassRTT = GetPrevPassRenderToTexture();
+	using namespace Scene;
 
-	hdrHistogram = std::make_shared<ComputeShader::LuminanceHistogram>(prevPassRTT);
-	hdrHistogram->UpdateLuminanceHistogramParams(prevPassRTT->width, prevPassRTT->height, cam->minLogLuminance(), cam->maxLogLuminance());
+	JUUID prevPassRTTUUID = GetPrevPassRenderToTexture();
+	auto& prevPassRTT = GetRenderToTexture(prevPassRTTUUID);
+	auto& camera = GetCameraSceneObject(cam);
 
-	luminanceHistogramAverage = std::make_shared<ComputeShader::LuminanceHistogramAverage>(hdrHistogram->resultCpuHandle, hdrHistogram->resultGpuHandle);
+	hdrHistogram = std::make_unique<ComputeShader::LuminanceHistogram>(prevPassRTTUUID);
+	hdrHistogram->UpdateLuminanceHistogramParams(prevPassRTT->width, prevPassRTT->height, camera->minLogLuminance(), camera->maxLogLuminance());
+
+	luminanceHistogramAverage = std::make_unique<ComputeShader::LuminanceHistogramAverage>(hdrHistogram->resultCpuHandle, hdrHistogram->resultGpuHandle);
 	luminanceHistogramAverage->UpdateLuminanceHistogramAverageParams(prevPassRTT->width * prevPassRTT->height,
-		cam->minLogLuminance(), cam->maxLogLuminance(), 0.016f, cam->tau()
+		camera->minLogLuminance(), camera->maxLogLuminance(), 0.016f, camera->tau()
 	);
 
-	CreateFsQuadResources("ToneMap", GetRenderPassTemplate(cam->renderPasses().at(rpI)));
+	CreateFsQuadResources("ToneMap", camera->renderPasses().at(rpI));
 }
 
 ToneMappingPass::~ToneMappingPass()
@@ -33,12 +45,20 @@ ToneMappingPass::~ToneMappingPass()
 extern DX::StepTimer timer;
 void ToneMappingPass::Pass()
 {
-	auto& cam = camera;
+	using namespace Scene;
+	auto& prevPassRTT = GetRenderToTexture(GetPrevPassRenderToTexture());
+	CameraUUID cam = camera;
+
+	float dt = static_cast<float>(timer.GetElapsedSeconds());
+#if defined(_EDITOR)
+	if (!Editor::IsPlaying() || Editor::IsPaused())
+		dt = 0.0f;
+#endif
 
 	//update the histogram and & luminance average parameters
 	hdrHistogram->UpdateLuminanceHistogramParams(prevPassRTT->width, prevPassRTT->height, cam->minLogLuminance(), cam->maxLogLuminance());
 	luminanceHistogramAverage->UpdateLuminanceHistogramAverageParams(prevPassRTT->width * prevPassRTT->height,
-		cam->minLogLuminance(), cam->maxLogLuminance(), static_cast<float>(timer.GetElapsedSeconds()), cam->tau());
+		cam->minLogLuminance(), cam->maxLogLuminance(), dt, cam->tau());
 
 	//run the compute shaders for hdr histogram & luminance average calculation
 	hdrHistogram->Compute();
@@ -53,7 +73,13 @@ void ToneMappingPass::Pass()
 
 void ToneMappingPass::Render()
 {
+	using namespace Scene;
+	using namespace DeviceUtils;
+
 	auto& commandList = renderer->commandList;
+	auto& prevPassRTT = GetRenderToTexture(GetPrevPassRenderToTexture());
+	auto& fsQuadMesh = GetMeshInstance(fsQuad);
+
 #if defined(_DEVELOPMENT)
 	PIXBeginEvent(commandList.p, 0, "ResolvePassQuad");
 #endif
@@ -69,13 +95,13 @@ void ToneMappingPass::Render()
 
 	//commandList->SetGraphicsRootDescriptorTable(0, fsQuadConstantsBuffer->gpu_xhandle.at(renderer->backBufferIndex));
 	unsigned int camSlot = 0U;
-	camera->cameraCbv->SetRootDescriptorTable(commandList, camSlot, renderer->backBufferIndex);
+	camera->cameraCb->SetRootDescriptorTable(commandList, camSlot, renderer->backBufferIndex);
 	commandList->SetGraphicsRootDescriptorTable(1, prevPassRTT->gpuTextureHandle);
 	commandList->SetGraphicsRootDescriptorTable(2, luminanceHistogramAverage->averageReadGpuHandle);
 
-	commandList->IASetVertexBuffers(0, 1, &fsQuad->vbvData.vertexBufferView);
-	commandList->IASetIndexBuffer(&fsQuad->ibvData.indexBufferView);
-	commandList->DrawIndexedInstanced(fsQuad->ibvData.indexBufferView.SizeInBytes / sizeof(unsigned int), 1, 0, 0, 0);
+	commandList->IASetVertexBuffers(0, 1, &fsQuadMesh->vbvData.vertexBufferView);
+	commandList->IASetIndexBuffer(&fsQuadMesh->ibvData.indexBufferView);
+	commandList->DrawIndexedInstanced(fsQuadMesh->ibvData.indexBufferView.SizeInBytes / sizeof(unsigned int), 1, 0, 0, 0);
 
 	DeviceUtils::TransitionResource(commandList, luminanceHistogramAverage->average,
 		D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_COMMON

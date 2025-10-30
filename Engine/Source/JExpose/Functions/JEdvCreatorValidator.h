@@ -13,8 +13,8 @@ JEdvCreatorValidatorFunction CreatorValidMap() { return[](std::string attribute,
 
 template<typename E, JsonToEditorValueType J>
 JEdvCreatorValidatorFunction CreatorValidEnum(
-	std::map<E, std::string>& EtoS,
-	std::map<std::string, E>& StoE
+	std::unordered_map<E, std::string>& EtoS,
+	std::unordered_map<std::string, E>& StoE
 ) {
 	return [&EtoS, &StoE](std::string attribute, nlohmann::json& json)
 		{

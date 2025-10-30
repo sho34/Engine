@@ -6,6 +6,12 @@
 #include <unordered_map>
 #include <map>
 #include <JTypes.h>
+#include <SceneObject.h>
+
+namespace Scene
+{
+	bool SceneObjectExists(JUUID uuid);
+}
 
 struct RightPanelComponent
 {
@@ -24,12 +30,43 @@ struct RightPanelComponent
 	std::unordered_map<std::string, JEdvEditorDrawerFunction> drawers;
 	std::map<std::string, std::any> assets;
 	std::map<std::string, std::string> assetsNames;
-	std::map<std::string, std::shared_ptr<JObject>> assetsJsons;
-	std::map<std::string, std::function<bool(std::shared_ptr<JObject>)>> assetsConditioner;
+	std::map<std::string, JObject*> assetsJsons;
+	std::map<std::string, std::function<bool(JObject*)>> assetsConditioner;
 
 	void Destroy();
 
 	void DrawAttributes();
+
+	void BuildAssetsTree(auto GetObjects, auto GetPanelObject, std::string ignorePrefix = "")
+	{
+		if (assets.empty() || dirtyAssetsTree)
+		{
+			assets.clear();
+			assetsNames.clear();
+			assetsJsons.clear();
+			for (JUUIDName uuidName : GetObjects())
+			{
+				std::string uuid = std::get<0>(uuidName);
+				std::string path = std::get<1>(uuidName);
+
+				if (!ignorePrefix.empty())
+				{
+					path = std::regex_replace(path, std::regex(ignorePrefix), "");
+				}
+
+				std::vector<std::string> splitParts = nostd::split(path, "/");
+				assetsNames.insert_or_assign(uuid, splitParts.back());
+				assetsJsons.insert_or_assign(uuid, GetPanelObject(uuid));
+
+				splitParts.pop_back();
+				splitParts.push_back(uuid);
+				std::tuple<std::string, std::vector<std::string>> uuidParts = std::make_tuple(uuid, splitParts);
+				BuildAssetsTree(assets, uuidParts);
+			}
+
+			dirtyAssetsTree = false;
+		}
+	}
 
 	void BuildAssetsTree(std::map<std::string, std::any>& assets, std::tuple<std::string, std::vector<std::string>>& uuidParts);
 
@@ -66,11 +103,13 @@ struct RightPanelComponent
 				return child.empty();
 			}
 		);
-		std::transform(leafs.begin(), leafs.end(), std::back_inserter(orderedLeafs), [](auto& pair) { return pair.first; });
+
+		std::transform(leafs.begin(), leafs.end(), std::back_inserter(orderedLeafs), [this](auto& pair) { return pair.first; });
+
 		std::sort(orderedLeafs.begin(), orderedLeafs.end(), [this](std::string uuidA, std::string uuidB)
 			{
-				std::shared_ptr<JObject> assetA = assetsJsons.at(uuidA);
-				std::shared_ptr<JObject> assetB = assetsJsons.at(uuidB);
+				JObject* assetA = assetsJsons.at(uuidA);
+				JObject* assetB = assetsJsons.at(uuidB);
 				return assetA->at("name") < assetB->at("name");
 			}
 		);
@@ -82,7 +121,7 @@ struct RightPanelComponent
 				ImGui::PushID((std::string("select-") + uuid).c_str());
 				{
 					bool checked = selected.contains(uuid);
-					std::shared_ptr<JObject> asset = assetsJsons.at(uuid);
+					JObject* asset = assetsJsons.at(uuid);
 					bool enabled = true;
 					for (auto& [_, cond] : assetsConditioner)
 					{
@@ -141,31 +180,6 @@ struct RightPanelComponent
 
 	void DrawAssetsTree(auto GetObjects, auto GetPanelObject, auto OnSelect, auto OnOpen, auto OnDelete, std::string ignorePrefix)
 	{
-		if (assets.empty() || dirtyAssetsTree)
-		{
-			assets.clear();
-			assetsNames.clear();
-			for (UUIDName uuidName : GetObjects())
-			{
-				std::string uuid = std::get<0>(uuidName);
-				std::string path = std::get<1>(uuidName);
-
-				if (!ignorePrefix.empty())
-				{
-					path = std::regex_replace(path, std::regex(ignorePrefix), "");
-				}
-
-				std::vector<std::string> splitParts = nostd::split(path, "/");
-				assetsNames.insert_or_assign(uuid, splitParts.back());
-				assetsJsons.insert_or_assign(uuid, GetPanelObject(uuid));
-				splitParts.pop_back();
-				splitParts.push_back(uuid);
-				std::tuple<std::string, std::vector<std::string>> uuidParts = std::make_tuple(uuid, splitParts);
-				BuildAssetsTree(assets, uuidParts);
-			}
-			dirtyAssetsTree = false;
-		}
-
 		DrawAssetTreeNodes(assets, "", OnSelect, OnOpen, OnDelete);
 	}
 
@@ -183,6 +197,9 @@ struct RightPanelComponent
 		auto OnDelete
 	)
 	{
+		if (assets.empty() || dirtyAssetsTree)
+			return;
+
 		ImGui::BeginChild((panelName + "panel").c_str(), size, ImGuiChildFlags_None);
 		{
 			DrawTabs(OnChangeTab);
@@ -250,7 +267,7 @@ struct RightPanelComponent
 		{
 			//at the same time gather the types of the objects, this will be used later for sorting purposes
 			objectTypes.insert(GetTypes(uuid));
-			std::shared_ptr<JObject> so = GetJson(uuid);
+			JObject* so = GetJson(uuid);
 			for (auto it = so->begin(); it != so->end(); it++)
 			{
 				attributesMatch[it.key()]++;

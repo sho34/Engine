@@ -55,76 +55,6 @@ namespace DX
 	{
 	}
 #endif
-
-	inline void MatrixDump(DirectX::XMMATRIX& wvp)
-	{
-		std::string row1 = "[" +
-			std::to_string(wvp.r[0].m128_f32[0]) + "," +
-			std::to_string(wvp.r[0].m128_f32[1]) + "," +
-			std::to_string(wvp.r[0].m128_f32[2]) + "," +
-			std::to_string(wvp.r[0].m128_f32[3]) + "]";
-		std::string row2 = "[" +
-			std::to_string(wvp.r[1].m128_f32[0]) + "," +
-			std::to_string(wvp.r[1].m128_f32[1]) + "," +
-			std::to_string(wvp.r[1].m128_f32[2]) + "," +
-			std::to_string(wvp.r[1].m128_f32[3]) + "]";
-		std::string row3 = "[" +
-			std::to_string(wvp.r[2].m128_f32[0]) + "," +
-			std::to_string(wvp.r[2].m128_f32[1]) + "," +
-			std::to_string(wvp.r[2].m128_f32[2]) + "," +
-			std::to_string(wvp.r[2].m128_f32[3]) + "]";
-		std::string row4 = "[" +
-			std::to_string(wvp.r[3].m128_f32[0]) + "," +
-			std::to_string(wvp.r[3].m128_f32[1]) + "," +
-			std::to_string(wvp.r[3].m128_f32[2]) + "," +
-			std::to_string(wvp.r[3].m128_f32[3]) + "]";
-		std::string matrixDump = row1 + "\n" + row2 + "\n" + row3 + "\n" + row4 + "\n";
-
-		OutputDebugStringA("Matrix\n");
-		OutputDebugStringA(matrixDump.c_str());
-	}
-
-	inline void MatrixDump(DirectX::XMFLOAT4X4& wvp)
-	{
-		std::string row1 = "[" +
-			std::to_string(wvp._11) + "," +
-			std::to_string(wvp._12) + "," +
-			std::to_string(wvp._13) + "," +
-			std::to_string(wvp._14) + "]";
-		std::string row2 = "[" +
-			std::to_string(wvp._21) + "," +
-			std::to_string(wvp._22) + "," +
-			std::to_string(wvp._23) + "," +
-			std::to_string(wvp._24) + "]";
-		std::string row3 = "[" +
-			std::to_string(wvp._31) + "," +
-			std::to_string(wvp._32) + "," +
-			std::to_string(wvp._33) + "," +
-			std::to_string(wvp._34) + "]";
-		std::string row4 = "[" +
-			std::to_string(wvp._41) + "," +
-			std::to_string(wvp._42) + "," +
-			std::to_string(wvp._43) + "," +
-			std::to_string(wvp._44) + "]";
-		std::string matrixDump = row1 + "\n" + row2 + "\n" + row3 + "\n" + row4 + "\n";
-
-		OutputDebugStringA("Matrix\n");
-		OutputDebugStringA(matrixDump.c_str());
-	}
-
-	inline XMFLOAT3 GetPitchYawRoll(XMFLOAT4X4 transform)
-	{
-		float pitch = XMScalarASin(-transform._32);
-
-		XMVECTOR from(XMVectorSet(transform._12, transform._31, 0.0f, 0.0f));
-		XMVECTOR to(XMVectorSet(transform._22, transform._33, 0.0f, 0.0f));
-		XMVECTOR res(XMVectorATan2(from, to));
-
-		float roll = XMVectorGetX(res);
-		float yaw = XMVectorGetY(res);
-
-		return XMFLOAT3(XMConvertToDegrees(pitch), XMConvertToDegrees(yaw), XMConvertToDegrees(roll));
-	}
 }
 
 // Nombrar función del asistente para ComPtr<T>.
@@ -134,7 +64,7 @@ namespace DX
 #define CCNAME_D3D12_OBJECT_N(x,name) x->SetName(nostd::StringToWString(""###x##":"+name).c_str())
 #if defined(_DEBUG)
 #define DEBUG_PTR_COUNT(x) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + x->name + "(" + std::to_string(x.use_count()) + ")\n").c_str());
-#define DEBUG_PTR_COUNT_JSON(x) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + x->name() + "(" + std::to_string(x.use_count()) + ")\n").c_str());
+#define DEBUG_PTR_COUNT_JSON(x) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + std::string(x->at("name")) + "(" + std::to_string(x.use_count()) + ")\n").c_str());
 #define DEBUG_INSTANCE_REF_COUNT(instanceName,refCountMap,key) OutputDebugStringA(std::string(__FUNCTION__##" -> "  + instanceName + "(" + std::to_string(refCountMap.find(key)->second) + ")\n").c_str());
 #else
 #define DEBUG_PTR_COUNT(x) 
@@ -151,6 +81,6 @@ void LogCComPtrAddress(std::string name, CComPtr<T> p)
 	pAddressSStream << std::setw(16) << std::setfill('0') << std::hex << p.p;
 	pAddressSStream >> pAddressS;
 	std::string debugS = "Live " + std::string(typeid(T).name()) + "(" + name + ") at 0x" + pAddressS + "\n";
-	OutputDebugStringA(debugS.c_str());
+	//OutputDebugStringA(debugS.c_str());
 #endif
 }

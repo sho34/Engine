@@ -1,90 +1,96 @@
 #include "pch.h"
 #include "OverridePass.h"
+#include <Scene.h>
 #include <Renderer.h>
 #include <Material/Material.h>
 #include <Shader/Shader.h>
 #include <Camera/Camera.h>
+#include <Mesh/Mesh.h>
+#include <DeviceUtils/RootSignature/RootSignature.h>
+#include <DeviceUtils/PipelineState/PipelineState.h>
+#include <RenderPass/RenderPass.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 OverridePass::~OverridePass()
 {
-	if (fsQuad)
+	if (!fsQuad.empty() && MeshInstanceExists(fsQuad))
 	{
 		DestroyMeshInstance(fsQuad);
 	}
-	if (fsQuadMaterial)
+	if (!fsQuadMaterial.empty())
 	{
-		DestroyMaterialInstance(fsQuadMaterial);
+		DestroyMaterialInstance(fsQuadMaterial());
 	}
-	if (fsQuadConstantsBuffer)
+	if (!fsQuadConstantsBuffer.empty())
 	{
-		DestroyConstantsBuffer(fsQuadConstantsBuffer);
+		DestroyConstantsBuffer(fsQuadConstantsBuffer());
 	}
-	camera = nullptr;
-	renderPassInstance = nullptr;
-	rootSignature = nullptr;
-	pipelineState = nullptr;
-	prevPassRTT = nullptr;
 }
 
-void OverridePass::CreateFsQuadResources(std::string materialName, std::shared_ptr<RenderPassJson> renderPass, std::function<void(std::string, ShaderConstantsBufferVariable&)> constantsBufferPusher)
+void OverridePass::CreateFsQuadResources(std::string materialName, JUUID renderPassJson, std::function<void(std::string, ShaderConstantsBufferVariable&)> constantsBufferPusher)
 {
-	fsQuad = GetMeshInstance(FindMeshUUIDByName("decal"));
-	std::string fsQuadMaterialUUID = FindMaterialUUIDByName(materialName);
-	VertexClass vertexClass = fsQuad->vertexClass;
-	fsQuadMaterial = GetMaterialInstance(fsQuadMaterialUUID, [fsQuadMaterialUUID, vertexClass]()
+	using namespace Scene;
+
+	auto& fsQuadMesh = GetMeshInstance(GetMeshUUIDByName("decal"));
+	fsQuad = fsQuadMesh->uuid;
+	fsQuadMaterial = GetMaterialUUIDByName(materialName);
+	VertexClass vertexClass = fsQuadMesh->vertexClass;
+	CreateMaterialInstance(fsQuadMaterial(), [this, vertexClass]()
 		{
-			return std::make_shared<MaterialInstance>(fsQuadMaterialUUID, fsQuadMaterialUUID, vertexClass, false, false);
+			return std::make_unique<MaterialInstance>(fsQuadMaterial(), fsQuadMaterial(), vertexClass, false, false);
 		}
 	);
+	auto& fsQuadMat = fsQuadMaterial;
 
-	if (fsQuadMaterial->variablesBufferSize.size() > 0ULL)
+	if (fsQuadMat->variablesBufferSize.size() > 0ULL)
 	{
-		size_t size = fsQuadMaterial->variablesBufferSize.at(0);
+		size_t size = fsQuadMat->variablesBufferSize.at(0);
 		fsQuadConstantsBuffer = CreateConstantsBuffer(size, materialName + ":cbv");
 
-		auto& vsVars = fsQuadMaterial->vertexShader->constantsBuffersVariables;
-		auto& psVars = fsQuadMaterial->pixelShader->constantsBuffersVariables;
+		auto& vsVars = fsQuadMat->vertexShaderInstanceUUID->constantsBuffersVariables;
+		auto& psVars = fsQuadMat->pixelShaderInstanceUUID->constantsBuffersVariables;
 
 		for (auto& [name, var] : vsVars) { constantsBufferPusher(name, var); }
 		for (auto& [name, var] : psVars) { constantsBufferPusher(name, var); }
 	}
 
-	auto& mi = fsQuadMaterial;
+	auto& miVS = fsQuadMat->vertexShaderInstanceUUID;
+	auto& miPS = fsQuadMat->pixelShaderInstanceUUID;
 
-	auto& vsCBparams = mi->vertexShader->constantsBuffersParameters;
-	auto& psCBparams = mi->pixelShader->constantsBuffersParameters;
-	auto& uavParams = mi->pixelShader->uavParameters;
-	auto& psSRVCSparams = mi->pixelShader->srvCSParameters;
-	auto& psSRVTexparams = mi->pixelShader->srvTexParameters;
-	auto& psSamplersParams = mi->pixelShader->samplersParameters;
-	auto& samplers = mi->samplers;
+	auto& vsCBparams = miVS->constantsBuffersParameters;
+	auto& psCBparams = miPS->constantsBuffersParameters;
+	auto& uavParams = miPS->uavParameters;
+	auto& psSRVCSparams = miPS->srvCSParameters;
+	auto& psSRVTexparams = miPS->srvTexParameters;
+	auto& psSamplersParams = miPS->samplersParameters;
+	auto& samplers = fsQuadMat->samplers;
 
 	std::string rsName = "rootSignature:" + materialName;
 	rootSignature = CreateRootSignature(rsName, vsCBparams, psCBparams, uavParams, psSRVCSparams, psSRVTexparams, psSamplersParams, samplers);
 
 	auto& vsLayout = vertexInputLayoutsMap[vertexClass];
-	auto& vsByteCode = mi->vertexShader->byteCode;
-	auto& psByteCode = mi->pixelShader->byteCode;
+	auto& vsByteCode = miVS->byteCode;
+	auto& psByteCode = miPS->byteCode;
 
-	std::shared_ptr<MaterialJson> material = GetMaterialTemplate(mi->materialUUID);
+	MaterialJsonUUID material = fsQuadMaterial();
 	BlendDesc blendDesc = material->blendState();
 	RasterizerDesc rasterizerDesc = material->rasterizerState();
 
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
 	std::string plName = "pipelineState:" + materialName;
+	auto& renderPass = GetRenderPassTemplate(renderPassJson);
 	auto rtf = renderPass->renderTargetFormats();
 	auto df = renderPass->depthStencilFormat();
-	pipelineState = CreateGraphicsPipelineState(plName, vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtf, df);
 
-	if (camera)
-		prevPassRTT = GetPrevPassRenderToTexture();
+	pipelineState = CreateGraphicsPipelineState(plName, vsLayout, vsByteCode, psByteCode, rootSignature, blendDesc, rasterizerDesc, primitiveTopologyType, rtf, df);
 }
 
-std::shared_ptr<RenderToTexture> OverridePass::GetPrevPassRenderToTexture(unsigned int index)
+JUUID OverridePass::GetPrevPassRenderToTexture(unsigned int index)
 {
-	std::shared_ptr<RenderPassInstance> prevPass = camera->cameraRenderPasses.at(renderPassIndex - 1);
-	return prevPass->renderToTexturePass->renderToTexture.at(index);
+	using namespace Scene;
+	auto& prevPass = camera->renderPassesUUID.at(renderPassIndex - 1);
+	auto& rttPass = prevPass->renderToTexturePass;
+	return rttPass->renderToTexture.at(index)();
 }

@@ -6,7 +6,7 @@
 #include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include <DirectXHelper.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 using namespace DeviceUtils;
 
@@ -74,7 +74,7 @@ namespace ComputeShader
 			.timeDelta = timeDelta,
 			.tau = tau
 		};
-		constantsBuffers->push(params, 0);
+		GetConstantsBuffer(constantsBuffers)->push(params, 0);
 	}
 
 	void LuminanceHistogramAverage::Compute()
@@ -88,7 +88,7 @@ namespace ComputeShader
 		//after clearing the uav we can compute
 		shader.SetComputeState();
 
-		commandList->SetComputeRootDescriptorTable(0, constantsBuffers->gpu_xhandle[0]);
+		commandList->SetComputeRootDescriptorTable(0, GetConstantsBuffer(constantsBuffers)->gpu_xhandle[0]);
 		commandList->SetComputeRootDescriptorTable(1, histogramGpuHandle);
 		commandList->SetComputeRootDescriptorTable(2, averageGpuHandle);
 		commandList->Dispatch(1, 1, 1);

@@ -1,19 +1,13 @@
 #include "pch.h"
 #include "Renderer.h"
-#include "../Common/DirectXHelper.h"
-#include "DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
-#include "DeviceUtils/D3D12Device/Builder.h"
-#include "DeviceUtils/D3D12Device/Interop.h"
-#include "DeviceUtils/RootSignature/RootSignature.h"
-#include "DeviceUtils/PipelineState/PipelineState.h"
-#include "DeviceUtils/RenderTarget/RenderTarget.h"
-#include "DeviceUtils/RenderToTexture/RenderToTexture.h"
-#include <dxgidebug.h>
-#include <winerror.h>
+#include <DirectXHelper.h>
+#include <DeviceUtils/D3D12Device/Builder.h>
+#include <DeviceUtils/D3D12Device/Interop.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
+#include <DeviceUtils/RenderToTexture/RenderToTexture.h>
+#include <RenderPass/RenderPass.h>
 
 using namespace DeviceUtils;
-
-static std::shared_ptr<Renderer> renderer = nullptr;
 
 #if defined(_DEBUG)
 CComPtr<ID3D12Debug1> debugController;
@@ -22,7 +16,6 @@ CComPtr<ID3D12DebugDevice1> debugDevice;
 
 //CREATE
 void Renderer::Initialize(HWND coreHwnd) {
-	renderer = shared_from_this();
 	using namespace DeviceUtils;
 
 	hwnd = coreHwnd;
@@ -85,14 +78,15 @@ void Renderer::CreateComputeEngine()
 
 void Renderer::CreateSwapChainPass()
 {
-	swapChainPass = GetRenderPassInstance(nullptr, 0, FindRenderPassUUIDByName("simplePass"));
+	using namespace Templates;
+	swapChainPass = CreateRenderPassInstance("", GetRenderPassUUIDByName("simplePass"), 0);
 }
 
 //DESTROY
 void Renderer::DestroySwapChainPass()
 {
-	DestroyRenderPassInstance(swapChainPass);
-	swapChainPass = nullptr;
+	using namespace Templates;
+	DestroyRenderPassInstance(swapChainPass());
 }
 
 void Renderer::Destroy() {
@@ -135,8 +129,6 @@ void Renderer::Destroy() {
 	debugDevice.Release();
 	debugDevice = nullptr;
 #endif
-
-	renderer = nullptr;
 }
 
 void Renderer::UpdateViewportPerspective() {
@@ -145,7 +137,6 @@ void Renderer::UpdateViewportPerspective() {
 	int width = rect.right - rect.left;
 	int height = rect.bottom - rect.top;
 
-	//float aspectRatio = static_cast<FLOAT>(width) / static_cast<FLOAT>(height);
 	scissorRect = { 0, 0, static_cast<LONG>(width), static_cast<LONG>(height) };
 	screenViewport = { 0.0f, 0.0f, static_cast<FLOAT>(width), static_cast<FLOAT>(height), 0.0f, 1.0f };
 }
@@ -213,8 +204,11 @@ void Renderer::CloseCommandsAndFlush() {
 	Flush();
 }
 
-void Renderer::RenderCriticalFrame(std::function<void()> callback)
+void Renderer::RenderCriticalFrame(std::function<void()> callback, bool flush)
 {
+	if (flush)
+		Flush();
+
 	ResetCommands();
 	SetCSUDescriptorHeap();
 

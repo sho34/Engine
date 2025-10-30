@@ -5,41 +5,40 @@ template<typename K, typename V, typename C = std::less<K>>
 struct RefTracker
 {
 	std::map<K, V, C> instances;
-	std::map<V, unsigned int> instancesRefCount;
+	std::map<K, unsigned int> instancesRefCount;
 
-	V AddRef(K key, std::function<V()> newRefCallback)
+	V& AddRef(K key, std::function<V()> newRefCallback)
 	{
-		V instance;
 		if (instances.contains(key))
 		{
-			instance = instances.at(key);
+			V& instanceRef = instances.at(key);
+			instancesRefCount.find(key)->second++;
+			return instanceRef;
 		}
 		else
 		{
-			instance = newRefCallback();
-			instances.insert_or_assign(key, instance);
-			instancesRefCount.insert_or_assign(instance, 0U);
+			V instance = newRefCallback();
+			instances.insert_or_assign(key, std::move(instance));
+			instancesRefCount.insert_or_assign(key, 1U);
+			V& instanceRef = instances.at(key);
+			return instanceRef;
 		}
-		instancesRefCount.find(instance)->second++;
-		return instance;
 	}
 
-	void IncrementRefCount(V& instance, unsigned int d)
+	void IncrementRefCount(K key, unsigned int d)
 	{
-		instancesRefCount.find(instance)->second += d;
+		instancesRefCount.find(key)->second += d;
 	}
 
-	void RemoveRef(K key, V& instance)
+	void RemoveRef(K key)
 	{
-		assert(instancesRefCount.contains(instance));
-
-		instancesRefCount.at(instance)--;
-		if (instancesRefCount.at(instance) == 0U)
+		assert(instancesRefCount.contains(key));
+		instancesRefCount.at(key)--;
+		if (instancesRefCount.at(key) == 0U)
 		{
-			instancesRefCount.erase(instance);
+			instancesRefCount.erase(key);
 			instances.erase(key);
 		}
-		instance = nullptr;
 	}
 
 	bool Has(K k)
@@ -47,43 +46,14 @@ struct RefTracker
 		return instances.contains(k);
 	}
 
-	unsigned int Count(V& instance)
+	size_t Size()
 	{
-		assert(instancesRefCount.contains(instance));
-		return instancesRefCount.at(instance);
+		return instances.size();
 	}
 
-	void Clear()
-	{
-		instances.clear();
-		instancesRefCount.clear();
-	}
 
-	K FindKey(V& instance)
-	{
-		for (auto it = instances.begin(); it != instances.end(); it++)
-		{
-			if (it->second == instance) { return it->first; }
-		}
-		return K();
-	}
-
-	V FindValue(K key)
+	V& FindValue(K key)
 	{
 		return instances.at(key);
-	}
-
-	void RenameKey(K from, K to)
-	{
-		instances[to] = instances[from];
-		instances.erase(from);
-	}
-
-	void ForEach(std::function<void(V&)> cb)
-	{
-		for (auto it = instances.begin(); it != instances.end(); it++)
-		{
-			cb(it->second);
-		}
 	}
 };

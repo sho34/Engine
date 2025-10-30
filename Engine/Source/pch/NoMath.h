@@ -51,3 +51,73 @@ inline XMFLOAT4X4 GetBoundindBoxesCentroid(auto& objects)
 	XMStoreFloat4x4(&w, cmx);
 	return w;
 }
+
+inline void MatrixDump(DirectX::XMMATRIX& wvp)
+{
+	std::string row1 = "[" +
+		std::to_string(wvp.r[0].m128_f32[0]) + "," +
+		std::to_string(wvp.r[0].m128_f32[1]) + "," +
+		std::to_string(wvp.r[0].m128_f32[2]) + "," +
+		std::to_string(wvp.r[0].m128_f32[3]) + "]";
+	std::string row2 = "[" +
+		std::to_string(wvp.r[1].m128_f32[0]) + "," +
+		std::to_string(wvp.r[1].m128_f32[1]) + "," +
+		std::to_string(wvp.r[1].m128_f32[2]) + "," +
+		std::to_string(wvp.r[1].m128_f32[3]) + "]";
+	std::string row3 = "[" +
+		std::to_string(wvp.r[2].m128_f32[0]) + "," +
+		std::to_string(wvp.r[2].m128_f32[1]) + "," +
+		std::to_string(wvp.r[2].m128_f32[2]) + "," +
+		std::to_string(wvp.r[2].m128_f32[3]) + "]";
+	std::string row4 = "[" +
+		std::to_string(wvp.r[3].m128_f32[0]) + "," +
+		std::to_string(wvp.r[3].m128_f32[1]) + "," +
+		std::to_string(wvp.r[3].m128_f32[2]) + "," +
+		std::to_string(wvp.r[3].m128_f32[3]) + "]";
+	std::string matrixDump = row1 + "\n" + row2 + "\n" + row3 + "\n" + row4 + "\n";
+
+	OutputDebugStringA("Matrix\n");
+	OutputDebugStringA(matrixDump.c_str());
+}
+
+inline void MatrixDump(DirectX::XMFLOAT4X4& wvp)
+{
+	std::string row1 = "[" +
+		std::to_string(wvp._11) + "," +
+		std::to_string(wvp._12) + "," +
+		std::to_string(wvp._13) + "," +
+		std::to_string(wvp._14) + "]";
+	std::string row2 = "[" +
+		std::to_string(wvp._21) + "," +
+		std::to_string(wvp._22) + "," +
+		std::to_string(wvp._23) + "," +
+		std::to_string(wvp._24) + "]";
+	std::string row3 = "[" +
+		std::to_string(wvp._31) + "," +
+		std::to_string(wvp._32) + "," +
+		std::to_string(wvp._33) + "," +
+		std::to_string(wvp._34) + "]";
+	std::string row4 = "[" +
+		std::to_string(wvp._41) + "," +
+		std::to_string(wvp._42) + "," +
+		std::to_string(wvp._43) + "," +
+		std::to_string(wvp._44) + "]";
+	std::string matrixDump = row1 + "\n" + row2 + "\n" + row3 + "\n" + row4 + "\n";
+
+	OutputDebugStringA("Matrix\n");
+	OutputDebugStringA(matrixDump.c_str());
+}
+
+inline XMFLOAT3 GetPitchYawRoll(XMFLOAT4X4 transform)
+{
+	float pitch = XMScalarASin(-transform._32);
+
+	XMVECTOR from(XMVectorSet(transform._12, transform._31, 0.0f, 0.0f));
+	XMVECTOR to(XMVectorSet(transform._22, transform._33, 0.0f, 0.0f));
+	XMVECTOR res(XMVectorATan2(from, to));
+
+	float roll = XMVectorGetX(res);
+	float yaw = XMVectorGetY(res);
+
+	return XMFLOAT3(XMConvertToDegrees(pitch), XMConvertToDegrees(yaw), XMConvertToDegrees(roll));
+}

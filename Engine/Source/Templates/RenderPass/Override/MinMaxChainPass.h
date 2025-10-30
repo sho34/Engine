@@ -2,18 +2,14 @@
 
 #include "OverridePass.h"
 
-namespace Scene
-{
-	struct Camera;
-};
-
 struct MinMaxChainPass : public OverridePass
 {
 	CD3DX12_GPU_DESCRIPTOR_HANDLE shadowMapChainGpuHandle1;
 	CD3DX12_GPU_DESCRIPTOR_HANDLE	shadowMapChainGpuHandle2;
 
-	MinMaxChainPass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp);
+	MinMaxChainPass(JUUID cam, unsigned int rpI, JUUID rp);
 	virtual ~MinMaxChainPass() {};
+	virtual void Initialize();
 	virtual void Pass();
 	void Render();
 };

@@ -23,7 +23,7 @@ enum TemplateType {
 	T_RenderPasses
 };
 
-inline const std::map<TemplateType, std::string> TemplateTypeToString = {
+inline const std::unordered_map<TemplateType, std::string> TemplateTypeToString = {
 	{ T_Shaders, "Shaders" },
 	{ T_Materials, "Materials" },
 	{ T_Models3D, "Models3D" },
@@ -32,7 +32,7 @@ inline const std::map<TemplateType, std::string> TemplateTypeToString = {
 	{ T_RenderPasses, "RenderPasses"}
 };
 
-inline const std::map<std::string, TemplateType> StringToTemplateType = {
+inline const std::unordered_map<std::string, TemplateType> StringToTemplateType = {
 	{ "Shaders", T_Shaders },
 	{ "Materials", T_Materials },
 	{ "Models3D", T_Models3D },
@@ -42,7 +42,7 @@ inline const std::map<std::string, TemplateType> StringToTemplateType = {
 };
 
 #if defined(_EDITOR)
-inline const std::map<TemplateType, const char* > TemplateTypePanelMenuItems = {
+inline const std::unordered_map<TemplateType, const char* > TemplateTypePanelMenuItems = {
 	{ T_Shaders, ICON_FA_FILE "Shaders" },
 	{ T_Materials, ICON_FA_TSHIRT "Materials" },
 	{ T_Models3D, ICON_FA_CUBE "Models3D" },
@@ -52,11 +52,14 @@ inline const std::map<TemplateType, const char* > TemplateTypePanelMenuItems = {
 };
 #endif
 
+template <typename T>
+using TemplatesContainer = std::unordered_map<JUUID, T>;
+
 namespace Templates
 {
 	struct JTemplate : JObject
 	{
-		JTemplate(nlohmann::json json) :JObject(json) {}
+		JTemplate(nlohmann::json& json) :JObject(json) {}
 		virtual TemplateType JType() { return T_None; }
 		virtual void JUpdate(nlohmann::json p)
 		{

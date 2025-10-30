@@ -1,37 +1,38 @@
 #pragma once
-#include <atlbase.h>
+//#include <atlbase.h>
 #include <nlohmann/json.hpp>
 #include <set>
-#include <DirectXCollision.h>
-#include <Renderable/RenderableBoundingBox.h>
+//#include <DirectXCollision.h>
+//#include <Renderable/RenderableBoundingBox.h>
 #include <Model3D/Model3D.h>
-#include <Mesh/Mesh.h>
-#include <Material/Material.h>
+//#include <Mesh/Mesh.h>
+//#include <Material/Material.h>
 #include <Material/MeshMaterial.h>
-#include <RenderPass/RenderPass.h>
+//#include <RenderPass/RenderPass.h>
 #include <RenderPass/PassMaterialOverride.h>
-#include <Animated.h>
-#include <DeviceUtils/PipelineState/PipelineState.h>
-#include <Json.h>
+//#include <Animated.h>
+//#include <DeviceUtils/PipelineState/PipelineState.h>
+//#include <Json.h>
+//#include <UUID.h>
 #include <SceneObjectDecl.h>
-#include <NoMath.h>
+//#include <NoMath.h>
 #include <SceneObject.h>
-#include <JTypes.h>
-#if defined(_EDITOR)
-#include <ImGuizmo.h>
-#endif
+//#include <JTypes.h>
+//#if defined(_EDITOR)
+//#include <ImGuizmo.h>
+//#endif
 
-namespace Scene { struct Camera; struct Light; };
-namespace ComputeShader { struct RenderableBoundingBox; };
-using namespace Templates;
-using namespace DeviceUtils;
-using namespace ComputeShader;
+//namespace Scene { struct Camera; struct Light; };
+//namespace ComputeShader { struct RenderableBoundingBox; };
+//using namespace Templates;
+//using namespace DeviceUtils;
+//using namespace ComputeShader;
 
-typedef std::vector<std::shared_ptr<MeshInstance>> RenderableMeshes;
-typedef std::map<std::shared_ptr<RenderPassInstance>, std::vector<std::shared_ptr<MaterialInstance>>> RenderableMaterials;
-typedef std::map<std::shared_ptr<RenderPassInstance>, std::vector<std::vector<std::shared_ptr<ConstantsBuffer>>>> RenderableConstantsBuffer;
-typedef std::map<std::shared_ptr<RenderPassInstance>, std::vector<CComPtr<ID3D12RootSignature>>> RenderableRootSignatures;
-typedef std::map<std::shared_ptr<RenderPassInstance>, std::vector<CComPtr<ID3D12PipelineState>>> RenderablePipelineStates;
+typedef std::vector<MeshInstanceUUID> RenderableMeshes;
+typedef std::unordered_map<RenderPassInstanceUUID, std::vector<MaterialInstanceUUID>> RenderableMaterials; //RenderPassInstanceUUID -> MaterialInstanceUUID
+typedef std::unordered_map<RenderPassInstanceUUID, std::vector<std::vector<ConstantsBufferUUID>>> RenderableConstantsBuffer; //RenderPassUUID -> vector:vector:ConstantsBufferUUID
+typedef std::unordered_map<RenderPassInstanceUUID, std::vector<CComPtr<ID3D12RootSignature>>> RenderableRootSignatures; //RenderPassUUID -> vector:RootSignature
+typedef std::unordered_map<RenderPassInstanceUUID, std::vector<CComPtr<ID3D12PipelineState>>> RenderablePipelineStates; //RenderPassUUID -> vector:PipelineState
 
 static nlohmann::json defaultShadowMapShaderAttributes = { { "uniqueMaterialInstance", false }, { "castShadows",false }, { "ibl", false} };
 #if defined(_EDITOR)
@@ -40,10 +41,6 @@ static nlohmann::json defaultPickingShaderAttributes = { { "uniqueMaterialInstan
 
 namespace Scene
 {
-#include <TrackUUID/JDecl.h>
-#include <RenderableAtt.h>
-#include <JEnd.h>
-
 #if defined(_EDITOR)
 
 #include <Attributes/JOrder.h>
@@ -78,7 +75,7 @@ namespace Scene
 
 	//UPDATE
 	void RenderablesStep();
-	void DestroyRenderablesCameraBinding();
+	//	void DestroyRenderablesCameraBinding();
 	void RunBoundingBoxComputeShaders();
 	void RunBoundingBoxComputeShadersSolution();
 
@@ -93,7 +90,8 @@ namespace Scene
 
 	struct Renderable : SceneObject
 	{
-		SCENEOBJECT_DECL(Renderable);
+		inline static const SceneObjectType sceneObjectType = SO_Renderables;
+		inline static const std::string fallbackMaterialName = "BaseLighting";
 
 #include <Attributes/JFlags.h>
 #include <RenderableAtt.h>
@@ -103,72 +101,77 @@ namespace Scene
 #include <RenderableAtt.h>
 #include <JEnd.h>
 
+		Renderable(nlohmann::json& json);
+		~Renderable() { Destroy(); }
+
 		XMVECTOR rotationQ();
 		XMMATRIX world();
 
 		//Model3D
-		std::shared_ptr<Model3DInstance> model3D = nullptr;
-
+		Model3DInstanceUUID model3D;
 		//meshes
 		RenderableMeshes meshes;
 		RenderableMaterials materials;
 		RenderableConstantsBuffer constantsBuffers;
 		RenderableRootSignatures rootSignatures;
 		RenderablePipelineStates pipelineStates;
+		std::set<CameraUUID> bindedCameras;
 
-		std::set<std::shared_ptr<Camera>> bindedCameras;
 		virtual void Initialize();
-		virtual void Bind(std::shared_ptr<SceneObject> sceneObject);
-		virtual void Unbind(std::shared_ptr<SceneObject> sceneObject);
+		virtual void Bind(JUUID uuid);
+		virtual void Unbind(JUUID uuid);
+		virtual void BindToScene();
+		virtual void UnbindFromScene();
 		void BindCameras();
-		void BindCamera(std::shared_ptr<Camera>& cam);
+		void BindCamera(JUUID cuuid);
 		void UnbindCameras();
-		void UnbindCamera(std::shared_ptr<Camera>& cam);
+		void UnbindCamera(JUUID cuuid);
 		void BindShadowMapCameras();
 		void CreateMeshInstances();
-		std::vector<std::shared_ptr<RenderPassInstance>> GetCameraRenderPasses(std::shared_ptr<Camera> cam);
-		void CreateMaterialsInstances(std::shared_ptr<Camera> cam);
-		void DestroyMaterialsInstances(std::shared_ptr<Camera> cam);
-		void CreateRenderPassMaterialsInstances(std::shared_ptr<Templates::RenderPassInstance>& rp);
-		void DestroyRenderPassMaterialsInstances(std::shared_ptr<Templates::RenderPassInstance>& rp);
-		void CreateConstantsBuffersInstances(std::shared_ptr<Camera> cam);
-		void DestroyConstantsBuffersInstances(std::shared_ptr<Camera> cam);
-		void CreateRenderPassConstantsBuffersInstances(std::shared_ptr<Templates::RenderPassInstance>& rp);
-		void DestroyRenderPassConstantsBuffersInstances(std::shared_ptr<Templates::RenderPassInstance>& rp);
-		void CreateRootSignatures(std::shared_ptr<Camera> cam);
-		void DestroyRootSignatures(std::shared_ptr<Camera> cam);
-		void CreateRenderPassRootSignatures(std::shared_ptr<Templates::RenderPassInstance>& rp);
-		void DestroyRenderPassRootSignatures(std::shared_ptr<Templates::RenderPassInstance>& rp);
-		void CreatePipelineStates(std::shared_ptr<Camera> cam);
-		void DestroyPipelineStates(std::shared_ptr<Camera> cam);
-		void CreateRenderPassPipelineStates(std::shared_ptr<Templates::RenderPassInstance>& rp);
-		void DestroyRenderPassPipelineStates(std::shared_ptr<Templates::RenderPassInstance>& rp);
 
+		std::vector<RenderPassInstanceUUID> GetCameraRenderPasses(CameraUUID cam);
+		//Materials
+		void CreateMaterialsInstances(CameraUUID cam);
+		void DestroyMaterialsInstances(CameraUUID cam);
+		void CreateRenderPassMaterialsInstances(RenderPassInstanceUUID pass);
+		void DestroyRenderPassMaterialsInstances(RenderPassInstanceUUID pass);
+		//Constants Buffers
+		void CreateConstantsBuffersInstances(CameraUUID cam);
+		void DestroyConstantsBuffersInstances(CameraUUID cam);
+		void CreateRenderPassConstantsBuffersInstances(RenderPassInstanceUUID pass);
+		void DestroyRenderPassConstantsBuffersInstances(RenderPassInstanceUUID pass);
+		//Root Signatures
+		void CreateRootSignatures(CameraUUID cam);
+		void DestroyRootSignatures(CameraUUID cam);
+		void CreateRenderPassRootSignatures(RenderPassInstanceUUID rp);
+		void DestroyRenderPassRootSignatures(RenderPassInstanceUUID rp);
+		//Pipeline States
+		void CreatePipelineStates(CameraUUID cam);
+		void DestroyPipelineStates(CameraUUID cam);
+		void CreateRenderPassPipelineStates(RenderPassInstanceUUID rp);
+		void DestroyRenderPassPipelineStates(RenderPassInstanceUUID rp);
 		void RebuildMeshMaterials();
-
 		//ANIMATION
-		std::shared_ptr<Model3DInstance> animable = nullptr;
+		//std::shared_ptr<Model3DInstance> animable = nullptr;
+		Model3DInstanceUUID animable;
 		Animation::BonesTransformations bonesTransformation;
 		Sequence* currentSequence = nullptr;
 		AnimationSequences animationsSequences;
 
 		void CreateAnimationSequences();
 		void RebuildAnimationSequences();
-
 		BoundingBox boundingBox;
-		std::shared_ptr<RenderableBoundingBox> boundingBoxCompute; //used for animables
-
+		RenderableBoundingBoxUUID boundingBoxCompute; //used for animables
 		void CreateBoundingBox();
 		BoundingBox GetBoundingBox();
 
 		//UPDATEs
 #if defined(_EDITOR)
 		std::function<void()> OnPick;
-
 		//Gizmo
 		virtual bool CanInteractWithGizmo(ImGuizmo::OPERATION operation) { return true; }
 #endif
-		void WriteMaterialVariablesToConstantsBufferSpace(std::shared_ptr<MaterialInstance>& material, std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int cbvFrameIndex);
+		void WriteMaterialVariablesToConstantsBufferSpace(MaterialInstanceUUID material, ConstantsBufferUUID cbvData, unsigned int cbvFrameIndex);
 		template<typename T>
 		void WriteConstantsBuffer(std::string constantName, T& data, unsigned int backbufferIndex, unsigned int slot = 0U, size_t offset = 0ULL)
 		{
@@ -176,8 +179,8 @@ namespace Scene
 			{
 				for (unsigned int mesh = 0; mesh < meshMaterials.size(); mesh++)
 				{
-					auto& vsVars = meshMaterials.at(mesh)->vertexShader->constantsBuffersVariables;
-					auto& psVars = meshMaterials.at(mesh)->pixelShader->constantsBuffersVariables;
+					auto& vsVars = meshMaterials.at(mesh)->vertexShaderInstanceUUID->constantsBuffersVariables;
+					auto& psVars = meshMaterials.at(mesh)->pixelShaderInstanceUUID->constantsBuffersVariables;
 					auto& cbuffers = constantsBuffers.at(rp).at(mesh);
 
 					if (vsVars.contains(constantName)) {
@@ -197,7 +200,9 @@ namespace Scene
 				}
 			}
 		};
+		void WriteAnimationConstantsBuffer();
 		void WriteAnimationConstantsBuffer(unsigned int backbufferIndex);
+		void WriteConstantsBuffer();
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
 		void SetCurrentAnimation(Sequence* sequence, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
@@ -211,10 +216,15 @@ namespace Scene
 		bool markedForDelete = false;
 		void Destroy();
 
-		//RENDER
 		bool renderException = false;
-		void Render(std::shared_ptr<RenderPassInstance> renderPass, std::shared_ptr<Camera> camera = nullptr);
+		void Render(RenderPassInstanceUUID renderPass, CameraUUID camera);
 		void UnbindMaterialsChangesCallback();
 		void UnbindModelChangesCallback();
 	};
+
+	SODECL_FULL(Renderable);
+
+#include <TrackUUID/JDecl.h>
+#include <RenderableAtt.h>
+#include <JEnd.h>
 }

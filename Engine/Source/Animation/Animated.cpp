@@ -1,17 +1,12 @@
 #include "pch.h"
 #include <stack>
 #include "Animated.h"
-#include <Renderer.h>
 #include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include <Renderable/Renderable.h>
 
-extern std::shared_ptr<Renderer> renderer;
-
 namespace Animation {
-	using namespace DeviceUtils;
-	using namespace Scene;
 
-	std::map<std::shared_ptr<Renderable>, std::shared_ptr<ConstantsBuffer>> animationsCbv;
+	std::map<JUUID, JUUID> animationsCbv; //Renderable -> ConstantsBuffer
 
 	void BuildBonesOffsets(const aiScene* aiModel, BonesTransformations& bonesOffsets)
 	{
@@ -94,9 +89,9 @@ namespace Animation {
 		if (node->children) delete[] node->children;
 	}
 
-	std::shared_ptr<Animated> CreateAnimatedFromAssimp(const aiScene* aiModel)
+	std::unique_ptr<Animated> CreateAnimatedFromAssimp(const aiScene* aiModel)
 	{
-		std::shared_ptr<Animated> animated = std::make_shared<Animated>();
+		std::unique_ptr<Animated> animated = std::make_unique<Animated>();
 
 		animated->animationsLength[""] = 0.0f;
 		for (unsigned int animationIndex = 0U; animationIndex < aiModel->mNumAnimations; animationIndex++)
@@ -123,25 +118,32 @@ namespace Animation {
 
 	void DestroyAnimated()
 	{
+		for (auto& [r, c] : animationsCbv)
+		{
+			DestroyConstantsBuffer(c);
+		}
 		animationsCbv.clear();
 	}
 
-	void AttachAnimation(const std::shared_ptr<Renderable>& renderable, std::shared_ptr<Animated>& animated)
+	void AttachAnimation(JUUID renderableUUID, std::unique_ptr<Animated>& animated)
 	{
-		std::shared_ptr<ConstantsBuffer> cbvData = CreateConstantsBuffer(sizeof(BonesMatrices), renderable->name());
-		animationsCbv[renderable] = cbvData;
-
+		using namespace Scene;
+		using namespace DeviceUtils;
+		auto& renderable = GetRenderableSceneObject(renderableUUID);
+		animationsCbv[renderableUUID] = CreateConstantsBuffer(sizeof(BonesMatrices), renderable->name());
 		renderable->bonesTransformation = animated->bonesOffsets;
 	}
 
-	std::shared_ptr<ConstantsBuffer> GetAnimatedConstantsBuffer(const std::shared_ptr<Renderable>& renderable)
+
+	ConstantsBufferUUID GetAnimatedConstantsBuffer(JUUID renderableUUID)
 	{
-		return animationsCbv[renderable];
+		return animationsCbv[renderableUUID];
 	}
 
-	void WriteBoneTransformationsToConstantsBuffer(const std::shared_ptr<Renderable>& renderable, BonesTransformations& bonesTransformation, unsigned int backbufferIndex)
+	void WriteBoneTransformationsToConstantsBuffer(JUUID renderableUUID, BonesTransformations& bonesTransformation, unsigned int backbufferIndex)
 	{
-		auto bonesCbv = GetAnimatedConstantsBuffer(renderable);
+		using namespace DeviceUtils;
+		auto bonesCbv = GetAnimatedConstantsBuffer(renderableUUID);
 
 		XMMATRIX* bones = reinterpret_cast<XMMATRIX*>(bonesCbv->mappedConstantBuffer + bonesCbv->alignedConstantBufferSize * backbufferIndex);
 
@@ -170,7 +172,7 @@ namespace Animation {
 		return ToMatrix(keyFrames[0].key);
 	}
 
-	void TraverseMultiplycationQueue(float time, std::string currentAnimation, std::shared_ptr<Animated>& animations, BonesTransformations& bonesTransformation)
+	void TraverseMultiplycationQueue(float time, std::string currentAnimation, std::unique_ptr<Animated>& animations, BonesTransformations& bonesTransformation)
 	{
 		TraverseMultiplycationQueue(time, animations->multiplyNavigator, animations->animationsBonesKeys[currentAnimation], bonesTransformation, animations->bonesOffsets, animations->rootNodeInverseTransform, XMMatrixIdentity());
 	}

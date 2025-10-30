@@ -4,7 +4,7 @@
 
 namespace ImGui
 {
-	bool DrawComboSelection(UUIDName selected, std::vector<UUIDName> selectables, std::function<void(UUIDName)> onSelect, std::string label)
+	bool DrawComboSelection(JUUIDName selected, std::vector<JUUIDName> selectables, std::function<void(JUUIDName)> onSelect, std::string label)
 	{
 		bool ret = false;
 		int current_item = static_cast<int>(std::find(selectables.begin(), selectables.end(), selected) - selectables.begin());
@@ -367,7 +367,7 @@ namespace ImGui
 		}
 	}
 
-	void OpenTemplate(const char* iconCode, UUIDName uuidName)
+	void OpenTemplate(const char* iconCode, JUUIDName uuidName)
 	{
 		ImGui::DrawItemWithEnabledState([uuidName, iconCode]
 			{
@@ -378,7 +378,7 @@ namespace ImGui
 			}, std::get<0>(uuidName) != "");
 	}
 
-	void OpenSceneObject(const char* iconCode, UUIDName uuidName)
+	void OpenSceneObject(const char* iconCode, JUUIDName uuidName)
 	{
 		ImGui::DrawItemWithEnabledState([uuidName, iconCode]
 			{

@@ -1,34 +1,24 @@
 #pragma once
 
-//#include <Camera/Camera.h>
-#include <RenderPass/RenderPass.h>
-
-namespace Scene
-{
-	struct Camera;
-}
-
-//using namespace Scene;
-using namespace Templates;
-
 struct OverridePass
 {
 	//data from camera and renderpass
-	std::shared_ptr<Scene::Camera> camera;
+	CameraUUID camera;
 	unsigned int renderPassIndex;
-	std::shared_ptr<RenderPassInstance> renderPassInstance;
+	RenderPassInstanceUUID renderPassInstance;
 
 	//fsQuad
-	std::shared_ptr<MeshInstance> fsQuad;
-	std::shared_ptr<MaterialInstance> fsQuadMaterial;
-	std::shared_ptr<ConstantsBuffer> fsQuadConstantsBuffer;
+	JUUID fsQuad;
+	MaterialInstanceUUID fsQuadMaterial;
+	ConstantsBufferUUID fsQuadConstantsBuffer;
 	CComPtr<ID3D12RootSignature> rootSignature;
 	CComPtr<ID3D12PipelineState> pipelineState;
-	std::shared_ptr<RenderToTexture> prevPassRTT;
 
-	OverridePass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) { camera = cam; renderPassIndex = rpI; renderPassInstance = rp; };
+	OverridePass() { assert(!!!"do not use"); }
+	explicit OverridePass(JUUID cam, unsigned int rpI, JUUID rp) { camera = cam; renderPassIndex = rpI; renderPassInstance = rp; };
 	virtual ~OverridePass();
-	void CreateFsQuadResources(std::string materialName, std::shared_ptr<RenderPassJson> renderPass, std::function<void(std::string, ShaderConstantsBufferVariable&)> constantsBufferPusher = [](auto a, auto b) {});
-	std::shared_ptr<RenderToTexture> GetPrevPassRenderToTexture(unsigned int index = 0U);
+	virtual void Initialize() {};
+	void CreateFsQuadResources(std::string materialName, JUUID renderPassJson, std::function<void(std::string, ShaderConstantsBufferVariable&)> constantsBufferPusher = [](auto a, auto b) {});
+	JUUID GetPrevPassRenderToTexture(unsigned int index = 0U);
 	virtual void Pass() = 0;
 };

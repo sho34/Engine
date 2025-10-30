@@ -5,10 +5,9 @@
 #include <DirectXHelper.h>
 #include <NoStd.h>
 #include <ios>
-#include "../RootSignature/RootSignature.h"
+#include <DeviceUtils/RootSignature/RootSignature.h>
 
-extern std::shared_ptr<Renderer> renderer;
-
+extern std::unique_ptr<Renderer> renderer;
 
 namespace DeviceUtils
 {
@@ -25,7 +24,7 @@ namespace DeviceUtils
 		DXGI_FORMAT& depthStencilFormat
 	)
 	{
-		D3D12_GRAPHICS_PIPELINE_STATE_DESC state = {};
+		D3D12_GRAPHICS_PIPELINE_STATE_DESC state{};
 
 		//input layout
 		state.InputLayout = { inputLayout.data(), static_cast<UINT>(inputLayout.size()) };

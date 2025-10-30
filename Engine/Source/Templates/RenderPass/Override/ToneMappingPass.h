@@ -8,17 +8,13 @@ namespace ComputeShader
 	struct LuminanceHistogram;
 	struct LuminanceHistogramAverage;
 };
-namespace Scene
-{
-	struct Camera;
-};
 
 struct ToneMappingPass : public OverridePass
 {
-	std::shared_ptr<ComputeShader::LuminanceHistogram> hdrHistogram;
-	std::shared_ptr<ComputeShader::LuminanceHistogramAverage> luminanceHistogramAverage;
+	std::unique_ptr<ComputeShader::LuminanceHistogram> hdrHistogram;
+	std::unique_ptr<ComputeShader::LuminanceHistogramAverage> luminanceHistogramAverage;
 
-	ToneMappingPass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp);
+	ToneMappingPass(JUUID cam, unsigned int rpI, JUUID rp);
 	virtual ~ToneMappingPass();
 	virtual void Pass();
 	void Render();

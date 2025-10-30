@@ -2,38 +2,30 @@
 #include "Camera.h"
 #include <Scene.h>
 #include <Light/Light.h>
+#include <Renderable/Renderable.h>
 #include <Renderer.h>
-#include <nlohmann/json.hpp>
-#if defined(_EDITOR)
-#include <Templates.h>
 #include <Textures/Texture.h>
-#endif
-#include <Keyboard.h>
-#include <GamePad.h>
-#include <SimpleMath.h>
-#include <Mouse.h>
 #include <RenderPass/RenderPass.h>
-#include <DeviceUtils/RenderToTexture/RenderToTexture.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
+#include <SceneObjectDef.h>
 
-using namespace DeviceUtils;
 
-extern RECT hWndRect;
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 #if defined(_EDITOR)
 namespace Editor
 {
-	extern void SelectCamera(std::shared_ptr<Camera> camera);
-	extern std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
-	extern void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject);
-	extern std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject);
-	extern void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject);
+	extern void SelectCamera(JUUID camera);
+	extern JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	extern void RegisterBillboard(JUUID sceneObject);
+	extern JUUID GetBillboard(JUUID sceneObject);
+	extern void DestroyBillboard(JUUID sceneObject);
 }
 #endif
 namespace Scene
 {
-	using namespace DeviceUtils;
-	using namespace DirectX;
+
+	SODEF_FULL(Camera);
 
 #include <TrackUUID/JDef.h>
 #include <CameraAtt.h>
@@ -63,33 +55,47 @@ namespace Scene
 
 #endif
 
-	Camera::Camera(nlohmann::json json) :SceneObject(json)
+	void DestroyCameras()
 	{
-#include <Attributes/JInit.h>
-#include <CameraAtt.h>
-#include <JEnd.h>
-
-#include <Attributes/JUpdate.h>
+		auto uuids = nostd::GetUUIDS<CameraUUID>(CamerasceneObjects);
+		for (auto cam : uuids)
+		{
+			if (cam->light().empty())
+			{
+				DeleteCameraSceneObject(cam());
+			}
+		}
+#include <TrackUUID/JClear.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
 	}
 
+	void DeleteCamera(std::string uuid)
+	{
+		CameraUUID cam = uuid;
+#if defined(_EDITOR)
+		Editor::DestroyBillboard(uuid);
+#endif
+		cam->markedForDelete = true;
+	}
+
 	void CamerasStep()
 	{
-		std::set<std::shared_ptr<Camera>> cams;
-		std::transform(Cameras.begin(), Cameras.end(), std::inserter(cams, cams.begin()), [](const auto& pair) { return pair.second; });
+		auto& Cameras = GetCameras();
+		std::set<CameraUUID> cams;
+		std::transform(Cameras.begin(), Cameras.end(), std::inserter(cams, cams.begin()), [](auto o) { return o; });
 
 		//we construct the set of cameras with dirty render passes
-		std::set<std::shared_ptr<Camera>> camsRpi;
-		std::copy_if(cams.begin(), cams.end(), std::inserter(camsRpi, camsRpi.begin()), [](const auto& cam)
+		std::set<CameraUUID> camsRpi;
+		std::copy_if(cams.begin(), cams.end(), std::inserter(camsRpi, camsRpi.begin()), [](auto cam)
 			{
 				return cam->dirty(Camera::Update_renderPasses);
 			}
 		);
 
 		//build a set of cameras for which ibl settings changed
-		std::set<std::shared_ptr<Camera>> camsIBL;
-		std::copy_if(cams.begin(), cams.end(), std::inserter(camsIBL, camsIBL.begin()), [](const auto& cam)
+		std::set<CameraUUID> camsIBL;
+		std::copy_if(cams.begin(), cams.end(), std::inserter(camsIBL, camsIBL.begin()), [](auto cam)
 			{
 				return cam->dirty(Camera::Update_IBLIrradiance) || cam->dirty(Camera::Update_IBLPreFilteredEnvironment) ||
 					cam->dirty(Camera::Update_IBLBRDFLUT);
@@ -98,50 +104,54 @@ namespace Scene
 		);
 
 		//go through all cameras checking updates of the swapchain
-		std::map<std::string, std::shared_ptr<Camera>> allCams(Cameras.begin(), Cameras.end());
-		for (auto& pair : allCams)
+		std::set<CameraUUID> allCams(Cameras.begin(), Cameras.end());
+		for (auto cam : allCams)
 		{
-			auto [uuid, cam] = pair;
 			//as a special case update the billboard
 #if defined(_EDITOR)
-			cam->UpdateBillboard(Editor::GetBillboard(cam));
+			if (cam() != *GetMouseCameras().begin() && cam->light().empty())
+			{
+				JUUID bbuuid = Editor::GetBillboard(cam());
+				if (!bbuuid.empty())
+				{
+					cam->UpdateBillboard(bbuuid);
+				}
+
+			}
 #endif
 			if (!cam->dirty(Camera::Update_useSwapChain)) continue;
 			cam->clean(Camera::Update_useSwapChain);
 			if (cam->useSwapChain())
 			{
-				InsertCameraIntoSwapChainCameras(cam);
+				InsertCameraIntoSwapChainCameras(cam());
 			}
 			else
 			{
-				EraseCameraFromSwapChainCameras(cam);
+				EraseCameraFromSwapChainCameras(cam());
 			}
 			//as swapchain changed add this camera to the update renderpass set
 			camsRpi.insert(cam);
 		}
 
-		//do the same for the camera controllers cameras 
-		for (auto& pair : allCams)
+		//do the same for the camera controllers cameras
+		for (auto cam : allCams)
 		{
-			auto [uuid, cam] = pair;
-
 			if (!cam->dirty(Camera::Update_mouseController)) continue;
 			cam->clean(Camera::Update_mouseController);
 
 			if (cam->mouseController())
 			{
-				InsertCameraIntoMouseCameras(cam);
+				InsertCameraIntoMouseCameras(cam());
 			}
 			else
 			{
-				EraseCameraFromMouseCameras(cam);
+				EraseCameraFromMouseCameras(cam());
 			}
 		}
 
 		//update projection attributes
-		for (auto& pair : allCams)
+		for (auto cam : allCams)
 		{
-			auto [uuid, cam] = pair;
 			if (
 				!cam->dirty(Camera::Update_projectionType) &&
 				!cam->dirty(Camera::Update_perspective) &&
@@ -161,25 +171,25 @@ namespace Scene
 			renderer->Flush();
 			renderer->RenderCriticalFrame([&camsIBL]
 				{
-					for (auto& cam : camsIBL)
+					for (auto cam : camsIBL)
 					{
-						std::set<std::shared_ptr<Renderable>> renderables = cam->renderables;
+						std::set<RenderableUUID> renderables(cam->renderables.begin(), cam->renderables.end());
 
-						for (auto& r : renderables)
+						for (auto r : renderables)
 						{
-							cam->UnbindRenderable(r);
+							cam->UnbindRenderable(r());
 						}
 
 						cam->DestroyIBLTextures();
 						cam->DestroyRenderPasses();
-						DestroyConstantsBuffer(cam->cameraCbv);
+						DestroyConstantsBuffer(cam->cameraCb());
 
 						cam->CreateConstantsBuffer();
 						cam->CreateRenderPasses();
 
-						for (auto& r : renderables)
+						for (auto r : renderables)
 						{
-							cam->BindRenderable(r);
+							cam->BindRenderable(r());
 						}
 
 						cam->clean(Camera::Update_IBLIrradiance);
@@ -189,85 +199,62 @@ namespace Scene
 				});
 		}
 
-		std::set<std::shared_ptr<Camera>> delCams;
-		std::copy_if(cams.begin(), cams.end(), std::inserter(delCams, delCams.begin()), [](auto& c) {return c->markedForDelete; });
+		std::set<CameraUUID> delCams;
+		std::copy_if(cams.begin(), cams.end(), std::inserter(delCams, delCams.begin()), [](auto c) {return c->markedForDelete; });
 
 		if (camsRpi.size() > 0ULL || delCams.size() > 0ULL)
 		{
 			renderer->Flush();
 			renderer->RenderCriticalFrame([&camsRpi, &delCams]
 				{
-					for (auto& c : camsRpi)
+					for (auto c : camsRpi)
 					{
 						c->clean(Camera::Update_renderPasses);
 
-						for (auto rpi : c->cameraRenderPasses)
+						for (auto rpi : c->renderPassesUUID)
 						{
 							if (rpi->renderCallbackOverride == RenderPassRenderCallbackOverride_Resolve)
 							{
-								EraseCameraFromSwapChainCameras(c);
+								EraseCameraFromSwapChainCameras(c());
 								break;
 							}
 						}
 
-						auto renderables = c->renderables;
+						std::set<RenderableUUID> renderables(c->renderables.begin(), c->renderables.end());
 
-						for (auto& renderable : renderables)
+						for (auto renderable : renderables)
 						{
-							UnbindFromScene(c->this_ptr, renderable);
+							UnbindFromScene(c->Juuid(), renderable->Juuid());
 						}
 						c->DestroyRenderPasses();
 
 						c->CreateRenderPasses();
-						for (auto& renderable : renderables)
+						for (auto renderable : renderables)
 						{
-							BindToScene(c->this_ptr, renderable);
+							BindToScene(c->Juuid(), renderable->Juuid());
 						}
 
-						for (auto rpi : c->cameraRenderPasses)
+						for (auto rpi : c->renderPassesUUID)
 						{
 							if (rpi->renderCallbackOverride == RenderPassRenderCallbackOverride_Resolve)
 							{
-								InsertCameraIntoSwapChainCameras(c);
+								InsertCameraIntoSwapChainCameras(c());
 								break;
 							}
 						}
 					}
 
-					for (auto& c : delCams)
+					for (auto c : delCams)
 					{
-						EraseCameraFromCameras(c);
-						EraseCameraFromWindowCameras(c);
-						EraseCameraFromSwapChainCameras(c);
-						EraseCameraFromMouseCameras(c);
-						std::shared_ptr<Camera> cam = c;
-						SafeDeleteSceneObject(cam);
+						EraseCameraFromCameras(c());
+						EraseCameraFromWindowCameras(c());
+						EraseCameraFromSwapChainCameras(c());
+						EraseCameraFromMouseCameras(c());
+						DeleteCameraSceneObject(c());
 					}
 				}
 			);
 		}
-	}
-
-	void DestroyCameras()
-	{
-		auto cams = Cameras;
-		for (auto& [_, cam] : cams)
-		{
-			if (cam->light().empty())
-				SafeDeleteSceneObject(cam);
-		}
-#include <TrackUUID/JClear.h>
-#include <CameraAtt.h>
-#include <JEnd.h>
-	}
-
-	void DeleteCamera(std::string uuid)
-	{
-		std::shared_ptr<Camera> cam = FindInCameras(uuid);
-#if defined(_EDITOR)
-		Editor::DestroyBillboard(cam);
-#endif
-		cam->markedForDelete = true;
 	}
 
 #if defined(_EDITOR)
@@ -276,8 +263,36 @@ namespace Scene
 #include <Editor/JSaveFile.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
+
 	}
 #endif
+
+	Camera::Camera(nlohmann::json& json) :SceneObject(json)
+	{
+#include <Attributes/JInit.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
+
+#include <Attributes/JUpdate.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
+#include <Application.h>
+	}
+
+	void Camera::Initialize()
+	{
+#include <TrackUUID/JInsert.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
+
+		UpdateProjection();
+		CreateConstantsBuffer();
+		CreateRenderPasses();
+#if defined(_EDITOR)
+		if (GetCountFromMouseCameras() > 0 && uuid() != *GetMouseCameras().begin() && light().empty())
+			Editor::RegisterBillboard(uuid());
+#endif
+	}
 
 	XMVECTOR Camera::positionV()
 	{
@@ -296,16 +311,22 @@ namespace Scene
 
 	XMVECTOR Camera::forward()
 	{
-		if (lightCam != nullptr && lightCam->lightType() == LT_Point)
+		/*
+		if (!light().empty())
 		{
-			unsigned int i = 0U;
-			for (; i < 6U; i++) {
-				if (lightCam->shadowMapCameras[i].get() == this)
-				{
-					return Scene::PointLightDirection[i];
+			auto lcam = GetFromLights(light());
+			if (lcam->lightType() == LT_Point)
+			{
+				unsigned int i = 0U;
+				for (; i < 6U; i++) {
+					if (lcam->shadowMapCameras[i] == uuid())
+					{
+						return Scene::PointLightDirection[i];
+					}
 				}
 			}
 		}
+		*/
 
 		FXMVECTOR dir = { 0.0f, 0.0f, 1.0f,0.0f };
 		return XMVector3Normalize(XMVector3Rotate(dir, rotationQ()));
@@ -313,17 +334,23 @@ namespace Scene
 
 	XMVECTOR Camera::up()
 	{
-		if (lightCam != nullptr && lightCam->lightType() == LT_Point)
+		/*
+		if (!light().empty())
 		{
-			unsigned int i = 0U;
-			for (; i < 6U; i++)
+			auto lcam = GetFromLights(light());
+			if (lcam->lightType() == LT_Point)
 			{
-				if (lightCam->shadowMapCameras[i].get() == this)
+				unsigned int i = 0U;
+				for (; i < 6U; i++)
 				{
-					return Scene::PointLightUp[i];
+					if (lcam->shadowMapCameras[i] == uuid())
+					{
+						return Scene::PointLightUp[i];
+					}
 				}
 			}
 		}
+		*/
 
 		FXMVECTOR up = { 0.0f, 1.0f, 0.0f,0.0f };
 		return XMVector3Normalize(XMVector3Rotate(up, rotationQ()));
@@ -362,11 +389,11 @@ namespace Scene
 		{
 		case PROJ_Perspective:
 		{
-			return fitWindow() ? static_cast<float>(abs(hWndRect.right - hWndRect.left)) : perspective().width;
+			return fitWindow() ? HWNDWIDTHF : perspective().width;
 		}
 		break;
 		default:
-			return fitWindow() ? static_cast<float>(abs(hWndRect.right - hWndRect.left)) : orthographic().width;
+			return fitWindow() ? HWNDWIDTHF : orthographic().width;
 			break;
 		}
 	}
@@ -376,10 +403,10 @@ namespace Scene
 		switch (projectionType())
 		{
 		case PROJ_Perspective:
-			return  fitWindow() ? static_cast<float>(abs(hWndRect.top - hWndRect.bottom)) : perspective().height;
+			return  fitWindow() ? HWNDHEIGHTF : perspective().height;
 			break;
 		default:
-			return  fitWindow() ? static_cast<float>(abs(hWndRect.top - hWndRect.bottom)) : orthographic().height;
+			return  fitWindow() ? HWNDHEIGHTF : orthographic().height;
 			break;
 		}
 	}
@@ -406,44 +433,36 @@ namespace Scene
 		//do not create the render passes of the camera if one of the renderpasses is broken. as we want to avoid a broken chain of passes
 		for (unsigned int i = 0; i < renderPasses().size(); i++)
 		{
-			std::string passUUID = renderPasses().at(i);
-			if (passUUID == "") continue;
-			std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(passUUID);
-			if (rp == nullptr) return;
+			JUUID passUUID = renderPasses().at(i);
+			if (passUUID.empty()) continue;
+			if (!RenderPassTemplateExist(passUUID)) return;
 		}
 
+		unsigned int projW = static_cast<unsigned int>(projectionWidth());
+		unsigned int projH = static_cast<unsigned int>(projectionHeight());
 		for (unsigned int i = 0; i < renderPasses().size(); i++)
 		{
 			std::string passUUID = renderPasses().at(i);
 			if (passUUID == "") continue;
-			std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(passUUID);
+			auto& rp = GetRenderPassTemplate(passUUID);
 			if (rp->type() == RenderPassType_SwapChainPass && rp->renderCallbackOverride() != RenderPassRenderCallbackOverride_Resolve) continue;
 
-			cameraRenderPasses.push_back(
-				GetRenderPassInstance(
-					this_ptr,
-					i,
-					passUUID,
-					static_cast<unsigned int>(projectionWidth()),
-					static_cast<unsigned int>(projectionHeight())
-				)
-			);
+			renderPassesUUID.push_back(CreateRenderPassInstance(uuid(), passUUID, i, projW, projH));
 		}
 	}
 
 	void Camera::DestroyRenderPasses()
 	{
-		for (auto& rp : cameraRenderPasses)
+		for (auto uuid : renderPassesUUID)
 		{
-			DestroyRenderPassInstance(rp);
-			rp = nullptr;
+			DestroyRenderPassInstance(uuid());
 		}
-		cameraRenderPasses.clear();
+		renderPassesUUID.clear();
 	}
 
 	void Camera::ResizeReleasePasses()
 	{
-		for (auto& pass : cameraRenderPasses)
+		for (auto& pass : renderPassesUUID)
 		{
 			pass->ResizeRelease();
 		}
@@ -451,7 +470,7 @@ namespace Scene
 
 	void Camera::ResizePasses(unsigned int width, unsigned int height)
 	{
-		for (auto& pass : cameraRenderPasses)
+		for (auto& pass : renderPassesUUID)
 		{
 			pass->Resize(width, height);
 		}
@@ -500,46 +519,25 @@ namespace Scene
 		}
 	}
 
-	void Camera::Initialize()
+	void Camera::Bind(JUUID uuid)
 	{
-#include <TrackUUID/JInsert.h>
-#include <CameraAtt.h>
-#include <JEnd.h>
-
-		if (!light().empty()) {
-			lightCam = FindInLights(light());
-		}
-
-		UpdateProjection();
-		CreateConstantsBuffer();
-		CreateRenderPasses();
-#if defined(_EDITOR)
-		if (GetNumMouseCameras() > 0 && this_ptr != GetMouseCameras().at(0) && !lightCam)
-			Editor::RegisterBillboard(this_ptr);
-#endif
-	}
-
-	void Camera::Bind(std::shared_ptr<SceneObject> sceneObject)
-	{
-		switch (sceneObject->JType())
+		switch (GetSceneObjectType(uuid))
 		{
 		case SO_Renderables:
 		{
-			std::shared_ptr<Renderable> r = std::dynamic_pointer_cast<Renderable>(sceneObject);
-			BindRenderable(r);
+			BindRenderable(uuid);
 		}
 		break;
 		}
 	}
 
-	void Camera::Unbind(std::shared_ptr<SceneObject> sceneObject)
+	void Camera::Unbind(JUUID uuid)
 	{
-		switch (sceneObject->JType())
+		switch (GetSceneObjectType(uuid))
 		{
 		case SO_Renderables:
 		{
-			std::shared_ptr<Renderable> r = std::dynamic_pointer_cast<Renderable>(sceneObject);
-			UnbindRenderable(r);
+			UnbindRenderable(uuid);
 		}
 		break;
 		}
@@ -550,19 +548,9 @@ namespace Scene
 #include <TrackUUID/JInsert.h>
 #include <CameraAtt.h>
 #include <JEnd.h>
-
 #if defined(_EDITOR)
 		SceneObject::BindToScene();
 #endif
-	}
-
-	void Camera::BindRenderable(std::shared_ptr<Renderable> r)
-	{
-		renderables.insert(r);
-		r->CreateMaterialsInstances(this_ptr);
-		r->CreateConstantsBuffersInstances(this_ptr);
-		r->CreateRootSignatures(this_ptr);
-		r->CreatePipelineStates(this_ptr);
 	}
 
 	void Camera::UnbindFromScene()
@@ -571,37 +559,46 @@ namespace Scene
 #include <CameraAtt.h>
 #include <JEnd.h>
 
-		lightCam = nullptr;
-		Scene::UnbindFromScene(this_ptr);
+		Scene::UnbindFromScene(uuid());
 		DestroyIBLTextures();
 		DestroyRenderPasses();
-		DestroyConstantsBuffer(cameraCbv);
+		DestroyConstantsBuffer(cameraCb());
 	}
 
-	void Camera::UnbindRenderable(std::shared_ptr<Renderable> r)
+	void Camera::BindRenderable(RenderableUUID renderable)
 	{
-		if (!renderables.contains(r)) return;
-		renderables.erase(r);
-		r->DestroyMaterialsInstances(this_ptr);
-		r->DestroyConstantsBuffersInstances(this_ptr);
-		r->DestroyRootSignatures(this_ptr);
-		r->DestroyPipelineStates(this_ptr);
+		if (renderables.contains(renderable)) return;
+		renderables.insert(renderable);
+
+		renderable->CreateMaterialsInstances(uuid());
+		renderable->CreateConstantsBuffersInstances(uuid());
+		renderable->CreateRootSignatures(uuid());
+		renderable->CreatePipelineStates(uuid());
+	}
+
+	void Camera::UnbindRenderable(RenderableUUID renderable)
+	{
+		if (!renderables.contains(renderable)) return;
+		renderables.erase(renderable);
+
+		renderable->DestroyMaterialsInstances(uuid());
+		renderable->DestroyConstantsBuffersInstances(uuid());
+		renderable->DestroyRootSignatures(uuid());
+		renderable->DestroyPipelineStates(uuid());
 	}
 
 	bool Camera::ResolvesToSwapChain()
 	{
 		using namespace Templates;
 		if (useSwapChain()) return true;
-
 		for (auto i = 0; i < renderPasses().size(); i++)
 		{
-			std::shared_ptr<RenderPassJson> pass = GetRenderPassTemplate(renderPasses().at(i));
-			if (!pass) continue;
+			RenderPassJsonUUID pass = renderPasses().at(i);
+			if (pass.empty()) continue;
 
 			if (pass->type() == RenderPassType_SwapChainPass) return true;
 			if (pass->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve) return true;
 		}
-
 		return false;
 	}
 
@@ -610,50 +607,46 @@ namespace Scene
 		WriteConstantsBuffer(renderer->backBufferIndex);
 
 		//first make a set of objects which are not meant to be rendered first
-		std::set<std::shared_ptr<Renderable>> nonRoot;
+		std::set<RenderableUUID> nonRoot;
 		for (auto r : renderables)
 		{
-			std::vector<std::string> uuids = r->renderNext();
+			std::vector<JUUID> uuids = r->renderNext();
 			for (std::string& uuid : uuids)
 			{
-				std::shared_ptr<Renderable> child = FindInRenderables(uuid);
-				if (child)
-					nonRoot.insert(child);
+				if (!SceneObjectExists(uuid)) continue;
+				nonRoot.insert(uuid);
 			}
 		}
 
-		//create the renderable set recursivelly 
-		nostd::VectorSet<std::shared_ptr<Renderable>> renVecSet;
-		std::function<void(std::shared_ptr<Renderable>)> addToRenderablesVecSet;
-		addToRenderablesVecSet = [&addToRenderablesVecSet, &renVecSet](std::shared_ptr<Renderable> r)
+		//create the renderable set recursivelly
+		nostd::VectorSet<RenderableUUID> renVecSet;
+		std::function<void(RenderableUUID)> addToRenderablesVecSet;
+		addToRenderablesVecSet = [&addToRenderablesVecSet, &renVecSet](RenderableUUID r)
 			{
 				renVecSet.insert(r);
-				std::vector<std::string> uuids = r->renderNext();
-				for (std::string& uuid : uuids)
+				for (auto& uuid : r->renderNext())
 				{
-					std::shared_ptr<Renderable> child = FindInRenderables(uuid);
-					if (child)
-						addToRenderablesVecSet(child);
+					if (!SceneObjectExists(uuid)) continue;
+					addToRenderablesVecSet(uuid);
 				}
 			};
 
 		//add the objects to the vecset only if are root objects
 		for (auto r : renderables)
 		{
-			if (nonRoot.contains(r))
-				continue;
-			addToRenderablesVecSet(r);
+			if (nonRoot.contains(r())) continue;
+			addToRenderablesVecSet(r());
 		}
 
-		auto draw = [this, &renVecSet](std::shared_ptr<RenderPassInstance> rp)
+		auto draw = [this, &renVecSet](auto& rpi)
 			{
 				for (auto it = renVecSet.begin(); it != renVecSet.end(); it++)
 				{
-					(*it)->Render(rp, this_ptr);
+					(*it)->Render(rpi, uuid());
 				}
 			};
 
-		std::vector<std::shared_ptr<RenderPassInstance>> rpiv = cameraRenderPasses;
+		std::vector<RenderPassInstanceUUID> rpiv = renderPassesUUID;
 		if (useSwapChain())
 		{
 			rpiv.push_back(renderer->swapChainPass);
@@ -661,7 +654,7 @@ namespace Scene
 
 		for (auto& rp : rpiv)
 		{
-			rp->Pass([rp, draw]() {draw(rp); });
+			rp->Pass([&rp, draw]() {draw(rp); });
 		}
 	}
 
@@ -671,7 +664,7 @@ namespace Scene
 
 	void Camera::CreateConstantsBuffer()
 	{
-		cameraCbv = DeviceUtils::CreateConstantsBuffer(sizeof(CameraAttributes) * renderer->numFrames, name());
+		cameraCb = DeviceUtils::CreateConstantsBuffer(sizeof(CameraAttributes) * renderer->numFrames, name());
 	}
 
 	void Camera::WriteConstantsBuffer(unsigned int backbufferIndex)
@@ -680,23 +673,17 @@ namespace Scene
 
 		atts.view = view();
 		atts.viewProjection = XMMatrixMultiply(view(), projection());
-
-		XMVECTOR camPos = positionV();
-		XMVECTOR camFw = forward();
-		XMVECTOR camUp = up();
-		XMVECTOR camRight = right();
-
-		atts.eyePosition = *(XMFLOAT4*)camPos.m128_f32;
-		atts.eyeForward = *(XMFLOAT4*)camFw.m128_f32;
-		atts.eyeUp = *(XMFLOAT4*)camUp.m128_f32;
-		atts.eyeRight = *(XMFLOAT4*)camRight.m128_f32;
+		XMStoreFloat4(&atts.eyePosition, positionV());
+		XMStoreFloat4(&atts.eyeForward, forward());
+		XMStoreFloat4(&atts.eyeUp, up());
+		XMStoreFloat4(&atts.eyeRight, right());
 		atts.white = white();
 		atts.widthHeight.x = projectionWidth();
 		atts.widthHeight.y = projectionHeight();
 
 		if (iblTextures.contains(TextureShaderUsage_IBLPreFilteredEnvironment))
 		{
-			std::shared_ptr<TextureJson> tex = GetTextureTemplate(iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->materialTexture);
+			TextureJsonUUID tex = iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment);
 			atts.IBLNumEnvLevels = static_cast<float>(tex->mipLevels());
 		}
 		else
@@ -704,12 +691,17 @@ namespace Scene
 			atts.IBLNumEnvLevels = 0.0f;
 		}
 
-		memcpy(cameraCbv->mappedConstantBuffer + cameraCbv->alignedConstantBufferSize * backbufferIndex, &atts, sizeof(atts));
+		cameraCb->push(atts, backbufferIndex);
 	}
 
 	void Camera::ProcessKeyboardInput(DirectX::Keyboard::KeyboardStateTracker& tracker, DirectX::Keyboard::State& state)
 	{
-		if (lightCam == nullptr || lightCam->lightType() == LT_Spot || lightCam->lightType() == LT_Point)
+		if (!SceneObjectExists(light()))
+			return;
+
+		LightUUID lcam = light();
+
+		if (lcam->lightType() == LT_Spot || lcam->lightType() == LT_Point)
 		{
 			float moveSpeed = speed() * ((state.LeftShift || state.RightShift) ? 10.0f : 1.0f);
 			if (state.Up) { MoveForward(moveSpeed); }
@@ -740,14 +732,19 @@ namespace Scene
 
 	void Camera::ProcessGamepadInput(DirectX::GamePad::State& gamePadState, DirectX::SimpleMath::Vector2 gamePadCameraRotationSensitivity)
 	{
-		if (lightCam == nullptr || lightCam->lightType() == LT_Spot || lightCam->lightType() == LT_Point)
+		if (!SceneObjectExists(light()))
+			return;
+
+		LightUUID lcam = light();
+
+		if (lcam->lightType() == LT_Spot || lcam->lightType() == LT_Point)
 		{
 			if (gamePadState.thumbSticks.leftY > 0) { MoveForward(speed()); }
 			if (gamePadState.thumbSticks.leftY < 0) { MoveBack(speed()); }
 			if (gamePadState.thumbSticks.leftX < 0) { MoveLeft(speed()); }
 			if (gamePadState.thumbSticks.leftX > 0) { MoveRight(speed()); }
 		}
-		if (lightCam == nullptr || lightCam->lightType() == LT_Directional || lightCam->lightType() == LT_Spot)
+		if (lcam->lightType() == LT_Directional || lcam->lightType() == LT_Spot)
 		{
 			Vector2 stickDiff = { gamePadState.thumbSticks.rightX, gamePadState.thumbSticks.rightY };
 			rotation(rotation() - XMFLOAT3{ stickDiff.x * gamePadCameraRotationSensitivity.x, stickDiff.y * gamePadCameraRotationSensitivity.y, 0.0f });
@@ -772,39 +769,45 @@ namespace Scene
 	float wheelDiffFactor = 0.0001f;
 	void Camera::ProcessCameraMouseRotation(DirectX::Mouse::State& mouseState, DirectX::SimpleMath::Vector2 rotationSensitivity, bool firstStep)
 	{
-		if (lightCam == nullptr || lightCam->lightType() == LT_Directional || lightCam->lightType() == LT_Spot)
+		if (!SceneObjectExists(light()))
+			return;
+
+		LightUUID lcam = light();
+
+		if (lcam->lightType() != LT_Directional && lcam->lightType() != LT_Spot)
+			return;
+
+		Vector2 mouseDiff = GetMouseDiff(mouseState);
+		mouseDiff = firstStep ? Vector2(0.0f, 0.0f) : mouseDiff;
+		rotation(rotation() - XMFLOAT3{ mouseDiff.x * rotationSensitivity.x, mouseDiff.y * rotationSensitivity.y, 0.0f });
+		UdateLightRotation();
+		if (lcam->lightType() == LT_Directional)
 		{
-			Vector2 mouseDiff = GetMouseDiff(mouseState);
-			mouseDiff = firstStep ? Vector2(0.0f, 0.0f) : mouseDiff;
-			rotation(rotation() - XMFLOAT3{ mouseDiff.x * rotationSensitivity.x, mouseDiff.y * rotationSensitivity.y, 0.0f });
-			UdateLightRotation();
-			if (lightCam != nullptr && lightCam->lightType() == LT_Directional)
-			{
-				float diff = static_cast<float>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
-				orthographicProjection.expandView(diff);
-			}
-			else if (lightCam == nullptr)
-			{
-				float diff = static_cast<float>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
-			}
+			float diff = static_cast<float>(mouseState.scrollWheelValue - lastWheelValue) * wheelDiffFactor;
+			orthographicProjection.expandView(diff);
 		}
 	}
 
 	void Camera::UpdateLightPosition()
 	{
-		if (lightCam == nullptr) return;
+		using namespace Scene;
 
-		switch (lightCam->lightType())
+		if (!SceneObjectExists(light()))
+			return;
+
+		LightUUID lcam = light();
+
+		switch (lcam->lightType())
 		{
 		case LT_Spot:
 		{
-			lightCam->position(position());
+			lcam->position(position());
 		}
 		break;
 		case LT_Point:
 		{
-			lightCam->position(position());
-			for (auto cam : lightCam->shadowMapCameras)
+			lcam->position(position());
+			for (auto cam : lcam->shadowMapCameras)
 			{
 				cam->position(position());
 			}
@@ -815,22 +818,27 @@ namespace Scene
 
 	void Camera::UdateLightRotation()
 	{
-		if (lightCam == nullptr) return;
+		using namespace Scene;
+
+		if (!SceneObjectExists(light()))
+			return;
+
+		LightUUID lcam = light();
 
 		XMFLOAT3 rot = rotation();
 
-		switch (lightCam->lightType())
+		switch (lcam->lightType())
 		{
 		case LT_Directional:
 		{
-			lightCam->rotation(rot);
-			XMVECTOR camPos = XMVectorScale(XMVector3Normalize(forward()), lightCam->dirDist());
+			lcam->rotation(rot);
+			XMVECTOR camPos = XMVectorScale(XMVector3Normalize(forward()), lcam->dirDist());
 			position(*(XMFLOAT3*)camPos.m128_f32);
 		}
 		break;
 		case LT_Spot:
 		{
-			lightCam->rotation(rot);
+			lcam->rotation(rot);
 		}
 		break;
 		}
@@ -871,25 +879,25 @@ namespace Scene
 
 	void Camera::CreateIBLTextures()
 	{
-		iblTextures.insert_or_assign(TextureShaderUsage_IBLIrradiance, GetTextureInstance(IBLIrradiance()));
-		iblTextures.insert_or_assign(TextureShaderUsage_IBLPreFilteredEnvironment, GetTextureInstance(IBLPreFilteredEnvironment()));
-		iblTextures.insert_or_assign(TextureShaderUsage_IBLBRDFLUT, GetTextureInstance(IBLBRDFLUT()));
+		iblTextures.insert_or_assign(TextureShaderUsage_IBLIrradiance, IBLIrradiance());
+		iblTextures.insert_or_assign(TextureShaderUsage_IBLPreFilteredEnvironment, IBLPreFilteredEnvironment());
+		iblTextures.insert_or_assign(TextureShaderUsage_IBLBRDFLUT, IBLBRDFLUT());
 	}
 
 	void Camera::DestroyIBLTextures()
 	{
 		for (auto& [_, t] : iblTextures)
 		{
-			RemoveTextureInstance(t);
+			DeleteTextureInstance(t);
 		}
 		iblTextures.clear();
 	}
 
 	void Camera::SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot)
 	{
-		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLIrradiance)->gpuHandle);
-		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment)->gpuHandle);
-		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, iblTextures.at(TextureShaderUsage_IBLBRDFLUT)->gpuHandle);
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, GetTextureInstance(iblTextures.at(TextureShaderUsage_IBLIrradiance))->gpuHandle);
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, GetTextureInstance(iblTextures.at(TextureShaderUsage_IBLPreFilteredEnvironment))->gpuHandle);
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot++, GetTextureInstance(iblTextures.at(TextureShaderUsage_IBLBRDFLUT))->gpuHandle);
 	}
 
 #if defined(_EDITOR)
@@ -903,23 +911,27 @@ namespace Scene
 	{
 	}
 
-	std::shared_ptr<Renderable> Camera::CreateBillboard()
+	JUUID Camera::CreateBillboard()
 	{
-		if (GetNumMouseCameras() == 0ULL || this_ptr == GetMouseCameras().at(0) || lightCam) return nullptr;
+		if (GetCountFromMouseCameras() == 0ULL || uuid() == *GetMouseCameras().begin() || !light().empty()) return nullptr;
 
-		std::shared_ptr<Renderable> billboard = Editor::CreateBillboardFromMaterials(at("name"), "Camera", "CameraPicking");
-		billboard->OnPick = [this] {Editor::SelectCamera(this_ptr); };
-		UpdateBillboard(billboard);
-		return billboard;
+		JUUID uuid = Editor::CreateBillboardFromMaterials(at("name"), "Camera", "CameraPicking");
+		RenderableUUID bb = uuid;
+		bb->OnPick = [this] {Editor::SelectCamera(this->uuid()); };
+		UpdateBillboard(uuid);
+		return uuid;
 	}
 
-	void Camera::UpdateBillboard(std::shared_ptr<Renderable> billboard)
+	void Camera::UpdateBillboard(JUUID uuid)
 	{
-		if (!billboard) return;
-		billboard->position(position());
+		assert(!uuid.empty());
+		if (uuid.empty()) return;
+
 		XMFLOAT3 baseColor = { 1.0f,1.0f,1.0f };
-		billboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
-		billboard->WriteConstantsBuffer(renderer->backBufferIndex);
+		RenderableUUID bb = uuid;
+		bb->position(position());
+		bb->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
+		bb->WriteConstantsBuffer();
 	}
 
 	BoundingBox Camera::GetBoundingBox()

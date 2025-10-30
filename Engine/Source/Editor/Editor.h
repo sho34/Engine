@@ -5,6 +5,10 @@
 #include <Templates.h>
 #include <DirectXMath.h>
 
+#define _EDITOR_BOUNDINGBOX
+#define _EDITOR_PICKINGPASS
+#define _EDITOR_BILLBOARD
+
 enum SceneObjectType;
 enum TemplateType;
 
@@ -38,7 +42,7 @@ namespace Editor {
 	bool WndProcHandlerEditor(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 	//Editor Drawing
-	void DrawEditor(std::shared_ptr<Camera> camera);
+	void DrawEditor(CameraUUID camera = JUUID(""));
 	void DrawApplicationBar();
 	void HandleApplicationDragTitleBar(RECT& dragRect);
 	RECT GetGameControllerRect();
@@ -46,11 +50,13 @@ namespace Editor {
 	void OpenLevelFile();
 	void SaveLevelAs();
 	bool SaveFileDialog(std::wstring& path, std::wstring defaultDirectory = L"", std::wstring defaultFileName = L"", std::pair<COMDLG_FILTERSPEC*, int>* pFilterInfo = nullptr);
+	std::string GetLevelString();
 	void SaveLevelToFile(std::string levelFileName);
 	void SaveTemplates();
 	void DrawRightPanel();
 	void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void(std::vector<nlohmann::json>)> OnDelete, std::function<void()> OnCancel);
 	void CloseDeletionPrompt();
+	void BuildAssetsTree();
 
 	//SceneObjects Panel
 	void OnChangeSceneObjectTab(std::string newTab);
@@ -66,8 +72,8 @@ namespace Editor {
 	void MarkTemplatesPanelAssetsAsDirty();
 
 	//JObject's Preview Panel
-	void SendEditorPreview(std::string uuid, auto GetJObject, auto drawers);
-	void SendEditorDestroyPreview(std::string uuid, auto GetJObject);
+	void SendEditorPreview(JUUID uuid, auto GetJObject, auto drawers);
+	void SendEditorDestroyPreview(JUUID uuid, auto GetJObject);
 
 	//Model3D Animation Sequencer
 	void OpenAnimationSequencer(std::string uuid);
@@ -79,41 +85,41 @@ namespace Editor {
 
 	//Gizmos
 	void ResetGizmoVariableWorkers();
-	bool InteractWithGizmos(std::set<std::shared_ptr<SceneObject>>& objects2Gizmo);
-	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera);
-	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4)> interaction = [](DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4) {});
+	bool InteractWithGizmos(std::set<SceneObject*>& objects2Gizmo);
+	void DrawPickedObjectsGizmo(CameraUUID camera);
+	void BeginGizmoInteraction(CameraUUID camera, std::function<void(DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4)> interaction = [](DirectX::XMFLOAT4X4, DirectX::XMFLOAT4X4) {});
 
 	//SceneObject Selection
-	void SelectSceneObject(std::string uuid);
-	void SelectRenderable(std::shared_ptr<Renderable> renderable);
-	void SelectLight(std::shared_ptr<Light> light);
-	void SelectCamera(std::shared_ptr<Camera> camera);
-	void SelectSoundEffect(std::shared_ptr<SoundFX> soundEffect);
-	void ToggleSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject);
-	void SetSceneObjectSelection(std::string uuid, bool selected);
-	void InsertSceneObjectToSelection(std::shared_ptr<SceneObject> sceneObject);
-	void EraseSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject);
+	void SelectSceneObject(JUUID uuid);
+	void SelectRenderable(JUUID ruuid);
+	void SelectLight(JUUID luuid);
+	void SelectCamera(JUUID cuuid);
+	void SelectSoundEffect(JUUID suuid);
+	void ToggleSceneObjectFromSelection(JUUID uuid);
+	void SetSceneObjectSelection(JUUID uuid, bool selected);
+	void InsertSceneObjectToSelection(JUUID uuid);
+	void EraseSceneObjectFromSelection(JUUID uuid);
 	void ClearSceneObjectsSelection();
 
 	//BoundingBox
 	bool RenderableBoundingBoxExists();
-	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera);
+	void CreateRenderableBoundingBox(CameraUUID camera);
 	void DestroyRenderableBoundingBox();
 	void UpdateBoundingBox();
 
 	//Mouse Processing
 	bool MouseIsInGameArea(std::unique_ptr<DirectX::Mouse>& mouse);
-	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera);
+	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, CameraUUID camera);
 
 	//SceneObject Picking
 	bool PickingPassExists();
 	void CreatePickingPass();
 	void DestroyPickingPass();
 	void BindPickingRenderables();
-	void BindRenderableToPickingPass(std::shared_ptr<Renderable> r);
+	void BindRenderableToPickingPass(RenderableUUID r);
 	void UnbindPickingRenderables();
-	void UnbindRenderableFromPickingPass(std::shared_ptr<Renderable> r);
-	void RenderPickingPass(std::shared_ptr<Camera> camera);
+	void UnbindRenderableFromPickingPass(RenderableUUID r);
+	void RenderPickingPass(CameraUUID camera);
 	void PickFromScene();
 	void PickSceneObject(unsigned int pickedObjectId);
 	void ReleasePickingPassResources();
@@ -124,13 +130,14 @@ namespace Editor {
 	void StartTemplateCreation(TemplateType type);
 
 	//Billboards
-	std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
-	void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject);
-	std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject);
-	void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject);
+	JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	void RegisterBillboard(JUUID sceneObject);
+	JUUID GetBillboard(JUUID sceneObject);
+	void DestroyBillboard(JUUID sceneObject);
 	void CreateRegisteredBillboards();
 	bool PendingBillboards();
 	bool PendingBillboardsDestruction();
+	void UpdateBillboards();
 	void DestroyPendingBillboards();
 	void DestroyBillboards();
 
@@ -139,5 +146,6 @@ namespace Editor {
 	bool IsPaused();
 	void SwitchToPlayMode();
 	void SwitchToPauseMode();
+	void SwitchToUnPausedMode();
 	void SwitchToNonPlayMode();
 }

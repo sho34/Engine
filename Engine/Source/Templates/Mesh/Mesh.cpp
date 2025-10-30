@@ -1,59 +1,52 @@
 #include "pch.h"
 #include "Mesh.h"
-#include "../../Primitives/Primivites.h"
-#include <Renderer.h>
-#include <set>
-#include <memory>
-#include <NoStd.h>
-#include <Templates.h>
-#include <Application.h>
+#include <Primivites.h>
+#include <RefTracker.h>
+#include <UUID.h>
 
 namespace Templates {
 
-	std::map<std::string, MeshTemplate> meshes;
+	std::map<JUUID, JNAME> meshes;
 
 	namespace Mesh
 	{
-		static RefTracker<std::string, std::shared_ptr<MeshInstance>> refTracker;
+		static RefTracker<JUUID, std::unique_ptr<MeshInstance>> refTracker;
 	}
 
 	//CREATE
-	void CreatePrimitiveMeshTemplate(const std::string uuid, const std::string name)
+	void CreatePrimitiveMeshTemplate(JUUID uuid, JNAME name)
 	{
-		MeshTemplate t;
-
-		std::string& n = std::get<0>(t);
-		n = name;
-
-		meshes.insert_or_assign(uuid, t);
+		meshes.insert_or_assign(uuid, name);
 	}
 
-	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string uuid)
+	std::unique_ptr<MeshInstance>& GetMeshInstance(JUUID uuid)
 	{
-		if (!meshes.contains(uuid))
-		{
-			assert(!!!"mesh uuid not present");
-		}
-
-		std::string name = std::get<0>(meshes.at(uuid));
-
 		using namespace Mesh;
-		return refTracker.AddRef(uuid, [uuid, name]()
-			{
-				std::shared_ptr<MeshInstance> instance = std::make_shared<MeshInstance>();
-				instance->uuid = uuid;
-				LoadPrimitiveIntoMeshFunctions.at(name)(instance, nullptr);
-				return instance;
-			}
-		);
+
+		if (meshes.contains(uuid))
+		{
+			JNAME& name = meshes.at(uuid);
+			return refTracker.AddRef(uuid, [uuid, name]()
+				{
+					std::unique_ptr<MeshInstance> instance = std::make_unique<MeshInstance>();
+					instance->uuid = uuid;
+					LoadPrimitiveIntoMeshFunctions.at(name)(instance, nullptr);
+					return instance;
+				}
+			);
+		}
+		else
+		{
+			return  refTracker.FindValue(uuid);
+		}
 	}
 
-	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string uuid, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount)
+	std::unique_ptr<MeshInstance>& GetMeshInstance(JUUID uuid, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount)
 	{
 		using namespace Mesh;
 		return refTracker.AddRef(uuid, [uuid, vertexClass, vertexData, vertexSize, verticesCount, indices, indicesCount]()
 			{
-				std::shared_ptr<MeshInstance> instance = std::make_shared<MeshInstance>();
+				std::unique_ptr<MeshInstance> instance = std::make_unique<MeshInstance>();
 				instance->uuid = uuid;
 				instance->vertexClass = vertexClass;
 				InitializeVertexBufferView(renderer->d3dDevice, renderer->commandList, vertexData, vertexSize, verticesCount, instance->vbvData);
@@ -63,41 +56,51 @@ namespace Templates {
 		);
 	}
 
-	std::string GetMeshName(std::string uuid)
+	JNAME GetMeshName(JUUID uuid)
 	{
-		return std::get<0>(meshes.at(uuid));
+		return meshes.at(uuid);
 	}
 
-	std::vector<UUIDName> GetMeshesUUIDsNames()
+	std::vector<JUUIDName> GetMeshesUUIDsNames()
 	{
-		return GetUUIDsNames(meshes);
+		std::vector<JUUIDName> uuidNames;
+		std::transform(meshes.begin(), meshes.end(), std::back_inserter(uuidNames), [](auto& pair)
+			{
+				JUUIDName uuidname;
+				JUUID& uuid = std::get<0>(uuidname);
+				JNAME& name = std::get<1>(uuidname);
+				uuid = pair.first;
+				name = pair.second;
+				return uuidname;
+			}
+		);
+		return uuidNames;
 	}
 
-	std::string FindMeshUUIDByName(std::string name)
+	JUUID GetMeshUUIDByName(JNAME name)
 	{
-		for (auto& [meshUUID, meshTemplate] : meshes)
+		for (auto& [meshUUID, meshName] : meshes)
 		{
-			if (std::get<0>(meshTemplate) == name) return meshUUID;
+			if (meshName == name) return meshUUID;
 		}
-
 		assert(!!!"mesh not found");
 		return "";
+	}
+
+	bool MeshInstanceExists(JUUID uuid)
+	{
+		using namespace Mesh;
+		return refTracker.Has(uuid);
 	}
 
 	//UPDATE
 
 	//DESTROY
-	void ReleaseMeshTemplates()
-	{
-		using namespace Mesh;
-		refTracker.Clear();
-		meshes.clear();
-	}
 
-	void DestroyMeshInstance(std::shared_ptr<MeshInstance>& mesh)
+	void DestroyMeshInstance(JUUID uuid)
 	{
 		using namespace Mesh;
-		refTracker.RemoveRef(mesh->uuid, mesh);
+		refTracker.RemoveRef(uuid);
 	}
 
 	void MeshInstance::CreateVerticesShaderResourceView(CD3DX12_CPU_DESCRIPTOR_HANDLE& cpuHandle, CD3DX12_GPU_DESCRIPTOR_HANDLE& gpuHandle)

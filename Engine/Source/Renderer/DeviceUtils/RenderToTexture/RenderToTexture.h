@@ -2,6 +2,7 @@
 
 #include "../DescriptorHeap/DescriptorHeap.h"
 #include <dxgiformat.h>
+#include <UUID.h>
 
 using namespace Microsoft::WRL;
 using namespace DirectX;
@@ -34,4 +35,7 @@ namespace DeviceUtils
 	//DESTROY
 	void DestroyRenderToTextureDescriptorHeap();
 
+	JUUID CreateRenderToTexture();
+	std::unique_ptr<RenderToTexture>& GetRenderToTexture(JUUID rttUUID);
+	void DeleteRenderToTexture(JUUID rttUUID);
 };

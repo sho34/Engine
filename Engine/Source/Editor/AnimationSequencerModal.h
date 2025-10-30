@@ -104,13 +104,13 @@ struct AnimationSequencerModal : public ExImSequencer::SequenceInterface
 	bool showing = false;
 	bool initializing = false;
 	bool destroying = false;
-	std::string model3dUUID;
-	std::shared_ptr<Scene::Renderable> renderable;
-	std::shared_ptr<Scene::Renderable> floor;
-	std::shared_ptr<Scene::Camera> camera;
-	std::shared_ptr<Scene::Light> ambientLight;
-	std::shared_ptr<Scene::Light> directionalLight;
-	std::shared_ptr<Templates::Model3DJson> model3D;
+	Model3DInstanceUUID model3dUUID;
+	RenderableUUID renderable;
+	RenderableUUID floor;
+	CameraUUID camera;
+	LightUUID ambientLight;
+	LightUUID directionalLight;
+	Model3DJsonUUID model3D;
 
 	AnimationSequences animationsSequences;
 	std::vector<std::string> animations;
@@ -123,7 +123,7 @@ struct AnimationSequencerModal : public ExImSequencer::SequenceInterface
 
 	int currentFrame = 0;
 
-	void Initialize(std::string uuid);
+	void Initialize(JUUID uuid);
 	void LoadSceneObjects();
 	void DestroySceneObjects();
 	void Step();
@@ -139,7 +139,6 @@ struct AnimationSequencerModal : public ExImSequencer::SequenceInterface
 	void OnCurrentFrameChanged(int frame);
 
 	// interface with sequencer
-
 	virtual int GetFrameMin() const;
 	virtual int GetFrameMax() const;
 	virtual int GetItemCount() const;

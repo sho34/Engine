@@ -4,21 +4,15 @@
 #include <Audio.h>
 #include <Application.h>
 #include <nlohmann/json.hpp>
-#include <Sound/SoundFX.h>
-#include <UUID.h>
-#include <JTemplate.h>
-#include <Templates.h>
-#include <TemplateDecl.h>
 #include <JTypes.h>
+#include <JTemplate.h>
+#include <TemplateDecl.h>
+
 
 using namespace DirectX;
 
 namespace Templates
 {
-	namespace Sound
-	{
-		inline static const std::string templateName = "sounds.json";
-	}
 #if defined(_EDITOR)
 
 #include <Attributes/JOrder.h>
@@ -51,6 +45,12 @@ namespace Templates
 
 #endif
 
+	namespace Sound
+	{
+		inline static const std::string templateName = "sounds.json";
+		inline static const TemplateType templateType = T_Sounds;
+	}
+
 	struct SoundJson : JTemplate
 	{
 		TEMPLATE_DECL(Sound);
@@ -69,22 +69,19 @@ namespace Templates
 	void SoundJsonStep();
 	void ReleaseSoundEffectsInstances();
 
-	//EDITOR
 	std::tuple<
 		std::unique_ptr<DirectX::SoundEffect>,
 		std::unique_ptr<DirectX::SoundEffectInstance>
 	> GetSoundEffectInstance(
-		std::string uuid,
+		JUUID uuid,
 		unsigned int flags,
 		std::string objectUUID = "",
 		JObjectChangeCallback cb = nullptr,
 		JObjectChangePostCallback postCb = nullptr
 	);
 
-	void DestroySoundEffectInstance(std::string uuid, std::tuple<
+	void DestroySoundEffectInstance(JUUID uuid, std::tuple<
 		std::unique_ptr<DirectX::SoundEffect>,
 		std::unique_ptr<DirectX::SoundEffectInstance>
 	>& soundEffectInstance);
-
 };
-

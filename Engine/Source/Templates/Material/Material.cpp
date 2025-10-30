@@ -4,16 +4,6 @@
 #include "Material.h"
 #include "Variables.h"
 #include <ShaderCompiler.h>
-#include <nlohmann/json.hpp>
-#include <set>
-#include <string>
-#include <random>
-#include <NoStd.h>
-#include <DXTypes.h>
-
-#if defined(_EDITOR)
-#include <VertexFormats.h>
-#endif
 
 namespace Templates
 {
@@ -41,7 +31,7 @@ namespace Templates
 
 #endif
 
-	MaterialJson::MaterialJson(nlohmann::json json) : JTemplate(json)
+	MaterialJson::MaterialJson(nlohmann::json& json) : JTemplate(json)
 	{
 #include <Attributes/JInit.h>
 #include <MaterialAtt.h>
@@ -57,16 +47,15 @@ namespace Templates
 
 	void MaterialJsonStep()
 	{
-		std::set<std::shared_ptr<MaterialJson>> mats;
+		std::set<MaterialJsonUUID> mats;
 		std::transform(Materialtemplates.begin(), Materialtemplates.end(), std::inserter(mats, mats.begin()), [](auto& temps)
 			{
-				auto& matJ = std::get<1>(temps.second);
-				return matJ;
+				return temps.first;
 			}
 		);
 
-		std::set<std::shared_ptr<MaterialJson>> rebuildMaterials;
-		std::copy_if(mats.begin(), mats.end(), std::inserter(rebuildMaterials, rebuildMaterials.begin()), [](auto& mat)
+		std::set<MaterialJsonUUID> rebuildMaterials;
+		std::copy_if(mats.begin(), mats.end(), std::inserter(rebuildMaterials, rebuildMaterials.begin()), [](auto mat)
 			{
 				return mat->dirty(MaterialJson::Update_shader_vs) ||
 					mat->dirty(MaterialJson::Update_shader_ps) ||
@@ -95,13 +84,13 @@ namespace Templates
 	}
 
 	MaterialInstance::MaterialInstance(
-		const std::string instance_uuid,
-		const std::string uuid,
+		JUUID instance_uuid,
+		JUUID uuid,
 		VertexClass vClass,
 		bool isShadowed,
 		bool hasIBL,
 		TextureShaderUsageMap overrideTextures,
-		std::string bindingUUID,
+		JUUID bindingUUID,
 		JObjectChangeCallback materialChangeCallback,
 		JObjectChangePostCallback materialChangePostCallback
 	)
@@ -109,7 +98,7 @@ namespace Templates
 		instanceUUID = instance_uuid;
 		materialUUID = uuid;
 
-		std::shared_ptr<MaterialJson> material = GetMaterialTemplate(uuid);
+		std::unique_ptr<MaterialJson>& material = GetMaterialTemplate(uuid);
 		if (bindingUUID != "" && (materialChangeCallback != nullptr || materialChangePostCallback != nullptr)) {
 			material->BindChangeCallback(bindingUUID, materialChangeCallback, materialChangePostCallback);
 		}
@@ -117,12 +106,14 @@ namespace Templates
 		auto matTextures = material->textures();
 		std::transform(matTextures.begin(), matTextures.end(), std::inserter(textures, textures.end()), [](auto& pair)
 			{
-				return TextureUsageInstancePair(pair.first, GetTextureInstance(pair.second));
+				CreateTextureInstance(pair.second);
+				return TextureUsageInstancePair(pair.first, pair.second);
 			}
 		);
 		std::transform(overrideTextures.begin(), overrideTextures.end(), std::inserter(textures, textures.end()), [](auto& pair)
 			{
-				return TextureUsageInstancePair(pair.first, GetTextureInstance(pair.second));
+				CreateTextureInstance(pair.second);
+				return TextureUsageInstancePair(pair.first, pair.second);
 			}
 		);
 		if (textures.size() > 0ULL) samplers = material->samplers();
@@ -146,12 +137,12 @@ namespace Templates
 
 		std::vector<std::string> vertexClassDefines = VertexClassDefines.at(vertexClass);
 
-		std::shared_ptr<MaterialJson> mat = GetMaterialTemplate(materialUUID);
+		auto& mat = materialUUID;
 		TextureShaderUsageMap texMap = mat->textures();
 
 		if (texMap.size() == 0UL)
 		{
-			//remove textures components 
+			//remove textures components
 			std::copy_if(vertexClassDefines.begin(), vertexClassDefines.end(), std::back_inserter(defines), [](auto& def)
 				{
 					return !VertexTextureCompoentsString.contains(def);
@@ -165,7 +156,7 @@ namespace Templates
 			{
 				defines.push_back(textureShaderUsageToShaderDefine.at(texType));
 
-				std::shared_ptr<TextureJson> tex = GetTextureTemplate(texUUID);
+				std::unique_ptr<TextureJson>& tex = GetTextureTemplate(texUUID);
 				if (NonLinearDxgiFormats.contains(tex->format()))
 				{
 					std::string srgbTexDefine = textureShaderUsageInGammaSpaceToShaderDefine.at(texType);
@@ -190,28 +181,28 @@ namespace Templates
 	void MaterialInstance::CreateShaderInstances()
 	{
 		using namespace ShaderCompiler;
-		Source compVS = { .shaderType = VERTEX_SHADER, .shaderTarget = shaderTarget.at(VERTEX_SHADER),.shaderUUID = vertexShaderUUID, .defines = defines };
-		Source compPS = { .shaderType = PIXEL_SHADER, .shaderTarget = shaderTarget.at(PIXEL_SHADER), .shaderUUID = pixelShaderUUID, .defines = defines };
-		std::string vertexShaderInstanceUUID = vertexShaderUUID + std::to_string(std::hash<Source>()(compVS));
-		std::string pixelShaderInstanceUUID = pixelShaderUUID + std::to_string(std::hash<Source>()(compPS));
-		auto onVSShaderChange = [this](std::shared_ptr<JObject> vsShader)
+		Source compVS = { .shaderType = VERTEX_SHADER, .shaderTarget = shaderTarget.at(VERTEX_SHADER),.shaderUUID = vertexShaderUUID(), .defines = defines };
+		Source compPS = { .shaderType = PIXEL_SHADER, .shaderTarget = shaderTarget.at(PIXEL_SHADER), .shaderUUID = pixelShaderUUID(), .defines = defines };
+		vertexShaderInstanceUUID = vertexShaderUUID() + std::to_string(std::hash<Source>()(compVS));
+		pixelShaderInstanceUUID = pixelShaderUUID() + std::to_string(std::hash<Source>()(compPS));
+		auto onVSShaderChange = [this](JUUID vsShader)
 			{
-				std::shared_ptr<MaterialJson> mat = GetMaterialTemplate(materialUUID);
+				auto& mat = materialUUID;
 				mat->flag(MaterialJson::Update_shader_vs);
 			};
-		auto onPSShaderChange = [this](std::shared_ptr<JObject> psShader)
+		auto onPSShaderChange = [this](JUUID psShader)
 			{
-				std::shared_ptr<MaterialJson> mat = GetMaterialTemplate(materialUUID);
+				auto& mat = materialUUID;
 				mat->flag(MaterialJson::Update_shader_ps);
 			};
-		vertexShader = GetShaderInstance(vertexShaderInstanceUUID, [this, vertexShaderInstanceUUID, compVS, onVSShaderChange]
+		CreateShaderInstance(vertexShaderInstanceUUID(), [this, compVS, onVSShaderChange]
 			{
-				return std::make_shared<ShaderInstance>(vertexShaderInstanceUUID, compVS.shaderUUID, compVS, instanceUUID, onVSShaderChange);
+				return std::make_unique<ShaderInstance>(vertexShaderInstanceUUID(), compVS.shaderUUID, compVS, instanceUUID, onVSShaderChange);
 			}
 		);
-		pixelShader = GetShaderInstance(pixelShaderInstanceUUID, [this, pixelShaderInstanceUUID, compPS, onPSShaderChange]
+		CreateShaderInstance(pixelShaderInstanceUUID(), [this, compPS, onPSShaderChange]
 			{
-				return std::make_shared<ShaderInstance>(pixelShaderInstanceUUID, compPS.shaderUUID, compPS, instanceUUID, onPSShaderChange);
+				return std::make_unique<ShaderInstance>(pixelShaderInstanceUUID(), compPS.shaderUUID, compPS, instanceUUID, onPSShaderChange);
 			}
 		);
 	}
@@ -220,32 +211,25 @@ namespace Templates
 	{
 		using namespace ShaderCompiler;
 
-		std::shared_ptr<ShaderJson> vsShaderJson = GetShaderTemplate(vertexShaderUUID);
-		if (vsShaderJson)
-			vsShaderJson->UnbindChangeCallback(instanceUUID);
+		if (ShaderTemplateExist(vertexShaderUUID()))
+			vertexShaderUUID->UnbindChangeCallback(instanceUUID);
 
-		std::shared_ptr<ShaderJson> psShaderJson = GetShaderTemplate(pixelShaderUUID);
-		if (psShaderJson)
-			psShaderJson->UnbindChangeCallback(instanceUUID);
+		if (ShaderTemplateExist(pixelShaderUUID()))
+			pixelShaderUUID->UnbindChangeCallback(instanceUUID);
 
-		if (RemoveShaderInstance(vertexShader->instanceUUID, vertexShader))
-		{
-			vertexShader = nullptr;
-		}
-		if (RemoveShaderInstance(pixelShader->instanceUUID, pixelShader))
-		{
-			pixelShader = nullptr;
-		}
+		DeleteShaderInstance(vertexShaderInstanceUUID());
+		DeleteShaderInstance(pixelShaderInstanceUUID());
 		for (auto& [type, tex] : textures)
 		{
-			RemoveTextureInstance(tex->materialTexture, tex);
-			//DestroyTextureInstance(tex);
+			DeleteTextureInstance(tex);
 		}
-		textures.clear();
 	}
 
 	void MaterialInstance::LoadVariablesMapping()
 	{
+		auto& vertexShader = vertexShaderInstanceUUID;
+		auto& pixelShader = pixelShaderInstanceUUID;
+
 		//do i really need this?
 		unsigned int numConstantsBuffers = static_cast<unsigned int>(
 			max(vertexShader->cbufferSize.size(), pixelShader->cbufferSize.size())
@@ -270,9 +254,9 @@ namespace Templates
 		ShaderConstantsBufferVariablesMap& psVars = pixelShader->constantsBuffersVariables;
 
 		//initialize the variables mapping
-		std::shared_ptr<MaterialJson> material = GetMaterialTemplate(materialUUID);
-		std::shared_ptr<ShaderJson> shader_vs = GetShaderTemplate(material->shader_vs());
-		std::shared_ptr<ShaderJson> shader_ps = GetShaderTemplate(material->shader_ps());
+		auto& material = materialUUID;
+		ShaderJsonUUID shader_vs = material->shader_vs();
+		ShaderJsonUUID shader_ps = material->shader_ps();
 
 		nlohmann::json materialMappedValues = nlohmann::json::array();
 		nlohmann::json shaderVSMappedValues = nlohmann::json::array();
@@ -309,7 +293,7 @@ namespace Templates
 			}
 		}
 
-		auto constantsBufferContains = [this](std::string varName)
+		auto constantsBufferContains = [this, &vertexShader, &pixelShader](std::string varName)
 			{
 				ShaderConstantsBufferVariablesMap& vsVars = vertexShader->constantsBuffersVariables;
 				ShaderConstantsBufferVariablesMap& psVars = pixelShader->constantsBuffersVariables;
@@ -317,7 +301,7 @@ namespace Templates
 				return vsVars.contains(varName) || psVars.contains(varName);
 			};
 
-		auto getConstantsBufferVariable = [this](std::string varName)
+		auto getConstantsBufferVariable = [this, &vertexShader, &pixelShader](std::string varName)
 			{
 				ShaderConstantsBufferVariablesMap& vsVars = vertexShader->constantsBuffersVariables;
 				ShaderConstantsBufferVariablesMap& psVars = pixelShader->constantsBuffersVariables;
@@ -371,13 +355,14 @@ namespace Templates
 	}
 
 	//READ&GET
-	bool MaterialInstance::ShaderInstanceHasRegister(std::function<int(std::shared_ptr<ShaderInstance>&)> getRegister)
+	bool MaterialInstance::ShaderInstanceHasRegister(std::function<int(ShaderInstanceUUID)> getRegister)
 	{
-		return (getRegister(vertexShader) != -1) || (getRegister(pixelShader) != -1);
+		return (getRegister(vertexShaderInstanceUUID) != -1) || (getRegister(pixelShaderInstanceUUID) != -1);
 	}
 
 	void MaterialInstance::SetUAVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& slot)
 	{
+		auto& pixelShader = pixelShaderInstanceUUID;
 		for (auto& [name, uavParam] : pixelShader->uavParameters)
 		{
 			if (uav.contains(uavParam.registerId))
@@ -390,16 +375,18 @@ namespace Templates
 
 	void MaterialInstance::SetSRVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& slot)
 	{
+		auto& pixelShader = pixelShaderInstanceUUID;
 		for (auto& [textureType, texParam] : pixelShader->srvTexParameters)
 		{
 			if (texParam.numSRV == 0xFFFFFFFF || iblUsageTexture.contains(textureType)) continue;
-			commandList->SetGraphicsRootDescriptorTable(slot, textures.at(textureType)->gpuHandle);
+			auto& texInstance = GetTextureInstance(textures.at(textureType));
+			commandList->SetGraphicsRootDescriptorTable(slot, texInstance->gpuHandle);
 			slot++;
 		}
 	}
 
-	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& materialInstance)
+	void DestroyMaterialInstance(JUUID materialInstance)
 	{
-		RemoveMaterialInstance(materialInstance->instanceUUID, materialInstance);
+		DeleteMaterialInstance(materialInstance);
 	}
 }

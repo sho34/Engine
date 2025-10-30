@@ -6,7 +6,7 @@
 #include <atlbase.h>
 #include <NoStd.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 namespace DeviceUtils
 {
@@ -41,7 +41,7 @@ namespace DeviceUtils
 
 		std::vector<D3D12_STATIC_SAMPLER_DESC> samplers = GetRootSignatureSamplerDesc(samplersDef, matSamplers);
 
-		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+		CD3DX12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
 		rootSignatureDesc.Init(
 			static_cast<UINT>(parameters.size()), parameters.data(),
 			static_cast<UINT>(samplers.size()), samplers.data(),

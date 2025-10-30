@@ -3,14 +3,8 @@
 #include <VertexFormats.h>
 #include <DeviceUtils/VertexBuffer/VertexBuffer.h>
 #include <DeviceUtils/IndexBuffer/IndexBuffer.h>
-#include <DeviceUtils/RootSignature/RootSignature.h>
-#include <DeviceUtils/PipelineState/PipelineState.h>
 #include <DirectXCollision.h>
 #include <Application.h>
-
-typedef std::tuple<
-	std::string //name
-> MeshTemplate;
 
 namespace Templates {
 
@@ -18,7 +12,7 @@ namespace Templates {
 
 	struct MeshInstance
 	{
-		std::string uuid;
+		JUUID uuid;
 		VertexClass vertexClass;
 		VertexBufferViewData vbvData;
 		IndexBufferViewData	ibvData;
@@ -28,20 +22,20 @@ namespace Templates {
 	};
 
 	//CREATE
-	void CreatePrimitiveMeshTemplate(const std::string uuid, const std::string name);
-	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string uuid);
-	std::shared_ptr<MeshInstance> GetMeshInstance(const std::string uuid, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount);
+	void CreatePrimitiveMeshTemplate(JUUID uuid, JNAME name);
+	std::unique_ptr<MeshInstance>& GetMeshInstance(JUUID uuid);
+	std::unique_ptr<MeshInstance>& GetMeshInstance(JUUID uuid, VertexClass vertexClass, void* vertexData, unsigned int vertexSize, unsigned int verticesCount, const void* indices, unsigned int indicesCount);
 
 	//READ&GET
-	std::string GetMeshName(std::string uuid);
-	std::vector<UUIDName> GetMeshesUUIDsNames();
-	std::string FindMeshUUIDByName(std::string name);
+	JNAME GetMeshName(JUUID uuid);
+	std::vector<JUUIDName> GetMeshesUUIDsNames();
+	JUUID GetMeshUUIDByName(JNAME name);
+	bool MeshInstanceExists(JUUID uuid);
 
 	//UPDATE
 
 	//DESTROY
-	void ReleaseMeshTemplates();
-	void DestroyMeshInstance(std::shared_ptr<MeshInstance>& mesh);
+	void DestroyMeshInstance(JUUID uuid);
 
 	//EDITOR
 };

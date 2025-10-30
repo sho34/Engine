@@ -1,14 +1,9 @@
 #pragma once
 
-#include <Renderable/Renderable.h>
-#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include "ShadowMap.h"
 #include <SceneObjectDecl.h>
-#include <Json.h>
 #include <SceneObject.h>
-#include <JTypes.h>
 #include <ShaderMaterials.h>
-#include <DirectXMath.h>
 
 //let's explain a little bit here
 // 1.- One CVB of MaxLights Descriptors is created to write the data used
@@ -18,13 +13,7 @@
 // 3.- these DepthStencil resources for each light are then used to be mapped into
 // a CBV descriptor as SRV unbounded slots
 
-namespace Scene { struct Camera; };
-namespace DeviceUtils { struct RenderToTexturePass; };
-
 namespace Scene {
-
-	using namespace DirectX;
-	using namespace DeviceUtils;
 
 	static constexpr XMVECTOR PointLightDirection[] = {
 	{ 0.0f, 1.0f, 0.0f, 0.0f }, { 0.0f,-1.0f, 0.0f, 0.0f },
@@ -56,14 +45,14 @@ namespace Scene {
 		"Point"
 	};
 
-	static std::map<LightType, std::string> LightTypeToString = {
+	static std::unordered_map<LightType, std::string> LightTypeToString = {
 		{ LT_Ambient, "Ambient" },
 		{ LT_Directional, "Directional" },
 		{ LT_Spot, "Spot" },
 		{ LT_Point, "Point" }
 	};
 
-	static std::map<std::string, LightType> StringToLightType = {
+	static std::unordered_map<std::string, LightType> StringToLightType = {
 		{ "Ambient",	LT_Ambient },
 		{ "Directional",	LT_Directional },
 		{ "Spot", LT_Spot },
@@ -72,7 +61,7 @@ namespace Scene {
 
 #if defined(_EDITOR)
 
-	static const std::map<LightType, nlohmann::json> editorDefaultLightProperties = {
+	static const std::unordered_map<LightType, nlohmann::json> editorDefaultLightProperties = {
 		{ LT_Ambient, {
 			{ "color", { 0.3f, 0.3f, 0.3f} },
 		}},
@@ -108,7 +97,7 @@ namespace Scene {
 		}}
 	};
 
-	static inline std::map<LightType, std::vector<std::string>> shadowMapSizes =
+	static inline std::unordered_map<LightType, std::vector<std::string>> shadowMapSizes =
 	{
 		{ LT_Directional, { "32","64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" }},
 		{ LT_Spot, { "32","64", "128", "256", "512", "1024", "2048", "4096", "8192", "16384" }},
@@ -133,9 +122,7 @@ namespace Scene {
 		LightAttributes lights[MaxLights];
 	};
 
-#include <TrackUUID/JDecl.h>
-#include <LightAtt.h>
-#include <JEnd.h>
+	void DestroyLights();
 
 #if defined(_EDITOR)
 
@@ -171,7 +158,7 @@ namespace Scene {
 
 	struct Light : SceneObject
 	{
-		SCENEOBJECT_DECL(Light);
+		inline static const SceneObjectType sceneObjectType = SO_Lights;
 
 #include <Attributes/JFlags.h>
 #include <LightAtt.h>
@@ -180,6 +167,9 @@ namespace Scene {
 #include <Attributes/JDecl.h>
 #include <LightAtt.h>
 #include <JEnd.h>
+
+		Light(nlohmann::json& json);
+		~Light() { Destroy(); }
 
 		bool markedForDelete = false;
 		void Destroy();
@@ -191,14 +181,16 @@ namespace Scene {
 		std::vector<D3D12_VIEWPORT> shadowMapViewport;
 		XMFLOAT2 shadowMapTexelInvSize;
 
-		std::shared_ptr<RenderToTexturePass> shadowMapRenderPass;
+		RenderToTexturePassUUID shadowMapRenderPass;
 		unsigned int shadowMapIndex = 0xFFFFFFFF;
 
 		//Camera
-		std::vector<std::shared_ptr<Scene::Camera>> shadowMapCameras;
+		std::vector<CameraUUID> shadowMapCameras;
 
 		//CREATE
 		virtual void Initialize();
+		virtual void BindToScene();
+		virtual void UnbindFromScene();
 		void CreateShadowMap();
 		void BindRenderablesToShadowMapCamera();
 		void UnbindRenderablesFromShadowMapCameras();
@@ -213,20 +205,18 @@ namespace Scene {
 #if defined(_EDITOR)
 		virtual void EditorPreview(size_t flags);
 		virtual void DestroyEditorPreview();
-		std::vector<std::shared_ptr<RenderPassInstance>> shadowMapMinMaxChainRenderPass;
-		std::shared_ptr<RenderPassInstance> shadowMapMinMaxChainResultRenderPass;
+		std::vector<RenderPassInstanceUUID> shadowMapMinMaxChainRenderPass;
+		RenderPassInstanceUUID shadowMapMinMaxChainResultRenderPass;
 		void CreateShadowMapMinMaxChain();
 		bool destroySMChain = false;
 		void DestroyShadowMapMinMaxChain();
 		void RenderShadowMapMinMaxChain();
 
-		virtual std::function<bool(std::shared_ptr<JObject>)> GetAssetsConditioner();
+		virtual std::function<bool(JObject*)> GetAssetsConditioner();
 
-		virtual std::shared_ptr<Renderable> CreateBillboard();
-		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard);
-
+		virtual JUUID CreateBillboard();
+		virtual void UpdateBillboard(JUUID uuid);
 		BoundingBox GetBoundingBox();
-
 		//Gizmo
 		virtual bool CanInteractWithGizmo(ImGuizmo::OPERATION operation);
 #endif
@@ -249,20 +239,26 @@ namespace Scene {
 		void RenderShadowMap(std::function<void(unsigned int)> renderScene);
 	};
 
+	SODECL_FULL(Light);
+
+#include <TrackUUID/JDecl.h>
+#include <LightAtt.h>
+#include <JEnd.h>
+
 	//CREATE
 	void CreateLightsResources();
 
 	//READ&GET
-	std::shared_ptr<ConstantsBuffer> GetLightsConstantsBuffer();
+	ConstantsBufferUUID GetLightsConstantsBuffer();
 
 	void LightsStep();
 	void WriteConstantsBufferNumLights(unsigned int backbufferIndex, unsigned int numLights);
-	void WriteConstantsBufferLightAttributes(const std::shared_ptr<Light>& light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex = 0U);
+	void WriteConstantsBufferLightAttributes(LightUUID light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex = 0U);
 
 	//DELETE
 	void DestroyLightsResources();
-	void DestroyLights();
-	void DeleteLight(std::string uuid);
+
+	void DeleteLight(JUUID uuid);
 	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex);
 	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex);
 

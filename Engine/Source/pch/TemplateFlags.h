@@ -6,6 +6,4 @@ enum TemplateFlags {
 	SystemCreated = 0x2
 };
 
-template <typename T>
-using TemplatesContainer = std::map<std::string, T>;
 

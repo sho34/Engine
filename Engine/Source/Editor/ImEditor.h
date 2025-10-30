@@ -61,7 +61,7 @@ namespace ImGui
 		}
 		return ret;
 	}
-	bool DrawComboSelection(UUIDName selected, std::vector<UUIDName> selectables, std::function<void(UUIDName)> onSelect, std::string label = "##");
+	bool DrawComboSelection(JUUIDName selected, std::vector<JUUIDName> selectables, std::function<void(JUUIDName)> onSelect, std::string label = "##");
 	bool DrawComboSelection(std::string selected, std::vector<std::string> selectables, std::function<void(std::string)> onSelect, std::string label = "##");
 	bool DrawComboSelection(nlohmann::json& json, std::string attribute, std::vector<std::string> selectables, std::string label = "##");
 
@@ -107,8 +107,8 @@ namespace ImGui
 	bool DrawJsonInputText(nlohmann::json& json, std::string att);
 	bool OpenFileDialog(std::wstring& path, std::wstring defaultDirectory, std::wstring defaultFileName, std::vector<std::pair<std::wstring, std::wstring>>& specs);
 	void OpenFile(std::function<void(std::filesystem::path)> onFileSelected, std::string defaultDirectory, std::vector<std::string> filterName = { "JSON files. (*.json)" }, std::vector<std::string> filterPattern = { "*.json" }, bool detach = false);
-	void OpenTemplate(const char* iconCode, UUIDName uuidName);
-	void OpenSceneObject(const char* iconCode, UUIDName uuidName);
+	void OpenTemplate(const char* iconCode, JUUIDName uuidName);
+	void OpenSceneObject(const char* iconCode, JUUIDName uuidName);
 
 	void DrawAnimationController(
 		std::function<bool()> animationsArePlaying,

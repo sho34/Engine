@@ -1,59 +1,67 @@
-#define TEMPDEF_TUPLE(TemplateName) std::map<std::string, TemplateName##Template> TemplateName##templates
+#define TEMPDEF_TUPLE(TemplateName) TemplateName##Templates TemplateName##templates
 
-#define TEMPDEF_GETTEMPLATES(TemplateName) TemplatesContainer<TemplateName##Template>& Get##TemplateName##Templates() { return TemplateName##templates ; }
-
-#define TEMPDEF_CREATE(TemplateName) void Create##TemplateName(nlohmann::json json)\
+#define TEMPDEF_GETTEMPLATES(TemplateName) TemplateName##Templates& Get##TemplateName##Templates()\
 {\
-	CreateJsonTemplate<TemplateName##Template,TemplateName##Json>(json, Get##TemplateName##Templates);\
+	return TemplateName##templates;\
 }
 
-#define TEMPDEF_GET(TemplateName) std::shared_ptr<TemplateName##Json> Get##TemplateName##Template(std::string uuid)\
+#define TEMPDEF_CREATE(TemplateName) void Create##TemplateName(nlohmann::json& json)\
 {\
-	return TemplateName##templates.contains(uuid)?std::get<1>(Get##TemplateName##Templates().at(uuid)):nullptr;\
+	CreateJsonTemplate<TemplateName::templateType, TemplateName##Json>(json, Get##TemplateName##Templates);\
 }
 
-#define TEMPDEF_GETUUIDNAMES(TemplateName) std::vector<UUIDName> Get##TemplateName##sUUIDsNames()\
+#define TEMPDEF_GET(TemplateName) std::unique_ptr<TemplateName##Json>& Get##TemplateName##Template(JUUID uuid)\
 {\
-	return GetUUIDsNames(Get##TemplateName##Templates());\
+	auto& tuple = TemplateName##templates.at(uuid);\
+	auto& ptr = std::get<1>(tuple);\
+	return ptr;\
 }
 
-#define TEMPDEF_GETNAMES(TemplateName) std::vector<std::string> Get##TemplateName##sNames()\
+#define TEMPDEF_GETUUIDNAMES(TemplateName) std::vector<JUUIDName> Get##TemplateName##sUUIDsNames()\
 {\
-	return GetNames(Get##TemplateName##Templates());\
+	return GetUUIDsNames(TemplateName##templates);\
 }
 
-#define TEMPDEF_GETNAME(TemplateName) std::string Get##TemplateName##Name(std::string uuid)\
+#define TEMPDEF_GETNAMES(TemplateName) std::vector<JNAME> Get##TemplateName##sNames()\
+{\
+	return GetNames(TemplateName##templates);\
+}
+
+#define TEMPDEF_GETNAME(TemplateName) JNAME Get##TemplateName##Name(JUUID uuid)\
 {\
 	return GetName(uuid, Get##TemplateName##Templates);\
 }
 
-#define TEMPDEF_FINDUUIDBYNAME(TemplateName) std::string Find##TemplateName##UUIDByName(std::string name)\
+#define TEMPDEF_GETUUIDBYNAME(TemplateName) JUUID Get##TemplateName##UUIDByName(JNAME name)\
 {\
-	return FindUUIDByName(name, Get##TemplateName##Templates);\
+	return GetUUIDByName(name, Get##TemplateName##Templates);\
 }
 
 #define TEMPDEF_WRITEJSON(TemplateName) void Write##TemplateName##sJson(nlohmann::json& json)\
 {\
-	WriteTemplateJson(json, Get##TemplateName##Templates());\
+	WriteJsonTemplate(json, TemplateName##templates);\
 }
 
 #define TEMPDEF_RELEASE(TemplateName) void Release##TemplateName##Templates()\
 {\
-	Get##TemplateName##Templates().clear();\
+	TemplateName##templates.clear();\
 }
 
-#define TEMPDEF_EXIST(TemplateName) bool TemplateName##TemplateExist(std::string uuid)\
+#define TEMPDEF_EXIST(TemplateName) bool TemplateName##TemplateExist(JUUID uuid)\
 {\
-	return Get##TemplateName##Templates().contains(uuid);\
+	return TemplateName##templates.contains(uuid);\
 }
 
-#define TEMPDEF_RENAME(TemplateName) void Rename##TemplateName(std::string uuid,std::string newName)\
+#define TEMPDEF_RENAME(TemplateName) void Rename##TemplateName##Template(JUUID uuid,std::string newName)\
 {\
-	std::string& refName= std::get<0>(Get##TemplateName##Templates().at(uuid));\
+	auto& tup = TemplateName##templates.at(uuid);\
+	auto& refName = std::get<0>(tup);\
+	auto& ptr = std::get<1>(tup);\
 	refName = newName;\
+	ptr->name(newName);\
 }
 
-#define TEMPDEF_DELETE(TemplateName) void Delete##TemplateName(std::string uuid)\
+#define TEMPDEF_DELETE(TemplateName) void Delete##TemplateName##Template(JUUID uuid)\
 {\
 	TemplateName##templates.erase(uuid);\
 }\
@@ -66,68 +74,58 @@
 	TEMPDEF_GETUUIDNAMES(TemplateName);\
 	TEMPDEF_GETNAMES(TemplateName);\
 	TEMPDEF_GETNAME(TemplateName);\
-	TEMPDEF_FINDUUIDBYNAME(TemplateName);\
+	TEMPDEF_GETUUIDBYNAME(TemplateName);\
 	TEMPDEF_WRITEJSON(TemplateName);\
 	TEMPDEF_RELEASE(TemplateName);\
 	TEMPDEF_EXIST(TemplateName);\
 	TEMPDEF_RENAME(TemplateName);\
 	TEMPDEF_DELETE(TemplateName)
 
-#define TEMPDEF_INSTANCECALLBACK(TemplateName,uuid) []\
+#define TEMPDEF_REFTRACKER(TemplateName) static RefTracker<JUUID, std::unique_ptr<TemplateName##Instance>> refTracker;\
+std::unique_ptr<TemplateName##Instance>& Create##TemplateName##Instance(JUUID templateUUID, std::function<std::unique_ptr<TemplateName##Instance>()> newRefCallback)\
 {\
-	return std::make_shared<TemplateName##Instance>(uuid); \
-}
-
-#define TEMPDEF_REFTRACKER(TemplateName) static RefTracker<std::string, std::shared_ptr<TemplateName##Instance>> refTracker; \
-\
-std::shared_ptr<TemplateName##Instance>\
-Get##TemplateName##Instance(\
-	std::string uuid,\
-	std::function<std::shared_ptr<TemplateName##Instance>()> newRefCallback\
-)\
-{\
-	if(refTracker.Has(uuid))\
+	if (refTracker.Has(templateUUID))\
 	{\
-		std::shared_ptr<TemplateName##Instance> instance = refTracker.FindValue(uuid); \
-		refTracker.IncrementRefCount(instance,1U);\
+		std::unique_ptr<TemplateName##Instance>& instance = refTracker.FindValue(templateUUID);\
+		refTracker.IncrementRefCount(templateUUID, 1U);\
 		return instance;\
 	}\
 	else\
-		return refTracker.AddRef(uuid, newRefCallback);\
-}\
-std::shared_ptr<TemplateName##Instance> Get##TemplateName##Instance(std::string uuid)\
-{\
-	if(refTracker.Has(uuid))\
 	{\
-		std::shared_ptr<TemplateName##Instance> instance = refTracker.FindValue(uuid); \
-		refTracker.IncrementRefCount(instance,1U);\
+		return refTracker.AddRef(templateUUID, newRefCallback);\
+	}\
+}\
+std::unique_ptr<TemplateName##Instance>& Create##TemplateName##Instance(JUUID templateUUID, JUUID instanceKey, std::function<std::unique_ptr<TemplateName##Instance>()> newRefCallback)\
+{\
+	if (refTracker.Has(instanceKey))\
+	{\
+		std::unique_ptr<TemplateName##Instance>& instance = refTracker.FindValue(instanceKey);\
+		refTracker.IncrementRefCount(instanceKey, 1U);\
 		return instance;\
 	}\
 	else\
-		return refTracker.AddRef(uuid, [uuid]{return std::make_shared<TemplateName##Instance>(uuid);});\
-}\
-bool Remove##TemplateName##Instance(std::string uuid, std::shared_ptr<TemplateName##Instance>& instance)\
-{\
-	if(refTracker.Has(uuid))\
 	{\
-		refTracker.RemoveRef(uuid,instance);\
+		return refTracker.AddRef(instanceKey, newRefCallback);\
+	}\
+}\
+std::unique_ptr<TemplateName##Instance>& Create##TemplateName##Instance(JUUID templateUUID)\
+{\
+	return Create##TemplateName##Instance(templateUUID, [templateUUID]\
+		{\
+			return std::make_unique<TemplateName##Instance>(templateUUID);\
+		}\
+	);\
+}\
+bool Delete##TemplateName##Instance(JUUID instanceKey)\
+{\
+	if (refTracker.Has(instanceKey))\
+	{\
+		refTracker.RemoveRef(instanceKey);\
 		return true;\
 	}\
 	return false;\
 }\
-bool Remove##TemplateName##Instance(std::function<std::string()> getKey, std::shared_ptr<TemplateName##Instance>& instance)\
+std::unique_ptr<TemplateName##Instance>& Get##TemplateName##Instance(JUUID instanceKey)\
 {\
-	std::string uuid = getKey();\
-	return Remove##TemplateName##Instance(uuid,instance);\
-}\
-bool Remove##TemplateName##Instance(std::shared_ptr<TemplateName##Instance>& instance)\
-{\
-	std::string uuid = refTracker.FindKey(instance);\
-	return Remove##TemplateName##Instance(uuid, instance); \
-}\
-std::shared_ptr<TemplateName##Instance> Find##TemplateName##Instance(std::string uuid)\
-{\
-	if (refTracker.Has(uuid))\
-		return refTracker.FindValue(uuid); \
-	return nullptr; \
+	return refTracker.FindValue(instanceKey);\
 }

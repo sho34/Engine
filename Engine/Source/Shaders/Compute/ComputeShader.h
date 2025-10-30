@@ -12,13 +12,12 @@ namespace ComputeShader
 {
 	struct ComputeShader
 	{
-		std::shared_ptr<ShaderInstance> shader = nullptr;
+		JUUID shader;
 		CComPtr<ID3D12RootSignature> rootSignature;
 		CComPtr<ID3D12PipelineState> pipelineState;
 
 		~ComputeShader() {
-			RemoveShaderInstance(shader->instanceUUID, shader);
-			shader = nullptr;
+			DeleteShaderInstance(shader);
 		}
 		void Init(std::string shaderName, std::vector<MaterialSamplerDesc> samplers = {}, std::wstring target = ShaderCompiler::shaderTarget.at(COMPUTE_SHADER));
 		void SetComputeState();

@@ -10,6 +10,7 @@ namespace Scene::Level
 	void LoadPendingLevel();
 
 	//level handling
+	void LoadSceneObjects(nlohmann::json& j, std::string type, std::function<void(nlohmann::json&)> loader);
 #if defined(_EDITOR)
 	void LoadDefaultLevel();
 #endif
@@ -17,6 +18,5 @@ namespace Scene::Level
 
 	//destroy scene objects
 	void DestroySceneObjects();
-
 };
 

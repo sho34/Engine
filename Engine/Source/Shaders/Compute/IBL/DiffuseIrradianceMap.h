@@ -7,8 +7,6 @@
 #include <d3dx12.h>
 #include <SimpleMath.h>
 
-namespace Templates { struct TextureInstance; };
-
 namespace ComputeShader
 {
 	using namespace Templates;
@@ -25,7 +23,7 @@ namespace ComputeShader
 
 		std::filesystem::path outputFile;
 
-		std::shared_ptr<TextureInstance> envMap;
+		JUUID envMap;
 		CD3DX12_CPU_DESCRIPTOR_HANDLE envMapCubeCpuHandle; //SRV, (T0)
 		CD3DX12_GPU_DESCRIPTOR_HANDLE envMapCubeGpuHandle; //SRV, (T0)
 
@@ -36,7 +34,7 @@ namespace ComputeShader
 
 		CComPtr<ID3D12Resource> readBackResource;
 
-		DiffuseIrradianceMap(std::string envMapUUID, std::filesystem::path iblDiffuseFile);
+		DiffuseIrradianceMap(JUUID envMapTemplateUUID, std::filesystem::path iblDiffuseFile);
 		~DiffuseIrradianceMap();
 
 		virtual void Compute();

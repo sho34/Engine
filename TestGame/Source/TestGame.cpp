@@ -1,0 +1,658 @@
+// TestGame.cpp : Defines the entry point for the application.
+//
+
+#include "pch.h"
+#include "TestGame.h"
+#include <unordered_map>
+#include <memory>
+#include <functional>
+#include <string>
+#include "GameControllers/VenomController.h"
+#include "GameControllers/SpinYawController.h"
+#include <Renderable/Renderable.h>
+
+std::string gameAppTitle = "Culpeo Test Game";
+extern std::unique_ptr<Renderer> renderer;
+CameraUUID levelCameraUUID;
+#if defined(_EDITOR)
+using namespace Editor;
+std::string editorPrePlayDump;
+CameraUUID editorCameraUUID;
+#endif
+
+#if !defined(_EDITOR) && defined(_DEVELOPMENT)
+int main()
+{
+	return EngineConsoleMain();
+}
+#else
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
+{
+	return EngineWinMain(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
+}
+#endif
+
+
+GameStatesMachine<GameStates> gsm =
+{
+	.currentState = GS_None,
+	.onEnter = {
+		{ GS_Booting, BootScreenCreate },
+		{ GS_Loading, LoadingScreenCreate },
+		{ GS_Playing, PlayModeCreate },
+#if defined(_EDITOR)
+		{ GS_Editor, EditorModeCreate },
+		{ GS_EditorPlaying, EditorPlayingModeCreate }
+#endif
+	},
+	.onLeave = {
+		{ GS_Booting, BootScreenLeave },
+		{ GS_Loading, LoadingScreenLeave },
+		{ GS_Playing, PlayModeLeave },
+#if defined(_EDITOR)
+		{ GS_Editor, EditorModeLeave },
+		{ GS_EditorPlaying, EditorPlayingModeLeave }
+#endif
+	},
+	.onStep = {
+#if !defined(_EDITOR)
+		{ GS_None, []() {gsm.ChangeState(GS_Booting); }},
+#else
+		{ GS_None, []() {gsm.ChangeState(GS_Editor); }},
+#endif
+		{ GS_Booting, BootScreenStep },
+		{ GS_Loading, LoadingScreenStep },
+		{ GS_Playing, PlayModeStep },
+#if defined(_EDITOR)
+		{ GS_Editor, EditorModeStep },
+		{ GS_EditorPlaying, EditorPlayingModeStep }
+#endif
+	},
+	.onRender = {
+		{ GS_Booting, BootScreenRender },
+		{ GS_Loading, LoadingScreenRender },
+		{ GS_Playing, PlayModeRender },
+#if defined(_EDITOR)
+		{ GS_Editor, EditorModeRender },
+		{ GS_EditorPlaying, EditorPlayingModeRender },
+#endif
+	},
+	.onPostRender = {
+#if defined(_EDITOR)
+		{ GS_Editor, EditorModePostRender },
+		{ GS_EditorPlaying, EditorPlayingModePostRender },
+#endif
+	}
+};
+
+void GameStep()
+{
+	gsm.Step();
+}
+
+void GameDestroy()
+{
+	gsm.ChangeState(GS_Destroy);
+}
+
+void RunRender()
+{
+	gsm.Render();
+}
+
+void PostRender()
+{
+	gsm.PostRender();
+}
+
+void WindowResizeReleaseResources()
+{
+	/*
+#if defined(_EDITOR)
+	Editor::ReleasePickingPassResources();
+#endif
+	if (mainPass) mainPass->ReleaseResources();
+	if (resolvePass) resolvePass->ReleaseResources();
+	*/
+}
+
+void WindowResize(unsigned int width, unsigned int height)
+{
+	/*
+#if defined(_EDITOR)
+	Editor::ResizePickingPass(width, height);
+#endif
+	if (mainPass) mainPass->Resize(width, height);
+	if (resolvePass) resolvePass->Resize(width, height);
+
+	std::shared_ptr<MaterialInstance>& toneMapMaterial = toneMapQuad->meshMaterials.begin()->second;
+	toneMapMaterial->textures.insert_or_assign(TextureShaderUsage_Base, GetTextureFromGPUHandle("toneMap", mainPass->renderToTexture[0]->gpuTextureHandle));
+	*/
+}
+
+void RunPreRenderComputeShaders()
+{
+	using namespace Scene;
+	RunBoundingBoxComputeShaders();
+}
+
+void RunPostRenderComputeShaders()
+{
+	using namespace Scene;
+	RunBoundingBoxComputeShadersSolution();
+}
+
+void GetAudioListenerVectors(std::function<void(XMFLOAT3, XMVECTOR)> audioListenerCallback)
+{
+}
+
+//Booting
+//float bootScreenAlpha = 0.0f;
+//float loadingProgress = 0.0f;
+//std::shared_ptr<tween> bootAlphaTween;
+//std::shared_ptr<tween> loadingProgressTween;
+//std::shared_ptr<Renderable> bootScreen;
+//std::shared_ptr<Renderable> loadingBar;
+
+void BootScreenCreate(GameStates prevState)
+{
+	//renderer->RenderCriticalFrame([]
+	//	{
+	//		using namespace Scene::Level;
+	//
+	//		LoadLevel("bootscreen");
+	//		BindSceneObjects();
+	//	}
+	//);
+	//
+	//bootScreen = GetFromRenderablesByName("logo");
+	//loadingBar = GetFromRenderablesByName("loadingBar");
+	//bootAlphaTween = std::make_shared<tween>(tween(0.0f, 1.0f, 1000, tween::easing::linear));
+}
+
+void BootScreenLeave(GameStates nextState)
+{
+	//bootScreen = nullptr;
+	//bootAlphaTween = nullptr;
+}
+
+void BootScreenStep()
+{
+	//bootScreenAlpha = bootAlphaTween->step();
+	//
+	//if (bootScreenAlpha == 1.0f) {
+	//	gsm.ChangeState(GS_Loading);
+	//}
+}
+
+void BootScreenRender()
+{
+	//using namespace Scene;
+	//if (GetNumSwapChainCameras() > 0ULL)
+	//{
+	//	bootScreen->WriteConstantsBuffer("alpha", bootScreenAlpha, renderer->backBufferIndex);
+	//
+	//	//hide the loading bar
+	//	XMFLOAT2 scale(0.0f, 0.0f);
+	//	loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
+	//
+	//	WriteConstantsBuffers();
+	//	RenderSceneShadowMaps();
+	//	RenderSceneCameras();
+	//}
+}
+
+//Loading
+void LoadingScreenCreate(GameStates prevState)
+{
+	//loadingProgressTween = std::make_shared<tween>(tween(0.0f, 1.0f, 4000, tween::easing::linear));
+}
+
+void LoadingScreenLeave(GameStates nextState)
+{
+	//loadingBar = nullptr;
+	//loadingProgressTween = nullptr;
+}
+
+void LoadingScreenStep()
+{
+	//loadingProgress = loadingProgressTween->step();
+	//if (loadingProgress == 1.0f)
+	//{
+	//	gsm.ChangeState(GS_Playing);
+	//}
+}
+
+void LoadingScreenRender()
+{
+	//using namespace Scene;
+	//if (GetNumSwapChainCameras() > 0ULL)
+	//{
+	//	XMFLOAT2 pos(0.0f, -0.8f);
+	//	XMFLOAT2 scale(0.8f, 0.02f);
+	//	auto red = DirectX::Colors::Red;
+	//	auto blue = DirectX::Colors::Blue;
+	//
+	//	loadingBar->WriteConstantsBuffer<XMFLOAT2>("pos", pos, renderer->backBufferIndex);
+	//	loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
+	//	loadingBar->WriteConstantsBuffer<XMVECTORF32>("color1", red, renderer->backBufferIndex);
+	//	loadingBar->WriteConstantsBuffer<XMVECTORF32>("color2", blue, renderer->backBufferIndex);
+	//	loadingBar->WriteConstantsBuffer<float>("progress", loadingProgress, renderer->backBufferIndex);
+	//	WriteConstantsBuffers();
+	//	RenderSceneShadowMaps();
+	//	RenderSceneCameras();
+	//}
+}
+
+//Playing
+void PlayModeCreate(GameStates prevState)
+{
+	//renderer->RenderCriticalFrame([]
+	//	{
+	//		using namespace Scene::Level;
+	//
+	//		LoadLevel("venom");
+	//		BindSceneObjects();
+	//	}
+	//);
+}
+
+void PlayModeLeave(GameStates nextState)
+{
+}
+
+void PlayModeStep()
+{
+	//Game::StepControllers(static_cast<float>(timer.GetElapsedSeconds() / 1000.0f));
+}
+
+void PlayModeRender()
+{
+	//using namespace Scene;
+	//if (GetNumSwapChainCameras() > 0ULL)
+	//{
+	//	WriteConstantsBuffers();
+	//	RenderSceneShadowMaps();
+	//	RenderSceneCameras();
+	//}
+}
+
+//Editor
+#if defined(_EDITOR)
+
+//EditorMode
+void DestroyEditorModeBindings()
+{
+	DestroyPickingPass();
+	DestroyRenderableBoundingBox();
+	DestroyBillboards();
+	ResetGizmoVariableWorkers();
+	DestroyEditorSceneObjectsReferences();
+	MarkScenePanelAssetsAsDirty();
+	MarkTemplatesPanelAssetsAsDirty();
+}
+
+void CreateEditorIndependentCamera()
+{
+	if (GetCountFromMouseCameras() > 0ULL)
+	{
+		//no more than a single swapchain camera or mouse controller is allowed
+		//todo handle RTT cameras that does resolving
+		levelCameraUUID = *GetMouseCameras().begin();
+
+		//this should be done and reversed later in the same function.
+		//the purpose is to allow to create the editor camera
+		//switching will be performed by switching functions later so we undo this in a few lines below
+		EraseCameraFromMouseCameras(levelCameraUUID());
+		EraseCameraFromSwapChainCameras(levelCameraUUID());
+
+		//the new camera uuid must be known previously so it can be assigned to the renderables first
+		//this is because the camera binding must know before hand how to bind both camera the renderables 
+		editorCameraUUID = getUUID();
+
+		//make a patch for the uuid and clone the camera
+		nlohmann::json parameters = {
+			{ "uuid", editorCameraUUID()},
+			{ "name", "editorCamera" },
+			{ "hidden", true },
+			{ "systemCreated", true }
+		};
+		CloneSceneObject(levelCameraUUID(), parameters);
+
+		//step out a little bit of the scene, we can came up with a better number eventually
+		editorCameraUUID->MoveForward(-10.0f);
+		editorCameraUUID->WriteConstantsBuffer(renderer->backBufferIndex);
+
+		//restore cameras mapping
+		EraseCameraFromMouseCameras(editorCameraUUID());
+		EraseCameraFromSwapChainCameras(editorCameraUUID());
+		InsertCameraIntoMouseCameras(levelCameraUUID());
+		InsertCameraIntoSwapChainCameras(levelCameraUUID());
+
+		Editor::RegisterBillboard(levelCameraUUID());
+	}
+	else
+	{
+
+	}
+}
+
+void SwitchToEditorCamera()
+{
+	editorCameraUUID->renderables = levelCameraUUID->renderables;
+	EraseCameraFromMouseCameras(levelCameraUUID());
+	EraseCameraFromSwapChainCameras(levelCameraUUID());
+	InsertCameraIntoMouseCameras(editorCameraUUID());
+	InsertCameraIntoSwapChainCameras(editorCameraUUID());
+}
+
+void SwitchToEditorPlayCamera()
+{
+	EraseCameraFromMouseCameras(editorCameraUUID());
+	EraseCameraFromSwapChainCameras(editorCameraUUID());
+	InsertCameraIntoMouseCameras(levelCameraUUID());
+	InsertCameraIntoSwapChainCameras(levelCameraUUID());
+}
+
+void DestroyEditorCameras()
+{
+	DeleteCamera(editorCameraUUID());
+	editorCameraUUID.clear();
+}
+
+void ReloadSceneFromPrePlay()
+{
+	using namespace Scene::Level;
+
+	DestroySceneObjects();
+
+	nlohmann::json data = nlohmann::json::parse(editorPrePlayDump);
+
+	LoadSceneObjects(data, SceneObjectTypeJsonContainer.at(SO_Renderables), Scene::CreateRenderable);
+	LoadSceneObjects(data, SceneObjectTypeJsonContainer.at(SO_Cameras), Scene::CreateCamera);
+	LoadSceneObjects(data, SceneObjectTypeJsonContainer.at(SO_Lights), Scene::CreateLight);
+	LoadSceneObjects(data, SceneObjectTypeJsonContainer.at(SO_SoundEffects), Scene::CreateSoundFX);
+}
+
+void EditorModeCreate(GameStates prevState)
+{
+	if (prevState == GS_None)
+	{
+		renderer->RenderCriticalFrame([]
+			{
+				using namespace Scene;
+				using namespace Scene::Level;
+
+				//LoadDefaultLevel();
+				//LoadLevel("bootscreen");
+				LoadLevel("venom");
+				BindSceneObjects();
+			}
+		);
+	}
+	else if (prevState == GS_EditorPlaying)
+	{
+		renderer->RenderCriticalFrame([]
+			{
+				DestroyEditorCameras();
+				ReloadSceneFromPrePlay();
+				BindSceneObjects();
+			}
+		);
+	}
+
+	CreateEditorIndependentCamera();
+	SwitchToEditorCamera();
+	WriteConstantsBuffers();
+}
+
+void EditorModeLeave(GameStates nextState)
+{
+	editorCameraUUID->renderables.clear();
+
+	renderer->Flush();
+	renderer->RenderCriticalFrame([]
+		{
+			DestroyEditorModeBindings();
+		}
+	);
+}
+
+void EditorModeStep()
+{
+	using namespace Scene::Level;
+
+	//if there is a level pending to load
+	if (PendingLevelToLoad())
+	{
+		//then we can load the scene in a new critical frame
+		renderer->RenderCriticalFrame([]
+			{
+				DestroyEditorModeBindings();
+				LoadPendingLevel();
+				BindSceneObjects();
+			}
+		);
+		CreateEditorIndependentCamera();
+		SwitchToEditorCamera();
+	}
+
+	BuildAssetsTree();
+
+	if (RenderableBoundingBoxExists())
+	{
+		UpdateBoundingBox();
+	}
+
+	if (GetCountFromMouseCameras() > 0ULL)
+	{
+		GameAreaMouseProcessing(mouse, *GetMouseCameras().begin());
+	}
+
+	UpdateBillboards();
+
+	StepAnimationSequencer();
+
+	if (Editor::IsPlaying())
+	{
+		Editor::DestroyBillboard(levelCameraUUID());
+		gsm.ChangeState(GS_EditorPlaying);
+	}
+}
+
+void EditorModeRender()
+{
+	using namespace Scene;
+	using namespace Templates;
+	if (GetCountFromSwapChainCameras() > 0ULL)
+	{
+
+		WriteConstantsBuffers();
+		RenderPickingPass(*GetSwapChainCameras().begin());
+		RenderSceneShadowMaps();
+
+		RenderShadowMapMinMaxChain();
+
+		RenderSceneCameras();
+
+		DrawEditor(*GetSwapChainCameras().begin());
+	}
+	else
+	{
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, L"Fallback Draw");
+#endif
+		auto& swapChainPass = renderer->swapChainPass;
+		swapChainPass->Pass();
+		DrawEditor();
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+	}
+}
+
+void EditorModePostRender()
+{
+	bool criticalFrame = (
+		!PickingPassExists() ||
+		(!RenderableBoundingBoxExists() && GetCountFromSwapChainCameras() > 0ULL) ||
+		PendingBillboards() ||
+		PendingBillboardsDestruction() ||
+		PendingAnimationSequencer() ||
+		PendingAnimationSequencerDestruction());
+
+	if (criticalFrame)
+	{
+		renderer->RenderCriticalFrame([]
+			{
+				if (!PickingPassExists())
+				{
+					CreatePickingPass();
+					if (PickingPassExists())
+					{
+						BindPickingRenderables();
+					}
+				}
+
+				if (GetCountFromMouseCameras() > 0ULL && !RenderableBoundingBoxExists())
+				{
+					CreateRenderableBoundingBox(*GetMouseCameras().begin());
+				}
+
+				if (PendingBillboards())
+					CreateRegisteredBillboards();
+
+				if (PendingBillboardsDestruction())
+					DestroyPendingBillboards();
+
+				if (PendingAnimationSequencer())
+					LoadAnimationSequencer();
+
+				if (PendingAnimationSequencerDestruction())
+					DestroyAnimationSequencer();
+			}
+		);
+	}
+
+	PickFromScene();
+}
+
+//EditorPlayingMode
+void EditorPlayingModeCreate(GameStates prevState)
+{
+	using namespace Editor;
+	SwitchToEditorPlayCamera();
+	editorPrePlayDump = GetLevelString();
+}
+
+void EditorPlayingModeLeave(GameStates nextState)
+{
+
+}
+
+void EditorPlayingModeStep()
+{
+	using namespace Scene::Level;
+
+	if (PendingLevelToLoad())
+	{
+		renderer->Flush();
+		renderer->RenderCriticalFrame([]
+			{
+				DestroyEditorModeBindings();
+				LoadPendingLevel();
+				BindSceneObjects();
+			}
+		);
+	}
+
+	if (!Editor::IsPlaying())
+	{
+		gsm.ChangeState(GS_Editor);
+		return;
+	}
+
+	Game::StepControllers(static_cast<float>(timer.GetElapsedSeconds() / 1000.0f));
+}
+
+void EditorPlayingModeRender()
+{
+	using namespace Scene;
+	if (GetCountFromSwapChainCameras() > 0ULL)
+	{
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "EditorPlayingModeRender");
+#endif
+		WriteConstantsBuffers();
+
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "RenderSceneShadowMaps");
+#endif
+		RenderSceneShadowMaps();
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "RenderSceneCameras");
+#endif
+		RenderSceneCameras();
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, "DrawEditor");
+#endif
+		DrawEditor(*GetSwapChainCameras().begin());
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+	}
+	else
+	{
+#if defined(_DEVELOPMENT)
+		PIXBeginEvent(renderer->commandList.p, 0, L"Fallback Draw");
+#endif
+		renderer->swapChainPass->Pass();
+		DrawEditor();
+#if defined(_DEVELOPMENT)
+		PIXEndEvent(renderer->commandList.p);
+#endif
+	}
+}
+
+void EditorPlayingModePostRender()
+{
+
+}
+
+#endif
+
+namespace Game
+{
+	std::unordered_map<std::string, std::function<std::unique_ptr<Game::Controller>()>> controllers =
+	{
+		{ "venom", []() { return std::make_unique<Game::VenomController>(); }},
+		{ "spinyaw", []() { return std::make_unique<Game::SpinYawController>(); }},
+	};
+
+	std::vector<std::string> GetGameControllers()
+	{
+		return nostd::GetKeysFromMap(controllers);
+	}
+
+	std::unique_ptr<Game::Controller> GetGameController(std::string name)
+	{
+
+		return (controllers.contains(name)) ? controllers.at(name)() : nullptr;
+	}
+};

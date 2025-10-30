@@ -5,7 +5,7 @@
 #include <set>
 #include <Audio.h>
 
-static inline std::map<D3D12_DESCRIPTOR_HEAP_TYPE, std::string> D3D12_DESCRIPTOR_HEAP_TYPEToString = {
+static inline std::unordered_map<D3D12_DESCRIPTOR_HEAP_TYPE, std::string> D3D12_DESCRIPTOR_HEAP_TYPEToString = {
 	{ D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, "CBV_SRV_UAV"},
 	{ D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER, "SAMPLER"},
 	{ D3D12_DESCRIPTOR_HEAP_TYPE_RTV, "RTV"},
@@ -13,7 +13,7 @@ static inline std::map<D3D12_DESCRIPTOR_HEAP_TYPE, std::string> D3D12_DESCRIPTOR
 	{ D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES, "NUM_TYPES"},
 };
 
-static inline std::map<std::string, D3D12_DESCRIPTOR_HEAP_TYPE> StringToD3D12_DESCRIPTOR_HEAP_TYPE = {
+static inline std::unordered_map<std::string, D3D12_DESCRIPTOR_HEAP_TYPE> StringToD3D12_DESCRIPTOR_HEAP_TYPE = {
 	{ "CBV_SRV_UAV", D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV },
 	{ "SAMPLER", D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER },
 	{ "RTV", D3D12_DESCRIPTOR_HEAP_TYPE_RTV },
@@ -21,7 +21,7 @@ static inline std::map<std::string, D3D12_DESCRIPTOR_HEAP_TYPE> StringToD3D12_DE
 	{ "NUM_TYPES", D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES },
 };
 
-static inline std::map<DXGI_FORMAT, std::string> DXGI_FORMATToString = {
+static inline std::unordered_map<DXGI_FORMAT, std::string> DXGI_FORMATToString = {
 	{ DXGI_FORMAT_UNKNOWN, "UNKNOWN" },
 	{ DXGI_FORMAT_R32G32B32A32_TYPELESS, "R32G32B32A32_TYPELESS" },
 	{ DXGI_FORMAT_R32G32B32A32_FLOAT, "R32G32B32A32_FLOAT" },
@@ -147,7 +147,7 @@ static inline std::map<DXGI_FORMAT, std::string> DXGI_FORMATToString = {
 	{ DXGI_FORMAT_FORCE_UINT, "FORCE_UINT" }
 };
 
-static inline std::map<std::string, DXGI_FORMAT> StringToDXGI_FORMAT = {
+static inline std::unordered_map<std::string, DXGI_FORMAT> StringToDXGI_FORMAT = {
 	{ "UNKNOWN", DXGI_FORMAT_UNKNOWN },
 	{ "R32G32B32A32_TYPELESS", DXGI_FORMAT_R32G32B32A32_TYPELESS },
 	{ "R32G32B32A32_FLOAT", DXGI_FORMAT_R32G32B32A32_FLOAT },
@@ -288,7 +288,7 @@ static inline std::set<DXGI_FORMAT> NonLinearDxgiFormats =
 	DXGI_FORMAT_BC7_UNORM_SRGB,
 };
 
-static inline std::map<D3D12_FILTER, std::string> D3D12_FILTERToString = {
+static inline std::unordered_map<D3D12_FILTER, std::string> D3D12_FILTERToString = {
 	{ D3D12_FILTER_MIN_MAG_MIP_POINT, "MIN_MAG_MIP_POINT" },
 	{ D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR, "MIN_MAG_POINT_MIP_LINEAR" },
 	{ D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT, "MIN_POINT_MAG_LINEAR_MIP_POINT" },
@@ -331,7 +331,7 @@ static inline std::map<D3D12_FILTER, std::string> D3D12_FILTERToString = {
 	{ D3D12_FILTER_MAXIMUM_ANISOTROPIC, "MAXIMUM_ANISOTROPIC" }
 };
 
-static inline std::map<std::string, D3D12_FILTER> StringToD3D12_FILTER = {
+static inline std::unordered_map<std::string, D3D12_FILTER> StringToD3D12_FILTER = {
 	{ "MIN_MAG_MIP_POINT", D3D12_FILTER_MIN_MAG_MIP_POINT },
 	{ "MIN_MAG_POINT_MIP_LINEAR", D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR },
 	{ "MIN_POINT_MAG_LINEAR_MIP_POINT", D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT },
@@ -374,7 +374,7 @@ static inline std::map<std::string, D3D12_FILTER> StringToD3D12_FILTER = {
 	{ "MAXIMUM_ANISOTROPIC", D3D12_FILTER_MAXIMUM_ANISOTROPIC }
 };
 
-static inline std::map<D3D12_TEXTURE_ADDRESS_MODE, std::string> D3D12_TEXTURE_ADDRESS_MODEToString = {
+static inline std::unordered_map<D3D12_TEXTURE_ADDRESS_MODE, std::string> D3D12_TEXTURE_ADDRESS_MODEToString = {
 	{ D3D12_TEXTURE_ADDRESS_MODE_WRAP, "ADDRESS_MODE_WRAP" },
 	{ D3D12_TEXTURE_ADDRESS_MODE_MIRROR, "ADDRESS_MODE_MIRROR" },
 	{ D3D12_TEXTURE_ADDRESS_MODE_CLAMP, "ADDRESS_MODE_CLAMP" },
@@ -382,7 +382,7 @@ static inline std::map<D3D12_TEXTURE_ADDRESS_MODE, std::string> D3D12_TEXTURE_AD
 	{ D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE, "ADDRESS_MODE_MIRROR_ONCE" }
 };
 
-static inline std::map<std::string, D3D12_TEXTURE_ADDRESS_MODE> StringToD3D12_TEXTURE_ADDRESS_MODE = {
+static inline std::unordered_map<std::string, D3D12_TEXTURE_ADDRESS_MODE> StringToD3D12_TEXTURE_ADDRESS_MODE = {
 	{ "ADDRESS_MODE_WRAP", D3D12_TEXTURE_ADDRESS_MODE_WRAP },
 	{ "ADDRESS_MODE_MIRROR", D3D12_TEXTURE_ADDRESS_MODE_MIRROR },
 	{ "ADDRESS_MODE_CLAMP", D3D12_TEXTURE_ADDRESS_MODE_CLAMP },
@@ -390,7 +390,7 @@ static inline std::map<std::string, D3D12_TEXTURE_ADDRESS_MODE> StringToD3D12_TE
 	{ "ADDRESS_MODE_MIRROR_ONCE", D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE }
 };
 
-static inline std::map<D3D12_COMPARISON_FUNC, std::string> D3D12_COMPARISON_FUNCToString = {
+static inline std::unordered_map<D3D12_COMPARISON_FUNC, std::string> D3D12_COMPARISON_FUNCToString = {
 	{ D3D12_COMPARISON_FUNC_NONE, "NONE" },
 	{ D3D12_COMPARISON_FUNC_NEVER, "NEVER" },
 	{ D3D12_COMPARISON_FUNC_LESS, "LESS" },
@@ -402,7 +402,7 @@ static inline std::map<D3D12_COMPARISON_FUNC, std::string> D3D12_COMPARISON_FUNC
 	{ D3D12_COMPARISON_FUNC_ALWAYS, "ALWAYS" }
 };
 
-static inline std::map<std::string, D3D12_COMPARISON_FUNC> StringToD3D12_COMPARISON_FUNC = {
+static inline std::unordered_map<std::string, D3D12_COMPARISON_FUNC> StringToD3D12_COMPARISON_FUNC = {
 	{ "NONE", D3D12_COMPARISON_FUNC_NONE },
 	{ "NEVER", D3D12_COMPARISON_FUNC_NEVER },
 	{ "LESS", D3D12_COMPARISON_FUNC_LESS },
@@ -414,7 +414,7 @@ static inline std::map<std::string, D3D12_COMPARISON_FUNC> StringToD3D12_COMPARI
 	{ "ALWAYS", D3D12_COMPARISON_FUNC_ALWAYS }
 };
 
-static inline std::map<D3D12_STATIC_BORDER_COLOR, std::string> D3D12_STATIC_BORDER_COLORToString = {
+static inline std::unordered_map<D3D12_STATIC_BORDER_COLOR, std::string> D3D12_STATIC_BORDER_COLORToString = {
 	{ D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK, "TRANSPARENT_BLACK" },
 	{ D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK, "OPAQUE_BLACK" },
 	{ D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE, "OPAQUE_WHITE" },
@@ -422,7 +422,7 @@ static inline std::map<D3D12_STATIC_BORDER_COLOR, std::string> D3D12_STATIC_BORD
 	{ D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE_UINT, "OPAQUE_WHITE_UINT" }
 };
 
-static inline std::map<std::string, D3D12_STATIC_BORDER_COLOR> StringToD3D12_STATIC_BORDER_COLOR = {
+static inline std::unordered_map<std::string, D3D12_STATIC_BORDER_COLOR> StringToD3D12_STATIC_BORDER_COLOR = {
 	{ "TRANSPARENT_BLACK", D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK },
 	{ "OPAQUE_BLACK", D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK },
 	{ "OPAQUE_WHITE", D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE },
@@ -430,7 +430,7 @@ static inline std::map<std::string, D3D12_STATIC_BORDER_COLOR> StringToD3D12_STA
 	{ "OPAQUE_WHITE_UINT", D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE_UINT }
 };
 
-static inline std::map<D3D12_SHADER_VISIBILITY, std::string> D3D12_SHADER_VISIBILITYToString = {
+static inline std::unordered_map<D3D12_SHADER_VISIBILITY, std::string> D3D12_SHADER_VISIBILITYToString = {
 	{ D3D12_SHADER_VISIBILITY_ALL, "ALL" },
 	{ D3D12_SHADER_VISIBILITY_VERTEX, "VERTEX" },
 	{ D3D12_SHADER_VISIBILITY_HULL, "HULL" },
@@ -441,7 +441,7 @@ static inline std::map<D3D12_SHADER_VISIBILITY, std::string> D3D12_SHADER_VISIBI
 	{ D3D12_SHADER_VISIBILITY_MESH, "MESH" }
 };
 
-static inline std::map<std::string, D3D12_SHADER_VISIBILITY> StringToD3D12_SHADER_VISIBILITY = {
+static inline std::unordered_map<std::string, D3D12_SHADER_VISIBILITY> StringToD3D12_SHADER_VISIBILITY = {
 	{ "ALL", D3D12_SHADER_VISIBILITY_ALL},
 	{ "VERTEX", D3D12_SHADER_VISIBILITY_VERTEX },
 	{ "HULL", D3D12_SHADER_VISIBILITY_HULL },
@@ -452,7 +452,7 @@ static inline std::map<std::string, D3D12_SHADER_VISIBILITY> StringToD3D12_SHADE
 	{ "MESH", D3D12_SHADER_VISIBILITY_MESH }
 };
 
-static inline std::map<D3D_PRIMITIVE_TOPOLOGY, std::string> D3D_PRIMITIVE_TOPOLOGYToString = {
+static inline std::unordered_map<D3D_PRIMITIVE_TOPOLOGY, std::string> D3D_PRIMITIVE_TOPOLOGYToString = {
 	{ D3D_PRIMITIVE_TOPOLOGY_UNDEFINED , "UNDEFINED" },
 	{ D3D_PRIMITIVE_TOPOLOGY_POINTLIST , "POINTLIST" },
 	{ D3D_PRIMITIVE_TOPOLOGY_LINELIST , "LINELIST" },
@@ -466,7 +466,7 @@ static inline std::map<D3D_PRIMITIVE_TOPOLOGY, std::string> D3D_PRIMITIVE_TOPOLO
 	{ D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ , "TRIANGLESTRIP_ADJ" },
 };
 
-static inline std::map<std::string, D3D_PRIMITIVE_TOPOLOGY> StringToD3D_PRIMITIVE_TOPOLOGY = {
+static inline std::unordered_map<std::string, D3D_PRIMITIVE_TOPOLOGY> StringToD3D_PRIMITIVE_TOPOLOGY = {
 	{ "UNDEFINED", D3D_PRIMITIVE_TOPOLOGY_UNDEFINED },
 	{ "POINTLIST", D3D_PRIMITIVE_TOPOLOGY_POINTLIST },
 	{ "LINELIST", D3D_PRIMITIVE_TOPOLOGY_LINELIST },
@@ -480,7 +480,7 @@ static inline std::map<std::string, D3D_PRIMITIVE_TOPOLOGY> StringToD3D_PRIMITIV
 	{ "TRIANGLESTRIP_ADJ", D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ },
 };
 
-static inline std::map<D3D12_PRIMITIVE_TOPOLOGY_TYPE, std::string> D3D12_PRIMITIVE_TOPOLOGY_TYPEToString = {
+static inline std::unordered_map<D3D12_PRIMITIVE_TOPOLOGY_TYPE, std::string> D3D12_PRIMITIVE_TOPOLOGY_TYPEToString = {
 	{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED, "UNDEFINED" },
 	{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT, "POINT" },
 	{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, "LINE" },
@@ -488,7 +488,7 @@ static inline std::map<D3D12_PRIMITIVE_TOPOLOGY_TYPE, std::string> D3D12_PRIMITI
 	{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH, "PATCH" },
 };
 
-static inline std::map<std::string, D3D12_PRIMITIVE_TOPOLOGY_TYPE> StringToD3D12_PRIMITIVE_TOPOLOGY_TYPE = {
+static inline std::unordered_map<std::string, D3D12_PRIMITIVE_TOPOLOGY_TYPE> StringToD3D12_PRIMITIVE_TOPOLOGY_TYPE = {
 	{ "UNDEFINED", D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED },
 	{ "POINT", D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT },
 	{ "LINE", D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE },
@@ -496,49 +496,49 @@ static inline std::map<std::string, D3D12_PRIMITIVE_TOPOLOGY_TYPE> StringToD3D12
 	{ "PATCH", D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH },
 };
 
-static inline std::map<D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D_PRIMITIVE_TOPOLOGY> D3D12_PRIMITIVE_TOPOLOGY_TYPEToD3D_PRIMITIVE_TOPOLOGY = {
+static inline std::unordered_map<D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D_PRIMITIVE_TOPOLOGY> D3D12_PRIMITIVE_TOPOLOGY_TYPEToD3D_PRIMITIVE_TOPOLOGY = {
 	{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE , D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST },
 	{ D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE, D3D_PRIMITIVE_TOPOLOGY_LINELIST }
 };
 
-static inline std::map<D3D_PRIMITIVE_TOPOLOGY, D3D12_PRIMITIVE_TOPOLOGY_TYPE> D3D_PRIMITIVE_TOPOLOGYToD3D12_PRIMITIVE_TOPOLOGY_TYPE = {
+static inline std::unordered_map<D3D_PRIMITIVE_TOPOLOGY, D3D12_PRIMITIVE_TOPOLOGY_TYPE> D3D_PRIMITIVE_TOPOLOGYToD3D12_PRIMITIVE_TOPOLOGY_TYPE = {
 	{ D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST, D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE },
 	{ D3D_PRIMITIVE_TOPOLOGY_LINELIST, D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE }
 };
 
-static inline std::map<D3D12_FILL_MODE, std::string> D3D12_FILL_MODEToString = {
+static inline std::unordered_map<D3D12_FILL_MODE, std::string> D3D12_FILL_MODEToString = {
 	{ D3D12_FILL_MODE_WIREFRAME, "WIREFRAME" },
 	{ D3D12_FILL_MODE_SOLID, "SOLID" },
 };
 
-static inline std::map<std::string, D3D12_FILL_MODE> StringToD3D12_FILL_MODE = {
+static inline std::unordered_map<std::string, D3D12_FILL_MODE> StringToD3D12_FILL_MODE = {
 	{ "WIREFRAME", D3D12_FILL_MODE_WIREFRAME },
 	{ "SOLID", D3D12_FILL_MODE_SOLID },
 };
 
-static inline std::map<D3D12_CULL_MODE, std::string> D3D12_CULL_MODEToString = {
+static inline std::unordered_map<D3D12_CULL_MODE, std::string> D3D12_CULL_MODEToString = {
 	{ D3D12_CULL_MODE_NONE, "NONE" },
 	{ D3D12_CULL_MODE_FRONT, "FRONT" },
 	{ D3D12_CULL_MODE_BACK, "BACK" }
 };
 
-static inline std::map<std::string, D3D12_CULL_MODE> StringToD3D12_CULL_MODE = {
+static inline std::unordered_map<std::string, D3D12_CULL_MODE> StringToD3D12_CULL_MODE = {
 	{ "NONE",	D3D12_CULL_MODE_NONE },
 	{ "FRONT", D3D12_CULL_MODE_FRONT },
 	{ "BACK", D3D12_CULL_MODE_BACK },
 };
 
-static inline std::map<D3D12_CONSERVATIVE_RASTERIZATION_MODE, std::string> D3D12_CONSERVATIVE_RASTERIZATION_MODEToString = {
+static inline std::unordered_map<D3D12_CONSERVATIVE_RASTERIZATION_MODE, std::string> D3D12_CONSERVATIVE_RASTERIZATION_MODEToString = {
 	{ D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF , "OFF" },
 	{ D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON, "ON" },
 };
 
-static inline std::map<std::string, D3D12_CONSERVATIVE_RASTERIZATION_MODE> StringToD3D12_CONSERVATIVE_RASTERIZATION_MODE = {
+static inline std::unordered_map<std::string, D3D12_CONSERVATIVE_RASTERIZATION_MODE> StringToD3D12_CONSERVATIVE_RASTERIZATION_MODE = {
 	{ "OFF", D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF },
 	{ "ON", D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON },
 };
 
-static inline std::map<D3D12_BLEND, std::string> D3D12_BLENDToString =
+static inline std::unordered_map<D3D12_BLEND, std::string> D3D12_BLENDToString =
 {
 	{ D3D12_BLEND_ZERO, "ZERO" },
 	{ D3D12_BLEND_ONE, "ONE" },
@@ -561,7 +561,7 @@ static inline std::map<D3D12_BLEND, std::string> D3D12_BLENDToString =
 	{ D3D12_BLEND_INV_ALPHA_FACTOR, "INV_ALPHA_FACTOR" },
 };
 
-static inline std::map<std::string, D3D12_BLEND> StringToD3D12_BLEND =
+static inline std::unordered_map<std::string, D3D12_BLEND> StringToD3D12_BLEND =
 {
 	{ "ZERO", D3D12_BLEND_ZERO},
 	{ "ONE", D3D12_BLEND_ONE},
@@ -584,7 +584,7 @@ static inline std::map<std::string, D3D12_BLEND> StringToD3D12_BLEND =
 	{ "INV_ALPHA_FACTOR", D3D12_BLEND_INV_ALPHA_FACTOR },
 };
 
-static inline std::map<D3D12_BLEND_OP, std::string> D3D12_BLEND_OPToString =
+static inline std::unordered_map<D3D12_BLEND_OP, std::string> D3D12_BLEND_OPToString =
 {
 	{ D3D12_BLEND_OP_ADD, "ADD" },
 	{ D3D12_BLEND_OP_SUBTRACT, "SUBTRACT" },
@@ -593,7 +593,7 @@ static inline std::map<D3D12_BLEND_OP, std::string> D3D12_BLEND_OPToString =
 	{ D3D12_BLEND_OP_MAX, "MAX" },
 };
 
-static inline std::map<std::string, D3D12_BLEND_OP> StringToD3D12_BLEND_OP =
+static inline std::unordered_map<std::string, D3D12_BLEND_OP> StringToD3D12_BLEND_OP =
 {
 	{ "ADD", D3D12_BLEND_OP_ADD },
 	{ "SUBTRACT", D3D12_BLEND_OP_SUBTRACT },
@@ -602,7 +602,7 @@ static inline std::map<std::string, D3D12_BLEND_OP> StringToD3D12_BLEND_OP =
 	{ "MAX", D3D12_BLEND_OP_MAX },
 };
 
-static inline std::map<D3D12_LOGIC_OP, std::string> D3D12_LOGIC_OPToString =
+static inline std::unordered_map<D3D12_LOGIC_OP, std::string> D3D12_LOGIC_OPToString =
 {
 	{ D3D12_LOGIC_OP_CLEAR, "CLEAR" },
 	{ D3D12_LOGIC_OP_SET, "SET" },
@@ -622,7 +622,7 @@ static inline std::map<D3D12_LOGIC_OP, std::string> D3D12_LOGIC_OPToString =
 	{ D3D12_LOGIC_OP_OR_INVERTED, "OR_INVERTED" },
 };
 
-static inline std::map<std::string, D3D12_LOGIC_OP> StringToD3D12_LOGIC_OP =
+static inline std::unordered_map<std::string, D3D12_LOGIC_OP> StringToD3D12_LOGIC_OP =
 {
 	{ "CLEAR", D3D12_LOGIC_OP_CLEAR },
 	{ "SET", D3D12_LOGIC_OP_SET },
@@ -642,7 +642,7 @@ static inline std::map<std::string, D3D12_LOGIC_OP> StringToD3D12_LOGIC_OP =
 	{ "OR_INVERTED", D3D12_LOGIC_OP_OR_INVERTED },
 };
 
-static inline std::map<D3D_SHADER_INPUT_TYPE, std::string> D3D_SHADER_INPUT_TYPEToString =
+static inline std::unordered_map<D3D_SHADER_INPUT_TYPE, std::string> D3D_SHADER_INPUT_TYPEToString =
 {
 	{ D3D_SIT_CBUFFER, "CBUFFER" },
 	{ D3D_SIT_TBUFFER, "TBUFFER" },
@@ -660,7 +660,7 @@ static inline std::map<D3D_SHADER_INPUT_TYPE, std::string> D3D_SHADER_INPUT_TYPE
 	{ D3D_SIT_UAV_FEEDBACKTEXTURE, "UAV_FEEDBACKTEXTURE" },
 };
 
-static inline std::map<std::string, D3D_SHADER_INPUT_TYPE> StringToD3D_SHADER_INPUT_TYPE =
+static inline std::unordered_map<std::string, D3D_SHADER_INPUT_TYPE> StringToD3D_SHADER_INPUT_TYPE =
 {
 	{ "CBUFFER", D3D_SIT_CBUFFER },
 	{ "TBUFFER", D3D_SIT_TBUFFER },
@@ -678,21 +678,21 @@ static inline std::map<std::string, D3D_SHADER_INPUT_TYPE> StringToD3D_SHADER_IN
 	{ "UAV_FEEDBACKTEXTURE", D3D_SIT_UAV_FEEDBACKTEXTURE},
 };
 
-static inline std::map<SOUND_EFFECT_INSTANCE_FLAGS, std::string> SOUND_EFFECT_INSTANCE_FLAGSToString =
+static inline std::unordered_map<SOUND_EFFECT_INSTANCE_FLAGS, std::string> SOUND_EFFECT_INSTANCE_FLAGSToString =
 {
 	{ SoundEffectInstance_Use3D , "Use3D"},
 	{ SoundEffectInstance_ReverbUseFilters ,"ReverbUseFilters"},
 	{ SoundEffectInstance_NoSetPitch , "NoSetPitch"},
 };
 
-static inline std::map<std::string, SOUND_EFFECT_INSTANCE_FLAGS> StringToSOUND_EFFECT_INSTANCE_FLAGS =
+static inline std::unordered_map<std::string, SOUND_EFFECT_INSTANCE_FLAGS> StringToSOUND_EFFECT_INSTANCE_FLAGS =
 {
 	{ "Use3D", SoundEffectInstance_Use3D },
 	{ "ReverbUseFilters", SoundEffectInstance_ReverbUseFilters },
 	{ "NoSetPitch", SoundEffectInstance_NoSetPitch },
 };
 
-static inline std::map<AUDIO_ENGINE_REVERB, std::string> AUDIO_ENGINE_REVERBToString =
+static inline std::unordered_map<AUDIO_ENGINE_REVERB, std::string> AUDIO_ENGINE_REVERBToString =
 {
 	{ Reverb_Off, "Off" },
 	{ Reverb_Default, "Default" },
@@ -727,7 +727,7 @@ static inline std::map<AUDIO_ENGINE_REVERB, std::string> AUDIO_ENGINE_REVERBToSt
 	{ Reverb_Plate, "Plate" },
 };
 
-static inline std::map<std::string, AUDIO_ENGINE_REVERB> StringToAUDIO_ENGINE_REVERB =
+static inline std::unordered_map<std::string, AUDIO_ENGINE_REVERB> StringToAUDIO_ENGINE_REVERB =
 {
 	{ "Off", Reverb_Off },
 	{ "Default", Reverb_Default },

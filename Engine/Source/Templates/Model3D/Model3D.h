@@ -231,6 +231,15 @@ namespace Templates
 
 #endif
 
+	namespace Model3D
+	{
+		inline static const std::string templateName = "model3ds.json";
+		inline static const std::string defaultBaseTexture = "Assets/textures/gridmap.dds";
+		inline static const std::string defaultNormalMap = "Assets/textures/bumpmapflat.dds";
+		inline static const std::string fallbackMaterialName = "BaseLighting";
+		inline static const TemplateType templateType = T_Models3D;
+	}
+
 	struct Model3DJson : public JTemplate
 	{
 		TEMPLATE_DECL(Model3D);
@@ -246,27 +255,21 @@ namespace Templates
 
 	TEMPDECL_FULL(Model3D);
 
-	namespace Model3D
-	{
-		inline static const std::string templateName = "model3ds.json";
-		inline static const std::string defaultBaseTexture = "Assets/textures/gridmap.dds";
-		inline static const std::string defaultNormalMap = "Assets/textures/bumpmapflat.dds";
-	}
-
 	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index);
 	std::string GetModel3DMaterialInstanceUUID(std::string uuid, unsigned int index);
 	std::string GetModel3DMaterialInstanceName(std::string uuid, unsigned int index);
 
 	struct Model3DInstance
 	{
-		std::string model3DUUID;
+		JUUID model3DUUID;
 
-		Model3DInstance(std::string uuid) { assert(!!!"do not use"); }
+		Model3DInstance(JUUID uuid) { assert(!!!"do not use"); }
 		explicit Model3DInstance(
-			std::string uuid,
-			std::string objectUUID,
-			JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {},
+			JUUID uuid,
+			JUUID objectUUID,
+			JObjectChangeCallback cb = [](JUUID) {},
 			JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {});
+		~Model3DInstance();
 		void LoadModel3DInstance();
 		void CreateModel3DMaterialsTemplates(const aiScene* aiModel);
 		void CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh);
@@ -274,16 +277,14 @@ namespace Templates
 #if defined(_DEVELOPMENT)
 		void PushAssimpTextureToJson(nlohmann::json& j, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, std::string fallbackTexture = "", DXGI_FORMAT fallbackFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
 		void PushEmbeddedAsimpTextureToJson(nlohmann::json& m, const aiTexture* embeddedTexture, TextureShaderUsage textureType, std::filesystem::path relativePath, aiString& aiTextureName, DXGI_FORMAT fallbackFormat = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB);
-		MaterialJson CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, aiMaterial* material);
+		MaterialJson CreateModel3DMaterialJson(JUUID materialUUID, JNAME materialName, JUUID vertexShader, JUUID pixelShader, aiMaterial* material);
 #endif
 		VertexClass vertexClass;
-		std::vector<std::shared_ptr<MeshInstance>> meshes;
-		std::vector<std::string> materialUUIDs;
+		std::vector<MeshInstanceUUID> meshes;
+		std::vector<JUUID> materialUUIDs;
 		//animation
-		std::shared_ptr<Animation::Animated> animations = nullptr;
+		std::unique_ptr<Animation::Animated> animations;
 	};
-
-	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D);
 
 	TEMPDECL_REFTRACKER(Model3D);
 }

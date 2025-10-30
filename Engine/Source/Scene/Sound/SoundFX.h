@@ -1,18 +1,8 @@
 #pragma once
 
 #include <SceneObjectDecl.h>
-#include <Json.h>
 #include <SceneObject.h>
-#include <JTypes.h>
-
-namespace Scene { struct Renderable; };
-
 namespace Scene {
-	struct SoundFX;
-
-#include <TrackUUID/JDecl.h>
-#include <SoundFXAtt.h>
-#include <JEnd.h>
 
 #if defined(_EDITOR)
 
@@ -46,9 +36,11 @@ namespace Scene {
 
 #endif
 
+	void DestroySoundEffects();
+
 	struct SoundFX : SceneObject
 	{
-		SCENEOBJECT_DECL(SoundFX);
+		inline static const SceneObjectType sceneObjectType = SO_SoundEffects;
 
 #include <Attributes/JFlags.h>
 #include <SoundFXAtt.h>
@@ -58,7 +50,12 @@ namespace Scene {
 #include <SoundFXAtt.h>
 #include <JEnd.h>
 
+		SoundFX(nlohmann::json& json);
+		~SoundFX() { Destroy(); }
 		virtual void Initialize();
+		virtual void BindToScene();
+		virtual void UnbindFromScene();
+
 		bool markedForDelete = false;
 		void Destroy();
 
@@ -86,9 +83,8 @@ namespace Scene {
 		void UpdateEmmiter();
 
 #if defined(_EDITOR)
-		virtual std::shared_ptr<Renderable> CreateBillboard();
-		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard);
-
+		virtual JUUID CreateBillboard();
+		virtual void UpdateBillboard(JUUID billboard);
 		BoundingBox GetBoundingBox();
 
 		//Gizmo
@@ -96,13 +92,18 @@ namespace Scene {
 #endif
 	};
 
+
+	SODECL_FULL(SoundFX);
+
+#include <TrackUUID/JDecl.h>
+#include <SoundFXAtt.h>
+#include <JEnd.h>
+
 	//DESTROY
-	void DestroySoundEffects();
-	void DeleteSoundEffect(std::string uuid);
+	void DeleteSoundFX(std::string uuid);
 
 #if defined(_EDITOR)
-	void WriteSoundEffectsJson(nlohmann::json& json);
+	void WriteSoundFXsJson(nlohmann::json& json);
 #endif
-
-	void SoundEffectsStep(float step);
+	void SoundFXsStep(float step);
 }

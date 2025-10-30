@@ -1,6 +1,5 @@
 #pragma once
 
-//#include "../Shader/Shader.h"
 #include <VertexFormats.h>
 #include "Variables.h"
 #include "SamplerDesc.h"
@@ -16,6 +15,7 @@
 #include <ShaderMaterials.h>
 #include <JTemplate.h>
 #include <JTypes.h>
+#include <Shader/Shader.h>
 
 namespace Templates
 {
@@ -26,8 +26,8 @@ using namespace Templates;
 
 enum TextureShaderUsage;
 
-typedef std::map<TextureShaderUsage, std::shared_ptr<TextureInstance>> TextureUsageInstanceMap;
-typedef std::pair<TextureShaderUsage, std::shared_ptr<TextureInstance>> TextureUsageInstancePair;
+typedef std::unordered_map<TextureShaderUsage, JUUID> TextureUsageInstanceMap; //JUUID(TextureInstance)
+typedef std::pair<TextureShaderUsage, JUUID> TextureUsageInstancePair;
 
 inline MaterialInitialValuePair ToMaterialInitialValuePair(nlohmann::json j)
 {
@@ -92,6 +92,16 @@ namespace Templates
 
 	void MaterialJsonStep();
 
+	namespace Material
+	{
+		inline static const std::string templateName = "materials.json";
+		inline static const TemplateType templateType = T_Materials;
+#if defined(_EDITOR)
+		inline static const std::string fallbackShader_vs = "BaseLighting_vs";
+		inline static const std::string fallbackShader_ps = "BaseLighting_ps";
+#endif
+	};
+
 	struct MaterialJson : public JTemplate
 	{
 		TEMPLATE_DECL(Material);
@@ -107,39 +117,30 @@ namespace Templates
 
 	TEMPDECL_FULL(Material);
 
-	namespace Material
-	{
-		inline static const std::string templateName = "materials.json";
-#if defined(_EDITOR)
-		inline static const std::string fallbackShader_vs = "BaseLighting_vs";
-		inline static const std::string fallbackShader_ps = "BaseLighting_ps";
-#endif
-	};
-
 	//DESTROY
 	//void FreeGPUTexturesUploadIntermediateResources();
 
 	struct MaterialInstance
 	{
-		MaterialInstance(const std::string uuid) { assert(!!!"do not use"); }
+		MaterialInstance(JUUID uuid) { assert(!!!"do not use"); }
 		explicit MaterialInstance(
-			const std::string instance_uuid,
-			const std::string uuid,
+			JUUID Instance_uuid,
+			JUUID Template_uuid,
 			VertexClass vClass,
 			bool isShadowed,
 			bool hasIBL,
 			TextureShaderUsageMap overrideTextures = {},
-			std::string objectUUID = "",
+			JUUID ObjectUUID = "",
 			JObjectChangeCallback cb = nullptr,
 			JObjectChangePostCallback postCb = nullptr
 		);
 		~MaterialInstance() { Destroy(); }
 
-		std::string materialUUID;
-		std::string instanceUUID;
+		MaterialJsonUUID materialUUID;
+		JUUID instanceUUID;
 
-		std::string vertexShaderUUID;
-		std::string pixelShaderUUID;
+		ShaderJsonUUID vertexShaderUUID;
+		ShaderJsonUUID pixelShaderUUID;
 
 		VertexClass vertexClass;
 		bool shadowed;
@@ -149,8 +150,8 @@ namespace Templates
 		std::vector<std::vector<byte>> variablesBuffer;
 
 		std::vector<std::string> defines;
-		std::shared_ptr<ShaderInstance> vertexShader;
-		std::shared_ptr<ShaderInstance> pixelShader;
+		ShaderInstanceUUID vertexShaderInstanceUUID;
+		ShaderInstanceUUID pixelShaderInstanceUUID;
 		std::vector<MaterialSamplerDesc> samplers;
 		TextureUsageInstanceMap textures;
 		std::map<unsigned int, ::CD3DX12_GPU_DESCRIPTOR_HANDLE> uav;
@@ -158,13 +159,13 @@ namespace Templates
 		void CreateMaterialShaderDefines();
 		void CreateShaderInstances();
 		void Destroy();
-		bool ShaderInstanceHasRegister(std::function<int(std::shared_ptr<ShaderInstance>&)> getRegister);
+		bool ShaderInstanceHasRegister(std::function<int(ShaderInstanceUUID)> getRegister);
 		void LoadVariablesMapping();
 		void SetUAVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& slot);
 		void SetSRVRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& slot);
 	};
 
-	void DestroyMaterialInstance(std::shared_ptr<MaterialInstance>& materialInstance);
+	void DestroyMaterialInstance(JUUID materialInstance);
 
 	TEMPDECL_REFTRACKER(Material);
 };

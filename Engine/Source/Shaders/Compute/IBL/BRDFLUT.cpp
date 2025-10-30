@@ -1,18 +1,14 @@
 #include "pch.h"
 #include "BRDFLUT.h"
-
 #include <Renderer.h>
 #include <DeviceUtils/Resources/Resources.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include <DirectXHelper.h>
 #include <Textures/Texture.h>
 #include <DirectXTex.h>
+#include <DXTypes.h>
 
-extern std::shared_ptr<Renderer> renderer;
-
-namespace Templates
-{
-	extern void CreateTexture(nlohmann::json json);
-};
+extern std::unique_ptr<Renderer> renderer;
 
 using namespace DeviceUtils;
 using namespace Templates;

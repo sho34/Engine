@@ -7,18 +7,21 @@
 #include <NoStd.h>
 #include <pix3.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 namespace DeviceUtils
 {
-	std::shared_ptr<SwapChainPass> CreateRenderPass(const std::string name, std::shared_ptr<DeviceUtils::DescriptorHeap>& descriptorHeap, DXGI_FORMAT depthStencilFormat)
+	static std::unordered_map<JUUID, std::unique_ptr<SwapChainPass>> swapChainPasses;
+
+	JUUID CreateSwapChainPass(const std::string name, std::unique_ptr<DeviceUtils::DescriptorHeap>& descriptorHeap, DXGI_FORMAT depthStencilFormat)
 	{
+		JUUID uuid = getUUID();
 		auto& d3dDevice = renderer->d3dDevice;
 
 		unsigned int bufferCount = renderer->numFrames;
-		std::shared_ptr<SwapChainPass> swapChainPass = std::make_shared<SwapChainPass>();
+		std::unique_ptr<SwapChainPass> swapChainPass = std::make_unique<SwapChainPass>();
 		swapChainPass->name = name;
-		swapChainPass->rtvDescriptorHeap = descriptorHeap;
+		swapChainPass->rtvDescriptorHeap = descriptorHeap.get();
 		nostd::VecN_push_back(bufferCount, swapChainPass->renderTargets);
 		UpdateRenderTargetViews(d3dDevice, renderer->swapChain, descriptorHeap->descriptorHeap, swapChainPass->renderTargets.data(), bufferCount);
 		for (unsigned int i = 0U; i < bufferCount; i++)
@@ -45,7 +48,19 @@ namespace DeviceUtils
 			CCNAME_D3D12_OBJECT_N(swapChainPass->depthStencilTexture, name);
 		}
 
-		return swapChainPass;
+		swapChainPasses.insert_or_assign(uuid, std::move(swapChainPass));
+		return uuid;
+	}
+
+	std::unique_ptr<SwapChainPass>& GetSwapChainPass(JUUID uuid)
+	{
+		return swapChainPasses.at(uuid);
+	}
+
+	void DeleteSwapChainPass(JUUID uuid)
+	{
+		swapChainPasses.at(uuid)->ReleaseResources();
+		swapChainPasses.erase(uuid);
 	}
 
 	void SwapChainPass::Pass(std::function<void()> renderCallback, bool clearRTV, XMVECTORF32 clearColor)
@@ -58,8 +73,8 @@ namespace DeviceUtils
 	void SwapChainPass::BeginRenderPass(CComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap, bool clearRTV, XMVECTORF32 clearColor)
 	{
 		unsigned int backBufferIndex = renderer->backBufferIndex;
-		auto backBuffer = renderTargets[backBufferIndex];
-		auto commandList = renderer->commandList;
+		auto& backBuffer = renderTargets[backBufferIndex];
+		auto& commandList = renderer->commandList;
 
 #if defined(_DEVELOPMENT)
 		PIXBeginEvent(commandList.p, 0, name.c_str());
@@ -90,11 +105,12 @@ namespace DeviceUtils
 		}
 	}
 
-	void SwapChainPass::CopyFromRenderToTexture(const std::shared_ptr<RenderToTexture>& renderToTexture)
+	void SwapChainPass::CopyFromRenderToTexture(JUUID renderToTextureUUID)
 	{
 		unsigned int backbufferIndex = renderer->backBufferIndex;
 		auto& commandList = renderer->commandList;
 		auto& backbuffer = renderTargets[backbufferIndex];
+		auto& renderToTexture = GetRenderToTexture(renderToTextureUUID);
 		auto& rtt = renderToTexture->renderToTexture;
 
 		std::vector<CD3DX12_RESOURCE_BARRIER> hold = {
@@ -134,6 +150,7 @@ namespace DeviceUtils
 
 	void SwapChainPass::Resize(unsigned int width, unsigned int height)
 	{
+		using namespace std;
 		this->width = width;
 		this->height = height;
 		unsigned int bufferCount = renderer->numFrames;
@@ -145,10 +162,10 @@ namespace DeviceUtils
 			CCNAME_D3D12_OBJECT_N(renderTargets[i], passName);
 		}
 		screenViewport = renderer->screenViewport;
-		screenViewport.Width = std::min(static_cast<float>(width), screenViewport.Width);
-		screenViewport.Height = std::min(static_cast<float>(height), screenViewport.Height);
+		screenViewport.Width = min(static_cast<float>(width), screenViewport.Width);
+		screenViewport.Height = min(static_cast<float>(height), screenViewport.Height);
 		scissorRect = renderer->scissorRect;
-		scissorRect.right = std::min(static_cast<LONG>(width), scissorRect.right);
-		scissorRect.bottom = std::min(static_cast<LONG>(height), scissorRect.bottom);
+		scissorRect.right = min(static_cast<LONG>(width), scissorRect.right);
+		scissorRect.bottom = min(static_cast<LONG>(height), scissorRect.bottom);
 	}
 }

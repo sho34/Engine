@@ -4,10 +4,11 @@
 #include <functional>
 #include <any>
 #include <map>
+#include <UUID.h>
 
 struct JObject;
 
-typedef std::function<void(std::shared_ptr<JObject>)> JObjectChangeCallback;
+typedef std::function<void(JUUID)> JObjectChangeCallback;
 typedef std::function<void(unsigned int, unsigned int)> JObjectChangePostCallback;
 
 struct JObject : nlohmann::json
@@ -18,7 +19,7 @@ struct JObject : nlohmann::json
 	std::map<std::string, nlohmann::json> UpdatePrevValues;
 	unsigned int updateFlag = 0U;
 
-	JObject(nlohmann::json json) :nlohmann::json(json) {}
+	JObject(nlohmann::json& json) :nlohmann::json(json) {}
 	nlohmann::json json()
 	{
 		nlohmann::json j;
@@ -75,18 +76,18 @@ struct JObject : nlohmann::json
 		updateFlag = 0ULL;
 	}
 
-	virtual std::function<bool(std::shared_ptr<JObject>)> GetAssetsConditioner() { return [](std::shared_ptr<JObject>) { return true; }; }
+	virtual std::function<bool(JObject*)> GetAssetsConditioner() { return [](JObject*) { return true; }; }
 
 	virtual void EditorPreview(size_t flags) {}
 	virtual void DestroyEditorPreview() {}
 
-	std::map<std::string, std::tuple<JObjectChangeCallback, JObjectChangePostCallback>> bindedChangesCallbacks;
-	void BindChangeCallback(std::string objectUUID = "", JObjectChangeCallback cb = nullptr, JObjectChangePostCallback postCb = nullptr)
+	std::unordered_map<JUUID, std::tuple<JObjectChangeCallback, JObjectChangePostCallback>> bindedChangesCallbacks;
+	void BindChangeCallback(JUUID objectUUID = "", JObjectChangeCallback cb = nullptr, JObjectChangePostCallback postCb = nullptr)
 	{
 		if (objectUUID == "" || (cb == nullptr && postCb == nullptr)) return;
 		bindedChangesCallbacks.insert_or_assign(objectUUID, std::make_tuple(cb, postCb));
 	}
-	void UnbindChangeCallback(std::string objectUUID)
+	void UnbindChangeCallback(JUUID objectUUID)
 	{
 		if (objectUUID == "") return;
 		bindedChangesCallbacks.erase(objectUUID);
@@ -100,7 +101,7 @@ struct JObject : nlohmann::json
 				{
 					auto& lambda = std::get<0>(lambdas);
 					if (lambda)
-						lambda(j);
+						lambda(j());
 					total++;
 				}
 				cbComplete(j);

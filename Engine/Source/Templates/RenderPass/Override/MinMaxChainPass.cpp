@@ -3,23 +3,37 @@
 #include <Renderer.h>
 #include <Material/Material.h>
 #include <Shader/Shader.h>
+#include <Mesh/Mesh.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
+#include <RenderPass/RenderPass.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
-MinMaxChainPass::MinMaxChainPass(std::shared_ptr<Scene::Camera> cam, unsigned int rpI, std::shared_ptr<RenderPassInstance> rp) : OverridePass(cam, rpI, rp)
+MinMaxChainPass::MinMaxChainPass(JUUID cam, unsigned int rpI, JUUID rp) : OverridePass(cam, rpI, rp)
 {
-	CreateFsQuadResources("DepthMinMax", GetRenderPassTemplate(rp->renderPassUUID), [this, rp](std::string name, ShaderConstantsBufferVariable& var)
+}
+
+void MinMaxChainPass::Initialize()
+{
+	using namespace DeviceUtils;
+
+	JUUID renderPassTemplateUUID = renderPassInstance->renderPassJson();
+	RenderToTexturePassUUID rttPass = renderPassInstance->renderToTexturePass;
+	XMFLOAT2 texelInvSize = {
+		1.0f / rttPass->screenViewport.Width,
+		1.0f / rttPass->screenViewport.Height
+	};
+
+	CreateFsQuadResources("DepthMinMax", renderPassTemplateUUID,
+		[this, texelInvSize](std::string name, ShaderConstantsBufferVariable& var)
 		{
-			XMFLOAT2 texelInvSize = {
-				1.0f / rp->renderToTexturePass->screenViewport.Width,
-				1.0f / rp->renderToTexturePass->screenViewport.Height
-			};
+			auto& fsCB = fsQuadConstantsBuffer;
 
 			for (unsigned int n = 0; n < renderer->numFrames; n++)
 			{
 				if (name == "texelInvSize")
 				{
-					fsQuadConstantsBuffer->push(texelInvSize, n, var.offset);
+					fsCB->push(texelInvSize, n, var.offset);
 				}
 			}
 		}
@@ -28,14 +42,19 @@ MinMaxChainPass::MinMaxChainPass(std::shared_ptr<Scene::Camera> cam, unsigned in
 
 void MinMaxChainPass::Pass()
 {
-	renderPassInstance->renderToTexturePass->BeginRenderPass();
+	RenderPassInstanceUUID renderPass = renderPassInstance;
+	RenderToTexturePassUUID rttPass = renderPass->renderToTexturePass;
+	rttPass->BeginRenderPass();
 	Render();
-	renderPassInstance->renderToTexturePass->EndRenderPass();
+	rttPass->EndRenderPass();
 }
 
 void MinMaxChainPass::Render()
 {
 	auto& commandList = renderer->commandList;
+	auto& fsCB = fsQuadConstantsBuffer;
+	auto& fsQuadMesh = GetMeshInstance(fsQuad);
+
 #if defined(_DEVELOPMENT)
 	PIXBeginEvent(commandList.p, 0, "MinMaxChainPassQuad");
 #endif
@@ -44,13 +63,13 @@ void MinMaxChainPass::Render()
 	commandList->SetGraphicsRootSignature(rootSignature);
 	commandList->SetPipelineState(pipelineState);
 
-	commandList->SetGraphicsRootDescriptorTable(0, fsQuadConstantsBuffer->gpu_xhandle.at(renderer->backBufferIndex));
+	commandList->SetGraphicsRootDescriptorTable(0, fsCB->gpu_xhandle.at(renderer->backBufferIndex));
 	commandList->SetGraphicsRootDescriptorTable(1, shadowMapChainGpuHandle1);
 	commandList->SetGraphicsRootDescriptorTable(2, shadowMapChainGpuHandle2);
 
-	commandList->IASetVertexBuffers(0, 1, &fsQuad->vbvData.vertexBufferView);
-	commandList->IASetIndexBuffer(&fsQuad->ibvData.indexBufferView);
-	commandList->DrawIndexedInstanced(fsQuad->ibvData.indexBufferView.SizeInBytes / sizeof(unsigned int), 1, 0, 0, 0);
+	commandList->IASetVertexBuffers(0, 1, &fsQuadMesh->vbvData.vertexBufferView);
+	commandList->IASetIndexBuffer(&fsQuadMesh->ibvData.indexBufferView);
+	commandList->DrawIndexedInstanced(fsQuadMesh->ibvData.indexBufferView.SizeInBytes / sizeof(unsigned int), 1, 0, 0, 0);
 
 #if defined(_DEVELOPMENT)
 	PIXEndEvent(commandList.p);

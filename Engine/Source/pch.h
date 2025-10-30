@@ -33,9 +33,6 @@
 #include <DirectXColors.h>
 
 #include <d3d12.h>
-//#include <d3d11on12.h>
-//#include <dwrite_2.h>
-//#include <d2d1_3.h>
 #include <dxgi1_6.h>
 #include <d3d12shader.h>
 #include "d3dx12.h"
@@ -131,9 +128,11 @@ using namespace Concurrency;
 #include "pch/ShaderMaterials.h"
 #include "pch/RefTracker.h"
 #include "pch/NoMath.h"
-#include "pch/Binder.h"
-#include "pch/DDSTextures.h"
+#include "pch/UUID/DeviceUtilsUUID.h"
+#include "pch/UUID/TemplateUUID.h"
+#include "pch/UUID/SceneObjectUUID.h"
+#include "pch/UUID/ComputeShaderUUID.h"
 #if defined(_EDITOR)
-#include "pch/Command.h"
 #include "pch/JExposeEditor.h"
 #endif
+#include "pch/GameStateMachine.h"

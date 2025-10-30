@@ -4,14 +4,36 @@
 #include <Renderer.h>
 #include <DeviceUtils/Resources/Resources.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 namespace ComputeShader
 {
-	RenderableBoundingBox::RenderableBoundingBox(std::shared_ptr<Renderable> r) : ComputeInterface("BoundingBox_cs")
+	static std::unordered_map<JUUID, std::unique_ptr<RenderableBoundingBox>> renderableBoundingBoxCompute;
+
+	JUUID CreateRenderableBoundingBox(RenderableUUID renderable)
+	{
+		JUUID compUUID = getUUID();
+		std::unique_ptr<RenderableBoundingBox> rbbComp = std::make_unique<RenderableBoundingBox>(renderable());
+		renderableBoundingBoxCompute.insert_or_assign(compUUID, std::move(rbbComp));
+		return compUUID;
+	}
+
+	std::unique_ptr<RenderableBoundingBox>& GetRenderableBoundingBox(JUUID compUUID)
+	{
+		return renderableBoundingBoxCompute.at(compUUID);
+	}
+
+	void DeleteRenderableBoundingBox(JUUID compUUID)
+	{
+		renderableBoundingBoxCompute.erase(compUUID);
+	}
+
+	RenderableBoundingBox::RenderableBoundingBox(JUUID renderableUUID) : ComputeInterface("BoundingBox_cs")
 	{
 		using namespace Animation;
-		bonesCbv = GetAnimatedConstantsBuffer(r);
+		bonesCbv = GetAnimatedConstantsBuffer(renderableUUID);
+		auto& r = GetRenderableSceneObject(renderableUUID);
+		auto& shaderInstance = GetShaderInstance(shader.shader);
 
 		auto createComputeResource = [this, &r](size_t numResources)
 			{
@@ -60,19 +82,20 @@ namespace ComputeShader
 				}
 			};
 
-		auto createMeshVerticesShaderResourceView = [this](std::shared_ptr<MeshInstance>& mesh)
+		auto createMeshVerticesShaderResourceView = [this](auto mesh)
 			{
 				verticesCpuHandles.push_back(CD3DX12_CPU_DESCRIPTOR_HANDLE());
 				verticesGpuHandles.push_back(CD3DX12_GPU_DESCRIPTOR_HANDLE());
 				mesh->CreateVerticesShaderResourceView(verticesCpuHandles.back(), verticesGpuHandles.back());
 			};
 
-		auto createNumVerticesConstantsBuffer = [this](std::shared_ptr<MeshInstance>& mesh)
+		auto createNumVerticesConstantsBuffer = [this, &shaderInstance](auto mesh)
 			{
-				auto cbv = CreateConstantsBuffer(shader.shader->cbufferSize[0], "bboxCS." + mesh->uuid);
+				JUUID cbvUUID = CreateConstantsBuffer(shaderInstance->cbufferSize[0], "bboxCS." + mesh->uuid);
 				unsigned int numVertices = mesh->vbvData.vertexBufferView.SizeInBytes / mesh->vbvData.vertexBufferView.StrideInBytes;
+				auto& cbv = GetConstantsBuffer(cbvUUID);
 				cbv->push<unsigned int>(numVertices, 0);
-				constantsBuffers.push_back(cbv);
+				constantsBuffers.push_back(cbvUUID);
 			};
 
 		//Create the bounding box compute resource
@@ -93,12 +116,12 @@ namespace ComputeShader
 
 	RenderableBoundingBox::~RenderableBoundingBox()
 	{
-		bonesCbv = nullptr;
+		bonesCbv.clear();
 		resources.clear();
 		readBackResources.clear();
 		for (auto& constantBuffer : constantsBuffers)
 		{
-			DestroyConstantsBuffer(constantBuffer);
+			DestroyConstantsBuffer(constantBuffer());
 		}
 		constantsBuffers.clear();
 		for (unsigned int i = 0; i < verticesCpuHandles.size(); i++)
@@ -113,6 +136,8 @@ namespace ComputeShader
 
 	void RenderableBoundingBox::Compute()
 	{
+		using namespace DeviceUtils;
+
 		CComPtr<ID3D12GraphicsCommandList2>& commandList = renderer->commandList;
 
 #if defined(_DEVELOPMENT)

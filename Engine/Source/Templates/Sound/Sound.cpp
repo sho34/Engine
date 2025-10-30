@@ -3,11 +3,8 @@
 #include <map>
 #include <set>
 #include <Audio.h>
-#include <nlohmann/json.hpp>
 #include <AudioSystem.h>
-#include <Sound/SoundFX.h>
-#include <NoStd.h>
-#include <Application.h>
+#include <Templates.h>
 #include <TemplateDef.h>
 
 using namespace AudioSystem;
@@ -41,17 +38,17 @@ namespace Templates
 
 	namespace Sound
 	{
-		std::map<std::string, std::unique_ptr<DirectX::SoundEffect>> uuidToSoundEffects;
-		std::map<std::string, unsigned int> uuidInstanceCount;
+		std::map<JUUID, std::unique_ptr<DirectX::SoundEffect>> uuidToSoundEffects;
+		std::map<JUUID, unsigned int> uuidInstanceCount;
 	};
 
 	std::tuple<std::unique_ptr<DirectX::SoundEffect>, std::unique_ptr<DirectX::SoundEffectInstance>>
-		GetSoundEffectInstance(std::string uuid, unsigned int flags,
+		GetSoundEffectInstance(JUUID uuid, unsigned int flags,
 			std::string objectUUID, JObjectChangeCallback cb, JObjectChangePostCallback postCb)
 	{
 		if (objectUUID != "" && (cb != nullptr || postCb != nullptr))
 		{
-			std::shared_ptr<SoundJson> json = GetSoundTemplate(uuid);
+			std::unique_ptr<SoundJson>& json = GetSoundTemplate(uuid);
 			json->BindChangeCallback(objectUUID, cb, postCb);
 		}
 		using namespace Sound;
@@ -61,7 +58,7 @@ namespace Templates
 		}
 		else
 		{
-			std::shared_ptr<SoundJson> json = GetSoundTemplate(uuid);
+			std::unique_ptr<SoundJson>& json = GetSoundTemplate(uuid);
 			std::wstring path = nostd::StringToWString(defaultSoundsFolder + json->path());
 			uuidToSoundEffects[uuid] = std::make_unique<DirectX::SoundEffect>(GetAudioEngine().get(), path.c_str());
 			uuidInstanceCount[uuid] = 1;
@@ -69,7 +66,7 @@ namespace Templates
 		return std::make_tuple(std::move(uuidToSoundEffects[uuid]), std::move(uuidToSoundEffects[uuid]->CreateInstance(SOUND_EFFECT_INSTANCE_FLAGS(flags))));
 	}
 
-	void DestroySoundEffectInstance(std::string uuid, std::tuple<
+	void DestroySoundEffectInstance(JUUID uuid, std::tuple<
 		std::unique_ptr<DirectX::SoundEffect>,
 		std::unique_ptr<DirectX::SoundEffectInstance>
 	>& soundEffectInstance)
@@ -86,9 +83,7 @@ namespace Templates
 		}
 	}
 
-
-
-	SoundJson::SoundJson(nlohmann::json json) : JTemplate(json)
+	SoundJson::SoundJson(nlohmann::json& json) : JTemplate(json)
 	{
 #include <Attributes/JInit.h>
 #include <SoundAtt.h>
@@ -103,16 +98,15 @@ namespace Templates
 
 	void SoundJsonStep()
 	{
-		std::set<std::shared_ptr<SoundJson>> sounds;
+		std::set<SoundJsonUUID> sounds;
 		std::transform(Soundtemplates.begin(), Soundtemplates.end(), std::inserter(sounds, sounds.begin()), [](auto& temps)
 			{
-				auto& matJ = std::get<1>(temps.second);
-				return matJ;
+				return temps.first;
 			}
 		);
 
-		std::set<std::shared_ptr<SoundJson>> rebuildSounds;
-		std::copy_if(sounds.begin(), sounds.end(), std::inserter(rebuildSounds, rebuildSounds.begin()), [](auto& sound)
+		std::set<SoundJsonUUID> rebuildSounds;
+		std::copy_if(sounds.begin(), sounds.end(), std::inserter(rebuildSounds, rebuildSounds.begin()), [](auto sound)
 			{
 				return sound->dirty(SoundJson::Update_path);
 			}

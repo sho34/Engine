@@ -5,12 +5,8 @@
 #include <atlbase.h>
 #include <d3dx12.h>
 
-namespace DeviceUtils { struct ConstantsBuffer; };
-
 namespace ComputeShader
 {
-	using namespace DeviceUtils;
-
 	struct LuminanceHistogramAverageBuffer
 	{
 		unsigned int  pixelCount;
@@ -26,7 +22,7 @@ namespace ComputeShader
 		CD3DX12_CPU_DESCRIPTOR_HANDLE histogramCpuHandle;
 		CD3DX12_GPU_DESCRIPTOR_HANDLE histogramGpuHandle;
 
-		std::shared_ptr<ConstantsBuffer> constantsBuffers; //LuminanceHistogramAverageBuffer CBV (C0)
+		JUUID constantsBuffers; //LuminanceHistogramAverageBuffer CBV (C0)
 
 		//luminance
 		CComPtr<ID3D12Resource> average;

@@ -10,15 +10,15 @@
 #define JEXPOSE_MAP_TRANSFORM(KEYTYPE,VALUETYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
 #define JPREVIEW(NAME,JEDVALUETYPE)
 #define JTRACKUUID(CLASS,NAME,LIMIT,COND) \
-	size_t GetNum##NAME();\
-	std::vector<std::shared_ptr<CLASS>> Get##NAME();\
-	std::shared_ptr<CLASS> FindIn##NAME(std::string uuid);\
-	std::shared_ptr<CLASS> FindIn##NAME##ByName(std::string name);\
-	std::vector<std::string> Get##NAME##Names();\
-	std::vector<UUIDName> Get##NAME##UUIDNames();\
-	std::string FindNameIn##NAME(std::string uuid);\
-	void Insert##CLASS##Into##NAME(std::shared_ptr<CLASS> v);\
-	void Erase##CLASS##From##NAME(std::shared_ptr<CLASS> v);
+	size_t GetCountFrom##NAME();\
+	std::set<JUUID>& Get##NAME();\
+	std::unique_ptr<CLASS>& GetFrom##NAME(JUUID uuid);\
+	std::unique_ptr<CLASS>& GetFrom##NAME##ByName(std::string name);\
+	std::vector<JNAME> GetNamesFrom##NAME();\
+	std::vector<JUUIDName> GetUUIDNamesFrom##NAME();\
+	JNAME GetNameFrom##NAME(JUUID uuid);\
+	void Insert##CLASS##Into##NAME(JUUID uuid);\
+	void Erase##CLASS##From##NAME(JUUID uuid);\
 
 #endif
 
@@ -34,70 +34,56 @@
 #define JEXPOSE_MAP_TRANSFORM(KEYTYPE,VALUETYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
 #define JPREVIEW(NAME,JEDVALUETYPE)
 #define JTRACKUUID(CLASS,NAME,LIMIT,COND) \
-	static std::map<std::string, std::shared_ptr<CLASS>> NAME;\
-	size_t GetNum##NAME(){ return NAME.size(); } \
-	std::vector<std::shared_ptr<CLASS>> Get##NAME()\
+	static std::set<JUUID> NAME;\
+	size_t GetCountFrom##NAME() { return NAME.size(); }\
+	std::set<JUUID>& Get##NAME() { return NAME; }\
+	std::unique_ptr<CLASS>& GetFrom##NAME(JUUID uuid)\
 	{\
-		std::vector<std::shared_ptr<CLASS>> v;\
-		std::transform(NAME.begin(),NAME.end(),std::back_inserter(v),[](auto& pair){ return pair.second; });\
-		return v;\
+		assert(NAME.contains(uuid));\
+		return Get##CLASS##SceneObject(uuid);\
 	}\
-	std::shared_ptr<CLASS> FindIn##NAME(std::string uuid) { return NAME.contains(uuid)?NAME.at(uuid):nullptr; }\
-	std::shared_ptr<CLASS> FindIn##NAME##ByName(std::string name)\
+	std::unique_ptr<CLASS>& GetFrom##NAME##ByName(std::string name)\
 	{\
-		auto it = std::find_if(NAME.begin(),NAME.end(),[name](auto& pair)\
-			{\
-				return pair.second->name()==name;\
-			}\
-			); \
-			return (it != NAME.end()) ? it->second: nullptr;\
+		JUUID uuid = Get##CLASS##UUIDByName(name);\
+		return GetFrom##NAME(uuid);\
 	}\
-	std::vector<std::string> Get##NAME##Names() {\
-		std::map<std::string, std::shared_ptr<CLASS>> j;\
-		std::copy_if(NAME.begin(), NAME.end(), std::inserter(j, j.end()), [](const auto& pair)\
-			{\
-				return !bool(pair.second->at("hidden"));\
-			}\
-		);\
-		std::vector<std::string> v;\
-		std::transform(j.begin(),j.end(),std::back_inserter(v),[](const auto& pair)\
-			{\
-				return pair.second->at("name");\
-			}\
-		);\
-		return v;\
-	}\
-	std::vector<UUIDName> Get##NAME##UUIDNames()\
+	std::vector<JNAME> GetNamesFrom##NAME()\
 	{\
-		std::map<std::string, std::shared_ptr<CLASS>> j; \
-		std::copy_if(NAME.begin(), NAME.end(), std::inserter(j, j.end()), [](const auto& pair)\
+		std::vector<JNAME> names;\
+		std::transform(NAME.begin(), NAME.end(), std::back_inserter(names), [](JUUID uuid) { return Get##CLASS##Name(uuid); });\
+		std::sort(names.begin(), names.end());\
+		return names;\
+	}\
+	std::vector<JUUIDName> GetUUIDNamesFrom##NAME()\
+	{\
+		std::vector<JUUIDName> uuidNames;\
+		std::transform(NAME.begin(), NAME.end(), std::back_inserter(uuidNames), [](JUUID uuid)\
 			{\
-				return !bool(pair.second->at("hidden")); \
-			}\
-		);\
-		std::vector<UUIDName> v;\
-		std::transform(j.begin(),j.end(),std::back_inserter(v),[](const auto& pair)\
-			{\
-				UUIDName uuidName;\
-				std::string& uuid = std::get<0>(uuidName);\
-				uuid = pair.first;\
-				std::string& name = std::get<1>(uuidName);\
-				name = pair.second->at("name");\
+				JUUIDName uuidName;\
+				JUUID& uuid0 = std::get<0>(uuidName);\
+				JUUID& name = std::get<1>(uuidName);\
+				uuid0 = uuid;\
+				name = Get##CLASS##Name(uuid);\
 				return uuidName;\
 			}\
 		);\
-		return v;\
+		SortUUIDByName(uuidNames);\
+		return uuidNames;\
 	}\
-	std::string FindNameIn##NAME(std::string uuid) { return NAME.contains(uuid)?NAME.at(uuid)->name():""; }\
-	void Insert##CLASS##Into##NAME(std::shared_ptr<CLASS> v)\
+	JNAME GetNameFrom##NAME(JUUID uuid)\
 	{\
-		if(LIMIT>0 && !NAME.contains(v->uuid()))\
-		assert(NAME.size()<LIMIT);\
-		NAME.insert_or_assign(v->uuid(), v);\
+		assert(NAME.contains(uuid));\
+		return Get##CLASS##Name(uuid);\
 	}\
-	void Erase##CLASS##From##NAME(std::shared_ptr<CLASS> v)\
+	void Insert##CLASS##Into##NAME(JUUID uuid)\
 	{\
-		NAME.erase(v->uuid());\
+		if(LIMIT>0 && !NAME.contains(uuid))\
+			assert(NAME.size()<LIMIT);\
+		NAME.insert(uuid);\
+	}\
+	void Erase##CLASS##From##NAME(JUUID uuid)\
+	{\
+		NAME.erase(uuid);\
 	}
 
 #endif
@@ -113,7 +99,7 @@
 #define JEXPOSE_SET(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
 #define JEXPOSE_MAP_TRANSFORM(KEYTYPE,VALUETYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
 #define JPREVIEW(NAME,JEDVALUETYPE)
-#define JTRACKUUID(CLASS,NAME,LIMIT,COND) if(COND) { Insert##CLASS##Into##NAME(this_ptr); }
+#define JTRACKUUID(CLASS,NAME,LIMIT,COND) if(COND) { Insert##CLASS##Into##NAME(uuid()); }
 
 #endif
 
@@ -128,7 +114,7 @@
 #define JEXPOSE_SET(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
 #define JEXPOSE_MAP_TRANSFORM(KEYTYPE,VALUETYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
 #define JPREVIEW(NAME,JEDVALUETYPE)
-#define JTRACKUUID(CLASS,NAME,LIMIT,COND) Erase##CLASS##From##NAME(this_ptr);
+#define JTRACKUUID(CLASS,NAME,LIMIT,COND) Erase##CLASS##From##NAME(uuid());
 
 #endif
 

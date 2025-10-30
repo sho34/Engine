@@ -5,33 +5,38 @@
 
 namespace Game
 {
-	std::map<std::shared_ptr<Controller>, std::shared_ptr<Scene::SceneObject>> controllerRegistry;
+	std::unordered_map<JUUID, std::unique_ptr<Controller>> controllersUUIDs;
 
-	void RegisterController(std::shared_ptr<Controller> controller, std::shared_ptr<Scene::SceneObject> sceneObject)
+	JUUID RegisterController(std::unique_ptr<Controller>& controller, JUUID sceneObject)
 	{
+		JUUID controllerUUID = getUUID();
 		controller->Map(sceneObject);
-		controllerRegistry.insert_or_assign(controller, sceneObject);
+		controllersUUIDs.insert_or_assign(controllerUUID, std::move(controller));
+		return controllerUUID;
 	}
 
-	void UnregisterController(std::shared_ptr<Controller> controller)
+	void UnregisterController(JUUID controllerUUID)
 	{
-		controller->Unmap();
-		controllerRegistry.erase(controller);
+		if (controllersUUIDs.contains(controllerUUID))
+		{
+			auto& controller = controllersUUIDs.at(controllerUUID);
+			controller->Unmap();
+			controllersUUIDs.erase(controllerUUID);
+		}
 	}
 
 	void DestroyControllers()
 	{
-		std::vector<std::shared_ptr<Controller>> controllers;
-		std::transform(controllerRegistry.begin(), controllerRegistry.end(), std::back_inserter(controllers), [](auto& pair) {return pair.first; });
-		for (auto& controller : controllers)
+		for (auto it = controllersUUIDs.begin(); it != controllersUUIDs.end();)
 		{
-			UnregisterController(controller);
+			it->second->Unmap();
+			it = controllersUUIDs.erase(it);
 		}
 	}
 
 	void StepControllers(float delta)
 	{
-		for (auto& [c, _] : controllerRegistry)
+		for (auto& [_, c] : controllersUUIDs)
 		{
 			c->Step(delta);
 		}

@@ -10,8 +10,8 @@ JEdvCreatorDrawerFunction DrawCreatorMap() { return nullptr; }
 
 template<typename E, JsonToEditorValueType J>
 JEdvCreatorDrawerFunction DrawCreatorEnum(
-	std::map<E, std::string>& EtoS,
-	std::map<std::string, E>& StoE
+	std::unordered_map<E, std::string>& EtoS,
+	std::unordered_map<std::string, E>& StoE
 ) {
 	if (J == jedv_t_hidden) return nullptr;
 	return [&EtoS, &StoE](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
@@ -79,10 +79,10 @@ inline JEdvCreatorDrawerFunction DrawUniqueName(std::string objectName, auto get
 		};
 }
 
-template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_camera_name>() { return DrawUniqueName("Camera", GetCamerasNames); }
-template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_light_name>() { return DrawUniqueName("Light", GetLightsNames); }
-template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_renderable_name>() { return DrawUniqueName("Renderable", GetRenderablesNames); }
-template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_soundeffect_name>() { return DrawUniqueName("SoundEffects", GetSoundEffectsNames); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_camera_name>() { return DrawUniqueName("Camera", Scene::GetCamerasNames); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_light_name>() { return DrawUniqueName("Light", Scene::GetLightsNames); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_renderable_name>() { return DrawUniqueName("Renderable", Scene::GetRenderablesNames); }
+template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_so_soundeffect_name>() { return DrawUniqueName("SoundEffects", Scene::GetSoundFXsNames); }
 template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_material_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
 template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_model3d_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
 template<>inline JEdvCreatorDrawerFunction DrawCreatorValue<std::string, jedv_t_te_renderpass_name>() { return DrawCreatorValue<std::string, jedv_t_string>(); }
@@ -139,8 +139,8 @@ inline void EditorCreatorDrawTemplateSelector(
 	auto GetUUIDsNames
 )
 {
-	std::vector<UUIDName> selectables;
-	UUIDName selected = std::make_tuple("", "");
+	std::vector<JUUIDName> selectables;
+	JUUIDName selected = std::make_tuple("", "");
 	selectables.push_back(selected);
 
 	if (json.at(attribute) != "")
@@ -150,14 +150,14 @@ inline void EditorCreatorDrawTemplateSelector(
 		uuid = json.at(attribute);
 		name = GetNameFromUUID(uuid);
 	}
-	std::vector<UUIDName> resources = SortUUIDNameByName(GetUUIDsNames)();
+	std::vector<JUUIDName> resources = SortUUIDNameByName(GetUUIDsNames)();
 	nostd::AppendToVector(selectables, resources);
 
 	ImGui::Text(attribute.c_str());
 
 	ImGui::PushID(attribute.c_str());
 	{
-		ImGui::DrawComboSelection(selected, selectables, [attribute, &json](UUIDName option)
+		ImGui::DrawComboSelection(selected, selectables, [attribute, &json](JUUIDName option)
 			{
 				json.at(attribute) = std::get<0>(option);
 			}
@@ -228,10 +228,10 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<MeshMaterial, jedv_t_vector>(
 			unsigned int size = static_cast<unsigned int>(json.at("meshMaterials").size());
 			bool hasModel = json.contains("model") && json.at("model") != "";
 
-			std::vector<UUIDName> selectablesMeshes = { std::make_tuple("","") };
-			std::vector<UUIDName> selectablesMaterials = { std::make_tuple("","") };
-			std::vector<UUIDName> meshesUUIDs = Templates::GetMeshesUUIDsNames();
-			std::vector<UUIDName> materialsUUIDs = Templates::GetMaterialsUUIDsNames();
+			std::vector<JUUIDName> selectablesMeshes = { std::make_tuple("","") };
+			std::vector<JUUIDName> selectablesMaterials = { std::make_tuple("","") };
+			std::vector<JUUIDName> meshesUUIDs = Templates::GetMeshesUUIDsNames();
+			std::vector<JUUIDName> materialsUUIDs = Templates::GetMaterialsUUIDsNames();
 
 			selectablesMeshes.insert(selectablesMeshes.end(), meshesUUIDs.begin(), meshesUUIDs.end());
 			selectablesMaterials.insert(selectablesMaterials.end(), materialsUUIDs.begin(), materialsUUIDs.end());
@@ -268,11 +268,11 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<MeshMaterial, jedv_t_vector>(
 					std::string meshName = mesh.empty() ? "" : Templates::GetMeshName(mesh);
 					std::string materialName = material.empty() ? "" : Templates::GetMaterialName(material);
 
-					UUIDName meshUN = std::make_tuple(mesh, meshName);
-					UUIDName matUN = std::make_tuple(material, materialName);
+					JUUIDName meshUN = std::make_tuple(mesh, meshName);
+					JUUIDName matUN = std::make_tuple(material, materialName);
 
 					ImGui::PushID((std::string("mesh-") + std::to_string(index)).c_str());
-					ImGui::DrawComboSelection(meshUN, meshesUUIDs, [index, setMesh](UUIDName option)
+					ImGui::DrawComboSelection(meshUN, meshesUUIDs, [index, setMesh](JUUIDName option)
 						{
 							std::string& nuuid = std::get<0>(option);
 							setMesh(index, nuuid);
@@ -282,7 +282,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<MeshMaterial, jedv_t_vector>(
 
 					ImGui::SameLine();
 					ImGui::PushID((std::string("material-") + std::to_string(index)).c_str());
-					ImGui::DrawComboSelection(matUN, materialsUUIDs, [index, setMaterial](UUIDName option)
+					ImGui::DrawComboSelection(matUN, materialsUUIDs, [index, setMaterial](JUUIDName option)
 						{
 							std::string& nuuid = std::get<0>(option);
 							setMaterial(index, nuuid);
@@ -309,17 +309,17 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<MeshMaterial, jedv_t_vector>(
 				}
 
 				ImGui::Text("model");
-				std::vector<UUIDName> selectablesModels = { std::make_tuple("","") };
-				std::vector<UUIDName> model3DsUUIDs = Templates::GetModel3DsUUIDsNames();
+				std::vector<JUUIDName> selectablesModels = { std::make_tuple("","") };
+				std::vector<JUUIDName> model3DsUUIDs = Templates::GetModel3DsUUIDsNames();
 				selectablesModels.insert(selectablesModels.end(), model3DsUUIDs.begin(), model3DsUUIDs.end());
 
 				std::string model = json.contains("model") ? json.at("model") : "";
 				std::string modelName = model.empty() ? "" : Templates::GetModel3DName(model);
 
-				UUIDName modelUN = std::make_tuple(model, modelName);
+				JUUIDName modelUN = std::make_tuple(model, modelName);
 
 				ImGui::PushID(std::string("model").c_str());
-				ImGui::DrawComboSelection(modelUN, model3DsUUIDs, [setModel](UUIDName option)
+				ImGui::DrawComboSelection(modelUN, model3DsUUIDs, [setModel](JUUIDName option)
 					{
 						std::string& nuuid = std::get<0>(option);
 						setModel(nuuid);
@@ -343,7 +343,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_so_camera
 			{
 				currentUUIDs.insert(json.at(attribute).at(i));
 			}
-			std::vector<UUIDName> camsUUIDNames = GetCamerasUUIDNames();
+			std::vector<JUUIDName> camsUUIDNames = GetSceneObjectsByType(SO_Cameras)();
 
 			auto setCamera = [&json, attribute](unsigned int index, std::string uuid)
 				{
@@ -353,14 +353,14 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_so_camera
 			auto drawRow = [&json, attribute, &camsUUIDNames, &currentUUIDs, setCamera](unsigned int index)
 				{
 					std::string uuid = json.at(attribute).at(index);
-					std::vector<UUIDName> selectablesCams = { std::make_tuple("","") };
-					std::copy_if(camsUUIDNames.begin(), camsUUIDNames.end(), std::back_inserter(selectablesCams), [uuid, &currentUUIDs](UUIDName cam)
+					std::vector<JUUIDName> selectablesCams = { std::make_tuple("","") };
+					std::copy_if(camsUUIDNames.begin(), camsUUIDNames.end(), std::back_inserter(selectablesCams), [uuid, &currentUUIDs](JUUIDName cam)
 						{
 							std::string camUUID = std::get<0>(cam);
 							return !currentUUIDs.contains(camUUID) || uuid == camUUID;
 						}
 					);
-					UUIDName selected = std::make_tuple("", "");
+					JUUIDName selected = std::make_tuple("", "");
 					if (uuid != "")
 					{
 						for (unsigned int i = 0; i < selectablesCams.size(); i++)
@@ -372,7 +372,7 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<std::string, jedv_t_so_camera
 						}
 					}
 					ImGui::PushID((std::string("camera-") + std::to_string(index)).c_str());
-					ImGui::DrawComboSelection(selected, selectablesCams, [index, setCamera](UUIDName option)
+					ImGui::DrawComboSelection(selected, selectablesCams, [index, setCamera](JUUIDName option)
 						{
 							std::string& nuuid = std::get<0>(option);
 							setCamera(index, nuuid);
@@ -446,8 +446,8 @@ inline JEdvCreatorDrawerFunction DrawCreatorVector<DXGI_FORMAT, jedv_t_dxgi_form
 
 template<>
 inline JEdvCreatorDrawerFunction DrawCreatorEnum<LightType, jedv_t_lighttype>(
-	std::map<LightType, std::string>& EtoS,
-	std::map<std::string, LightType>& StoE
+	std::unordered_map<LightType, std::string>& EtoS,
+	std::unordered_map<std::string, LightType>& StoE
 ) {
 	return [&EtoS, &StoE](std::string attribute, nlohmann::json& json, nlohmann::json& modalProperties)
 		{

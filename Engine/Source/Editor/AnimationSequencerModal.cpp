@@ -7,31 +7,35 @@
 #include <Light/Light.h>
 #include <Renderable/Renderable.h>
 #include <Renderer.h>
+#include <Scene.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
+extern DX::StepTimer timer;
 
 namespace Editor
 {
 	extern bool templatesModified;
 };
 
-void AnimationSequencerModal::Initialize(std::string uuid)
+void AnimationSequencerModal::Initialize(JUUID uuid)
 {
 	showing = true;
 	initializing = true;
 	model3dUUID = uuid;
 	currentFrame = 0;
-	model3D = GetModel3DTemplate(uuid);
+	model3D = uuid;
 	animationsSequences = model3D->animationSequences();
 }
 
 void AnimationSequencerModal::LoadSceneObjects()
 {
-	std::string cameraUUID = getUUID();
-	std::string ambLightUUID = getUUID();
-	std::string dirLightUUID = getUUID();
-	std::string animableUUID = getUUID();
-	std::string floorUUID = getUUID();
+	using namespace Scene;
+
+	camera = getUUID();
+	ambientLight = getUUID();
+	directionalLight = getUUID();
+	renderable = getUUID();
+	floor = getUUID();
 
 	nlohmann::json cameraJson = {
 		{ "fitWindow", false },
@@ -49,10 +53,10 @@ void AnimationSequencerModal::LoadSceneObjects()
 		{ "projectionType", "Perspective" },
 		{ "rotation", { 12.898999214172363, 0.0, 0.0 } },
 		{ "speed", 0.05000000074505806 },
-		{ "uuid", cameraUUID },
-			{
-				"renderPasses", { FindRenderPassUUIDByName("ModelPreviewPass")}
-			},
+		{ "uuid", camera() },
+		{
+			"renderPasses", { GetRenderPassUUIDByName("ModelPreviewPass")}
+		},
 		{ "mouseController", false },
 		{ "useSwapChain", false }
 	};
@@ -62,8 +66,8 @@ void AnimationSequencerModal::LoadSceneObjects()
 		{ "color", { 0.05000000074505806, 0.05000000074505806, 0.05000000074505806 } },
 		{ "lightType", "Ambient" },
 		{ "name", "light.0.amb-preview" },
-		{ "uuid", ambLightUUID },
-		{ "cameras", { cameraUUID } }
+		{ "uuid", ambientLight()},
+		{ "cameras", { camera() }}
 	};
 
 	nlohmann::json directionalLightJson =
@@ -75,21 +79,21 @@ void AnimationSequencerModal::LoadSceneObjects()
 		{ "rotation", {40.31087875366211, -0.30000039935112, 0.0} },
 		{ "lightType", "Directional"},
 		{ "name", "light.1.dir-preview"},
-		{ "uuid", dirLightUUID },
+		{ "uuid", directionalLight() },
 		{ "zBias", 0.0002 },
-		{ "cameras", { cameraUUID } }
+		{ "cameras", { camera() } }
 	};
 
 	nlohmann::json animableJson =
 	{
 		{ "castShadows", true },
-		{ "model", model3dUUID },
+		{ "model", model3dUUID()},
 		{ "name", "preview-model" },
 		{ "position", { 0.0, 0.0, 0.0} },
 		{ "rotation", { 0.0, -90.0, 0.0 }},
 		{ "scale", { 0.1, 0.1, 0.1} },
-		{ "uuid", animableUUID },
-		{ "cameras", { cameraUUID } }
+		{ "uuid", renderable() },
+		{ "cameras", { camera() } }
 	};
 
 	nlohmann::json floorJson =
@@ -107,15 +111,15 @@ void AnimationSequencerModal::LoadSceneObjects()
 		{ "name", "preview-floor" },
 		{ "position", { 0.0, 0.0, 0.0} },
 		{ "scale", { 100.0, 100.0, 100.0} },
-		{ "uuid", floorUUID },
-		{ "cameras", { cameraUUID } }
+		{ "uuid", floor() },
+		{ "cameras", { camera() } }
 	};
 
-	camera = Scene::CreateSceneObjectFromJson<Scene::Camera>(cameraJson);
-	ambientLight = Scene::CreateSceneObjectFromJson<Scene::Light>(ambientLightJson);
-	directionalLight = Scene::CreateSceneObjectFromJson<Scene::Light>(directionalLightJson);
-	renderable = Scene::CreateSceneObjectFromJson<Scene::Renderable>(animableJson);
-	floor = Scene::CreateSceneObjectFromJson<Scene::Renderable>(floorJson);
+	CreateCamera(cameraJson);
+	CreateLight(ambientLightJson);
+	CreateLight(directionalLightJson);
+	CreateRenderable(animableJson);
+	CreateRenderable(floorJson);
 
 	camera->BindToScene();
 	ambientLight->BindToScene();
@@ -142,25 +146,32 @@ void AnimationSequencerModal::LoadSceneObjects()
 
 void AnimationSequencerModal::DestroySceneObjects()
 {
-	Scene::SafeDeleteSceneObject<Renderable>(renderable);
-	Scene::SafeDeleteSceneObject<Renderable>(floor);
-	Scene::SafeDeleteSceneObject<Light>(directionalLight);
-	Scene::SafeDeleteSceneObject<Light>(ambientLight);
-	Scene::SafeDeleteSceneObject<Camera>(camera);
+	using namespace Scene;
 
-	renderable = nullptr;
-	floor = nullptr;
-	directionalLight = nullptr;
-	ambientLight = nullptr;
-	camera = nullptr;
-	model3D = nullptr;
+	renderable->UnbindFromScene();
+	floor->UnbindFromScene();
+	directionalLight->UnbindFromScene();
+	ambientLight->UnbindFromScene();
+	camera->UnbindFromScene();
+
+	DeleteRenderable(renderable());
+	DeleteRenderable(floor());
+	DeleteLight(directionalLight());
+	DeleteLight(ambientLight());
+	DeleteCamera(camera());
+
+	renderable.clear();
+	floor.clear();
+	directionalLight.clear();
+	ambientLight.clear();
+	camera.clear();
+	model3D.clear();
 	model3dUUID.clear();
 	animations.clear();
 	selectedSequence.clear();
 	expandedChannels.clear();
 	addNewSequence = false;
 	newSequenceName.clear();
-
 }
 
 void AnimationSequencerModal::Step()
@@ -169,6 +180,7 @@ void AnimationSequencerModal::Step()
 	floor->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
 
 	//https://stackoverflow.com/a/32836605
+	renderable->StepAnimation(static_cast<FLOAT>(timer.GetElapsedSeconds()));
 	BoundingBox modelBB = renderable->GetBoundingBox();
 	BoundingSphere modelBBS;
 	BoundingSphere::CreateFromBoundingBox(modelBBS, modelBB);
@@ -294,7 +306,7 @@ void AnimationSequencerModal::DrawSequenceSelector(ImVec2 curPos)
 
 void AnimationSequencerModal::DrawModelPreview(ImVec2 curPos, ImVec2 size)
 {
-	if (!camera) return;
+	if (camera.empty()) return;
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 	ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
@@ -303,7 +315,7 @@ void AnimationSequencerModal::DrawModelPreview(ImVec2 curPos, ImVec2 size)
 	ImGui::SetNextWindowPos(curPos, 0);
 	ImGui::BeginChild("model-preview", size, 0);
 	{
-		auto& pass = camera->cameraRenderPasses.at(0);
+		auto& pass = camera->renderPassesUUID.at(0);
 		ImGui::DrawTextureImage(
 			(ImTextureID)
 			pass->renderToTexturePass->renderToTexture[0]->gpuTextureHandle.ptr,

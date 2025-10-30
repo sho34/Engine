@@ -35,40 +35,40 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Development|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -99,32 +99,32 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)Target\</OutDir>
+    <OutDir>$(SolutionDir)Lib\</OutDir>
     <TargetName>$(ProjectName)_$(Configuration)</TargetName>
     <IntDir>..\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-    <OutDir>$(SolutionDir)Target\</OutDir>
+    <OutDir>$(SolutionDir)Lib\</OutDir>
     <TargetName>$(ProjectName)_$(Configuration)</TargetName>
     <IntDir>..\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
-    <OutDir>$(SolutionDir)Target\</OutDir>
+    <OutDir>$(SolutionDir)Lib\</OutDir>
     <TargetName>$(ProjectName)_$(Configuration)</TargetName>
     <IntDir>..\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Development|x64'">
-    <OutDir>$(SolutionDir)Target\</OutDir>
+    <OutDir>$(SolutionDir)Lib\</OutDir>
     <TargetName>$(ProjectName)_$(Configuration)</TargetName>
     <IntDir>..\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Target\</OutDir>
+    <OutDir>$(SolutionDir)Lib\</OutDir>
     <TargetName>$(ProjectName)_$(Configuration)</TargetName>
     <IntDir>..\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'">
-    <OutDir>$(SolutionDir)Target\</OutDir>
+    <OutDir>$(SolutionDir)Lib\</OutDir>
     <TargetName>$(ProjectName)_$(Configuration)</TargetName>
     <IntDir>..\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -134,7 +134,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -142,13 +142,17 @@
       <PreprocessToFile>false</PreprocessToFile>
       <FunctionLevelLinking>
       </FunctionLevelLinking>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mtd.lib;zlibstaticd.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;CmdLineHelpers.lib;DirectXTex.lib;texconv.lib;texassemble.lib;texdiag.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Debug;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Debug;../../SDKs/DirectXTK12/Bin/Desktop_2022_Win10/x64/Debug;../../SDKs/imgui/x64/Debug;../../SDKs/imguizmo/x64/Debug;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/DebugLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <Lib>
+      <SubSystem>Console</SubSystem>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
     <ClCompile>
@@ -156,7 +160,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -180,20 +184,32 @@
       </AssemblyDebug>
       <UseDynamicDebugging>false</UseDynamicDebugging>
     </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+    <Lib>
+      <SubSystem>Windows</SubSystem>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <Optimization>MaxSpeed</Optimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -203,20 +219,33 @@
       <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;CmdLineHelpers.lib;DirectXTex.lib;texconv.lib;texassemble.lib;texdiag.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/DirectXTK12/Bin/Desktop_2022_Win10/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <Lib>
+      <ExportNamedFunctions>
+      </ExportNamedFunctions>
+      <SubSystem>Console</SubSystem>
+    </Lib>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Development|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <SupportJustMyCode>true</SupportJustMyCode>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -226,6 +255,13 @@
       <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;CmdLineHelpers.lib;DirectXTex.lib;texconv.lib;texassemble.lib;texdiag.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/DirectXTK12/Bin/Desktop_2022_Win10/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <Lib>
+      <SubSystem>Windows</SubSystem>
+      <LinkTimeCodeGeneration />
+    </Lib>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -241,6 +277,7 @@
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -259,7 +296,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
@@ -267,6 +304,7 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <EnableModules>
       </EnableModules>
+      <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -278,18 +316,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Animation\Animated.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="Animation\Animated.h" />
+    <ClInclude Include="Audio\AudioSystem.h" />
     <ClInclude Include="Controllers\Controller.h" />
-    <ClInclude Include="Controllers\GameStateMachine.h" />
+    <ClInclude Include="Editor\AnimationSequencerModal.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Editor\CreatorModal.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Editor\DefaultLevel.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Editor\DeletePrompt.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Editor\Editor.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -304,6 +354,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Editor\IconsFontAwesome5.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Editor\ImEditor.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Editor\MousePicking.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
@@ -314,12 +374,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Editor\AnimationSequencerModal.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="GameControllers\VenomController.h" />
+    <ClInclude Include="EngineInc.h" />
     <ClInclude Include="JExpose\Attributes\JExpose.h" />
     <ClInclude Include="JExpose\Creator\JDrawersDecl.h" />
     <ClInclude Include="JExpose\Creator\JDrawersDef.h" />
@@ -350,7 +405,13 @@
     <ClInclude Include="JExpose\TrackUUID\JInsert.h" />
     <ClInclude Include="JExpose\JTypes.h" />
     <ClInclude Include="JExpose\JObject.h" />
-    <ClInclude Include="pch\Binder.h" />
+    <ClInclude Include="pch\UUID\ComputeShaderUUID.h" />
+    <ClInclude Include="pch\UUID\DeviceUtilsUUID.h" />
+    <ClInclude Include="pch\UUID\TemplateUUID.h" />
+    <ClInclude Include="Renderer\DeviceUtils\PipelineState\PipelineState.h" />
+    <ClInclude Include="Renderer\DeviceUtils\RootSignature\RootSignature.h" />
+    <ClInclude Include="Scene\Binder.h" />
+    <ClInclude Include="pch\GameStateMachine.h" />
     <ClInclude Include="pch\JExposeEditor.h" />
     <ClInclude Include="JExpose\JEnd.h" />
     <ClInclude Include="JExpose\Attributes\JInit.h" />
@@ -358,150 +419,25 @@
     <ClInclude Include="JExpose\Scene\CameraAtt.h" />
     <ClInclude Include="JExpose\Scene\LightAtt.h" />
     <ClInclude Include="JExpose\Scene\RenderableAtt.h" />
-    <ClInclude Include="Scene\SceneObject.h" />
     <ClInclude Include="JExpose\Scene\SoundFXAtt.h" />
     <ClInclude Include="JExpose\Templates\MaterialAtt.h" />
     <ClInclude Include="JExpose\Templates\Model3DAtt.h" />
-    <ClInclude Include="Templates\JTemplate.h" />
-    <ClInclude Include="Templates\RenderPass\Override\MinMaxChainPass.h" />
-    <ClInclude Include="Templates\RenderPass\Override\MinMaxChainResultPass.h" />
-    <ClInclude Include="Templates\RenderPass\Override\ToneMappingPass.h" />
-    <ClInclude Include="Primitives\Cone.h" />
-    <ClInclude Include="Primitives\Primitive.h" />
-    <ClInclude Include="Renderer\RenderPass\SwapChainPass.h" />
-    <ClInclude Include="Templates\RenderPass\Override\OverridePass.h" />
-    <ClInclude Include="Templates\RenderPass\Override\ResolvePass.h" />
-    <ClInclude Include="Scene\SceneObjectDecl.h" />
-    <ClInclude Include="Scene\SceneObjectDef.h" />
-    <ClInclude Include="Templates\Material\BlendDesc.h" />
-    <ClInclude Include="Templates\Material\MeshMaterial.h" />
-    <ClInclude Include="Templates\Material\RasterizerDesc.h" />
-    <ClInclude Include="Templates\RenderPass\PassMaterialOverride.h" />
-    <ClInclude Include="Templates\RenderPass\RenderPass.h" />
-    <ClInclude Include="Shaders\Compute\IBL\BRDFLUT.h" />
-    <ClInclude Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.h" />
-    <ClInclude Include="Shaders\Compute\IBL\DiffuseIrradianceMap.h" />
     <ClInclude Include="pch\NoMath.h" />
     <ClInclude Include="pch\RefTracker.h" />
-    <ClInclude Include="Shaders\Compute\HDR\LuminanceHistogramAverage.h" />
-    <ClInclude Include="Shaders\Compute\ComputeInterface.h" />
-    <ClInclude Include="Shaders\Compute\HDR\LuminanceHistogram.h" />
-    <ClInclude Include="Shaders\Compute\ComputeShader.h" />
-    <ClInclude Include="Effects\Effects.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Effects\DecalLoop.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Audio\AudioSystem.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Game.h" />
     <ClInclude Include="GameDecl.h" />
-    <ClInclude Include="Primitives\Sphere.h" />
     <ClInclude Include="JExpose\Templates\RenderPassAtt.h" />
     <ClInclude Include="JExpose\Templates\ShaderAtt.h" />
     <ClInclude Include="JExpose\Templates\SoundAtt.h" />
     <ClInclude Include="JExpose\Templates\TextureAtt.h" />
-    <ClInclude Include="Templates\Shader\ShaderInstance.h" />
-    <ClInclude Include="Utils\ImageConvert.h" />
     <ClInclude Include="pch\Command.h" />
     <ClInclude Include="pch\DDSTextures.h" />
     <ClInclude Include="pch\Debug.h" />
     <ClInclude Include="pch\ShaderMaterials.h" />
     <ClInclude Include="pch\UUID.h" />
-    <ClInclude Include="Shaders\Compute\Renderable\RenderableBoundingBox.h" />
-    <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />
-    <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h" />
     <ClInclude Include="pch\DXTypes.h" />
-    <ClInclude Include="Editor\ImEditor.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="pch\Json.h" />
     <ClInclude Include="pch\NoStd.h" />
-    <ClInclude Include="Primitives\BoxLines.h" />
-    <ClInclude Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.h" />
-    <ClInclude Include="Editor\DefaultLevel.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Development|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Editor\Editor.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Development|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Editor\IconsFontAwesome5.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Development|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.h" />
-    <ClInclude Include="Renderer\RenderPass\RenderToTexturePass.h" />
-    <ClInclude Include="Scene\Level.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Primitives\Decal.h" />
-    <ClInclude Include="Scene\Scene.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Sound\SoundFX.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Light\ShadowMap.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Templates\Material\SamplerDesc.h" />
-    <ClInclude Include="Templates\Material\Variables.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="pch\TemplateFlags.h" />
-    <ClInclude Include="Templates\TemplateDecl.h" />
-    <ClInclude Include="Templates\TemplateDef.h" />
-    <ClInclude Include="Templates\Templates.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Templates\Model3D\Model3D.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Light\Light.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\Camera.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="Common\d3dx12.h.bkp" />
     <ClInclude Include="Common\DirectXHelper.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -515,114 +451,87 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="Renderer\DeviceUtils\PipelineState\PipelineState.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Renderer\DeviceUtils\ConstantsBuffer\ConstantsBuffer.h" />
-    <ClInclude Include="Renderer\DeviceUtils\IndexBuffer\IndexBuffer.h" />
-    <ClInclude Include="Renderer\DeviceUtils\D3D12Device\Interop.h" />
-    <ClInclude Include="Renderer\DeviceUtils\D3D12Device\Builder.h" />
-    <ClInclude Include="Primitives\Cube.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
     <ClInclude Include="Common\d3dx12.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="Primitives\Pentahedron.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Primitives\Primivites.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Renderable\Renderable.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="Primitives\BoxLines.h" />
+    <ClInclude Include="Primitives\Cone.h" />
+    <ClInclude Include="Primitives\Cube.h" />
+    <ClInclude Include="Primitives\Decal.h" />
+    <ClInclude Include="Primitives\Floor.h" />
+    <ClInclude Include="Primitives\Pentahedron.h" />
+    <ClInclude Include="Primitives\Primitive.h" />
+    <ClInclude Include="Primitives\Primivites.h" />
+    <ClInclude Include="Primitives\Sphere.h" />
+    <ClInclude Include="Primitives\UtahTeapot.h" />
+    <ClInclude Include="Renderer\DeviceUtils\ConstantsBuffer\ConstantsBuffer.h" />
+    <ClInclude Include="Renderer\DeviceUtils\D3D12Device\Builder.h" />
+    <ClInclude Include="Renderer\DeviceUtils\D3D12Device\Interop.h" />
+    <ClInclude Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.h" />
+    <ClInclude Include="Renderer\DeviceUtils\IndexBuffer\IndexBuffer.h" />
     <ClInclude Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.h" />
+    <ClInclude Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.h" />
     <ClInclude Include="Renderer\DeviceUtils\Resources\Resources.h" />
-    <ClInclude Include="Renderer\DeviceUtils\RootSignature\RootSignature.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\Projections\Orthographic.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Scene\Camera\Projections\Perspective.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Templates\Shader\Shader.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Templates\Mesh\Mesh.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Templates\Sound\Sound.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Templates\Material\Material.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Primitives\Floor.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Renderer\Renderer.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
-    <ClInclude Include="Renderer\VertexFormats.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="Renderer\DeviceUtils\VertexBuffer\VertexBuffer.h" />
+    <ClInclude Include="Renderer\Renderer.h" />
+    <ClInclude Include="Renderer\RenderPass\RenderToTexturePass.h" />
+    <ClInclude Include="Renderer\RenderPass\SwapChainPass.h" />
+    <ClInclude Include="Renderer\VertexFormats.h" />
     <ClInclude Include="Resource.h" />
-    <ClInclude Include="Shaders\Compiler\ShaderCompiler.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">false</ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="Scene\Camera\Camera.h" />
+    <ClInclude Include="Scene\Camera\Projections\Orthographic.h" />
+    <ClInclude Include="Scene\Camera\Projections\Perspective.h" />
+    <ClInclude Include="Scene\Level.h" />
+    <ClInclude Include="Scene\Light\Light.h" />
+    <ClInclude Include="Scene\Light\ShadowMap.h" />
+    <ClInclude Include="Scene\Renderable\Renderable.h" />
+    <ClInclude Include="Scene\Scene.h" />
+    <ClInclude Include="Scene\SceneObject.h" />
+    <ClInclude Include="Scene\SceneObjectDecl.h" />
+    <ClInclude Include="Scene\SceneObjectDef.h" />
+    <ClInclude Include="pch\UUID\SceneObjectUUID.h" />
+    <ClInclude Include="Scene\Sound\SoundFX.h" />
+    <ClInclude Include="Shaders\Compiler\CompilerQueue.h" />
+    <ClInclude Include="Shaders\Compiler\CustomIncludeHandler.h" />
+    <ClInclude Include="Shaders\Compiler\ShaderCompiler.h" />
+    <ClInclude Include="Shaders\Compute\ComputeInterface.h" />
+    <ClInclude Include="Shaders\Compute\ComputeShader.h" />
+    <ClInclude Include="Shaders\Compute\HDR\LuminanceHistogram.h" />
+    <ClInclude Include="Shaders\Compute\HDR\LuminanceHistogramAverage.h" />
+    <ClInclude Include="Shaders\Compute\IBL\BRDFLUT.h" />
+    <ClInclude Include="Shaders\Compute\IBL\DiffuseIrradianceMap.h" />
+    <ClInclude Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.h" />
+    <ClInclude Include="Shaders\Compute\Renderable\RenderableBoundingBox.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="pch\Application.h" />
-    <ClInclude Include="Primitives\UtahTeapot.h" />
-    <ClInclude Include="Renderer\DeviceUtils\VertexBuffer\VertexBuffer.h" />
-    <ClInclude Include="Effects\LightOscilation.h">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClInclude>
+    <ClInclude Include="Templates\JTemplate.h" />
+    <ClInclude Include="Templates\Material\BlendDesc.h" />
+    <ClInclude Include="Templates\Material\Material.h" />
+    <ClInclude Include="Templates\Material\MeshMaterial.h" />
+    <ClInclude Include="Templates\Material\RasterizerDesc.h" />
+    <ClInclude Include="Templates\Material\SamplerDesc.h" />
+    <ClInclude Include="Templates\Material\Variables.h" />
+    <ClInclude Include="Templates\Mesh\Mesh.h" />
+    <ClInclude Include="Templates\Model3D\Model3D.h" />
+    <ClInclude Include="Templates\RenderPass\Override\MinMaxChainPass.h" />
+    <ClInclude Include="Templates\RenderPass\Override\MinMaxChainResultPass.h" />
+    <ClInclude Include="Templates\RenderPass\Override\OverridePass.h" />
+    <ClInclude Include="Templates\RenderPass\Override\ResolvePass.h" />
+    <ClInclude Include="Templates\RenderPass\Override\ToneMappingPass.h" />
+    <ClInclude Include="Templates\RenderPass\PassMaterialOverride.h" />
+    <ClInclude Include="Templates\RenderPass\RenderPass.h" />
+    <ClInclude Include="Templates\Shader\Shader.h" />
+    <ClInclude Include="Templates\Shader\ShaderInstance.h" />
+    <ClInclude Include="Templates\Sound\Sound.h" />
+    <ClInclude Include="Templates\TemplateDecl.h" />
+    <ClInclude Include="Templates\TemplateDef.h" />
+    <ClInclude Include="Templates\Templates.h" />
     <ClInclude Include="Templates\Textures\Texture.h" />
+    <ClInclude Include="Utils\ImageConvert.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Animation\Animated.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="Animation\Animated.cpp" />
+    <ClCompile Include="Audio\AudioSystem.cpp" />
     <ClCompile Include="Controllers\Controller.cpp" />
     <ClCompile Include="Editor\AnimationSequencerModal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -630,11 +539,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Editor\DefaultLevel.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Editor\DeletePrompt.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Editor\Editor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -664,98 +578,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="GameControllers\VenomController.cpp" />
-    <ClCompile Include="Scene\SceneObject.cpp" />
-    <ClCompile Include="Templates\RenderPass\Override\MinMaxChainPass.cpp" />
-    <ClCompile Include="Templates\RenderPass\Override\MinMaxChainResultPass.cpp" />
-    <ClCompile Include="Templates\RenderPass\Override\OverridePass.cpp" />
-    <ClCompile Include="Templates\RenderPass\Override\ToneMappingPass.cpp" />
-    <ClCompile Include="Primitives\BoxLines.cpp" />
-    <ClCompile Include="Primitives\Cone.cpp" />
-    <ClCompile Include="Primitives\Cube.cpp" />
-    <ClCompile Include="Primitives\Decal.cpp" />
-    <ClCompile Include="Primitives\Floor.cpp" />
-    <ClCompile Include="Primitives\Pentahedron.cpp" />
-    <ClCompile Include="Primitives\UtahTeapot.cpp" />
-    <ClCompile Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.cpp" />
-    <ClCompile Include="Renderer\RenderPass\SwapChainPass.cpp" />
-    <ClCompile Include="Templates\RenderPass\Override\ResolvePass.cpp" />
-    <ClCompile Include="Templates\RenderPass\RenderPass.cpp" />
-    <ClCompile Include="Shaders\Compute\IBL\BRDFLUT.cpp" />
-    <ClCompile Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.cpp" />
-    <ClCompile Include="Shaders\Compute\IBL\DiffuseIrradianceMap.cpp" />
-    <ClCompile Include="Shaders\Compute\HDR\LuminanceHistogramAverage.cpp" />
-    <ClCompile Include="Shaders\Compute\HDR\LuminanceHistogram.cpp" />
-    <ClCompile Include="Shaders\Compute\ComputeShader.cpp" />
-    <ClCompile Include="Effects\Effects.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Effects\DecalLoop.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Audio\AudioSystem.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Game.cpp" />
-    <ClCompile Include="Primitives\Sphere.cpp" />
-    <ClCompile Include="Utils\ImageConvert.cpp" />
-    <ClCompile Include="Shaders\Compute\Renderable\RenderableBoundingBox.cpp" />
-    <ClCompile Include="Renderer\VertexFormats.cpp" />
-    <ClCompile Include="Scene\Scene.cpp" />
-    <ClCompile Include="Shaders\Compiler\CustomIncludeHandler.cpp" />
-    <ClCompile Include="Editor\Editor.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Development|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.cpp" />
-    <ClCompile Include="Renderer\RenderPass\RenderToTexturePass.cpp" />
-    <ClCompile Include="Scene\Level.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Scene\Sound\SoundFX.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Scene\Light\ShadowMap.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Templates\Material\Variables.cpp" />
-    <ClCompile Include="Templates\Templates.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Templates\Model3D\Model3D.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Scene\Light\Light.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Scene\Camera\Camera.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Renderer\DeviceUtils\PipelineState\PipelineState.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Renderer\DeviceUtils\ConstantsBuffer\ConstantsBuffer.cpp" />
-    <ClCompile Include="Renderer\DeviceUtils\IndexBuffer\IndexBuffer.cpp" />
-    <ClCompile Include="Renderer\DeviceUtils\D3D12Device\Interop.cpp" />
-    <ClCompile Include="Renderer\DeviceUtils\D3D12Device\Builder.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">Create</PrecompiledHeader>
@@ -764,56 +586,63 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Scene\Renderable\Renderable.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.cpp" />
-    <ClCompile Include="Renderer\DeviceUtils\Resources\Resources.cpp" />
-    <ClCompile Include="Renderer\DeviceUtils\RootSignature\RootSignature.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Templates\Shader\Shader.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Templates\Mesh\Mesh.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Templates\Sound\Sound.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Templates\Material\Material.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="Renderer\Renderer.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="Engine.cpp" />
-    <ClCompile Include="Shaders\Compiler\ShaderCompiler.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">false</ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="Primitives\BoxLines.cpp" />
+    <ClCompile Include="Primitives\Cone.cpp" />
+    <ClCompile Include="Primitives\Cube.cpp" />
+    <ClCompile Include="Primitives\Decal.cpp" />
+    <ClCompile Include="Primitives\Floor.cpp" />
+    <ClCompile Include="Primitives\Pentahedron.cpp" />
+    <ClCompile Include="Primitives\Sphere.cpp" />
+    <ClCompile Include="Primitives\UtahTeapot.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\ConstantsBuffer\ConstantsBuffer.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\D3D12Device\Builder.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\D3D12Device\Interop.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\DescriptorHeap\DescriptorHeap.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\IndexBuffer\IndexBuffer.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\PipelineState\PipelineState.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\RenderTarget\RenderTarget.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\RenderToTexture\RenderToTexture.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\Resources\Resources.cpp" />
+    <ClCompile Include="Renderer\DeviceUtils\RootSignature\RootSignature.cpp" />
     <ClCompile Include="Renderer\DeviceUtils\VertexBuffer\VertexBuffer.cpp" />
-    <ClCompile Include="Effects\LightOscilation.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">
-      </ExcludedFromBuild>
-    </ClCompile>
+    <ClCompile Include="Renderer\Renderer.cpp" />
+    <ClCompile Include="Renderer\RenderPass\RenderToTexturePass.cpp" />
+    <ClCompile Include="Renderer\RenderPass\SwapChainPass.cpp" />
+    <ClCompile Include="Renderer\VertexFormats.cpp" />
+    <ClCompile Include="Scene\Binder.cpp" />
+    <ClCompile Include="Scene\Camera\Camera.cpp" />
+    <ClCompile Include="Scene\Level.cpp" />
+    <ClCompile Include="Scene\Light\Light.cpp" />
+    <ClCompile Include="Scene\Light\ShadowMap.cpp" />
+    <ClCompile Include="Scene\Renderable\Renderable.cpp" />
+    <ClCompile Include="Scene\Scene.cpp" />
+    <ClCompile Include="Scene\SceneObject.cpp" />
+    <ClCompile Include="Scene\Sound\SoundFX.cpp" />
+    <ClCompile Include="Shaders\Compiler\CustomIncludeHandler.cpp" />
+    <ClCompile Include="Shaders\Compiler\ShaderCompiler.cpp" />
+    <ClCompile Include="Shaders\Compute\ComputeShader.cpp" />
+    <ClCompile Include="Shaders\Compute\HDR\LuminanceHistogram.cpp" />
+    <ClCompile Include="Shaders\Compute\HDR\LuminanceHistogramAverage.cpp" />
+    <ClCompile Include="Shaders\Compute\IBL\BRDFLUT.cpp" />
+    <ClCompile Include="Shaders\Compute\IBL\DiffuseIrradianceMap.cpp" />
+    <ClCompile Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.cpp" />
+    <ClCompile Include="Shaders\Compute\Renderable\RenderableBoundingBox.cpp" />
+    <ClCompile Include="Templates\Material\Material.cpp" />
+    <ClCompile Include="Templates\Material\Variables.cpp" />
+    <ClCompile Include="Templates\Mesh\Mesh.cpp" />
+    <ClCompile Include="Templates\Model3D\Model3D.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\MinMaxChainPass.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\MinMaxChainResultPass.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\OverridePass.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\ResolvePass.cpp" />
+    <ClCompile Include="Templates\RenderPass\Override\ToneMappingPass.cpp" />
+    <ClCompile Include="Templates\RenderPass\RenderPass.cpp" />
+    <ClCompile Include="Templates\Shader\Shader.cpp" />
+    <ClCompile Include="Templates\Sound\Sound.cpp" />
+    <ClCompile Include="Templates\Templates.cpp" />
     <ClCompile Include="Templates\Textures\Texture.cpp" />
+    <ClCompile Include="Utils\ImageConvert.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CulpeoEngine.rc" />
@@ -828,13 +657,13 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets" Condition="Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" />
-    <Import Project="..\packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets" Condition="Exists('..\packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets')" />
+    <Import Project="..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets" Condition="Exists('..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\WinPixEventRuntime.1.0.240308001\build\WinPixEventRuntime.targets'))" />
-    <Error Condition="!Exists('..\packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\nlohmann.json.3.11.2\build\native\nlohmann.json.targets'))" />
+    <Error Condition="!Exists('..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets'))" />
   </Target>
 </Project>

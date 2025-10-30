@@ -1,11 +1,13 @@
 #include "pch.h"
 #include "SceneObject.h"
-#if defined(_EDITOR)
-#include <Renderable/Renderable.h>
-#include <Camera/Camera.h>
-#endif
-#include <Scene.h>
 #include <Controller.h>
+
+#if defined(_EDITOR)
+namespace Editor
+{
+	extern bool levelModified;
+};
+#endif
 
 namespace Scene
 {
@@ -39,13 +41,22 @@ namespace Scene
 
 		if (!contains("controllers")) return;
 
-		auto controllers = at("controllers");
-		for (auto it = controllers.begin(); it != controllers.end(); it++)
+		auto& ctrls = at("controllers");
+		for (auto it = ctrls.begin(); it != ctrls.end(); it++)
 		{
-			std::shared_ptr<Controller> controller = GetGameController(*it);
+			std::unique_ptr<Controller> controller = GetGameController(*it);
 			if (!controller) continue;
 
-			Game::RegisterController(controller, ThisPtr());
+			controllers.insert(Game::RegisterController(controller, Juuid()));
 		}
+	}
+
+	void SceneObject::UnbindControllers()
+	{
+		for (auto c : controllers)
+		{
+			Game::UnregisterController(c);
+		}
+		controllers.clear();
 	}
 }

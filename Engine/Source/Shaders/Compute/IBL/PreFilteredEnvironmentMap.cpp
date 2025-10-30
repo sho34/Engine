@@ -6,12 +6,9 @@
 #include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include <Textures/Texture.h>
 #include <DirectXHelper.h>
+#include <DXTypes.h>
 
-extern std::shared_ptr<Renderer> renderer;
-namespace Templates
-{
-	extern void CreateTexture(nlohmann::json json);
-};
+extern std::unique_ptr<Renderer> renderer;
 
 using namespace DeviceUtils;
 using namespace Templates;
@@ -32,35 +29,36 @@ D3D12_STATIC_SAMPLER_DESC IBLPreFilteredEnvironmentSampler = {
 	.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL,
 };
 
-
 namespace ComputeShader
 {
-	PreFilteredEnvironmentMap::PreFilteredEnvironmentMap(std::string envMapUUID, std::filesystem::path iblPreFilteredEnvironmentMapFile) :
+	PreFilteredEnvironmentMap::PreFilteredEnvironmentMap(JUUID envMapUUID, std::filesystem::path iblPreFilteredEnvironmentMapFile) :
 		ComputeInterface("IBLPrefilteredEnvironmentMap_cs", { IBLPreFilteredEnvironmentSampler }, L"cs_6_6")
 	{
 		using namespace Templates;
 
 		outputFile = iblPreFilteredEnvironmentMapFile;
+		envMap = envMapUUID;
 
 		//create a srv desc/view for reading the envmap but as a cube texture
-		envMap = GetTextureInstance(envMapUUID, [envMapUUID]
+		CreateTextureInstance(envMap, [this]
 			{
-				return std::make_shared<TextureInstance>(envMapUUID);
+				return std::make_unique<TextureInstance>(envMap);
 			}
 		);
-		std::shared_ptr<TextureJson> json = GetTextureTemplate(envMapUUID);
+		auto& json = GetTextureTemplate(envMap);
+		auto& envTexMap = GetTextureInstance(envMap);
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDescRead = {
-			.Format = envMap->viewDesc.Format, .ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE,
+			.Format = envTexMap->viewDesc.Format, .ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE,
 			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
 			.TextureCube = {
-				.MostDetailedMip = envMap->viewDesc.Texture2DArray.MostDetailedMip,
-				.MipLevels = envMap->viewDesc.Texture2DArray.MipLevels,
-				.ResourceMinLODClamp = envMap->viewDesc.Texture2DArray.ResourceMinLODClamp
+				.MostDetailedMip = envTexMap->viewDesc.Texture2DArray.MostDetailedMip,
+				.MipLevels = envTexMap->viewDesc.Texture2DArray.MipLevels,
+				.ResourceMinLODClamp = envTexMap->viewDesc.Texture2DArray.ResourceMinLODClamp
 			}
 		};
 		DeviceUtils::AllocCSUDescriptor(envMapCubeCpuHandle, envMapCubeGpuHandle);
-		renderer->d3dDevice->CreateShaderResourceView(envMap->texture, &srvDescRead, envMapCubeCpuHandle);
+		renderer->d3dDevice->CreateShaderResourceView(envTexMap->texture, &srvDescRead, envMapCubeCpuHandle);
 
 		faceWidth = json->at("width");
 		faceHeight = json->at("height");
@@ -96,8 +94,7 @@ namespace ComputeShader
 			};
 			renderer->d3dDevice->CreateUnorderedAccessView(resources.back(), nullptr, &uavDesc, resultCpuHandle);
 
-			std::shared_ptr<ConstantsBuffer> cbv = CreateConstantsBuffer(sizeof(XMFLOAT4), std::string("PrefilteredEnvironmentMap:CBV[" + std::to_string(i + 1) + "]"));
-			mipsResultsCB.push_back(cbv);
+			mipsResultsCB.push_back(CreateConstantsBuffer(sizeof(XMFLOAT4), std::string("PrefilteredEnvironmentMap:CBV[" + std::to_string(i + 1) + "]")));
 
 			//Create a ReadBack
 			readBackSizes.push_back(static_cast<size_t>(faceW) * static_cast<size_t>(faceH) * pixelSize * static_cast<size_t>(numFaces));
@@ -109,7 +106,7 @@ namespace ComputeShader
 
 	PreFilteredEnvironmentMap::~PreFilteredEnvironmentMap()
 	{
-		RemoveTextureInstance(envMap);
+		DeleteTextureInstance(envMap);
 		DeviceUtils::FreeCSUDescriptor(envMapCubeCpuHandle, envMapCubeGpuHandle);
 		for (unsigned int i = 0; i < mipsResultsCpuHandle.size(); i++)
 		{
@@ -140,12 +137,13 @@ namespace ComputeShader
 		unsigned int faceH = faceHeight;
 		for (unsigned int i = 0; i < mipsResultsGpuHandle.size(); i++)
 		{
+			auto& mipResCB = GetConstantsBuffer(mipsResultsCB.at(i));
 			unsigned int threadsX = max(faceW / 8, 1U);
 			unsigned int threadsY = max(faceH / 8, 1U);
 			float roughness = static_cast<float>(i) / static_cast<float>(numMipMaps);
 			XMFLOAT4 cb0Params = { roughness, static_cast<float>(i), static_cast<float>(faceWidth), static_cast<float>(faceW) };
-			mipsResultsCB.at(i)->push<XMFLOAT4>(cb0Params, 0);
-			commandList->SetComputeRootDescriptorTable(0, mipsResultsCB.at(i)->gpu_xhandle.at(0));
+			mipResCB->push<XMFLOAT4>(cb0Params, 0);
+			commandList->SetComputeRootDescriptorTable(0, mipResCB->gpu_xhandle.at(0));
 			commandList->SetComputeRootDescriptorTable(1, mipsResultsGpuHandle.at(i));
 			commandList->SetComputeRootDescriptorTable(2, envMapCubeGpuHandle);
 			commandList->Dispatch(threadsX, threadsY, numFaces);

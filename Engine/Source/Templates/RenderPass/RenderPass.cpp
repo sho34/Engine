@@ -1,9 +1,10 @@
 #include "pch.h"
 #include "RenderPass.h"
-#include <DXTypes.h>
+#include <Renderer.h>
+#include <DeviceUtils/DescriptorHeap/DescriptorHeap.h>
 #include <Templates.h>
 #include <TemplateDef.h>
-#include <Renderer.h>
+#include <Scene.h>
 #include <RenderPass/SwapChainPass.h>
 #include <RenderPass/RenderToTexturePass.h>
 #include <Material/Material.h>
@@ -14,8 +15,7 @@
 #include "Override/MinMaxChainPass.h"
 #include "Override/MinMaxChainResultPass.h"
 
-extern std::shared_ptr<Renderer> renderer;
-using namespace Scene;
+extern std::unique_ptr<Renderer> renderer;
 
 namespace Templates
 {
@@ -45,15 +45,15 @@ namespace Templates
 
 	namespace RenderPass
 	{
-		std::shared_ptr<DeviceUtils::DescriptorHeap> mainHeap;
+		std::unique_ptr<DeviceUtils::DescriptorHeap> mainHeap;
 
-		void CreateMainHeap()
+		void CreateRenderPassMainHeap()
 		{
-			mainHeap = std::make_shared<DeviceUtils::DescriptorHeap>();
+			mainHeap = std::make_unique<DeviceUtils::DescriptorHeap>();
 			mainHeap->CreateDescriptorHeap(renderer->d3dDevice, renderer->numFrames);
 		}
 
-		void DestroyMainHeap()
+		void DestroyRenderPassMainHeap()
 		{
 			mainHeap->DestroyDescriptorHeap();
 			mainHeap = nullptr;
@@ -61,24 +61,28 @@ namespace Templates
 
 		void ResizeRelease()
 		{
-			auto cameras = GetWindowCameras();
-			for (auto& cam : cameras)
+			using namespace Scene;
+			auto& cameras = GetWindowCameras();
+			for (auto& uuid : cameras)
 			{
+				auto& cam = GetFromWindowCameras(uuid);
 				cam->ResizeReleasePasses();
 			}
 		}
 
 		void Resize(unsigned int width, unsigned int height)
 		{
-			auto cameras = GetWindowCameras();
-			for (auto& cam : cameras)
+			using namespace Scene;
+			auto& cameras = GetWindowCameras();
+			for (auto& uuid : cameras)
 			{
+				auto& cam = GetFromWindowCameras(uuid);
 				cam->ResizePasses(width, height);
 			}
 		}
 	}
 
-	RenderPassJson::RenderPassJson(nlohmann::json json) : JTemplate(json)
+	RenderPassJson::RenderPassJson(nlohmann::json& json) : JTemplate(json)
 	{
 #include <Attributes/JInit.h>
 #include <RenderPassAtt.h>
@@ -90,104 +94,94 @@ namespace Templates
 	}
 
 	TEMPDEF_FULL(RenderPass);
+	TEMPDEF_REFTRACKER(RenderPass);
 
-	std::shared_ptr<RenderPassInstance> GetRenderPassInstance(std::shared_ptr<Camera> cam, unsigned int renderPassIndex, std::string uuid, unsigned int width, unsigned int height)
+	JUUID CreateRenderPassInstance(JUUID cameraUUID, JUUID renderPassTemplateUUID, unsigned int renderPassIndex, unsigned int width, unsigned int height)
 	{
-		const std::map<RenderPassRenderCallbackOverride, std::function<
-			std::shared_ptr<OverridePass>(
-				std::shared_ptr<Camera>,
-				unsigned int,
-				std::shared_ptr<Templates::RenderPassInstance>
-			)>> RenderCallbackOverriders =
-		{
-			{ RenderPassRenderCallbackOverride_None, [](auto c,auto rpi, auto rp) { return nullptr; }},
-			{ RenderPassRenderCallbackOverride_ToneMapping, [](auto c, auto rpi, auto rp) { return std::make_shared<ToneMappingPass>(c,rpi, rp); } },
-			{ RenderPassRenderCallbackOverride_Resolve, [](auto c, auto rpi, auto rp) { return rpi > 0 ? std::make_shared<ResolvePass>(c,rpi, rp) : nullptr; } },
-			{ RenderPassRenderCallbackOverride_MinMaxChain, [](auto c, auto rpi, auto rp) { return std::make_shared<MinMaxChainPass>(c,rpi, rp); } },
-			{ RenderPassRenderCallbackOverride_MinMaxChainResult, [](auto c, auto rpi, auto rp) { return std::make_shared<MinMaxChainResultPass>(c,rpi, rp); } }
-		};
+		RenderPassInstanceUUID rpiUUID = getUUID();
+		CreateRenderPassInstance(
+			renderPassTemplateUUID, rpiUUID(),
+			[cameraUUID, renderPassTemplateUUID, renderPassIndex, width, height, &rpiUUID]()
+			{
+				std::unique_ptr<RenderPassInstance> instance = std::make_unique<RenderPassInstance>(cameraUUID, renderPassTemplateUUID, rpiUUID(), renderPassIndex, width, height);
+				return instance;
+			}
+		);
+		rpiUUID->InitRenderPass();
+		return rpiUUID();
+	}
 
+	RenderPassInstance::RenderPassInstance(JUUID cameraUUID, JUUID renderPassTemplateUUID, JUUID renderPassInstanceUUID, unsigned int renderPassIndex, unsigned int width, unsigned int height)
+	{
 		using namespace RenderPass;
+		camera = cameraUUID;
+		renderPassJson = renderPassTemplateUUID;
 
-		std::shared_ptr<RenderPassInstance> instance = std::make_shared<RenderPassInstance>();
-		std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(uuid);
-
-		instance->camera = cam;
-		instance->renderPassUUID = uuid;
-
-		switch (rp->type())
+		type = renderPassJson->type();
+		switch (renderPassJson->type())
 		{
 		case RenderPassType_SwapChainPass:
 		{
-			instance->type = RenderPassType_SwapChainPass;
-			instance->swapChainPass = DeviceUtils::CreateRenderPass(GetRenderPassName(uuid), mainHeap, rp->depthStencilFormat());
+			swapChainPass = DeviceUtils::CreateSwapChainPass(GetRenderPassName(renderPassTemplateUUID), mainHeap, renderPassJson->depthStencilFormat());
 		}
 		break;
 		case RenderPassType_RenderToTexturePass:
 		{
 			assert(width != 0U); assert(height != 0U);
-			instance->type = RenderPassType_RenderToTexturePass;
-			instance->renderToTexturePass = DeviceUtils::CreateRenderPass(
-				GetRenderPassName(uuid),
-				rp->renderTargetFormats(),
-				rp->depthStencilFormat(),
-				width,
-				height
+			renderToTexturePass = DeviceUtils::CreateRenderToTexturePass(GetRenderPassName(renderPassTemplateUUID),
+				renderPassJson->renderTargetFormats(), renderPassJson->depthStencilFormat(),
+				width, height
 			);
 		}
 		break;
 		}
 
-		instance->materialOverride = rp->materialOverride();
-		instance->renderCallbackOverride = rp->renderCallbackOverride();
-		instance->overridePass = RenderCallbackOverriders.at(instance->renderCallbackOverride)(cam, renderPassIndex, instance);
-		if (instance->type == RenderPassType_RenderToTexturePass &&
-			instance->materialOverride == RenderPassMaterialOverride_None &&
-			instance->renderCallbackOverride == RenderPassRenderCallbackOverride_None &&
-			cam->HasIBL())
+		materialOverride = renderPassJson->materialOverride();
+		renderCallbackOverride = renderPassJson->renderCallbackOverride();
+		const std::map<RenderPassRenderCallbackOverride, std::function<
+			std::unique_ptr<OverridePass>(
+				JUUID camUUID,
+				unsigned int,
+				JUUID rpIUUID
+			)>> RenderCallbackOverriders =
 		{
-			cam->CreateIBLTextures();
+			{ RenderPassRenderCallbackOverride_None, [](auto c,auto rpindex, auto rpInstance) { return nullptr; }},
+			{ RenderPassRenderCallbackOverride_ToneMapping, [](auto c, auto rpindex, auto rpInstance) { return std::make_unique<ToneMappingPass>(c,rpindex, rpInstance); } },
+			{ RenderPassRenderCallbackOverride_Resolve, [](auto c, auto rpindex, auto rpInstance) { return rpindex > 0 ? std::make_unique<ResolvePass>(c,rpindex, rpInstance) : nullptr; } },
+			{ RenderPassRenderCallbackOverride_MinMaxChain, [](auto c, auto rpindex, auto rpInstance) { return std::make_unique<MinMaxChainPass>(c,rpindex, rpInstance); } },
+			{ RenderPassRenderCallbackOverride_MinMaxChainResult, [](auto c, auto rpindex, auto rpInstance) { return std::make_unique<MinMaxChainResultPass>(c,rpindex, rpInstance); } }
+		};
+		overridePass = RenderCallbackOverriders.at(renderCallbackOverride)(cameraUUID, renderPassIndex, renderPassInstanceUUID);
+		if (!camera.empty() && type == RenderPassType_RenderToTexturePass &&
+			materialOverride == RenderPassMaterialOverride_None &&
+			renderCallbackOverride == RenderPassRenderCallbackOverride_None &&
+			camera->HasIBL())
+		{
+			camera->CreateIBLTextures();
 		}
-
-		return instance;
 	}
 
-	void DestroyRenderPassInstance(std::shared_ptr<RenderPassInstance>& rp)
-	{
-		if (!rp) return;
 
-		rp->camera = nullptr;
-		rp->overridePass = nullptr;
-		switch (rp->type)
-		{
-		case RenderPassType_SwapChainPass:
-		{
-			rp->swapChainPass->ReleaseResources();
-			rp->swapChainPass = nullptr;
-		}
-		break;
-		case RenderPassType_RenderToTexturePass:
-		{
-			rp->renderToTexturePass->ReleaseResources();
-			rp->renderToTexturePass = nullptr;
-		}
-		break;
-		}
+	void DestroyRenderPassInstance(JUUID renderPassInstanceUUID)
+	{
+		if (renderPassInstanceUUID.empty()) return;
+
+		DeleteRenderPassInstance(renderPassInstanceUUID);
 	}
 
 	RenderPassInstance::~RenderPassInstance()
 	{
-		if (swapChainPass) {
+		if (!swapChainPass.empty()) {
 			swapChainPass->ReleaseResources();
-			swapChainPass = nullptr;
+			DeleteSwapChainPass(swapChainPass());
 		}
-		if (renderToTexturePass) {
+		if (!renderToTexturePass.empty()) {
 			renderToTexturePass->ReleaseResources();
-			renderToTexturePass = nullptr;
+			DeleteRenderToTexturePass(renderToTexturePass());
 		}
 	}
 
-	void RenderPassInstance::Pass(std::function<void()> renderCallback, bool clearRTV, XMVECTORF32 clearColor) const
+	void RenderPassInstance::Pass(std::function<void()> renderCallback, bool clearRTV, XMVECTORF32 clearColor)
 	{
 		if (overridePass) return overridePass->Pass();
 
@@ -206,68 +200,72 @@ namespace Templates
 		}
 	}
 
-	std::shared_ptr<MaterialInstance> RenderPassInstance::GetRenderPassMaterialInstance(
-		std::string materialUUID,
-		std::shared_ptr<MeshInstance> mesh,
+	JUUID RenderPassInstance::GetRenderPassMaterialInstance(
+		MaterialJsonUUID material,
+		MeshInstanceUUID mesh,
 		bool shadowed,
 		std::vector<PassMaterialOverride> passMaterialOverride,
-		std::string bindingUUID,
+		JUUID bindingUUID,
 		JObjectChangeCallback materialChangeCallback,
 		JObjectChangePostCallback materialChangePostCallback
-	) const
+	)
 	{
+		using namespace RenderPass;
+
 		VertexClass vertexClass = mesh->vertexClass;
 		std::string vertexType = VertexClassToString.at(vertexClass);
-		bool hasIbl = camera ? camera->HasIBL() : false;
+		bool hasIbl = camera.uuid.empty() ? false : camera->HasIBL();
 
-		auto noOverride = [materialUUID, vertexClass, vertexType, shadowed, hasIbl, bindingUUID, materialChangeCallback, materialChangePostCallback]()
+		auto noOverride = [&material, vertexClass, vertexType, shadowed, hasIbl, bindingUUID, materialChangeCallback, materialChangePostCallback]()
 			{
-				std::string instanceUUID = materialUUID + "-" + vertexType;
-				return GetMaterialInstance(instanceUUID, [instanceUUID, materialUUID, vertexClass, shadowed, hasIbl, bindingUUID, materialChangeCallback, materialChangePostCallback]()
+				MaterialInstanceUUID instanceUUID = material() + "-" + vertexType;
+				CreateMaterialInstance(instanceUUID(), [&instanceUUID, &material, vertexClass, shadowed, hasIbl, bindingUUID, materialChangeCallback, materialChangePostCallback]()
 					{
-						return std::make_shared<MaterialInstance>(instanceUUID, materialUUID, vertexClass, shadowed, hasIbl, TextureShaderUsageMap(),
+						return std::make_unique<MaterialInstance>(instanceUUID(), material(), vertexClass, shadowed, hasIbl, TextureShaderUsageMap(),
 							bindingUUID, materialChangeCallback, materialChangePostCallback);
 					}
 				);
+				return instanceUUID();
 			};
 
-		auto shadowMapOverride = [materialUUID, vertexClass, vertexType]()
+		auto shadowMapOverride = [&material, vertexClass, vertexType]()
 			{
-				std::string smMatUUID = FindMaterialUUIDByName("ShadowMap");
-				std::shared_ptr<MaterialJson> material = GetMaterialTemplate(materialUUID);
-				std::string instanceUUID = smMatUUID + "-" + vertexType;
+				JUUID smMatUUID = GetMaterialUUIDByName(shadowMapMaterialName);
+				MaterialInstanceUUID instanceUUID = smMatUUID + "-" + vertexType;
 				TextureShaderUsageMap overrideTextures;
 				if (material->textures_contains(TextureShaderUsage_Base))
 				{
 					overrideTextures.insert_or_assign(TextureShaderUsage_Base, material->textures().at(TextureShaderUsage_Base));
 				}
-				return GetMaterialInstance(instanceUUID, [instanceUUID, smMatUUID, vertexClass, overrideTextures]()
+				CreateMaterialInstance(instanceUUID(), [&instanceUUID, smMatUUID, vertexClass, overrideTextures]()
 					{
-						return std::make_shared<MaterialInstance>(instanceUUID, smMatUUID, vertexClass, false, false, overrideTextures);
+						return std::make_unique<MaterialInstance>(instanceUUID(), smMatUUID, vertexClass, false, false, overrideTextures);
 					}
 				);
+				return instanceUUID();
 			};
 
 		auto pickingOverride = [this, &passMaterialOverride, vertexClass, vertexType]
 			{
-				std::string pickMaterialUUID = FindMaterialUUIDByName("Picking");
+				JUUID pickMaterialUUID = GetMaterialUUIDByName(pickingMaterialName);
 				for (auto& pmo : passMaterialOverride)
 				{
-					if (pmo.renderPass == this->renderPassUUID)
+					if (pmo.renderPass == renderPassJson->uuid())
 					{
 						pickMaterialUUID = pmo.material;
 						break;
 					}
 				}
-				std::string instanceUUID = pickMaterialUUID + "-" + vertexType;
-				return GetMaterialInstance(instanceUUID, [instanceUUID, pickMaterialUUID, vertexClass]()
+				MaterialInstanceUUID instanceUUID = pickMaterialUUID + "-" + vertexType;
+				CreateMaterialInstance(instanceUUID(), [&instanceUUID, pickMaterialUUID, vertexClass]()
 					{
-						return std::make_shared<MaterialInstance>(instanceUUID, pickMaterialUUID, vertexClass, false, false);
+						return std::make_unique<MaterialInstance>(instanceUUID(), pickMaterialUUID, vertexClass, false, false);
 					}
 				);
+				return instanceUUID();
 			};
 
-		const std::map<RenderPassMaterialOverride, std::function<std::shared_ptr<MaterialInstance>()>> overrideMaterial =
+		const std::map<RenderPassMaterialOverride, std::function<JUUID()>> overrideMaterial =
 		{
 			{ RenderPassMaterialOverride_None, noOverride },
 			{ RenderPassMaterialOverride_ShadowMap, shadowMapOverride },
@@ -277,7 +275,15 @@ namespace Templates
 		return overrideMaterial.at(materialOverride)();
 	}
 
-	void RenderPassInstance::ResizeRelease() const
+	void RenderPassInstance::InitRenderPass()
+	{
+		if (overridePass)
+		{
+			overridePass->Initialize();
+		}
+	}
+
+	void RenderPassInstance::ResizeRelease()
 	{
 		switch (type)
 		{
@@ -290,7 +296,7 @@ namespace Templates
 		}
 	}
 
-	void RenderPassInstance::Resize(unsigned int width, unsigned int height) const
+	void RenderPassInstance::Resize(unsigned int width, unsigned int height)
 	{
 		switch (type)
 		{
@@ -302,7 +308,8 @@ namespace Templates
 			break;
 		}
 	}
-	std::vector<DXGI_FORMAT> RenderPassInstance::GetRenderTargetsFormats() const
+
+	std::vector<DXGI_FORMAT> RenderPassInstance::GetRenderTargetsFormats()
 	{
 		std::vector<DXGI_FORMAT> formats;
 		switch (type)
@@ -314,9 +321,10 @@ namespace Templates
 		break;
 		case RenderPassType_RenderToTexturePass:
 		{
-			for (auto& rt : renderToTexturePass->renderToTexture)
+			auto& renderToTexture = renderToTexturePass->renderToTexture;
+			for (auto& rtt : renderToTexture)
 			{
-				formats.push_back(rt->format);
+				formats.push_back(rtt->format);
 			}
 		}
 		break;
@@ -326,6 +334,8 @@ namespace Templates
 
 	DXGI_FORMAT RenderPassInstance::GetDepthStencilFormat()
 	{
-		return (type == RenderPassType_SwapChainPass) ? swapChainPass->depthStencilFormat : renderToTexturePass->depthStencilFormat;
+		return (type == RenderPassType_SwapChainPass) ?
+			swapChainPass->depthStencilFormat :
+			renderToTexturePass->depthStencilFormat;
 	}
 };

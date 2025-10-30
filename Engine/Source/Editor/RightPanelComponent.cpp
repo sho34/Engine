@@ -19,7 +19,7 @@ void RightPanelComponent::Destroy()
 
 void RightPanelComponent::DrawAttributes()
 {
-	std::vector<std::shared_ptr<JObject>> jobs;
+	std::vector<JObject*> jobs;
 	for (auto& uuid : editables)
 	{
 		jobs.push_back(assetsJsons.at(uuid));

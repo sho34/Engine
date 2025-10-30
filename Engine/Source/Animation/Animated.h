@@ -45,8 +45,9 @@ namespace Animation
 		std::vector<KeyFrame> scaling;
 		std::vector<KeyFrame> rotation;
 	};
-	typedef std::map<std::string, BoneKeys> BonesKeysMap;
-	typedef std::map<std::string, BonesKeysMap> AnimationBonesKeys;
+
+	typedef std::unordered_map<std::string, BoneKeys> BonesKeysMap;
+	typedef std::unordered_map<std::string, BonesKeysMap> AnimationBonesKeys;
 
 	typedef std::pair<HierarchyNode*, bool> MultiplyCmd;
 	typedef std::queue<MultiplyCmd> MultiplyCmdQueue;
@@ -65,16 +66,16 @@ namespace Animation
 	void BuildBonesOffsets(const aiScene* aiModel, BonesTransformations& bonesOffsets);
 	void BuildAnimationBonesKeys(const aiScene* model, AnimationBonesKeys& animationBonesKeys);
 	void BuildNodesHierarchy(aiNode* node, HierarchyNode* nodeInHierarchy, MultiplyCmdQueue& multiplyNavigator);
-	std::shared_ptr<Animated> CreateAnimatedFromAssimp(const aiScene* aiModel);
-	void DestroyAnimated();
 	void DestroyNodesHierarchy(HierarchyNode* node);
+	std::unique_ptr<Animated> CreateAnimatedFromAssimp(const aiScene* aiModel);
 
-	void AttachAnimation(const std::shared_ptr<Renderable>& renderable, std::shared_ptr<Animated>& animated);
-	std::shared_ptr<ConstantsBuffer> GetAnimatedConstantsBuffer(const std::shared_ptr<Renderable>& renderable);
-	void WriteBoneTransformationsToConstantsBuffer(const std::shared_ptr<Renderable>& renderable, BonesTransformations& bonesTransformation, unsigned int backbufferIndex);
+	void DestroyAnimated();
 
-	void TraverseMultiplycationQueue(float time, std::string currentAnimation, std::shared_ptr<Animated>& animations, BonesTransformations& bonesTransformation);
+	void AttachAnimation(JUUID renderableUUID, std::unique_ptr<Animated>& animated);
+	ConstantsBufferUUID GetAnimatedConstantsBuffer(JUUID renderableUUID);
+	void WriteBoneTransformationsToConstantsBuffer(JUUID renderableUUID, BonesTransformations& bonesTransformation, unsigned int backbufferIndex);
+
+	void TraverseMultiplycationQueue(float time, std::string currentAnimation, std::unique_ptr<Animated>& animations, BonesTransformations& bonesTransformation);
 	void TraverseMultiplycationQueue(float time, MultiplyCmdQueue& cmds, BonesKeysMap& boneKeys, BonesTransformations& bonesTransformation, BonesTransformations& bonesOffsets, XMMATRIX& rootNodeInverseTransform, XMMATRIX parentTransformation);
-
 }
 

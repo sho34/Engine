@@ -2,27 +2,23 @@
 #include <memory>
 #include <string>
 #include <vector>
-
-namespace Scene
-{
-	struct SceneObject;
-};
+#include <UUID.h>
 
 namespace Game
 {
 	struct Controller
 	{
-		std::shared_ptr<Scene::SceneObject> sceneObject;
+		JUUID sceneObject;
 		virtual void Step(float delta) {};
-		virtual void Map(std::shared_ptr<Scene::SceneObject> so) { sceneObject = so; }
-		virtual void Unmap() { sceneObject = nullptr; }
+		virtual void Map(JUUID so) { sceneObject = so; }
+		virtual void Unmap() { sceneObject.clear(); }
 	};
 
-	void RegisterController(std::shared_ptr<Controller> controller, std::shared_ptr<Scene::SceneObject> sceneObject);
-	void UnregisterController(std::shared_ptr<Controller> controller);
+	JUUID RegisterController(std::unique_ptr<Controller>& controller, JUUID sceneObject);
+	void UnregisterController(JUUID controllerUUID);
 	void DestroyControllers();
 	void StepControllers(float delta);
 
 	extern std::vector<std::string> GetGameControllers();
-	extern std::shared_ptr<Game::Controller> GetGameController(std::string name);
+	extern std::unique_ptr<Game::Controller> GetGameController(std::string name);
 };

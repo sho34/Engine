@@ -5,8 +5,8 @@ namespace Templates
 {
 	struct ShaderInstance
 	{
-		std::string instanceUUID;
-		std::string shaderUUID;
+		JUUID instanceUUID;
+		JUUID shaderUUID;
 		Source shaderSource;
 
 		//vertex shader semantics(POSITION,TEXCOORD0, etc)
@@ -46,12 +46,12 @@ namespace Templates
 		//the bytecode(vector of bytes)
 		ShaderByteCode byteCode;
 
-		ShaderInstance(std::string uuid) { assert(!!!"do not use"); }
+		ShaderInstance(JUUID uuid) { assert(!!!"do not use"); }
 		explicit ShaderInstance(
-			std::string instance_uuid,
-			std::string uuid, Source params,
-			std::string objectUUID = "",
-			JObjectChangeCallback cb = [](std::shared_ptr<JObject>) {},
+			JUUID instance_uuid,
+			JUUID uuid, Source params,
+			JUUID objectUUID = "",
+			JObjectChangeCallback cb = [](JUUID) {},
 			JObjectChangePostCallback postCb = [](unsigned int, unsigned int) {}
 		);
 		~ShaderInstance() {}

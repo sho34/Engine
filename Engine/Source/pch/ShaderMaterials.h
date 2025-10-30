@@ -63,6 +63,15 @@ struct std::hash<Source>
 		for (auto& v : src.defines) { s += v; }
 		return hash<std::string>()(s);
 	}
+	std::size_t operator()(Source& src) const
+	{
+		using std::hash;
+		std::string s = "";
+		s += ShaderTypeToStr.at(src.shaderType);
+		s += src.shaderUUID;
+		for (auto& v : src.defines) { s += v; }
+		return hash<std::string>()(s);
+	}
 };
 
 //define the byte code
@@ -228,7 +237,7 @@ enum TextureType
 	TextureType_Skybox,
 };
 
-inline static std::map<TextureType, std::string> TextureTypeToString =
+inline static std::unordered_map<TextureType, std::string> TextureTypeToString =
 {
 	{ TextureType_2D, "2D" },
 	{ TextureType_Array, "Array" },
@@ -236,7 +245,7 @@ inline static std::map<TextureType, std::string> TextureTypeToString =
 	{ TextureType_Skybox, "Skybox" },
 };
 
-inline static std::map<std::string, TextureType> StringToTextureType =
+inline static std::unordered_map<std::string, TextureType> StringToTextureType =
 {
 	{ "2D", TextureType_2D },
 	{ "Array", TextureType_Array },
@@ -249,9 +258,9 @@ struct ShaderSRVParameter {
 	unsigned int registerId;
 	unsigned int numSRV;
 };
-typedef std::map<TextureShaderUsage, ShaderSRVParameter> ShaderSRVTexParametersMap;
+typedef std::unordered_map<TextureShaderUsage, ShaderSRVParameter> ShaderSRVTexParametersMap;
 typedef std::pair<TextureShaderUsage, ShaderSRVParameter> ShaderSRVTexParametersPair;
-typedef std::map<std::string, ShaderSRVParameter> ShaderSRVCSParametersMap;
+typedef std::unordered_map<std::string, ShaderSRVParameter> ShaderSRVCSParametersMap;
 typedef std::pair<std::string, ShaderSRVParameter> ShaderSRVCSParametersPair;
 
 template <>
@@ -291,7 +300,7 @@ struct ShaderSamplerParameter {
 	unsigned int registerId;
 	unsigned int numSamplers;
 };
-typedef std::map<std::string, ShaderSamplerParameter> ShaderSamplerParametersMap;
+typedef std::unordered_map<std::string, ShaderSamplerParameter> ShaderSamplerParametersMap;
 typedef std::pair<std::string, ShaderSamplerParameter> ShaderSamplerParametersPair;
 
 template <>
@@ -316,11 +325,11 @@ struct ShaderConstantsBufferVariable {
 	size_t size;
 	size_t offset;
 };
-typedef std::map<std::string, ShaderConstantsBufferVariable> ShaderConstantsBufferVariablesMap;
+typedef std::unordered_map<std::string, ShaderConstantsBufferVariable> ShaderConstantsBufferVariablesMap;
 typedef std::pair<std::string, ShaderConstantsBufferVariable> ShaderConstantsBufferVariablesPair;
 
 //Collection of header(.h) files
-typedef std::unordered_set<std::string> ShaderDependencies;
+typedef std::set<std::string> ShaderDependencies;
 
 //Dependencies of hlsl+shaderType(Source) file to many .h files
 typedef std::map<Source, ShaderDependencies> ShaderIncludesDependencies;
@@ -339,7 +348,7 @@ enum MaterialVariablesTypes {
 	MAT_VAR_MATRIX4X4
 };
 
-static std::map<MaterialVariablesTypes, std::string> MaterialVariablesTypesToString = {
+static std::unordered_map<MaterialVariablesTypes, std::string> MaterialVariablesTypesToString = {
 	{ MAT_VAR_BOOLEAN, "BOOLEAN"},
 	{ MAT_VAR_INTEGER, "INTEGER"},
 	{ MAT_VAR_UNSIGNED_INTEGER, "UNSIGNED_INTEGER"},
@@ -352,7 +361,7 @@ static std::map<MaterialVariablesTypes, std::string> MaterialVariablesTypesToStr
 	{ MAT_VAR_MATRIX4X4, "MATRIX4X4"},
 };
 
-static std::map<std::string, MaterialVariablesTypes> StringToMaterialVariablesTypes = {
+static std::unordered_map<std::string, MaterialVariablesTypes> StringToMaterialVariablesTypes = {
 	{ "BOOLEAN", MAT_VAR_BOOLEAN },
 	{ "INTEGER", MAT_VAR_INTEGER },
 	{ "UNSIGNED_INTEGER", MAT_VAR_UNSIGNED_INTEGER },
@@ -365,7 +374,7 @@ static std::map<std::string, MaterialVariablesTypes> StringToMaterialVariablesTy
 	{ "MATRIX4X4", MAT_VAR_MATRIX4X4 }
 };
 
-static std::map<MaterialVariablesTypes, size_t> MaterialVariablesTypesSizes = {
+static std::unordered_map<MaterialVariablesTypes, size_t> MaterialVariablesTypesSizes = {
 	{ MAT_VAR_BOOLEAN, sizeof(bool)},
 	{ MAT_VAR_INTEGER, sizeof(int)},
 	{ MAT_VAR_UNSIGNED_INTEGER, sizeof(unsigned int)},
@@ -378,7 +387,7 @@ static std::map<MaterialVariablesTypes, size_t> MaterialVariablesTypesSizes = {
 	{ MAT_VAR_MATRIX4X4, sizeof(float[16])},
 };
 
-static std::map<std::string, MaterialVariablesTypes> HLSLVariableClassToMaterialVariableTypes = {
+static std::unordered_map<std::string, MaterialVariablesTypes> HLSLVariableClassToMaterialVariableTypes = {
 	{	"bool", MAT_VAR_BOOLEAN },
 	{	"int", MAT_VAR_INTEGER },
 	{	"uint", MAT_VAR_UNSIGNED_INTEGER },
@@ -392,7 +401,19 @@ static std::map<std::string, MaterialVariablesTypes> HLSLVariableClassToMaterial
 	{	"matrix", MAT_VAR_MATRIX4X4 },
 };
 
-static std::map<std::tuple<std::string, std::string>, MaterialVariablesTypes> HLSLVariablePatternToMaterialVariableTypes = {
+template <>
+struct std::hash<std::tuple<std::string, std::string>>
+{
+	std::size_t operator()(const std::tuple<std::string, std::string> t) const
+	{
+		std::string s1 = std::get<0>(t);
+		std::string s2 = std::get<1>(t);
+		std::string s = s1 + s2;
+		return hash<std::string>()(s);
+	}
+};
+
+static std::unordered_map<std::tuple<std::string, std::string>, MaterialVariablesTypes, std::hash<std::tuple<std::string, std::string>>> HLSLVariablePatternToMaterialVariableTypes = {
 	{ { "float3","color" }, MAT_VAR_RGB },
 	{ { "float4","color" }, MAT_VAR_RGBA },
 };
@@ -410,7 +431,7 @@ static std::set<std::string> HLSLNonConstantsBuffers = {
 	"AverageLuminance"
 };
 
-static std::map<MaterialVariablesTypes, std::function<void(nlohmann::json&, std::string)>> MaterialVariablesMappedJsonInitializer = {
+static std::unordered_map<MaterialVariablesTypes, std::function<void(nlohmann::json&, std::string)>> MaterialVariablesMappedJsonInitializer = {
 	{ MAT_VAR_BOOLEAN, [](nlohmann::json& mappedValues, std::string variable)
 	{
 		mappedValues.push_back({
@@ -495,12 +516,12 @@ struct MaterialVariableInitialValue
 	std::any value;
 };
 typedef std::pair<std::string, MaterialVariableInitialValue> MaterialInitialValuePair;
-typedef std::map<std::string, MaterialVariableInitialValue> MaterialInitialValueMap;
+typedef std::unordered_map<std::string, MaterialVariableInitialValue> MaterialInitialValueMap;
 
 struct MaterialVariableMapping
 {
 	MaterialVariablesTypes variableType;
 	ShaderConstantsBufferVariable mapping;
 };
-typedef std::map<std::string, MaterialVariableMapping> MaterialVariablesMapping;
+typedef std::unordered_map<std::string, MaterialVariableMapping> MaterialVariablesMapping;
 typedef std::pair<std::string, MaterialVariableMapping> MaterialVariablesPair;

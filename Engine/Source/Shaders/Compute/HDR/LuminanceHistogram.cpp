@@ -7,16 +7,16 @@
 #include <DeviceUtils/RenderToTexture/RenderToTexture.h>
 #include <DirectXHelper.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 using namespace DeviceUtils;
 
 namespace ComputeShader
 {
-	LuminanceHistogram::LuminanceHistogram(std::shared_ptr<RenderToTexture> renderToTexture) : ComputeInterface("LuminanceHistogram_cs")
+	LuminanceHistogram::LuminanceHistogram(JUUID renderToTextureUUID) : ComputeInterface("LuminanceHistogram_cs")
 	{
 		//hold a copy to the render to texture used for HDR rendering (T0)
-		rtt = renderToTexture;
+		rttUUID = renderToTextureUUID;
 
 		//create the luminicance histogram buffer containing the calculation parameters (C0)
 		constantsBuffers = CreateConstantsBuffer(sizeof(LuminanceHistogramBuffer), "LuminanceHistogramBuffer");
@@ -43,7 +43,7 @@ namespace ComputeShader
 		renderer->d3dDevice->CreateUnorderedAccessView(resource, nullptr, &uavDesc, resultCpuHandle);
 
 		//create a gpu handle to be able to clear the uav result
-		resultClearHeap = std::make_shared<DeviceUtils::DescriptorHeap>();
+		resultClearHeap = std::make_unique<DeviceUtils::DescriptorHeap>();
 		resultClearHeap->CreateDescriptorHeap(renderer->d3dDevice, 1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_NONE);
 		resultClearHeap->AllocCPUDescriptor(resultClearCpuHandle);
 		renderer->d3dDevice->CreateUnorderedAccessView(resource, nullptr, &uavDesc, resultClearCpuHandle);
@@ -57,7 +57,6 @@ namespace ComputeShader
 		DeviceUtils::FreeCSUDescriptor(resultCpuHandle, resultGpuHandle);
 		resource = nullptr;
 		DestroyConstantsBuffer(constantsBuffers);
-		rtt = nullptr;
 	}
 
 	//minLogLuminance, I use -10.0, and a max of 2.0, making the luminance range 12.0, and oneOverLogLuminanceRange = 1.0 / 12.0.
@@ -70,7 +69,7 @@ namespace ComputeShader
 			.minLogLuminance = minLogLuminance,
 			.oneOverLogLuminanceRange = 1.0f / (maxLogLuminance - minLogLuminance)
 		};
-		constantsBuffers->push(params, 0);
+		GetConstantsBuffer(constantsBuffers)->push(params, 0);
 	}
 
 	void LuminanceHistogram::Compute()
@@ -88,7 +87,9 @@ namespace ComputeShader
 		//after clearing the uav we can compute
 		shader.SetComputeState();
 
-		commandList->SetComputeRootDescriptorTable(0, constantsBuffers->gpu_xhandle[0]);
+		auto& rtt = GetRenderToTexture(rttUUID);
+
+		commandList->SetComputeRootDescriptorTable(0, GetConstantsBuffer(constantsBuffers)->gpu_xhandle[0]);
 		commandList->SetComputeRootDescriptorTable(1, resultGpuHandle);
 		commandList->SetComputeRootDescriptorTable(2, rtt->gpuTextureHandle);
 		unsigned int numDispatchX = (rtt->width / 16U) + ((rtt->width % 16U) ? 1U : 0U);

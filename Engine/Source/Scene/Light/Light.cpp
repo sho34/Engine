@@ -1,36 +1,26 @@
 #include "pch.h"
 #include "Light.h"
-#include <Camera/Camera.h>
-#include <d3dx12.h>
-#include <DirectXHelper.h>
 #include <Renderer.h>
 #include <Scene.h>
-#include <DeviceUtils/D3D12Device/Builder.h>
-#include <DeviceUtils/D3D12Device/Interop.h>
-#include <DeviceUtils/RootSignature/RootSignature.h>
-#include <DeviceUtils/PipelineState/PipelineState.h>
-#if defined(_EDITOR)
-#include <imgui.h>
-#include <Scene.h>
-#endif
-#include <Json.h>
-#include <NoStd.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
+#include <SceneObjectDef.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 #if defined(_EDITOR)
 namespace Editor
 {
-	extern void SelectLight(std::shared_ptr<Light> light);
-	extern std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
-	extern void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject);
-	extern std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject);
-	extern void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject);
+	extern void SelectLight(JUUID luuid);
+	extern JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	extern void RegisterBillboard(JUUID sceneObject);
+	extern JUUID GetBillboard(JUUID sceneObject);
+	extern void DestroyBillboard(JUUID sceneObject);
 }
 #endif
 
 namespace Scene
 {
+	SODEF_FULL(Light);
 
 #include <TrackUUID/JDef.h>
 #include <LightAtt.h>
@@ -62,14 +52,26 @@ namespace Scene
 
 	using namespace DeviceUtils;
 
-	static std::shared_ptr<ConstantsBuffer> lightsCbv = nullptr; //CBV for lights pool
+	static ConstantsBufferUUID lightsCbv; //CBV for lights pool
 
 	//CREATE
 	void CreateLightsResources() {
 		lightsCbv = CreateConstantsBuffer(sizeof(LightPool), "lightsCbv");
 	}
 
-	Light::Light(nlohmann::json json) : SceneObject(json)
+	void DestroyLights()
+	{
+		auto uuids = nostd::GetUUIDS(LightsceneObjects);
+		for (auto& uuid : uuids)
+		{
+			DeleteLightSceneObject(uuid);
+		}
+#include <TrackUUID/JClear.h>
+#include <LightAtt.h>
+#include <JEnd.h>
+	}
+
+	Light::Light(nlohmann::json& json) : SceneObject(json)
 	{
 #include <Attributes/JInit.h>
 #include <LightAtt.h>
@@ -92,7 +94,7 @@ namespace Scene
 		}
 #if defined(_EDITOR)
 		if (lightType() != LT_Ambient)
-			Editor::RegisterBillboard(this_ptr);
+			Editor::RegisterBillboard(uuid());
 #endif
 	}
 
@@ -103,7 +105,6 @@ namespace Scene
 #include <JEnd.h>
 
 		BindRenderablesToShadowMapCamera();
-
 #if defined(_EDITOR)
 		SceneObject::BindToScene();
 #endif
@@ -152,7 +153,7 @@ namespace Scene
 	}
 
 	//READ&GET
-	std::shared_ptr<ConstantsBuffer> GetLightsConstantsBuffer() {
+	ConstantsBufferUUID GetLightsConstantsBuffer() {
 		return lightsCbv;
 	}
 
@@ -160,12 +161,12 @@ namespace Scene
 	void LightsStep()
 	{
 #if defined(_EDITOR)
-		std::set<std::shared_ptr<Light>> lightsToDestroyShadowMaps;
-		std::set<std::shared_ptr<Light>> lightsToCreateShadowMaps;
-		std::set<std::shared_ptr<Light>> lightsToUpdateCamAttributes;
-		std::set<std::shared_ptr<Light>> lightsToUpdateTransformation;
-		std::set<std::shared_ptr<Light>> lightsToDestroySMChain;
-		std::set<std::shared_ptr<Light>> lightsToDelete;
+		std::set<LightUUID> lightsToDestroyShadowMaps;
+		std::set<LightUUID> lightsToCreateShadowMaps;
+		std::set<LightUUID> lightsToUpdateCamAttributes;
+		std::set<LightUUID> lightsToUpdateTransformation;
+		std::set<LightUUID> lightsToDestroySMChain;
+		std::set<LightUUID> lightsToDelete;
 
 		std::set<Light::Light_UpdateFlags> smCamAttributes =
 		{
@@ -177,10 +178,18 @@ namespace Scene
 			Light::Update_position, Light::Update_rotation, Light::Update_dirDist
 		};
 
-		for (auto& [uuid, l] : Lights)
+		auto& Lights = GetLights();
+
+		for (LightUUID l : Lights)
 		{
-			//l->UpdateLightBillboard();
-			l->UpdateBillboard(Editor::GetBillboard(l));
+			if (l->lightType() != LT_Ambient)
+			{
+				JUUID bbuuid = Editor::GetBillboard(l());
+				if (!bbuuid.empty())
+				{
+					l->UpdateBillboard(bbuuid);
+				}
+			}
 
 			//if the light type changed
 			if (l->dirty(Light::Update_lightType))
@@ -231,15 +240,15 @@ namespace Scene
 				l->clean(Light::Update_shadowMapHeight);
 			}
 
-			if (std::any_of(smCamAttributes.begin(), smCamAttributes.end(), [l](auto flag) { return l->dirty(flag); }))
+			if (std::any_of(smCamAttributes.begin(), smCamAttributes.end(), [&l](auto flag) { return l->dirty(flag); }))
 			{
 				lightsToUpdateCamAttributes.insert(l);
-				std::for_each(smCamAttributes.begin(), smCamAttributes.end(), [l](auto flag) { l->clean(flag); });
+				std::for_each(smCamAttributes.begin(), smCamAttributes.end(), [&l](auto flag) { l->clean(flag); });
 			}
-			if (std::any_of(smCamTransformations.begin(), smCamTransformations.end(), [l](auto flag) { return l->dirty(flag); }))
+			if (std::any_of(smCamTransformations.begin(), smCamTransformations.end(), [&l](auto flag) { return l->dirty(flag); }))
 			{
 				lightsToUpdateTransformation.insert(l);
-				std::for_each(smCamTransformations.begin(), smCamTransformations.end(), [l](auto flag) { l->clean(flag); });
+				std::for_each(smCamTransformations.begin(), smCamTransformations.end(), [&l](auto flag) { l->clean(flag); });
 			}
 
 			if (l->markedForDelete) {
@@ -263,38 +272,37 @@ namespace Scene
 				&lightsToDelete
 			]
 				{
-					for (auto& l : lightsToDestroyShadowMaps)
+					for (auto l : lightsToDestroyShadowMaps)
 					{
 						l->UnbindRenderablesFromShadowMapCameras();
 						l->DestroyShadowMapMinMaxChain();
 						l->DestroyShadowMap();
 					}
-					for (auto& l : lightsToCreateShadowMaps)
+					for (auto l : lightsToCreateShadowMaps)
 					{
 						l->CreateShadowMap();
 						l->CreateShadowMapMinMaxChain();
 						l->BindRenderablesToShadowMapCamera();
 					}
-					for (auto& l : lightsToDestroySMChain)
+					for (auto l : lightsToDestroySMChain)
 					{
 						l->DestroyShadowMapMinMaxChain();
 					}
-					for (auto& l : lightsToDelete)
+					for (auto l : lightsToDelete)
 					{
-						EraseLightFromLights(l);
-						EraseLightFromShadowMapLights(l);
-						std::shared_ptr<Light> light = l;
-						SafeDeleteSceneObject(light);
+						EraseLightFromLights(l());
+						EraseLightFromShadowMapLights(l());
+						DeleteLightSceneObject(l());
 					}
 				}
 			);
 		}
 
-		for (auto& l : lightsToUpdateCamAttributes)
+		for (auto l : lightsToUpdateCamAttributes)
 		{
 			l->UpdateShadowMapCameraProperties();
 		}
-		for (auto& l : lightsToUpdateTransformation)
+		for (auto l : lightsToUpdateTransformation)
 		{
 			l->UpdateShadowMapCameraTransformation();
 		}
@@ -308,7 +316,7 @@ namespace Scene
 		lpool->numLights.D[0] = numLights;
 	}
 
-	void WriteConstantsBufferLightAttributes(const std::shared_ptr<Light>& light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex)
+	void WriteConstantsBufferLightAttributes(LightUUID light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex)
 	{
 		LightAttributes atts{};
 		ZeroMemory(&atts, sizeof(atts));
@@ -366,26 +374,14 @@ namespace Scene
 	//DESTROY
 	void DestroyLightsResources()
 	{
-		DestroyConstantsBuffer(lightsCbv);
+		DestroyConstantsBuffer(lightsCbv());
 	}
 
-	void DestroyLights()
+	void DeleteLight(JUUID uuid)
 	{
-		auto tmp = Lights;
-		for (auto& [_, l] : tmp)
-		{
-			SafeDeleteSceneObject(l);
-		}
-#include <TrackUUID/JClear.h>
-#include <LightAtt.h>
-#include <JEnd.h>
-	}
-
-	void DeleteLight(std::string uuid)
-	{
-		std::shared_ptr<Light> l = FindInLights(uuid);
+		LightUUID  l = uuid;
 #if defined(_EDITOR)
-		Editor::DestroyBillboard(l);
+		Editor::DestroyBillboard(uuid);
 #endif
 		l->markedForDelete = true;
 	}
@@ -396,6 +392,7 @@ namespace Scene
 		LightPool* lpool = (LightPool*)(lightsCbv->mappedConstantBuffer + offset);
 		ZeroMemory(lpool, sizeof(LightPool));
 	}
+
 
 	//EDITOR
 #if defined(_EDITOR)
@@ -416,9 +413,6 @@ namespace Scene
 #include <JEnd.h>
 	}
 
-#endif
-
-#if defined(_EDITOR)
 	void Light::EditorPreview(size_t flags)
 	{
 		if (flags & (1 << Light::Update_hasShadowMaps))
@@ -432,6 +426,7 @@ namespace Scene
 		case LT_Spot:
 		case LT_Point:
 		{
+			//leave commented until i know why this was here initialy, not actual part of the convertion comments
 			//Editor::SelectSceneObject(uuid());
 		}
 		break;
@@ -445,36 +440,40 @@ namespace Scene
 		{
 		case LT_Directional:
 		{
+			//leave commented until i know why this was here initialy, not actual part of the convertion comments
 			//Editor::DeselectSceneObject(uuid());
 		}
 		break;
 		}
 	}
 
-	std::shared_ptr<Renderable> Light::CreateBillboard()
+	JUUID Light::CreateBillboard()
 	{
 		if (lightType() == LT_Ambient) return nullptr;
 
-		std::shared_ptr<Renderable> billboard = Editor::CreateBillboardFromMaterials(at("name"), "LightBulb", "LightBulbPicking");
-		billboard->OnPick = [this] {Editor::SelectLight(this_ptr); };
-		UpdateBillboard(billboard);
-		return billboard;
+		JUUID uuid = Editor::CreateBillboardFromMaterials(at("name"), "LightBulb", "LightBulbPicking");
+		RenderableUUID bb = uuid;
+		bb->OnPick = [this] { Editor::SelectLight(this->uuid()); };
+		UpdateBillboard(uuid);
+		return uuid;
 	}
 
-	void Light::UpdateBillboard(std::shared_ptr<Renderable> billboard)
+	void Light::UpdateBillboard(JUUID uuid)
 	{
-		if (!billboard) return;
-		billboard->position(position());
+		assert(!uuid.empty());
+		if (uuid.empty()) return;
+
 		XMFLOAT3 baseColor = color();
-		billboard->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
-		billboard->WriteConstantsBuffer(renderer->backBufferIndex);
+		RenderableUUID bb = uuid;
+		bb->position(position());
+		bb->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
+		bb->WriteConstantsBuffer(renderer->backBufferIndex);
 	}
 
 	BoundingBox Light::GetBoundingBox()
 	{
 		return BoundingBox(position(), { 0.1f,0.1f,0.1f });
 	}
-
 	bool Light::CanInteractWithGizmo(ImGuizmo::OPERATION operation)
 	{
 		return lightType() != LT_Ambient;

@@ -1,3 +1,5 @@
+#define TEXTFLOATREGEXREPLACE std::regex(".+-*/")
+
 template<typename T, JsonToEditorValueType J>
 JEdvEditorDrawerFunction DrawValue() { return nullptr; }
 
@@ -9,11 +11,11 @@ JEdvEditorDrawerFunction DrawMap() { return nullptr; }
 
 template<typename E, JsonToEditorValueType J>
 JEdvEditorDrawerFunction DrawEnum(
-	std::map<E, std::string>& EtoS,
-	std::map<std::string, E>& StoE
+	std::unordered_map<E, std::string>& EtoS,
+	std::unordered_map<std::string, E>& StoE
 ) {
 	if (J == jedv_t_hidden) return nullptr;
-	return [&EtoS, &StoE](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [&EtoS, &StoE](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto allSame = [attribute, &json]()
 				{
@@ -69,7 +71,7 @@ JEdvEditorDrawerFunction DrawEnum(
 template <JsonToEditorValueType J>
 JEdvEditorDrawerFunction DrawPreview() { return nullptr; }
 
-inline void EditorDrawFloat(std::string attribute, std::shared_ptr<JObject>& json, const char* format = "%.3f", std::function<float(float)> cb = [](float v) {return v; })
+inline void EditorDrawFloat(std::string attribute, JObject* json, const char* format = "%.3f", std::function<float(float)> cb = [](float v) {return v; })
 {
 	ImGui::TableNextRow();
 
@@ -88,7 +90,7 @@ inline void EditorDrawFloat(std::string attribute, std::shared_ptr<JObject>& jso
 	ImGui::PopID();
 }
 
-inline void EditorDrawFloatArray(std::string attribute, std::vector<std::shared_ptr<JObject>>& json, std::vector<std::string> labels, const char* format = "%.3f")
+inline void EditorDrawFloatArray(std::string attribute, std::vector<JObject*>& json, std::vector<std::string> labels, const char* format = "%.3f")
 {
 	auto updateValues = [&json, attribute](unsigned int i, float value)
 		{
@@ -126,7 +128,7 @@ inline void EditorDrawFloatArray(std::string attribute, std::vector<std::shared_
 				std::string value = "";
 				if (ImGui::InputText(labels[i].c_str(), &value, ImGuiInputTextFlags_CharsDecimal))
 				{
-					value = std::regex_replace(value, std::regex(".+-*/"), "");
+					value = std::regex_replace(value, TEXTFLOATREGEXREPLACE, "");
 					if (value.size() > 0ULL)
 					{
 						updateValues(i, (value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
@@ -148,7 +150,7 @@ inline void EditorDrawFloatArray(std::string attribute, std::vector<std::shared_
 	ImGui::PopID();
 }
 
-inline void EditorDrawFloatAngleArray(std::string attribute, std::vector<std::shared_ptr<JObject>>& json, std::vector<std::string> labels, const char* format = "%.3f")
+inline void EditorDrawFloatAngleArray(std::string attribute, std::vector<JObject*>& json, std::vector<std::string> labels, const char* format = "%.3f")
 {
 	auto updateValues = [&json, attribute](unsigned int i, float value)
 		{
@@ -187,7 +189,7 @@ inline void EditorDrawFloatAngleArray(std::string attribute, std::vector<std::sh
 				std::string value = "";
 				if (ImGui::InputText(labels[i].c_str(), &value, ImGuiInputTextFlags_CharsDecimal))
 				{
-					value = std::regex_replace(value, std::regex(".+-*/"), "");
+					value = std::regex_replace(value, TEXTFLOATREGEXREPLACE, "");
 					if (value.size() > 0ULL)
 					{
 						updateValues(i, (value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
@@ -213,13 +215,13 @@ inline void EditorDrawFloatAngleArray(std::string attribute, std::vector<std::sh
 
 inline void EditorDrawVector(
 	std::string attribute,
-	std::vector<std::shared_ptr<JObject>>& json,
+	std::vector<JObject*>& json,
 	const char* iconCode,
-	std::function<std::vector<UUIDName>()> GetSelectableItems,
+	std::function<std::vector<JUUIDName>()> GetSelectableItems,
 	std::function<std::string(std::string)> GetNameFromUUID,
-	std::function<void(const char*, UUIDName)> OpenItem = [](const char* icon, UUIDName item) {},
-	std::function<bool(unsigned int, UUIDName)> FilterItem = [](unsigned int index, UUIDName item) {return true; },
-	std::function<bool(unsigned int, unsigned int, unsigned int, UUIDName, UUIDName)> CanSwap = [](unsigned int index1, unsigned int index2, unsigned int numItems, UUIDName item1, UUIDName item2) { return true; }
+	std::function<void(const char*, JUUIDName)> OpenItem = [](const char* icon, JUUIDName item) {},
+	std::function<bool(unsigned int, JUUIDName)> FilterItem = [](unsigned int index, JUUIDName item) {return true; },
+	std::function<bool(unsigned int, unsigned int, unsigned int, JUUIDName, JUUIDName)> CanSwap = [](unsigned int index1, unsigned int index2, unsigned int numItems, JUUIDName item1, JUUIDName item2) { return true; }
 )
 {
 	auto allSame = [attribute, &json]()
@@ -335,7 +337,7 @@ inline void EditorDrawVector(
 
 	bool allEq = allSame();
 
-	std::vector<UUIDName> items = GetSelectableItems();
+	std::vector<JUUIDName> items = GetSelectableItems();
 
 	std::string tableName = "tables-" + attribute + "-table";
 	if (ImGui::BeginTable(tableName.c_str(), 2, defaultTableFlags))
@@ -363,10 +365,10 @@ inline void EditorDrawVector(
 			unsigned int numItems = static_cast<unsigned int>(json.at(0)->at(attribute).size());
 			auto getItemsInVector = [attribute, numItems, &json, GetNameFromUUID]
 				{
-					std::vector<UUIDName> itemsIV;
+					std::vector<JUUIDName> itemsIV;
 					for (unsigned int i = 0; i < numItems; i++)
 					{
-						UUIDName uuidName;
+						JUUIDName uuidName;
 						std::string& uuid = std::get<0>(uuidName);
 						std::string& name = std::get<1>(uuidName);
 						uuid = json.at(0)->at(attribute).at(i);
@@ -379,7 +381,7 @@ inline void EditorDrawVector(
 					return itemsIV;
 				};
 
-			std::vector<UUIDName> itemsInVector = getItemsInVector();
+			std::vector<JUUIDName> itemsInVector = getItemsInVector();
 
 			for (unsigned int index = 0U; index < numItems; index++)
 			{
@@ -440,19 +442,19 @@ inline void EditorDrawVector(
 				ImGui::TableSetColumnIndex(1);
 
 				//create a list of uuidnames but apply a filtering criteria
-				std::vector<UUIDName> uuidNames;
-				std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [index, FilterItem](UUIDName item)
+				std::vector<JUUIDName> uuidNames;
+				std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [index, FilterItem](JUUIDName item)
 					{
 						return FilterItem(index, item);
 					}
 				);
 				//build the final list appending the empty tuple at the beginning
-				std::vector<UUIDName> selectables = { std::make_tuple("","") };
+				std::vector<JUUIDName> selectables = { std::make_tuple("","") };
 				selectables.insert(selectables.end(), uuidNames.begin(), uuidNames.end());
 
 				//get the index of the selected item and get the selected uuidname from it's index
 				int selectedIndex = FindSelectableIndex(selectables, json.at(0)->at(attribute), index);
-				UUIDName selected = selectedIndex < selectables.size() ? selectables.at(selectedIndex) : std::tie("", "");
+				JUUIDName selected = selectedIndex < selectables.size() ? selectables.at(selectedIndex) : std::tie("", "");
 
 				//have a goto button to go to the selected item template//FIX this we might want to go to a scene object too
 				ImGui::DrawItemWithEnabledState([selected, iconCode, index, OpenItem]()
@@ -464,9 +466,9 @@ inline void EditorDrawVector(
 					}, std::get<0>(selected) != "");
 				ImGui::SameLine();
 
-				//draw the actual 
+				//draw the actual
 				ImGui::PushID((std::string("selectables-") + std::to_string(index)).c_str());
-				ImGui::DrawComboSelection(selected, selectables, [setValue, index](UUIDName option)
+				ImGui::DrawComboSelection(selected, selectables, [setValue, index](JUUIDName option)
 					{
 						std::string& nuuid = std::get<0>(option);
 						setValue(index, nuuid);
@@ -493,17 +495,17 @@ inline void EditorDrawVector(
 		}
 		else
 		{
-			std::vector<UUIDName> uuidNames;
-			std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [FilterItem](UUIDName item)
+			std::vector<JUUIDName> uuidNames;
+			std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [FilterItem](JUUIDName item)
 				{
 					return FilterItem(0, item);
 				}
 			);
-			std::vector<UUIDName> selectables = { std::make_tuple("","") };
+			std::vector<JUUIDName> selectables = { std::make_tuple("","") };
 			selectables.insert(selectables.end(), uuidNames.begin(), uuidNames.end());
 
 			ImGui::TableSetColumnIndex(1);
-			UUIDName& selected = selectables.at(0);
+			JUUIDName& selected = selectables.at(0);
 
 			ImGui::DrawItemWithEnabledState([selected, iconCode]()
 				{
@@ -514,7 +516,7 @@ inline void EditorDrawVector(
 			ImGui::SameLine();
 
 			ImGui::PushID((std::string("selectables-neq")).c_str());
-			ImGui::DrawComboSelection(selected, selectables, [&resetUUID](UUIDName option)
+			ImGui::DrawComboSelection(selected, selectables, [&resetUUID](JUUIDName option)
 				{
 					std::string& nuuid = std::get<0>(option);
 					resetUUID = nuuid;
@@ -533,7 +535,7 @@ inline void EditorDrawVector(
 		reset(resetUUID);
 }
 
-inline void EditorDrawColor3(std::string attribute, std::shared_ptr<JObject>& json, std::vector<std::string> labels)
+inline void EditorDrawColor3(std::string attribute, JObject* json, std::vector<std::string> labels)
 {
 	auto update = [attribute, &json](auto value)
 		{
@@ -560,7 +562,7 @@ inline void EditorDrawColor3(std::string attribute, std::shared_ptr<JObject>& js
 	ImGui::PopID();
 }
 
-inline bool EditorDrawString(std::string attribute, std::shared_ptr<JObject>& json)
+inline bool EditorDrawString(std::string attribute, JObject* json)
 {
 	ImGui::TableNextRow();
 
@@ -574,7 +576,7 @@ inline bool EditorDrawString(std::string attribute, std::shared_ptr<JObject>& js
 	return ret;
 }
 
-inline void EditorDrawCheckBox(std::string attribute, std::shared_ptr<JObject>& json)
+inline void EditorDrawCheckBox(std::string attribute, JObject* json)
 {
 	ImGui::TableNextRow();
 	ImGui::TableSetColumnIndex(0);
@@ -590,7 +592,7 @@ inline void EditorDrawCheckBox(std::string attribute, std::shared_ptr<JObject>& 
 	ImGui::PopID();
 }
 
-inline void EditorDrawEnum(std::string attribute, auto strOptions, std::shared_ptr<JObject>& json)
+inline void EditorDrawEnum(std::string attribute, auto strOptions, JObject* json)
 {
 	ImGui::TableNextRow();
 
@@ -610,7 +612,7 @@ inline void EditorDrawEnum(std::string attribute, auto strOptions, std::shared_p
 	ImGui::PopID();
 }
 
-inline void EditorDrawSelectableInt(std::string attribute, std::vector<std::string> selectables, std::shared_ptr<JObject>& json)
+inline void EditorDrawSelectableInt(std::string attribute, std::vector<std::string> selectables, JObject* json)
 {
 	ImGui::TableNextRow();
 
@@ -640,25 +642,25 @@ inline void EditorDrawSelectableInt(std::string attribute, std::vector<std::stri
 
 template<>
 inline JEdvEditorDrawerFunction DrawEnum<LightType, jedv_t_lighttype>(
-	std::map<LightType, std::string>& EtoS,
-	std::map<std::string, LightType>& StoE
+	std::unordered_map<LightType, std::string>& EtoS,
+	std::unordered_map<std::string, LightType>& StoE
 )
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto getLights = [&json]
 				{
-					std::vector<std::shared_ptr<Light>> lights;
+					std::vector<Light*> lights;
 					std::transform(json.begin(), json.end(), std::back_inserter(lights), [](auto& j)
 						{
-							return std::dynamic_pointer_cast<Light>(j);
+							return static_cast<Light*>(j);
 						}
 					);
 					return lights;
 				};
 			auto drawLightName = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					if (EditorDrawString("name", j))
 					{
 						Editor::MarkScenePanelAssetsAsDirty();
@@ -666,82 +668,82 @@ inline JEdvEditorDrawerFunction DrawEnum<LightType, jedv_t_lighttype>(
 				};
 			auto drawLightType = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawEnum("lightType", StringToLightType, j);
 				};
 			auto drawPosition = [](auto& light)
 				{
-					std::vector<std::shared_ptr<JObject>> lightV = { light };
+					std::vector<JObject*> lightV = { light };
 					EditorDrawFloatArray("position", lightV, { "x","y","z" });
 				};
 			auto drawRotation = [](auto& light)
 				{
-					std::vector<std::shared_ptr<JObject>> lightV = { light };
+					std::vector<JObject*> lightV = { light };
 					EditorDrawFloatAngleArray("rotation", lightV, { "pitch","yaw","roll" });
 				};
 			auto drawColor = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawColor3("color", j, { "r","g","b" });
 				};
 			auto drawBrightness = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawFloat("brightness", j);
 				};
 			auto drawAttenuation = [](auto& light)
 				{
-					std::vector<std::shared_ptr<JObject>> lightV = { light };
+					std::vector<JObject*> lightV = { light };
 					EditorDrawFloatArray("attenuation", lightV, { "C","X","X\xC2\xB2" });
 				};
 			auto drawDirectionalDistance = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawFloat("dirDist", j, "%.3f", [](float v) {return max(1.0f, v); });
 				};
 			auto drawConeAngle = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawFloat("coneAngle", j, "%.3f", [](float v) {return std::clamp(v, 10.0f, 150.0f); });
 				};
 			auto drawHasShadowMaps = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawCheckBox("hasShadowMaps", j);
 				};
 			auto drawShadowMapWidth = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawSelectableInt("shadowMapWidth", shadowMapSizes.at(light->lightType()), j);
 				};
 			auto drawShadowMapHeight = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawSelectableInt("shadowMapHeight", shadowMapSizes.at(light->lightType()), j);
 				};
 			auto drawViewWidth = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawFloat("viewWidth", j, "%.1f");
 				};
 			auto drawViewHeight = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawFloat("viewHeight", j, "%.1f");
 				};
 			auto drawNearZ = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawFloat("nearZ", j, "%.5f");
 				};
 			auto drawFarZ = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawFloat("farZ", j, "%.5f");
 				};
 			auto drawZBias = [](auto& light)
 				{
-					std::shared_ptr<JObject> j = light;
+					JObject* j = light;
 					EditorDrawFloat("zBias", j, "%.9f");
 				};
 			auto drawLight = [
@@ -806,7 +808,7 @@ inline JEdvEditorDrawerFunction DrawEnum<LightType, jedv_t_lighttype>(
 				};
 			auto drawShadowMap = [](auto& light)
 				{
-					if (light->shadowMapMinMaxChainResultRenderPass)
+					if (!light->shadowMapMinMaxChainResultRenderPass.empty())
 					{
 						ImGui::DrawTextureImage(
 							(ImTextureID)
@@ -832,7 +834,7 @@ inline JEdvEditorDrawerFunction DrawEnum<LightType, jedv_t_lighttype>(
 
 inline void EditorDrawFilePath(
 	std::string attribute,
-	std::vector<std::shared_ptr<JObject>>& json,
+	std::vector<JObject*>& json,
 	const char* buttonIcon,
 	const std::string defaultFolder,
 	std::vector<std::string> filterName,
@@ -888,7 +890,7 @@ inline void EditorDrawFilePath(
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_model3d_filepath>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawFilePath(attribute, json, ICON_FA_CUBE, default3DModelsFolder,
 				{ "Gltf files. (*.gltf)", "Glb files. (*.glb)" },
@@ -900,7 +902,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_model3d_filepath>(
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_shaders_filepath>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawFilePath(attribute, json, ICON_FA_FILE_CODE, defaultShadersFolder, { "HLSL files. (*.hlsl)" }, { "*.hlsl" });
 		};
@@ -909,7 +911,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_shaders_filepath>(
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_sounds_filepath>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawFilePath(attribute, json, ICON_FA_FILE_AUDIO, defaultSoundsFolder,
 				{ "WAV files. (*.wav)", "MP3 files. (*.mp3)", "OGG files. (*.ogg)" },
@@ -921,7 +923,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_sounds_filepath>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_unsigned>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto allSame = [attribute, &json]()
 				{
@@ -956,7 +958,7 @@ inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_unsigned>()
 					std::string value = "";
 					if (ImGui::InputText("", &value, ImGuiInputTextFlags_CharsDecimal))
 					{
-						value = std::regex_replace(value, std::regex(".+-*/"), "");
+						value = std::regex_replace(value, TEXTFLOATREGEXREPLACE, "");
 						if (value.size() > 0ULL)
 						{
 							updateValues((value.size() > 0ULL) ? static_cast<unsigned int>(std::stoi(value.c_str())) : 0U);
@@ -982,7 +984,7 @@ inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_unsigned>()
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_image >()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto textures = ToTextureJson(json);
 
@@ -1110,7 +1112,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_i
 						{
 							std::filesystem::path assetPath = texture->images().at(0);
 							assetPath = assetPath.remove_filename();
-							ImGui::OpenFile([texture](std::filesystem::path p)
+							ImGui::OpenFile([&texture](std::filesystem::path p)
 								{
 									std::filesystem::path abspath = std::filesystem::current_path();
 									std::filesystem::path rel = std::filesystem::relative(p, abspath);
@@ -1119,7 +1121,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_i
 										{"images", nlohmann::json::array({ rel.generic_string() })}
 									};
 									texture->JUpdate(patch);
-									RenameTexture(texture->uuid(), rel.generic_string());
+									//RenameTexture(texture->uuid(), rel.generic_string());
 									Editor::MarkTemplatesPanelAssetsAsDirty();
 								},
 								assetPath.string(),
@@ -1238,7 +1240,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_i
 template<>
 inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto allSame = [attribute, &json]()
 				{
@@ -1273,7 +1275,7 @@ inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float>()
 					std::string value = "";
 					if (ImGui::InputText("", &value, ImGuiInputTextFlags_CharsDecimal))
 					{
-						value = std::regex_replace(value, std::regex(".+-*/"), "");
+						value = std::regex_replace(value, TEXTFLOATREGEXREPLACE, "");
 						if (value.size() > 0ULL)
 						{
 							updateValues((value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
@@ -1298,7 +1300,7 @@ inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<XMFLOAT2, jedv_t_float2>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawFloatArray(attribute, json, { "x","y" });
 		};
@@ -1307,7 +1309,7 @@ inline JEdvEditorDrawerFunction DrawValue<XMFLOAT2, jedv_t_float2>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_float3>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawFloatArray(attribute, json, { "x","y","z" });
 		};
@@ -1316,14 +1318,14 @@ inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_float3>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_sound_instance_flags>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto getSoundEffects = [&json]()
 				{
-					std::vector<std::shared_ptr<Scene::SoundFX>> sfxs;
+					std::vector<Scene::SoundFX*> sfxs;
 					std::transform(json.begin(), json.end(), std::back_inserter(sfxs), [](auto& j)
 						{
-							return std::dynamic_pointer_cast<Scene::SoundFX>(j);
+							return static_cast<Scene::SoundFX*>(j);
 						}
 					);
 					return sfxs;
@@ -1405,7 +1407,7 @@ inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_sound_instance_fl
 template<>
 inline JEdvEditorDrawerFunction DrawValue<XMFLOAT4, jedv_t_float4>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawFloatArray(attribute, json, { "x","y","z","w" });
 		};
@@ -1414,7 +1416,7 @@ inline JEdvEditorDrawerFunction DrawValue<XMFLOAT4, jedv_t_float4>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float_angle>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto allSame = [attribute, &json]()
 				{
@@ -1449,7 +1451,7 @@ inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float_angle>()
 					std::string value = "";
 					if (ImGui::InputText("", &value, ImGuiInputTextFlags_CharsDecimal))
 					{
-						value = std::regex_replace(value, std::regex(".+-*/"), "");
+						value = std::regex_replace(value, TEXTFLOATREGEXREPLACE, "");
 						if (value.size() > 0ULL)
 						{
 							updateValues((value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
@@ -1476,7 +1478,7 @@ inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float_angle>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float_coneangle>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto allSame = [attribute, &json]()
 				{
@@ -1511,7 +1513,7 @@ inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float_coneangle>()
 					std::string value = "";
 					if (ImGui::InputText("", &value, ImGuiInputTextFlags_CharsDecimal))
 					{
-						value = std::regex_replace(value, std::regex(".+-*/"), "");
+						value = std::regex_replace(value, TEXTFLOATREGEXREPLACE, "");
 						if (value.size() > 0ULL)
 						{
 							updateValues((value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
@@ -1538,7 +1540,7 @@ inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float_coneangle>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<XMFLOAT2, jedv_t_float2_angle>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawFloatAngleArray(attribute, json, { "pitch","yaw" });
 		};
@@ -1547,7 +1549,7 @@ inline JEdvEditorDrawerFunction DrawValue<XMFLOAT2, jedv_t_float2_angle>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_float3_angle>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawFloatAngleArray(attribute, json, { "pitch","yaw","roll" });
 		};
@@ -1556,7 +1558,7 @@ inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_float3_angle>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_string>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto allSame = [attribute, &json]()
 				{
@@ -1595,7 +1597,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_string>()
 
 inline JEdvEditorDrawerFunction DrawNonEmptyValue(auto onChange)
 {
-	return [onChange](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [onChange](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto allSame = [attribute, &json]()
 				{
@@ -1647,15 +1649,16 @@ template<> inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_shad
 template<> inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_sound_name>() { return DrawNonEmptyValue([] {Editor::MarkTemplatesPanelAssetsAsDirty(); }); }
 template<> inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_texture_name>() { return DrawNonEmptyValue([] {Editor::MarkTemplatesPanelAssetsAsDirty(); }); }
 
+
 inline void DrawResourceSelection(
 	std::string attribute,
-	std::vector<std::shared_ptr<JObject>>& json,
+	std::vector<JObject*>& json,
 	std::function<std::string(std::string)> ResourceUUIDToName,
-	std::function<std::vector<UUIDName>()> GetResourcesUUIDsNames,
+	std::function<std::vector<JUUIDName>()> GetResourcesUUIDsNames,
 	const char* iconCode
 )
 {
-	std::vector<UUIDName> selectables;
+	std::vector<JUUIDName> selectables;
 
 	auto allEqual = [attribute, &json]()
 		{
@@ -1677,16 +1680,17 @@ inline void DrawResourceSelection(
 		};
 
 	auto allEq = allEqual();
-	UUIDName selected = std::make_tuple("", "");
-	/*if (!allEq)*/ selectables.push_back(selected);
-	/*else*/
+	JUUIDName selected = std::make_tuple("", "");
+	//if (!allEq)
+	selectables.push_back(selected);
+	//else
 	{
 		std::string& uuid = std::get<0>(selected);
 		std::string& name = std::get<1>(selected);
 		uuid = json[0]->at(attribute);
 		if (uuid != "") name = ResourceUUIDToName(uuid);
 	}
-	std::vector<UUIDName> resources = GetResourcesUUIDsNames();
+	std::vector<JUUIDName> resources = GetResourcesUUIDsNames();
 	nostd::AppendToVector(selectables, resources);
 
 	std::string tableName = "tables-" + attribute + "-table";
@@ -1700,7 +1704,7 @@ inline void DrawResourceSelection(
 
 		ImGui::OpenTemplate(iconCode, selected);
 		ImGui::SameLine();
-		ImGui::DrawComboSelection(selected, selectables, [attribute, &json, update](UUIDName option)
+		ImGui::DrawComboSelection(selected, selectables, [attribute, &json, update](JUUIDName option)
 			{
 				std::string uuid = std::get<0>(option);
 				//if (uuid != "")
@@ -1718,9 +1722,9 @@ inline void DrawResourceSelection(
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_so_renderable>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
-			DrawResourceSelection(attribute, json, Scene::FindNameInRenderables, SortUUIDNameByName(Scene::GetRenderablesUUIDNames), ICON_FA_SNOWMAN);
+			DrawResourceSelection(attribute, json, Scene::GetNameFromRenderables, SortUUIDNameByName(Scene::GetRenderablesUUIDsNames), ICON_FA_SNOWMAN);
 		};
 }
 
@@ -1728,7 +1732,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_so_renderable>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_shader>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			DrawResourceSelection(attribute, json, Templates::GetShaderName, SortUUIDNameByName(Templates::GetShadersUUIDsNames), ICON_FA_FILE_CODE);
 		};
@@ -1737,7 +1741,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_shader>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_model3d>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			DrawResourceSelection(attribute, json, Templates::GetModel3DName, SortUUIDNameByName(Templates::GetModel3DsUUIDsNames), ICON_FA_CUBE);
 		};
@@ -1746,7 +1750,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_model3d>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_sound>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			DrawResourceSelection(attribute, json, Templates::GetSoundName, SortUUIDNameByName(Templates::GetSoundsUUIDsNames), ICON_FA_MUSIC);
 		};
@@ -1755,7 +1759,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_sound>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_texture>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			DrawResourceSelection(attribute, json, Templates::GetTextureName, SortUUIDNameByName(Templates::GetTexturesUUIDsNames), ICON_FA_IMAGE);
 		};
@@ -1764,7 +1768,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jedv_t_te_texture>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<bool, jedv_t_boolean>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto allSame = [attribute, &json]()
 				{
@@ -1803,17 +1807,17 @@ inline JEdvEditorDrawerFunction DrawValue<bool, jedv_t_boolean>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			using namespace Scene;
 
 			auto getAnimables = [&json]()
 				{
-					std::vector<std::shared_ptr<Renderable>> animables;
+					std::vector<Renderable*> animables;
 					for (auto& j : json)
 					{
-						std::shared_ptr<Renderable> r = std::dynamic_pointer_cast<Renderable>(j);
-						if (!r->animable) continue;
+						Renderable* r = static_cast<Renderable*>(j);
+						if (r->animable.empty()) continue;
 
 						animables.push_back(r);
 					}
@@ -1893,7 +1897,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 
 			for (size_t i = 0ULL; i < animables.size(); i++)
 			{
-				std::shared_ptr<Renderable> animable = animables.at(i);
+				Renderable* animable = animables.at(i);
 
 				std::string tableName = "animation-controller-" + std::to_string(i);
 
@@ -1953,6 +1957,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 		};
 }
 
+
 template<>
 inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_tex_dimension>()
 {
@@ -1960,7 +1965,7 @@ inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_tex_dimension>()
 		16384U, 8192U, 4096U, 2048U, 1024U, 512U, 256U, 128U, 64U, 32U, 16U, 8U, 4U, 2U, 1U,
 	};
 
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto textures = ToTextureJson(json);
 
@@ -2027,7 +2032,7 @@ inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_tex_dimension>()
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_material_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawVector(attribute, json, ICON_FA_TSHIRT, Templates::GetMaterialsUUIDsNames, Templates::GetMaterialName, ImGui::OpenTemplate);
 		};
@@ -2036,7 +2041,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_material_vecto
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_model3d_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawVector(attribute, json, ICON_FA_CUBE, Templates::GetModel3DsUUIDsNames, Templates::GetModel3DName, ImGui::OpenTemplate);
 		};
@@ -2045,22 +2050,24 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_model3d_vector
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_renderpass_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawVector(attribute, json, ICON_FA_TV, Templates::GetRenderPasssUUIDsNames, Templates::GetRenderPassName, ImGui::OpenTemplate,
-				[](unsigned int index, UUIDName item) //filtering
+				[](unsigned int index, JUUIDName item) //filtering
 				{
-					std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(std::get<0>(item));
+					JUUID uuid = std::get<0>(item);
+					RenderPassJsonUUID rp = uuid;
 					return rp->type() == RenderPassType_RenderToTexturePass || (rp->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve && index != 0);
 				},
-				[](unsigned int index1, unsigned int index2, unsigned int numItems, UUIDName item1, UUIDName item2) //swap
+				[](unsigned int index1, unsigned int index2, unsigned int numItems, JUUIDName item1, JUUIDName item2) //swap
 				{
 					if (index1 > index2 && index2 == 0U) //moving up
 					{
 						std::string uuid = std::get<0>(item1);
 						if (uuid != "")
 						{
-							std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(uuid);
+							//std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(uuid);
+							RenderPassJsonUUID rp = uuid;
 							if (rp->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve) return false;
 						}
 					}
@@ -2069,7 +2076,8 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_renderpass_vec
 						std::string uuid = std::get<0>(item2);
 						if (uuid != "")
 						{
-							std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(uuid);
+							//std::shared_ptr<RenderPassJson> rp = GetRenderPassTemplate(uuid);
+							RenderPassJsonUUID rp = uuid;
 							if (rp->renderCallbackOverride() == RenderPassRenderCallbackOverride_Resolve) return false;
 						}
 					}
@@ -2082,7 +2090,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_renderpass_vec
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_shader_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawVector(attribute, json, ICON_FA_FILE, Templates::GetShadersUUIDsNames, Templates::GetShaderName, ImGui::OpenTemplate);
 		};
@@ -2091,7 +2099,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_shader_vector>
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_sound_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawVector(attribute, json, ICON_FA_MUSIC, Templates::GetSoundsUUIDsNames, Templates::GetSoundName, ImGui::OpenTemplate);
 		};
@@ -2100,7 +2108,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_sound_vector>(
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_texture_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			EditorDrawVector(attribute, json, ICON_FA_IMAGE, Templates::GetTexturesUUIDsNames, Templates::GetTextureName, ImGui::OpenTemplate);
 		};
@@ -2109,12 +2117,12 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_te_texture_vector
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_so_camera_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_CAMERA, Scene::GetCamerasUUIDNames, Scene::FindNameInCameras, ImGui::OpenSceneObject, [&json, attribute](unsigned int index, UUIDName item) //filtering
+			EditorDrawVector(attribute, json, ICON_FA_CAMERA, Scene::GetSceneObjectsByType(SO_Cameras), Scene::GetNameFromCameras, ImGui::OpenSceneObject, [&json, attribute](unsigned int index, JUUIDName item) //filtering
 				{
 					std::string uuid = std::get<0>(item);
-					std::shared_ptr<JObject> j0 = json.at(0);
+					JObject* j0 = json.at(0);
 					if (j0->at(attribute).at(index) == uuid) return true;
 					for (unsigned int i = 0; i < j0->at(attribute).size(); i++)
 					{
@@ -2129,27 +2137,27 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_so_camera_vector>
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_so_light_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_LIGHTBULB, Scene::GetLightsUUIDNames, Scene::FindNameInLights, ImGui::OpenSceneObject);
+			EditorDrawVector(attribute, json, ICON_FA_LIGHTBULB, Scene::GetSceneObjectsByType(SO_Lights), Scene::GetNameFromLights, ImGui::OpenSceneObject);
 		};
 }
 
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_so_renderable_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_SNOWMAN, Scene::GetRenderablesUUIDNames, Scene::FindNameInRenderables, ImGui::OpenSceneObject);
+			EditorDrawVector(attribute, json, ICON_FA_SNOWMAN, Scene::GetSceneObjectsByType(SO_Renderables), Scene::GetNameFromRenderables, ImGui::OpenSceneObject);
 		};
 }
 
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_so_soundeffect_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
-			EditorDrawVector(attribute, json, ICON_FA_MUSIC, Scene::GetSoundEffectsUUIDNames, Scene::FindNameInSoundEffects, ImGui::OpenSceneObject);
+			EditorDrawVector(attribute, json, ICON_FA_MUSIC, Scene::GetSceneObjectsByType(SO_SoundEffects), Scene::GetNameFromSoundEffects, ImGui::OpenSceneObject);
 		};
 }
 
@@ -2157,13 +2165,13 @@ struct MeshMaterial;
 template<>
 inline JEdvEditorDrawerFunction DrawVector<MeshMaterial, jedv_t_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			int removeIndex = -1;
-			std::vector<UUIDName> selectablesMeshes = { std::make_tuple("","") };
-			std::vector<UUIDName> selectablesMaterials = { std::make_tuple("","") };
-			std::vector<UUIDName> meshesUUIDs = Templates::GetMeshesUUIDsNames();
-			std::vector<UUIDName> materialsUUIDs = Templates::GetMaterialsUUIDsNames();
+			std::vector<JUUIDName> selectablesMeshes = { std::make_tuple("","") };
+			std::vector<JUUIDName> selectablesMaterials = { std::make_tuple("","") };
+			std::vector<JUUIDName> meshesUUIDs = Templates::GetMeshesUUIDsNames();
+			std::vector<JUUIDName> materialsUUIDs = Templates::GetMaterialsUUIDsNames();
 
 			selectablesMeshes.insert(selectablesMeshes.end(), meshesUUIDs.begin(), meshesUUIDs.end());
 			selectablesMaterials.insert(selectablesMaterials.end(), materialsUUIDs.begin(), materialsUUIDs.end());
@@ -2391,8 +2399,8 @@ inline JEdvEditorDrawerFunction DrawVector<MeshMaterial, jedv_t_vector>()
 					std::string meshName = mesh.empty() ? "" : Templates::GetMeshName(mesh);
 					std::string materialName = material.empty() ? "" : Templates::GetMaterialName(material);
 
-					UUIDName meshUN = std::make_tuple(mesh, meshName);
-					UUIDName matUN = std::make_tuple(material, materialName);
+					JUUIDName meshUN = std::make_tuple(mesh, meshName);
+					JUUIDName matUN = std::make_tuple(material, materialName);
 
 					std::set<unsigned int> skipsSet;
 					auto& jskip = json->at("skipMeshes");
@@ -2457,7 +2465,7 @@ inline JEdvEditorDrawerFunction DrawVector<MeshMaterial, jedv_t_vector>()
 
 					ImGui::TableSetColumnIndex(2);
 					ImGui::PushID((std::string("mesh-") + std::to_string(index)).c_str());
-					ImGui::DrawComboSelection(meshUN, meshesUUIDs, [index, setMesh](UUIDName option)
+					ImGui::DrawComboSelection(meshUN, meshesUUIDs, [index, setMesh](JUUIDName option)
 						{
 							std::string& nuuid = std::get<0>(option);
 							setMesh(index, nuuid);
@@ -2471,7 +2479,7 @@ inline JEdvEditorDrawerFunction DrawVector<MeshMaterial, jedv_t_vector>()
 					ImGui::PopID();
 					ImGui::SameLine();
 					ImGui::PushID((std::string("material-") + std::to_string(index)).c_str());
-					ImGui::DrawComboSelection(matUN, materialsUUIDs, [index, setMaterial](UUIDName option)
+					ImGui::DrawComboSelection(matUN, materialsUUIDs, [index, setMaterial](JUUIDName option)
 						{
 							std::string& nuuid = std::get<0>(option);
 							setMaterial(index, nuuid);
@@ -2481,8 +2489,8 @@ inline JEdvEditorDrawerFunction DrawVector<MeshMaterial, jedv_t_vector>()
 				};
 			auto drawPlaceholderRow = [attribute, &meshesUUIDs, &materialsUUIDs, reset, &json]()
 				{
-					UUIDName meshUN = std::make_tuple("", "");
-					UUIDName matUN = std::make_tuple("", "");
+					JUUIDName meshUN = std::make_tuple("", "");
+					JUUIDName matUN = std::make_tuple("", "");
 
 					ImGui::TableNextRow();
 
@@ -2494,7 +2502,7 @@ inline JEdvEditorDrawerFunction DrawVector<MeshMaterial, jedv_t_vector>()
 
 					ImGui::TableSetColumnIndex(2);
 					ImGui::PushID(std::string("mesh-ph").c_str());
-					ImGui::DrawComboSelection(meshUN, meshesUUIDs, [reset](UUIDName option)
+					ImGui::DrawComboSelection(meshUN, meshesUUIDs, [reset](JUUIDName option)
 						{
 							std::string& nuuid = std::get<0>(option);
 							reset(nuuid, "");
@@ -2504,7 +2512,7 @@ inline JEdvEditorDrawerFunction DrawVector<MeshMaterial, jedv_t_vector>()
 
 					ImGui::TableSetColumnIndex(3);
 					ImGui::PushID(std::string("material-ph").c_str());
-					ImGui::DrawComboSelection(matUN, materialsUUIDs, [reset](UUIDName option)
+					ImGui::DrawComboSelection(matUN, materialsUUIDs, [reset](JUUIDName option)
 						{
 							std::string& nuuid = std::get<0>(option);
 							reset("", nuuid);
@@ -2581,7 +2589,7 @@ struct MaterialSamplerDesc;
 template<>
 inline JEdvEditorDrawerFunction DrawVector<MaterialSamplerDesc, jedv_t_vector>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			int removeIndex = -1;
 			ImGui::Separator();
@@ -3230,7 +3238,7 @@ inline static std::map<MaterialVariablesTypes, std::function<bool(unsigned int, 
 template<>
 inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vector>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			ImGui::Text("Material Initial Values");
 
@@ -3358,6 +3366,7 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 				{
 					std::vector<std::string> selectables;
 
+					/*
 					std::string uuid_vs = json.at(0)->at("shader_vs");
 					std::string uuid_ps = json.at(0)->at("shader_ps");
 
@@ -3377,6 +3386,7 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 
 					auto& j = json.at(0)->at(attribute);
 					std::transform(j.begin(), j.end(), std::back_inserter(selectables), [](auto& jvar) { return jvar.at("variable"); });
+					*/
 
 					return selectables;
 				};
@@ -3502,7 +3512,7 @@ inline JEdvEditorDrawerFunction DrawVector<MaterialInitialValuePair, jedv_t_vect
 template<>
 inline JEdvEditorDrawerFunction DrawVector<DXGI_FORMAT, jedv_t_dxgi_format_vector>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			std::vector<std::string> formats = nostd::GetKeysFromMap(StringToDXGI_FORMAT);
 			std::vector<std::string> selectables = { "" };
@@ -3787,7 +3797,7 @@ struct RasterizerDesc;
 template<>
 inline JEdvEditorDrawerFunction DrawValue<RasterizerDesc, jedv_t_object>()
 {
-	return [](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return [](std::string attribute, std::vector<JObject*>& json)
 		{
 			ImGui::Separator();
 			ImGui::Text("Rasterizer Desc");
@@ -3914,7 +3924,7 @@ struct BlendDesc;
 template<>
 inline JEdvEditorDrawerFunction DrawValue<BlendDesc, jedv_t_object>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			ImGui::Separator();
 			ImGui::Text("Blending");
@@ -4184,12 +4194,12 @@ inline JEdvEditorDrawerFunction DrawValue<BlendDesc, jedv_t_object>()
 
 template<>
 inline JEdvEditorDrawerFunction DrawMap<TextureShaderUsage, std::string>() {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			ImGui::Separator();
 			ImGui::Text("Textures");
 
-			std::vector<UUIDName> texturesUUIDs = Templates::GetTexturesUUIDsNames();
+			std::vector<JUUIDName> texturesUUIDs = Templates::GetTexturesUUIDsNames();
 
 			TextureShaderUsage removeUsage = TextureShaderUsage_None;
 
@@ -4301,7 +4311,7 @@ inline JEdvEditorDrawerFunction DrawMap<TextureShaderUsage, std::string>() {
 						ImGui::Text(TextureShaderUsageToString.at(usage).c_str());
 
 						ImGui::TableSetColumnIndex(2);
-						UUIDName selected = std::make_tuple("", "");
+						JUUIDName selected = std::make_tuple("", "");
 
 						bool allEq = allEqual(usage);
 						if (allEq)
@@ -4326,7 +4336,7 @@ inline JEdvEditorDrawerFunction DrawMap<TextureShaderUsage, std::string>() {
 						ImGui::SameLine();
 
 						ImGui::PushID(TextureShaderUsageToString.at(usage).c_str());
-						ImGui::DrawComboSelection(selected, texturesUUIDs, [setTexture, usage](UUIDName selection)
+						ImGui::DrawComboSelection(selected, texturesUUIDs, [setTexture, usage](JUUIDName selection)
 							{
 								setTexture(usage, std::get<0>(selection));
 							}
@@ -4365,7 +4375,7 @@ inline JEdvEditorDrawerFunction DrawMap<TextureShaderUsage, std::string>() {
 template<>
 inline JEdvEditorDrawerFunction DrawValue<Perspective, jedv_t_object>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			using namespace Scene::CameraProjections;
 
@@ -4433,7 +4443,7 @@ inline JEdvEditorDrawerFunction DrawValue<Perspective, jedv_t_object>()
 						std::string value = "";
 						if (ImGui::InputText("##", &value, ImGuiInputTextFlags_CharsDecimal))
 						{
-							value = std::regex_replace(value, std::regex(".+-*/"), "");
+							value = std::regex_replace(value, TEXTFLOATREGEXREPLACE, "");
 							if (value.size() > 0ULL)
 							{
 								updateValue(att, (value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
@@ -4459,7 +4469,7 @@ inline JEdvEditorDrawerFunction DrawValue<Perspective, jedv_t_object>()
 template<>
 inline JEdvEditorDrawerFunction DrawValue<Orthographic, jedv_t_object>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			using namespace Scene::CameraProjections;
 
@@ -4522,7 +4532,7 @@ inline JEdvEditorDrawerFunction DrawValue<Orthographic, jedv_t_object>()
 						std::string value = "";
 						if (ImGui::InputText("##", &value, ImGuiInputTextFlags_CharsDecimal))
 						{
-							value = std::regex_replace(value, std::regex(".+-*/"), "");
+							value = std::regex_replace(value, TEXTFLOATREGEXREPLACE, "");
 							if (value.size() > 0ULL)
 							{
 								updateValue(att, (value.size() > 0ULL) ? std::stof(value.c_str()) : 0.0f);
@@ -4549,7 +4559,7 @@ inline JEdvEditorDrawerFunction DrawValue<Orthographic, jedv_t_object>()
 template<>
 inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_controller_vector>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			auto setValue = [attribute, &json](unsigned int index, std::string controller)
 				{
@@ -4722,36 +4732,34 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_controller_vector
 				}
 				else
 				{
-					/*
-					std::vector<UUIDName> uuidNames;
-					std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [FilterItem](UUIDName item)
-						{
-							return FilterItem(0, item);
-						}
-					);
-					std::vector<UUIDName> selectables = { std::make_tuple("","") };
-					selectables.insert(selectables.end(), uuidNames.begin(), uuidNames.end());
-
-					ImGui::TableSetColumnIndex(1);
-					UUIDName& selected = selectables.at(0);
-
-					ImGui::DrawItemWithEnabledState([selected, iconCode]()
-						{
-							ImGui::PushID((std::string("goto-selected") + std::to_string(0)).c_str());
-							ImGui::OpenTemplate(iconCode, selected);
-							ImGui::PopID();
-						}, std::get<0>(selected) != "");
-					ImGui::SameLine();
-
-					ImGui::PushID((std::string("selectables-neq")).c_str());
-					ImGui::DrawComboSelection(selected, selectables, [&resetUUID](UUIDName option)
-						{
-							std::string& nuuid = std::get<0>(option);
-							resetUUID = nuuid;
-						}
-					);
-					ImGui::PopID();
-					*/
+					//std::vector<JUUIDName> uuidNames;
+					//std::copy_if(items.begin(), items.end(), std::back_inserter(uuidNames), [FilterItem](UUIDName item)
+					//	{
+					//		return FilterItem(0, item);
+					//	}
+					//);
+					//std::vector<JUUIDName> selectables = { std::make_tuple("","") };
+					//selectables.insert(selectables.end(), uuidNames.begin(), uuidNames.end());
+					//
+					//ImGui::TableSetColumnIndex(1);
+					//UUIDName& selected = selectables.at(0);
+					//
+					//ImGui::DrawItemWithEnabledState([selected, iconCode]()
+					//	{
+					//		ImGui::PushID((std::string("goto-selected") + std::to_string(0)).c_str());
+					//		ImGui::OpenTemplate(iconCode, selected);
+					//		ImGui::PopID();
+					//	}, std::get<0>(selected) != "");
+					//ImGui::SameLine();
+					//
+					//ImGui::PushID((std::string("selectables-neq")).c_str());
+					//ImGui::DrawComboSelection(selected, selectables, [&resetUUID](UUIDName option)
+					//	{
+					//		std::string& nuuid = std::get<0>(option);
+					//		resetUUID = nuuid;
+					//	}
+					//);
+					//ImGui::PopID();
 				}
 
 				ImGui::EndTable();
@@ -4760,17 +4768,16 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_controller_vector
 
 			if (removeIndex != -1)
 				remove(removeIndex);
-			/*
-			if (resetUUID != "")
-				reset(resetUUID);
-				*/
+
+			//if (resetUUID != "")
+			//	reset(resetUUID);
 		};
 }
 
 template <>
 inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			for (auto& j : json)
 			{
@@ -4779,14 +4786,14 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 					ImGui::Text(std::string(j->at("name")).c_str());
 				}
 
-				std::shared_ptr<Camera> cam = std::dynamic_pointer_cast<Camera>(json[0]);
-				unsigned int numPasses = static_cast<unsigned int>(cam->cameraRenderPasses.size());
+				CameraUUID cam = std::string(json[0]->at("uuid"));
+				unsigned int numPasses = static_cast<unsigned int>(cam->renderPassesUUID.size());
 
 				std::set<unsigned int> previewAble;
 				std::set<unsigned int> shadowMapPass;
 				for (unsigned int i = 0; i < numPasses; i++)
 				{
-					auto& pass = cam->cameraRenderPasses.at(i);
+					RenderPassInstanceUUID pass = cam->renderPassesUUID.at(i);
 					if (pass->type == RenderPassType_SwapChainPass)
 					{
 						continue;
@@ -4798,7 +4805,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 					}
 				}
 
-				ImGui::DrawItemWithEnabledState([cam]()
+				ImGui::DrawItemWithEnabledState([&cam]()
 					{
 						ImGui::PushID("Minus");
 						if (ImGui::Button(ICON_FA_MINUS))
@@ -4811,7 +4818,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 				ImGui::SameLine();
 				ImGui::Text(std::string(std::string("Pass ") + std::to_string(cam->previewRenderPassIndex + 1)).c_str());
 				ImGui::SameLine();
-				ImGui::DrawItemWithEnabledState([cam]()
+				ImGui::DrawItemWithEnabledState([&cam]()
 					{
 						ImGui::PushID("Plus");
 						if (ImGui::Button(ICON_FA_PLUS))
@@ -4825,7 +4832,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 				unsigned int p = cam->previewRenderPassIndex;
 				if (!previewAble.contains(p)) return;
 
-				auto& pass = cam->cameraRenderPasses.at(p);
+				RenderPassInstanceUUID pass = cam->renderPassesUUID.at(p);
 				if (!shadowMapPass.contains(p))
 				{
 					unsigned int rt = cam->previewRenderToTextureIndex;
@@ -4853,7 +4860,7 @@ inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_renderpass_vector>()
 template <>
 inline JEdvEditorDrawerFunction DrawPreview<jedv_draw_animator_sequencer>()
 {
-	return[](std::string attribute, std::vector<std::shared_ptr<JObject>>& json)
+	return[](std::string attribute, std::vector<JObject*>& json)
 		{
 			if (json.size() > 1ULL) return;
 

@@ -3,7 +3,6 @@
 #include <Templates.h>
 #include <TemplateDef.h>
 #include <Mesh/Mesh.h>
-#include <Renderable/Renderable.h>
 #include <VertexFormats.h>
 #include <Animated.h>
 #include <d3d12.h>
@@ -12,9 +11,6 @@
 #include <NoStd.h>
 #include <Textures/Texture.h>
 #include <Material/Material.h>
-#if defined(_DEVELOPMENT)
-#include <Command.h>
-#endif
 #include <DDSTextures.h>
 
 using namespace Animation;
@@ -53,7 +49,7 @@ namespace Templates
 
 #endif
 
-	Model3DJson::Model3DJson(nlohmann::json json) : JTemplate(json)
+	Model3DJson::Model3DJson(nlohmann::json& json) : JTemplate(json)
 	{
 #include <Attributes/JInit.h>
 #include <Model3DAtt.h>
@@ -70,16 +66,15 @@ namespace Templates
 #if defined(_EDITOR)
 	void Model3DJsonStep()
 	{
-		std::set<std::shared_ptr<Model3DJson>> models;
+		std::set<Model3DJsonUUID> models;
 		std::transform(Model3Dtemplates.begin(), Model3Dtemplates.end(), std::inserter(models, models.begin()), [](auto& mdl)
 			{
-				auto& mdlJ = std::get<1>(mdl.second);
-				return mdlJ;
+				return mdl.first;
 			}
 		);
 
-		std::set<std::shared_ptr<Model3DJson>> seqMdls;
-		std::copy_if(models.begin(), models.end(), std::inserter(seqMdls, seqMdls.begin()), [](auto& mdl)
+		std::set<Model3DJsonUUID> seqMdls;
+		std::copy_if(models.begin(), models.end(), std::inserter(seqMdls, seqMdls.begin()), [](auto mdl)
 			{
 				return mdl->dirty(Model3DJson::Update_animationSequences);
 			}
@@ -96,45 +91,40 @@ namespace Templates
 	}
 #endif
 
-	std::string GetModel3DMeshInstanceUUID(std::string uuid, unsigned int index) {
+	JUUID GetModel3DMeshInstanceUUID(JUUID uuid, unsigned int index) {
 		return "mesh-" + uuid + "-" + std::to_string(index);
 	}
 
-	std::string GetModel3DMaterialInstanceUUID(std::string uuid, unsigned int index) {
+	JUUID GetModel3DMaterialInstanceUUID(JUUID uuid, unsigned int index) {
 		return "mat-" + uuid + "-" + std::to_string(index);
 	}
 
-	std::string GetModel3DMaterialInstanceName(std::string uuid, unsigned int index)
+	JUUID GetModel3DMaterialInstanceName(JUUID uuid, unsigned int index)
 	{
-		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(uuid);
+		std::unique_ptr<Model3DJson>& mdl = GetModel3DTemplate(uuid);
 		return "mat-" + mdl->name() + "-" + std::to_string(index);
 	}
 
-	void DestroyModel3DInstance(std::shared_ptr<Model3DInstance>& model3D)
-	{
-		std::string uuid = model3D->model3DUUID;
-
-		for (auto m : model3D->meshes)
-		{
-			DestroyMeshInstance(m);
-			model3D->meshes.clear();
-		}
-
-		using namespace Model3D;
-		refTracker.RemoveRef(uuid, model3D);
-	}
-
-	Model3DInstance::Model3DInstance(std::string uuid, std::string objectUUID, JObjectChangeCallback cb, JObjectChangePostCallback postCb)
+	Model3DInstance::Model3DInstance(JUUID uuid, JUUID objectUUID, JObjectChangeCallback cb, JObjectChangePostCallback postCb)
 	{
 		model3DUUID = uuid;
-		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(model3DUUID);
+		auto& mdl = GetModel3DTemplate(model3DUUID);
 		mdl->BindChangeCallback(objectUUID, cb, postCb);
 		LoadModel3DInstance();
 	}
 
+	Model3DInstance::~Model3DInstance()
+	{
+		for (auto m : meshes)
+		{
+			DestroyMeshInstance(m());
+		}
+		meshes.clear();
+	}
+
 	void Model3DInstance::LoadModel3DInstance()
 	{
-		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(model3DUUID);
+		auto& mdl = GetModel3DTemplate(model3DUUID);
 
 		std::string filename = default3DModelsFolder + mdl->path();
 
@@ -179,15 +169,15 @@ namespace Templates
 			}
 
 			unsigned int indicesCount = aMesh->mNumFaces * aMesh->mFaces[0].mNumIndices;
-			std::shared_ptr<MeshInstance> mesh = GetMeshInstance(GetModel3DMeshInstanceUUID(model3DUUID, meshIndex), vertexClass, vertexData.data(), static_cast<unsigned int>(vertexSize), aMesh->mNumVertices, indicesData.data(), indicesCount);
+			std::unique_ptr<MeshInstance>& mesh = GetMeshInstance(GetModel3DMeshInstanceUUID(model3DUUID, meshIndex), vertexClass, vertexData.data(), static_cast<unsigned int>(vertexSize), aMesh->mNumVertices, indicesData.data(), indicesCount);
 
 			CreateBoundingBox(mesh->boundingBox, aMesh);
 
-			meshes.push_back(mesh);
+			meshes.push_back(mesh->uuid);
 
 			auto mats = mdl->materials();
-			std::string fallbackMaterial = FindMaterialUUIDByName("BaseLighting");
-			std::transform(mats.begin(), mats.end(), std::back_inserter(materialUUIDs), [fallbackMaterial](std::string matUUID)
+			JUUID fallbackMaterial = GetMaterialUUIDByName(Model3D::fallbackMaterialName);
+			std::transform(mats.begin(), mats.end(), std::back_inserter(materialUUIDs), [fallbackMaterial](JUUID matUUID)
 				{
 					return (!matUUID.empty()) ? matUUID : fallbackMaterial;
 				}
@@ -201,7 +191,7 @@ namespace Templates
 	{
 		using namespace Templates;
 
-		std::shared_ptr<Model3DJson> mdl = GetModel3DTemplate(model3DUUID);
+		std::unique_ptr<Model3DJson>& mdl = GetModel3DTemplate(model3DUUID);
 
 		if (mdl->materials().size() == aiModel->mNumMeshes)
 			return;
@@ -231,7 +221,8 @@ namespace Templates
 					aiModel->mMaterials[aMesh->mMaterialIndex]
 				);
 				materialJson.merge_patch(texturesMaterialJson);
-				CreateMaterial(materialJson.json());
+				nlohmann::json j = materialJson.json();
+				CreateMaterial(j);
 				dirtyTemplatesPanel = true;
 			}
 			mdl->materials_push_back(materialUUID);
@@ -321,7 +312,7 @@ namespace Templates
 
 		if (textureJsonPath != "")
 		{
-			std::string texUUID = FindTextureUUIDByName(textureJsonPath.string());
+			JUUID texUUID = GetTextureUUIDByName(textureJsonPath.string());
 			if (texUUID.empty())
 			{
 				texUUID = CreateTextureTemplate(textureJsonPath.string(), textureJsonFormat);
@@ -358,7 +349,7 @@ namespace Templates
 			file.close();
 		}
 
-		std::string texUUID = FindTextureUUIDByName(textureJsonPath.string());
+		std::string texUUID = GetTextureUUIDByName(textureJsonPath.string());
 		if (texUUID.empty())
 		{
 			texUUID = CreateTextureTemplate(textureJsonPath.string(), textureJsonFormat);
@@ -373,7 +364,8 @@ namespace Templates
 
 	MaterialJson Model3DInstance::CreateModel3DMaterialJson(std::string materialUUID, std::string materialName, std::string vertexShader, std::string pixelShader, aiMaterial* material)
 	{
-		MaterialJson matJson(nlohmann::json({}));
+		nlohmann::json j;
+		MaterialJson matJson(j);
 
 		matJson.uuid(materialUUID);
 		matJson.name(materialName);

@@ -1,13 +1,18 @@
 #include "pch.h"
 
+#include <functional>
 #include <atlbase.h>
-#include <JExposeEditor.h>
 #include <Editor.h>
-#include <Mouse.h>
+#include <imgui.h>
+#include <ImGuizmo.h>
+#include <imgui_impl_win32.h>
+#include <imgui_impl_dx12.h>
+#include <IconsFontAwesome5.h>
+
 #include <Application.h>
-#include <JObject.h>
 #include <Renderer.h>
 #include <RenderPass/RenderPass.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include <DeviceUtils/Resources/Resources.h>
 #include <Renderable/Renderable.h>
 #include <Camera/Camera.h>
@@ -17,18 +22,13 @@
 #include <Sound/Sound.h>
 #include <Textures/Texture.h>
 #include <Shader/Shader.h>
-#include <imgui.h>
-#include <ImGuizmo.h>
-#include <imgui_impl_win32.h>
-#include <imgui_impl_dx12.h>
-#include <IconsFontAwesome5.h>
-#include <functional>
-#include <RightPanelComponent.h>
+
 #include <Level.h>
 #include <Mouse.h>
 #include <Keyboard.h>
 #include <MousePicking.h>
 #include <EditorMouseCamera.h>
+#include <RightPanelComponent.h>
 #include <CreatorModal.h>
 #include <DeletePrompt.h>
 #include <AnimationSequencerModal.h>
@@ -37,7 +37,7 @@ extern HWND hWnd;
 extern RECT hWndRect;
 extern std::unique_ptr<DirectX::Mouse> mouse;
 extern std::unique_ptr<DirectX::Keyboard> keyboard;
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 extern std::string gameAppTitle;
 extern bool inSizeMove;
 extern RECT GetMaximizedAreaSize();
@@ -59,9 +59,9 @@ namespace Editor
 	int lastMouseX;
 	int lastMouseY;
 
-	std::shared_ptr<Renderable> boundingBox = nullptr;
-	std::map<std::shared_ptr<SceneObject>, std::shared_ptr<Renderable>> billboardRegistry;
-	std::set<std::shared_ptr<Renderable>> billboardsToDestroy;
+	RenderableUUID boundingBox;
+	std::map<JUUID, RenderableUUID> billboardRegistry; //scene object -> renderable billboard
+	std::set<RenderableUUID> billboardsToDestroy;
 
 	float titleBH = static_cast<float>(ApplicationBarBottom);
 	float panW = static_cast<float>(RightPanelWidth);
@@ -91,10 +91,10 @@ namespace Editor
 	ImGuizmo::MODE gizmoMode(ImGuizmo::WORLD);
 	XMFLOAT4X4 gizmoCentroidMx;
 	bool gizmoApplyOp = false;
-	std::map<std::shared_ptr<SceneObject>, XMFLOAT3> soRotation;
-	std::map<std::shared_ptr<SceneObject>, XMFLOAT3> soScale;
-	std::map<std::shared_ptr<SceneObject>, XMFLOAT3> so2bb;
-	std::map<std::shared_ptr<SceneObject>, XMFLOAT3> bb2gizmo;
+	std::map<SceneObject*, XMFLOAT3> soRotation;
+	std::map<SceneObject*, XMFLOAT3> soScale;
+	std::map<SceneObject*, XMFLOAT3> so2bb;
+	std::map<SceneObject*, XMFLOAT3> bb2gizmo;
 	XMFLOAT3 gizmoRotation;
 	XMFLOAT3 gizmoPosition;
 	XMFLOAT3 gizmoScale;
@@ -106,8 +106,7 @@ namespace Editor
 	AnimationSequencerModal animationSequencer;
 
 	//SceneObject selection
-	std::map<std::string, std::shared_ptr<SceneObject>> selectedSceneObjectsMap;
-	std::set<std::shared_ptr<SceneObject>> selectedSceneObjects;
+	std::set<JUUID> selectedSceneObjects;
 
 	//Game Interaction
 	bool isPlaying = false;
@@ -271,18 +270,15 @@ namespace Editor
 
 	void DestroyEditor() {
 		initialized = false;
-
 		for (auto& uuid : sceneObjectEdition.editables)
 		{
-			SendEditorDestroyPreview(uuid, GetSceneObject);
+			SendEditorDestroyPreview(uuid, GetSceneObjectPointer);
 		}
 		for (auto& uuid : templateEdition.editables)
 		{
-			SendEditorDestroyPreview(uuid, GetTemplate);
+			SendEditorDestroyPreview(uuid, GetJTemplatePointer);
 		}
-
 		ClearSceneObjectsSelection();
-
 		sceneObjectEdition.Destroy();
 		templateEdition.Destroy();
 
@@ -290,7 +286,6 @@ namespace Editor
 		DestroyBillboards();
 		DestroyPickingPass();
 		DestroyRenderableBoundingBox();
-
 		// Cleanup
 		ImGui_ImplDX12_Shutdown();
 		ImGui_ImplWin32_Shutdown();
@@ -302,12 +297,13 @@ namespace Editor
 	}
 
 	//Editor Drawing
-	void DrawEditor(std::shared_ptr<Camera> camera) {
+	void DrawEditor(CameraUUID camera) {
 
 		if (inSizeMove) return;
 
 		unsigned int backBufferIndex = renderer->backBufferIndex;
-		auto pass = renderer->swapChainPass->swapChainPass;
+		RenderPassInstanceUUID renderPass = renderer->swapChainPass;
+		SwapChainPassUUID pass = renderPass->swapChainPass;
 		auto backBuffer = pass->renderTargets[backBufferIndex];
 		auto commandList = renderer->commandList;
 		TransitionResource(commandList, backBuffer, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -334,27 +330,30 @@ namespace Editor
 
 		DrawApplicationBar();
 		DrawGameController();
-		DrawRightPanel();
-		if (camera)
-			DrawPickedObjectsGizmo(camera);
 
-		if (sceneObjectModal.creating)
-			sceneObjectModal.DrawCreationPopup(SceneObjectsTypePanelMenuItems.at(sceneObjectModal.type));
-		if (templateModal.creating)
-			templateModal.DrawCreationPopup(TemplateTypePanelMenuItems.at(templateModal.type));
-		if (deletePrompt.showing)
-			deletePrompt.DrawPrompt("Delete Template");
-		if (animationSequencer.showing)
+		if (!IsPlaying())
 		{
+			DrawRightPanel();
 
-			static const float seqAdj = 8.0f;
+			if (!camera.empty())
+				DrawPickedObjectsGizmo(camera);
 
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-			ImVec2 seqPos = ImVec2(viewport->WorkSize.x / seqAdj, viewport->WorkSize.y / seqAdj);
-			ImVec2 seqSize = ImVec2(viewport->WorkSize.x * (1.0f - (2.0f / seqAdj)), viewport->WorkSize.y * (1.0f - (2.0f / seqAdj)));
-			animationSequencer.DrawSequencer("Animation Sequencer", seqPos, seqSize);
+			if (sceneObjectModal.creating)
+				sceneObjectModal.DrawCreationPopup(SceneObjectsTypePanelMenuItems.at(sceneObjectModal.type));
+			if (templateModal.creating)
+				templateModal.DrawCreationPopup(TemplateTypePanelMenuItems.at(templateModal.type));
+			if (deletePrompt.showing)
+				deletePrompt.DrawPrompt("Delete Template");
+			if (animationSequencer.showing)
+			{
+				static const float seqAdj = 8.0f;
+
+				const ImGuiViewport* viewport = ImGui::GetMainViewport();
+				ImVec2 seqPos = ImVec2(viewport->WorkSize.x / seqAdj, viewport->WorkSize.y / seqAdj);
+				ImVec2 seqSize = ImVec2(viewport->WorkSize.x * (1.0f - (2.0f / seqAdj)), viewport->WorkSize.y * (1.0f - (2.0f / seqAdj)));
+				animationSequencer.DrawSequencer("Animation Sequencer", seqPos, seqSize);
+			}
 		}
-
 		// Rendering
 		ImGui::Render();
 
@@ -424,28 +423,45 @@ namespace Editor
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				if (ImGui::MenuItem(ICON_FA_FILE "New"))
-				{
-					Level::SetDefaultLevelToLoad();
-				}
+				ImGui::DrawItemWithEnabledState([]
+					{
+						if (ImGui::MenuItem(ICON_FA_FILE "New"))
+						{
+							Level::SetDefaultLevelToLoad();
+						}
+					},
+					!IsPlaying()
+				);
 
 				ImGui::Separator();
-				if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "Open"))
-				{
-					OpenLevelFile();
-				}
+				ImGui::DrawItemWithEnabledState([]
+					{
+						if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN "Open"))
+						{
+							OpenLevelFile();
+						}
+					},
+					!IsPlaying()
+				);
 
 				ImGui::DrawItemWithEnabledState([]
 					{
 						if (ImGui::MenuItem(ICON_FA_SAVE "Save")) {
 							SaveLevelToFile(currentLevelName);
 						}
-					}, currentLevelName != "" && levelModified
+					},
+					currentLevelName != "" && levelModified && !IsPlaying()
 				);
 
-				if (ImGui::MenuItem(ICON_FA_SAVE "Save As..")) {
-					SaveLevelAs();
-				}
+				ImGui::DrawItemWithEnabledState([]
+					{
+						if (ImGui::MenuItem(ICON_FA_SAVE "Save As..")) {
+							SaveLevelAs();
+						}
+					},
+					!IsPlaying()
+				);
+
 				ImGui::Separator();
 				ImGui::DrawItemWithEnabledState([]
 					{
@@ -617,14 +633,21 @@ namespace Editor
 			float buttons_width = play_width + stop_width;
 			float cursorX = 0.5f * (controllerSize.x - buttons_width);
 			ImGui::SetCursorPosX(cursorX);
-			if (!IsPaused())
+			if (!IsPlaying() || IsPaused())
 			{
 				if (ImGui::Button(ICON_FA_PLAY))
 				{
-					SwitchToPlayMode();
+					if (!IsPlaying())
+					{
+						SwitchToPlayMode();
+					}
+					else
+					{
+						SwitchToUnPausedMode();
+					}
 				}
 			}
-			else
+			else if (IsPlaying() && !IsPaused())
 			{
 				if (ImGui::Button(ICON_FA_PAUSE))
 				{
@@ -765,9 +788,10 @@ namespace Editor
 		return are_all_operation_success;
 	}
 
-	void SaveLevelToFile(std::string levelFileName)
+	std::string GetLevelString()
 	{
 		using namespace nlohmann;
+		using namespace Scene;
 
 		nlohmann::json level;
 
@@ -779,9 +803,17 @@ namespace Editor
 		WriteRenderablesJson(level["renderables"]);
 		WriteLightsJson(level["lights"]);
 		WriteCamerasJson(level["cameras"]);
-		WriteSoundEffectsJson(level["sounds"]);
+		WriteSoundFXsJson(level["sounds"]);
 
 		std::string levelString = level.dump(4);
+		return levelString;
+	}
+
+	void SaveLevelToFile(std::string levelFileName)
+	{
+		using namespace nlohmann;
+
+		std::string levelString = GetLevelString();
 
 		const std::string levelsRootFolder = "Levels/";
 		const std::string filename = levelsRootFolder + levelFileName;
@@ -820,45 +852,11 @@ namespace Editor
 	const float panelMinHeight = 47.0f;
 	void DrawRightPanel() {
 
-		auto getSceneObjects = []()
-			{
-				auto sceneObjects = GetSceneObjects();
-				std::vector<UUIDName> sceneObjectsList;
-				for (auto& [type, uuidnames] : sceneObjects)
-				{
-					for (auto& uuidname : uuidnames)
-					{
-						std::string& uuid = std::get<0>(uuidname);
-						std::string& name = std::get<1>(uuidname);
-
-						std::string nname = SceneObjectTypeToString.at(type) + "/" + name;
-						sceneObjectsList.push_back(std::tie(uuid, nname));
-					}
-				}
-				return sceneObjectsList;
-			};
-		auto getTemplates = []()
-			{
-				auto templates = GetTemplates();
-				std::vector<UUIDName> templatesList;
-				for (auto& [type, uuidnames] : templates)
-				{
-					for (auto& uuidname : uuidnames)
-					{
-						std::string& uuid = std::get<0>(uuidname);
-						std::string& name = std::get<1>(uuidname);
-
-						std::string nname = TemplateTypeToString.at(type) + "/" + name;
-						templatesList.push_back(std::tie(uuid, nname));
-					}
-				}
-				return templatesList;
-			};
 		auto matchSceneObjectsAttributes = []()
 			{
 				sceneObjectEdition.CreateEditableAttributesToMatch<SceneObjectType>(
 					GetSceneObjectType,
-					GetSceneObject,
+					GetSceneObjectPointer,
 					GetSceneObjectAttributes,
 					GetSceneObjectDrawers,
 					GetSceneObjectPreviewers
@@ -868,7 +866,7 @@ namespace Editor
 			{
 				templateEdition.CreateEditableAttributesToMatch<TemplateType>(
 					GetTemplateType,
-					GetTemplate,
+					GetJTemplatePointer,
 					GetTemplateAttributes,
 					GetTemplateDrawers,
 					GetTemplatePreviewers
@@ -891,13 +889,14 @@ namespace Editor
 			ImVec2 soSize = ImVec2(panSize.x, soPanelH);
 
 			sceneObjectEdition.DrawPanel(soPos, soSize, SceneObjectsTypePanelMenuItems,
-				getSceneObjects, GetSceneObject,
+				GetSceneObjectsTypesList,
+				[](JUUID uuid) { return GetSceneObjectPointer(uuid); },
 				OnChangeSceneObjectTab,
 				matchSceneObjectsAttributes,
 				[](std::string uuid, bool selected) { SetSceneObjectSelection(uuid, selected); },
-				[](std::string uuid) { SendEditorPreview(uuid, GetSceneObject, sceneObjectEdition.drawers); },
+				[](std::string uuid) { SendEditorPreview(uuid, GetSceneObjectPointer, sceneObjectEdition.drawers); },
 				[](SceneObjectType type) { StartSceneObjectCreation(type); },
-				[](std::string uuid) { DeleteSceneObject(uuid); }
+				[](std::string uuid) { DeleteSceneObjectFromEditor(uuid); }
 			);
 
 			ImGui::Button("DragableSeparator", ImVec2(-1, 5));
@@ -917,11 +916,12 @@ namespace Editor
 			ImVec2 teSize = ImVec2(panSize.x, tePanelH);
 
 			templateEdition.DrawPanel(tePos, teSize, TemplateTypePanelMenuItems,
-				getTemplates, GetTemplate,
+				GetTemplatesTypesList,
+				[](JUUID uuid) { return GetJTemplatePointer(uuid); },
 				OnChangeTemplateTab,
 				matchTemplatesAttributes,
 				[](std::string uuid, bool selected) {},
-				[](std::string uuid) { SendEditorPreview(uuid, GetTemplate, templateEdition.drawers); },
+				[](std::string uuid) { SendEditorPreview(uuid, GetJTemplatePointer, templateEdition.drawers); },
 				[](TemplateType type) { StartTemplateCreation(type); },
 				[](std::string uuid) { DeleteTemplate(uuid); }
 			);
@@ -943,30 +943,38 @@ namespace Editor
 		deletePrompt.showing = false;
 	}
 
+	void BuildAssetsTree()
+	{
+		using namespace Scene;
+		sceneObjectEdition.BuildAssetsTree(GetSceneObjectsTypesList, GetSceneObjectPointer);
+		templateEdition.BuildAssetsTree(GetTemplatesTypesList, GetJTemplatePointer);
+	}
+
 	//SceneObjects Panel
 	void OnChangeSceneObjectTab(std::string newTab)
 	{
 		sceneObjectEdition.selectedTab = newTab;
 		sceneObjectEdition.editables = sceneObjectEdition.selected;
+
 		if (newTab == sceneObjectEdition.detailAbleTabs.at(1))
 		{
 			sceneObjectEdition.CreateEditableAttributesToMatch<SceneObjectType>(
 				GetSceneObjectType,
-				GetSceneObject,
+				GetSceneObjectPointer,
 				GetSceneObjectAttributes,
 				GetSceneObjectDrawers,
 				GetSceneObjectPreviewers
 			);
 			for (auto& uuid : sceneObjectEdition.editables)
 			{
-				SendEditorPreview(uuid, GetSceneObject, sceneObjectEdition.drawers);
+				SendEditorPreview(uuid, GetSceneObjectPointer, sceneObjectEdition.drawers);
 			}
 		}
 		else
 		{
 			for (auto& uuid : sceneObjectEdition.editables)
 			{
-				SendEditorDestroyPreview(uuid, GetSceneObject);
+				SendEditorDestroyPreview(uuid, GetSceneObjectPointer);
 			}
 		}
 	}
@@ -1007,25 +1015,26 @@ namespace Editor
 	{
 		templateEdition.selectedTab = newTab;
 		templateEdition.editables = templateEdition.selected;
+
 		if (newTab == templateEdition.detailAbleTabs.at(1))
 		{
 			templateEdition.CreateEditableAttributesToMatch<TemplateType>(
 				GetTemplateType,
-				GetTemplate,
+				GetJTemplatePointer,
 				GetTemplateAttributes,
 				GetTemplateDrawers,
 				GetTemplatePreviewers
 			);
 			for (auto& uuid : templateEdition.editables)
 			{
-				SendEditorPreview(uuid, GetTemplate, templateEdition.drawers);
+				SendEditorPreview(uuid, GetJTemplatePointer, templateEdition.drawers);
 			}
 		}
 		else
 		{
 			for (auto& uuid : templateEdition.editables)
 			{
-				SendEditorDestroyPreview(uuid, GetTemplate);
+				SendEditorDestroyPreview(uuid, GetJTemplatePointer);
 			}
 		}
 	}
@@ -1048,10 +1057,10 @@ namespace Editor
 	}
 
 	//JObject's Preview Panel
-	void SendEditorPreview(std::string uuid, auto GetJObject, auto drawers)
+	void SendEditorPreview(JUUID uuid, auto GetJObject, auto drawers)
 	{
 		size_t flags = 0;
-		std::shared_ptr<JObject> j = GetJObject(uuid);
+		JObject* j = GetJObject(uuid);
 		for (auto& [attribute, _] : drawers)
 		{
 			if (!j->UpdateFlagsMap.contains(attribute)) continue;
@@ -1062,9 +1071,9 @@ namespace Editor
 		j->EditorPreview(flags);
 	}
 
-	void SendEditorDestroyPreview(std::string uuid, auto GetJObject)
+	void SendEditorDestroyPreview(JUUID uuid, auto GetJObject)
 	{
-		std::shared_ptr<JObject> j = GetJObject(uuid);
+		JObject* j = GetJObject(uuid);
 		j->DestroyEditorPreview();
 	}
 
@@ -1116,9 +1125,16 @@ namespace Editor
 		gizmoScale = XMFLOAT3(1.0f, 1.0f, 1.0f);
 	}
 
-	bool InteractWithGizmos(std::set<std::shared_ptr<SceneObject>>& objects2Gizmo)
+	bool InteractWithGizmos(std::set<SceneObject*>& objects2Gizmo)
 	{
-		std::copy_if(selectedSceneObjects.begin(), selectedSceneObjects.end(), std::inserter(objects2Gizmo, objects2Gizmo.begin()), [](auto& so)
+		std::set<SceneObject*> objects;
+		std::transform(selectedSceneObjects.begin(), selectedSceneObjects.end(), std::inserter(objects, objects.begin()), [](JUUID uuid)
+			{
+				return GetSceneObjectPointer(uuid);
+			}
+		);
+
+		std::copy_if(objects.begin(), objects.end(), std::inserter(objects2Gizmo, objects2Gizmo.begin()), [](auto so)
 			{
 				return so->CanInteractWithGizmo(gizmoOperation);
 			}
@@ -1126,7 +1142,7 @@ namespace Editor
 		return !objects2Gizmo.empty();
 	}
 
-	void DrawPickedObjectsGizmo(std::shared_ptr<Camera> camera)
+	void DrawPickedObjectsGizmo(CameraUUID camera)
 	{
 		if (ImGui::IsKeyPressed(ImGuiKey_T)) // t ky
 		{
@@ -1147,7 +1163,7 @@ namespace Editor
 			ResetGizmoVariableWorkers();
 		}
 
-		std::set<std::shared_ptr<SceneObject>> objects2Gizmo;
+		std::set<SceneObject*> objects2Gizmo;
 		if (!InteractWithGizmos(objects2Gizmo))
 			return;
 
@@ -1316,7 +1332,7 @@ namespace Editor
 				}
 			};
 
-		std::map<ImGuizmo::OPERATION, std::function<void(XMFLOAT4X4, XMFLOAT4X4)>> operators =
+		std::unordered_map<ImGuizmo::OPERATION, std::function<void(XMFLOAT4X4, XMFLOAT4X4)>> operators =
 		{
 			{ ImGuizmo::OPERATION::TRANSLATE, translateObjects },
 			{ ImGuizmo::OPERATION::ROTATE, rotateObjects},
@@ -1330,7 +1346,7 @@ namespace Editor
 		);
 	}
 
-	void BeginGizmoInteraction(std::shared_ptr<Camera> camera, std::function<void(XMFLOAT4X4 view, XMFLOAT4X4 proj)> interaction)
+	void BeginGizmoInteraction(CameraUUID camera, std::function<void(XMFLOAT4X4 view, XMFLOAT4X4 proj)> interaction)
 	{
 		ImGuizmo::BeginFrame();
 		ImGuizmo::SetOrthographic(false);
@@ -1350,84 +1366,78 @@ namespace Editor
 	}
 
 	//SceneObject Selection
-	void SelectSceneObject(std::string uuid)
+	void SelectSceneObject(JUUID uuid)
 	{
-		if (uuid == "" || (boundingBox && boundingBox->uuid() == uuid))
+		if (uuid == "" || (!boundingBox.empty() && boundingBox == uuid))
 		{
 			return;
 		}
 
-		std::shared_ptr<Renderable> r = FindInRenderables(uuid);
+		RenderableUUID r = uuid;
 		r->OnPick();
 	}
 
-	void SelectRenderable(std::shared_ptr<Renderable> renderable)
+	void SelectRenderable(JUUID ruuid)
 	{
-		ToggleSceneObjectFromSelection(renderable);
+		ToggleSceneObjectFromSelection(ruuid);
 	}
 
-	void SelectLight(std::shared_ptr<Light> light)
+	void SelectLight(JUUID luuid)
 	{
-		ToggleSceneObjectFromSelection(light);
+		ToggleSceneObjectFromSelection(luuid);
 	}
 
-	void SelectCamera(std::shared_ptr<Camera> camera)
+	void SelectCamera(JUUID cuuid)
 	{
-		ToggleSceneObjectFromSelection(camera);
+		ToggleSceneObjectFromSelection(cuuid);
 	}
 
-	void SelectSoundEffect(std::shared_ptr<SoundFX> soundEffect)
+	void SelectSoundEffect(JUUID suuid)
 	{
-		ToggleSceneObjectFromSelection(soundEffect);
+		ToggleSceneObjectFromSelection(suuid);
 	}
 
-	void ToggleSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject)
+	void ToggleSceneObjectFromSelection(JUUID uuid)
 	{
-		std::string uuid = sceneObject->at("uuid");
 		if (!sceneObjectEdition.selected.contains(uuid))
 		{
-			InsertSceneObjectToSelection(sceneObject);
+			InsertSceneObjectToSelection(uuid);
 		}
 		else
 		{
-			EraseSceneObjectFromSelection(sceneObject);
+			EraseSceneObjectFromSelection(uuid);
 		}
 		ResetGizmoVariableWorkers();
 	}
 
-	void SetSceneObjectSelection(std::string uuid, bool selected)
+	void SetSceneObjectSelection(JUUID uuid, bool selected)
 	{
-		std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
 		if (selected)
 		{
-			selectedSceneObjectsMap.insert_or_assign(uuid, so);
-			selectedSceneObjects.insert(so);
+			selectedSceneObjects.insert(uuid);
 		}
 		else
 		{
-			selectedSceneObjectsMap.erase(uuid);
-			selectedSceneObjects.erase(so);
+			selectedSceneObjects.erase(uuid);
+
 		}
 		gizmoApplyOp = false;
 	}
 
-	void InsertSceneObjectToSelection(std::shared_ptr<SceneObject> sceneObject)
+	void InsertSceneObjectToSelection(JUUID uuid)
 	{
-		std::string uuid = sceneObject->at("uuid");
 		sceneObjectEdition.selected.insert(uuid);
 		SetSceneObjectSelection(uuid, true);
 	}
 
-	void EraseSceneObjectFromSelection(std::shared_ptr<SceneObject> sceneObject)
+	void EraseSceneObjectFromSelection(JUUID uuid)
 	{
-		std::string uuid = sceneObject->at("uuid");
 		sceneObjectEdition.selected.erase(uuid);
 		SetSceneObjectSelection(uuid, false);
 	}
 
 	void ClearSceneObjectsSelection()
 	{
-		selectedSceneObjectsMap.clear();
 		selectedSceneObjects.clear();
 		ResetGizmoVariableWorkers();
 	}
@@ -1435,25 +1445,29 @@ namespace Editor
 	//BoundingBox
 	bool RenderableBoundingBoxExists()
 	{
-		return boundingBox != nullptr;
+		return !boundingBox.empty();
 	}
 
-	void CreateRenderableBoundingBox(std::shared_ptr<Camera> camera)
+	void CreateRenderableBoundingBox(CameraUUID camera)
 	{
+#if !defined(_EDITOR_BOUNDINGBOX)
+		return;
+#endif
+		boundingBox = getUUID();
 		nlohmann::json jbox = nlohmann::json(
 			{
 				{ "meshMaterials",
 					{
 						{
-							{ "material", "2e4d8bf0-0761-45d9-8313-17cdf9b5f8fc"},
-							{ "mesh", "30f15e68-db42-46fa-b846-b2647a0ac9b9" }
+							{ "material", GetMaterialUUIDByName("BoundingBox") },
+							{ "mesh", GetMeshUUIDByName("boxlines") }
 						}
 					}
 				},
 				{ "castShadows", false },
 				{ "shadowed", false },
 				{ "name" , "EditorBoundingBox" },
-				{ "uuid" , "797b3a2b-6854-47ab-8e07-1974055e490d" },
+				{ "uuid" , boundingBox() },
 				{ "position" , { 0.0f, 0.0f, 0.0f} },
 				{ "topology", "LINELIST"},
 				{ "rotation" , { 0.0, 0.0, 0.0 } },
@@ -1461,32 +1475,44 @@ namespace Editor
 				{ "skipMeshes" , {}},
 				{ "visible" , false},
 				{ "hidden" , true},
-				{ "cameras", { camera->uuid() }}
+				{ "cameras", { camera() }}
 			}
 		);
-		boundingBox = CreateSceneObjectFromJson<Renderable>(jbox);
+		CreateRenderable(jbox);
 		boundingBox->BindToScene();
 	}
 
 	void DestroyRenderableBoundingBox()
 	{
-		SafeDeleteSceneObject(boundingBox);
+		if (!boundingBox.empty())
+		{
+			DeleteRenderableSceneObject(boundingBox());
+		}
+		boundingBox.clear();
 	}
 
 	void UpdateBoundingBox()
 	{
-		std::set<std::shared_ptr<SceneObject>>& objects = selectedSceneObjects;
-		if (objects.size() == 0ULL)
+		if (selectedSceneObjects.size() == 0ULL)
 		{
-			boundingBox->visible(false);
+			if (!boundingBox.empty())
+			{
+				boundingBox->visible(false);
+			}
 			return;
 		}
 
+		std::set<SceneObject*> objects;
+		std::transform(selectedSceneObjects.begin(), selectedSceneObjects.end(), std::inserter(objects, objects.begin()), GetSceneObjectPointer);
+
 		BoundingBox bb = GetContainedBoundingBox(objects);
-		boundingBox->visible(true);
-		boundingBox->scale(bb.Extents);
-		boundingBox->position(bb.Center);
-		boundingBox->WriteConstantsBuffer(renderer->backBufferIndex);
+		if (!boundingBox.empty())
+		{
+			boundingBox->visible(true);
+			boundingBox->scale(bb.Extents);
+			boundingBox->position(bb.Center);
+			boundingBox->WriteConstantsBuffer();
+		}
 	}
 
 	//Mouse Processing
@@ -1512,7 +1538,7 @@ namespace Editor
 		return coordsInArea(x, y, gameArea) && !coordsInArea(x, y, controllersArea);
 	}
 
-	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, std::shared_ptr<Camera> camera)
+	void GameAreaMouseProcessing(std::unique_ptr<DirectX::Mouse>& mouse, CameraUUID camera)
 	{
 		if (sceneObjectModal.creating || templateModal.creating || deletePrompt.showing || animationSequencer.showing) return;
 
@@ -1659,21 +1685,24 @@ namespace Editor
 	//SceneObject Picking
 	bool PickingPassExists()
 	{
-		return mousePicking.pickingPass != nullptr;
+		return !mousePicking.pickingPass.empty();
 	}
 
 	void CreatePickingPass()
 	{
-		mousePicking.pickingPass = GetRenderPassInstance(nullptr, 0, FindRenderPassUUIDByName("PickingPass"), HWNDWIDTH, HWNDHEIGHT);
+#if !defined(_EDITOR_PICKINGPASS)
+		return;
+#endif
+		mousePicking.pickingPass = CreateRenderPassInstance("", GetRenderPassUUIDByName("PickingPass"), 0, HWNDWIDTH, HWNDHEIGHT);
 	}
 
 	void DestroyPickingPass()
 	{
-		if (mousePicking.pickingPass) {
+		if (!mousePicking.pickingPass.empty()) {
 			UnbindPickingRenderables();
-			DestroyRenderPassInstance(mousePicking.pickingPass);
+			DestroyRenderPassInstance(mousePicking.pickingPass());
+			mousePicking.pickingPass.clear();
 		}
-		mousePicking.pickingPass = nullptr;
 		if (mousePicking.pickingCpuBuffer)
 		{
 			mousePicking.pickingCpuBuffer = nullptr;
@@ -1682,15 +1711,15 @@ namespace Editor
 
 	void BindPickingRenderables()
 	{
-		for (auto& r : GetRenderables())
+		for (auto uuid : GetRenderables())
 		{
-			BindRenderableToPickingPass(r);
+			BindRenderableToPickingPass(uuid);
 		}
 	}
 
-	void BindRenderableToPickingPass(std::shared_ptr<Renderable> r)
+	void BindRenderableToPickingPass(RenderableUUID r)
 	{
-		std::shared_ptr<RenderPassInstance>& pass = mousePicking.pickingPass;
+		auto pass = mousePicking.pickingPass;
 		r->CreateRenderPassMaterialsInstances(pass);
 		r->CreateRenderPassConstantsBuffersInstances(pass);
 		r->CreateRenderPassRootSignatures(pass);
@@ -1699,24 +1728,24 @@ namespace Editor
 
 	void UnbindPickingRenderables()
 	{
-		for (auto& r : GetRenderables())
+		for (auto uuid : GetRenderables())
 		{
-			UnbindRenderableFromPickingPass(r);
+			UnbindRenderableFromPickingPass(uuid);
 		}
 	}
 
-	void UnbindRenderableFromPickingPass(std::shared_ptr<Renderable> r)
+	void UnbindRenderableFromPickingPass(RenderableUUID r)
 	{
-		std::shared_ptr<RenderPassInstance>& pass = mousePicking.pickingPass;
+		auto pass = mousePicking.pickingPass;
 		r->DestroyRenderPassMaterialsInstances(pass);
 		r->DestroyRenderPassConstantsBuffersInstances(pass);
 		r->DestroyRenderPassRootSignatures(pass);
 		r->DestroyRenderPassPipelineStates(pass);
 	}
 
-	void RenderPickingPass(std::shared_ptr<Camera> camera)
+	void RenderPickingPass(CameraUUID camera)
 	{
-		if (!camera || !mousePicking.doPicking || !mousePicking.pickingPass) return;
+		if (camera.empty() || !mousePicking.doPicking || mousePicking.pickingPass.empty()) return;
 
 #if defined(_DEVELOPMENT)
 		PIXBeginEvent(renderer->commandList.p, 0, L"Scene Picker");
@@ -1726,10 +1755,10 @@ namespace Editor
 			{
 				unsigned int backBufferIndex = renderer->backBufferIndex;
 				unsigned int objectId = 1U;
-				for (auto& r : GetRenderables())
+				for (RenderableUUID r : GetRenderables())
 				{
 					//OutputDebugStringA(("RenderPickingPass:" + r->name() + ":" + std::to_string(objectId) + "\n").c_str());
-					if (!r->visible() || boundingBox == r) continue;
+					if (!r->visible() || boundingBox == r->uuid()) continue;
 
 					r->WriteConstantsBuffer("objectId", objectId, backBufferIndex);
 					r->Render(mousePicking.pickingPass, camera);
@@ -1749,7 +1778,7 @@ namespace Editor
 		mousePicking.doPicking = false;
 		currentMouseMode = MOUSE_GAMEAREA_MODE_NONE;
 
-		if (!mousePicking.pickingPass) return;
+		if (mousePicking.pickingPass.empty()) return;
 
 		unsigned int value = DeviceUtils::CapturePickingPixelValue(
 			renderer->d3dDevice,
@@ -1781,13 +1810,13 @@ namespace Editor
 		}
 
 		unsigned int objectId = 1U;
-		for (auto& r : GetRenderables())
+		for (RenderableUUID r : GetRenderables())
 		{
-			if (!r->visible() || r == boundingBox) continue;
+			if (!r->visible() || r() == boundingBox) continue;
 
 			if (pickedObjectId == objectId)
 			{
-				SelectSceneObject(r->uuid());
+				SelectSceneObject(r());
 				break;
 			}
 			objectId++;
@@ -1796,12 +1825,12 @@ namespace Editor
 
 	void ReleasePickingPassResources()
 	{
-		if (mousePicking.pickingPass) mousePicking.pickingPass->renderToTexturePass->ReleaseResources();
+		if (!mousePicking.pickingPass.empty()) mousePicking.pickingPass->renderToTexturePass->ReleaseResources();
 	}
 
 	void ResizePickingPass(unsigned int width, unsigned int height)
 	{
-		if (mousePicking.pickingPass) mousePicking.pickingPass->renderToTexturePass->Resize(width, height);
+		if (!mousePicking.pickingPass.empty()) mousePicking.pickingPass->renderToTexturePass->Resize(width, height);
 	}
 
 	//JObjects Creation
@@ -1828,24 +1857,26 @@ namespace Editor
 		templateModal.onCreate = CreateTemplate;
 	}
 
-	std::shared_ptr<Renderable> CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial)
+	JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial)
 	{
 		std::string jname = name;
 		jname += "-billboard";
+		JUUID uuid = getUUID();
+		CameraUUID camera = *GetMouseCameras().begin();
 		nlohmann::json jbillboard = nlohmann::json(
 			{
 				{ "meshMaterials",
 					{
 						{
-							{ "material", FindMaterialUUIDByName(material) },
-							{ "mesh", "7dec1229-075f-4599-95e1-9ccfad0d48b1" }
+							{ "material", GetMaterialUUIDByName(material) },
+							{ "mesh", GetMeshUUIDByName("decal") }
 						}
 					}
 				},
 				{ "castShadows", false },
 				{ "shadowed", false },
 				{ "name" , jname },
-				{ "uuid" , getUUID() },
+				{ "uuid" , uuid },
 				{ "position" , { 0.0f, 0.0f, 0.0f} },
 				{ "topology", "TRIANGLELIST"},
 				{ "rotation" , { 0.0, 0.0, 0.0 } },
@@ -1853,54 +1884,61 @@ namespace Editor
 				{ "skipMeshes" , {}},
 				{ "visible" , true},
 				{ "hidden" , true},
-				{ "cameras", { GetMouseCameras().at(0)->uuid()}},
+				{ "cameras", { camera->uuid() }},
 				{ "passMaterialOverrides",
 					{
 						{
 							{ "meshIndex", 0 },
-							{ "renderPass", FindRenderPassUUIDByName("PickingPass") },
-							{ "material", FindMaterialUUIDByName(pickingMaterial) }
+							{ "renderPass", GetRenderPassUUIDByName("PickingPass") },
+							{ "material", GetMaterialUUIDByName(pickingMaterial) }
 						}
 					}
 				}
 			}
 		);
-		std::shared_ptr<Renderable> billboard = CreateSceneObjectFromJson<Renderable>(jbillboard);
-		return billboard;
+		CreateRenderable(jbillboard);
+		return uuid;
 	}
 
-	void RegisterBillboard(std::shared_ptr<SceneObject> sceneObject)
+	void RegisterBillboard(JUUID sceneObject)
 	{
-		billboardRegistry.insert_or_assign(sceneObject, nullptr);
+#if !defined(_EDITOR_BILLBOARD)
+		return;
+#endif
+		billboardRegistry.insert_or_assign(sceneObject, "");
 	}
 
-	std::shared_ptr<Renderable> GetBillboard(std::shared_ptr<SceneObject> sceneObject)
+	JUUID GetBillboard(JUUID sceneObject)
 	{
-		return billboardRegistry.contains(sceneObject) ? billboardRegistry.at(sceneObject) : nullptr;
+		return billboardRegistry.contains(sceneObject) ? billboardRegistry.at(sceneObject)() : "";
 	}
 
-	void DestroyBillboard(std::shared_ptr<SceneObject> sceneObject)
+	void DestroyBillboard(JUUID sceneObject)
 	{
-		std::shared_ptr<Renderable> billboard = GetBillboard(sceneObject);
-		if (billboard == nullptr)
+		JUUID billboard = GetBillboard(sceneObject);
+		if (billboard.empty())
 			return;
+
 		billboardsToDestroy.insert(billboard);
 		billboardRegistry.erase(sceneObject);
 	}
 
 	void CreateRegisteredBillboards()
 	{
-		if (GetNumMouseCameras() == 0ULL) return;
+		if (GetCountFromMouseCameras() == 0ULL) return;
 
 		for (auto it = billboardRegistry.begin(); it != billboardRegistry.end(); it++)
 		{
-			if (it->second) continue;
+			if (!it->second.empty()) continue;
 
-			it->second = it->first->CreateBillboard();
-			if (it->second)
+			auto so = GetSceneObjectPointer(it->first);
+
+			it->second = so->CreateBillboard();
+			if (!it->second.empty())
 			{
-				it->second->BindToScene();
-				Editor::BindRenderableToPickingPass(it->second);
+				auto& bb = it->second;
+				bb->BindToScene();
+				Editor::BindRenderableToPickingPass(bb);
 			}
 		}
 	}
@@ -1909,24 +1947,36 @@ namespace Editor
 	{
 		for (auto it = billboardRegistry.begin(); it != billboardRegistry.end(); it++)
 		{
-			if (!it->second) return true;
+			if (it->second.empty()) return true;
 		}
 		return false;
 	}
 
-	bool Editor::PendingBillboardsDestruction()
+	bool PendingBillboardsDestruction()
 	{
 		return billboardsToDestroy.size() > 0ULL;
 	}
 
+	void UpdateBillboards()
+	{
+		if (GetCountFromMouseCameras() == 0ULL) return;
+
+		for (auto it = billboardRegistry.begin(); it != billboardRegistry.end(); it++)
+		{
+			if (it->second.empty()) continue;
+
+			auto so = GetSceneObjectPointer(it->first);
+			so->UpdateBillboard(it->second());
+		}
+	}
+
 	void Editor::DestroyPendingBillboards()
 	{
-		for (auto& b : billboardsToDestroy)
+		for (auto b : billboardsToDestroy)
 		{
-			std::shared_ptr<Renderable> billboard = b;
-			Editor::UnbindRenderableFromPickingPass(billboard);
-			EraseRenderableFromRenderables(billboard);
-			SafeDeleteSceneObject(billboard);
+			Editor::UnbindRenderableFromPickingPass(b);
+			EraseRenderableFromRenderables(b());
+			DeleteRenderableSceneObject(b());
 		}
 		billboardsToDestroy.clear();
 	}
@@ -1936,10 +1986,11 @@ namespace Editor
 		for (auto it = billboardRegistry.begin(); it != billboardRegistry.end(); )
 		{
 			Editor::UnbindRenderableFromPickingPass(it->second);
-			EraseRenderableFromRenderables(it->second);
-			SafeDeleteSceneObject(it->second);
+			EraseRenderableFromRenderables(it->second());
+			DeleteRenderableSceneObject(it->second());
 			it = billboardRegistry.erase(it);
 		}
+		billboardsToDestroy.clear();
 	}
 
 	bool IsPlaying()
@@ -1960,6 +2011,11 @@ namespace Editor
 	void SwitchToPauseMode()
 	{
 		isPaused = true;
+	}
+
+	void SwitchToUnPausedMode()
+	{
+		isPaused = false;
 	}
 
 	void SwitchToNonPlayMode()

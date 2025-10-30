@@ -35,14 +35,17 @@
 #if defined(JEXPOSE_EDITOR_SAVE_FILE)
 
 #define JCLASS(CLASS,GETJOBJECTS) \
-std::vector<std::shared_ptr<CLASS>> objs = GETJOBJECTS();\
-std::vector<std::shared_ptr<CLASS>> filtered;\
-std::copy_if(objs.begin(), objs.end(), std::back_inserter(filtered), [](auto& r) { return !r->hidden(); });\
-std::transform(filtered.begin(), filtered.end(), std::back_inserter(json), [](auto& r)\
+auto objs = GETJOBJECTS();\
+std::for_each(objs.begin(), objs.end(), [&json](auto o)\
 	{\
-		return nlohmann::json(r->get_ref<nlohmann::json::object_t&>());\
+		CLASS##UUID uuid = o;\
+		if (!uuid->hidden())\
+		{\
+			json.push_back(nlohmann::json(uuid->get_ref<nlohmann::json::object_t&>()));\
+		}\
 	}\
 );
+
 #define JTYPE(TYPE,VALUE)
 #define JEXPOSE(TYPE,ATT,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)
 #define JEXPOSE_TRANSFORM(TYPE,ATT,TOTYPE,FROMTYPE,INITIAL,JEDVALUETYPE,UPDATEMASK,REQUIREDTOCREATE)

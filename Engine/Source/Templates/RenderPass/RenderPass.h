@@ -3,24 +3,14 @@
 #include <tuple>
 #include <map>
 #include <vector>
-#include <nlohmann/json.hpp>
-#include <JTemplate.h>
-#include <TemplateDecl.h>
 #include <dxgiformat.h>
-#include <NoStd.h>
-#include <Json.h>
 #include <RenderPass/SwapChainPass.h>
 #include <RenderPass/RenderToTexturePass.h>
-#include <Mesh/Mesh.h>
+#include <RenderPass/Override/OverridePass.h>
 #include <JTypes.h>
+#include <JTemplate.h>
+#include <TemplateDecl.h>
 #include "PassMaterialOverride.h"
-
-namespace Scene { struct Camera; };
-struct OverridePass;
-using namespace Scene;
-
-using namespace DeviceUtils;
-namespace Templates { struct RenderPassInstance; };
 
 enum RenderPassType
 {
@@ -28,13 +18,13 @@ enum RenderPassType
 	RenderPassType_RenderToTexturePass
 };
 
-inline static std::map<RenderPassType, std::string> RenderPassTypeToString =
+inline static std::unordered_map<RenderPassType, std::string> RenderPassTypeToString =
 {
 	{ RenderPassType_SwapChainPass, "SwapChainPass"},
 	{ RenderPassType_RenderToTexturePass, "RenderToTexturePass"},
 };
 
-inline static std::map<std::string, RenderPassType> StringToRenderPassType =
+inline static std::unordered_map<std::string, RenderPassType> StringToRenderPassType =
 {
 	{ "SwapChainPass", RenderPassType_SwapChainPass },
 	{ "RenderToTexturePass", RenderPassType_RenderToTexturePass },
@@ -47,14 +37,14 @@ enum RenderPassMaterialOverride
 	RenderPassMaterialOverride_Picking
 };
 
-inline static std::map<RenderPassMaterialOverride, std::string> RenderPassMaterialOverrideToString =
+inline static std::unordered_map<RenderPassMaterialOverride, std::string> RenderPassMaterialOverrideToString =
 {
 	{ RenderPassMaterialOverride_None, "None"},
 	{ RenderPassMaterialOverride_ShadowMap, "ShadowMap"},
 	{ RenderPassMaterialOverride_Picking, "Picking" },
 };
 
-inline static std::map<std::string, RenderPassMaterialOverride> StringToRenderPassMaterialOverride =
+inline static std::unordered_map<std::string, RenderPassMaterialOverride> StringToRenderPassMaterialOverride =
 {
 	{ "None" , RenderPassMaterialOverride_None },
 	{ "ShadowMap" , RenderPassMaterialOverride_ShadowMap },
@@ -70,7 +60,7 @@ enum RenderPassRenderCallbackOverride
 	RenderPassRenderCallbackOverride_MinMaxChainResult,
 };
 
-inline static std::map<RenderPassRenderCallbackOverride, std::string> RenderPassRenderCallbackOverrideToString =
+inline static std::unordered_map<RenderPassRenderCallbackOverride, std::string> RenderPassRenderCallbackOverrideToString =
 {
 	{ RenderPassRenderCallbackOverride_None,	"None" },
 	{ RenderPassRenderCallbackOverride_ToneMapping,	"ToneMapping" },
@@ -79,7 +69,7 @@ inline static std::map<RenderPassRenderCallbackOverride, std::string> RenderPass
 	{ RenderPassRenderCallbackOverride_MinMaxChainResult, "MinMaxChainResult" },
 };
 
-inline static std::map<std::string, RenderPassRenderCallbackOverride> StringToRenderPassRenderCallbackOverride =
+inline static std::unordered_map<std::string, RenderPassRenderCallbackOverride> StringToRenderPassRenderCallbackOverride =
 {
 	{ "None",	RenderPassRenderCallbackOverride_None },
 	{ "ToneMapping",	RenderPassRenderCallbackOverride_ToneMapping },
@@ -122,6 +112,18 @@ namespace Templates
 
 #endif
 
+	namespace RenderPass
+	{
+		inline static const std::string templateName = "renderpasses.json";
+		inline static const TemplateType templateType = T_RenderPasses;
+		inline static const std::string shadowMapMaterialName = "ShadowMap";
+		inline static const std::string pickingMaterialName = "Picking";
+		void CreateRenderPassMainHeap();
+		void DestroyRenderPassMainHeap();
+		void ResizeRelease();
+		void Resize(unsigned int width, unsigned int height);
+	};
+
 	struct RenderPassJson : public JTemplate
 	{
 		TEMPLATE_DECL(RenderPass);
@@ -135,48 +137,42 @@ namespace Templates
 #include <JEnd.h>
 	};
 
-	TEMPDECL_FULL(RenderPass);
-
 	struct RenderPassInstance;
 
-	namespace RenderPass
-	{
-		inline static const std::string templateName = "renderpasses.json";
-		void CreateMainHeap();
-		void DestroyMainHeap();
-		void ResizeRelease();
-		void Resize(unsigned int width, unsigned int height);
-	};
+	TEMPDECL_FULL(RenderPass);
+	TEMPDECL_REFTRACKER(RenderPass);
 
-	std::shared_ptr<RenderPassInstance> GetRenderPassInstance(std::shared_ptr<Camera> cam, unsigned int renderPassIndex, std::string uuid, unsigned int width = 0U, unsigned int height = 0U);
-	void DestroyRenderPassInstance(std::shared_ptr<RenderPassInstance>& rp);
+	JUUID CreateRenderPassInstance(JUUID cameraUUID, JUUID renderPassTemplateUUID, unsigned int renderPassIndex, unsigned int width = 0U, unsigned int height = 0U);
+	void DestroyRenderPassInstance(JUUID renderPassInstanceUUID);
 
 	struct RenderPassInstance
 	{
-		std::shared_ptr<Camera> camera;
-		std::string renderPassUUID;
+		CameraUUID camera;
+		RenderPassJsonUUID renderPassJson;
 		RenderPassMaterialOverride materialOverride;
 		RenderPassRenderCallbackOverride renderCallbackOverride;
-		std::shared_ptr<OverridePass> overridePass;
+		std::unique_ptr<OverridePass> overridePass;
 		RenderPassType type = RenderPassType_SwapChainPass;
-		std::shared_ptr<SwapChainPass> swapChainPass;
-		std::shared_ptr<RenderToTexturePass> renderToTexturePass;
+		SwapChainPassUUID swapChainPass;
+		RenderToTexturePassUUID renderToTexturePass;
 
-		RenderPassInstance() {}
+		RenderPassInstance(JUUID uuid) { assert(!!!"do not use"); }
+		explicit RenderPassInstance(JUUID cameraUUID, JUUID renderPassTemplateUUID, JUUID renderPassInstanceUUID, unsigned int renderPassIndex, unsigned int width, unsigned int height);
 		~RenderPassInstance();
-		void Pass(std::function<void()> renderCallback = [] {}, bool clearRTV = true, XMVECTORF32 clearColor = DirectX::Colors::Black) const;
-		std::shared_ptr<MaterialInstance> GetRenderPassMaterialInstance(
-			std::string materialUUID,
-			std::shared_ptr<MeshInstance> mesh,
+		void Pass(std::function<void()> renderCallback = [] {}, bool clearRTV = true, XMVECTORF32 clearColor = DirectX::Colors::Black);
+		JUUID GetRenderPassMaterialInstance(
+			MaterialJsonUUID material,
+			MeshInstanceUUID mesh,
 			bool shadowed,
 			std::vector<PassMaterialOverride> passMaterialOverride,
-			std::string objectUUID = "",
+			JUUID bindingUUID = "",
 			JObjectChangeCallback cb = nullptr,
 			JObjectChangePostCallback postCb = nullptr
-		) const;
-		void ResizeRelease() const;
-		void Resize(unsigned int width, unsigned int height) const;
-		std::vector<DXGI_FORMAT> GetRenderTargetsFormats() const;
+		);
+		void InitRenderPass();
+		void ResizeRelease();
+		void Resize(unsigned int width, unsigned int height);
+		std::vector<DXGI_FORMAT> GetRenderTargetsFormats();
 		DXGI_FORMAT GetDepthStencilFormat();
 	};
 };

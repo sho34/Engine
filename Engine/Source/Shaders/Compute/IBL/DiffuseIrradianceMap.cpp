@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "DiffuseIrradianceMap.h"
-
 #include <Renderer.h>
 #include <DeviceUtils/Resources/Resources.h>
 #include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
@@ -8,13 +7,9 @@
 #include <Textures/Texture.h>
 #include <DirectXTex.h>
 #include "../Shaders/Compiler/ShaderCompiler.h"
+#include <DXTypes.h>
 
-extern std::shared_ptr<Renderer> renderer;
-
-namespace Templates
-{
-	extern void CreateTexture(nlohmann::json json);
-};
+extern std::unique_ptr<Renderer> renderer;
 
 using namespace DeviceUtils;
 using namespace ShaderCompiler;
@@ -38,11 +33,12 @@ D3D12_STATIC_SAMPLER_DESC IBLDiffuseSampler = {
 
 namespace ComputeShader
 {
-	DiffuseIrradianceMap::DiffuseIrradianceMap(std::string envMapUUID, std::filesystem::path iblDiffuseFile) :
+	DiffuseIrradianceMap::DiffuseIrradianceMap(JUUID envMapTemplateUUID, std::filesystem::path iblDiffuseFile) :
 		ComputeInterface("IBLDiffuseIrradianceMap_cs", { IBLDiffuseSampler }, L"cs_6_6")
 	{
 		using namespace Templates;
 
+		envMap = envMapTemplateUUID;
 		outputFile = iblDiffuseFile;
 
 		//create the uav resource for the calculation results (U0)
@@ -65,28 +61,30 @@ namespace ComputeShader
 		renderer->d3dDevice->CreateUnorderedAccessView(resource, nullptr, &uavDesc, resultCpuHandle);
 
 		//create a srv desc/view for reading the envmap but as a cube texture
-		envMap = GetTextureInstance(envMapUUID, [envMapUUID]
+		CreateTextureInstance(envMap, [this]
 			{
-				return std::make_shared<TextureInstance>(envMapUUID);
+				return std::make_unique<TextureInstance>(envMap);
 			}
 		);
 
+		auto& envTexMap = GetTextureInstance(envMap);
+
 		D3D12_SHADER_RESOURCE_VIEW_DESC srvDescRead = {
-			.Format = envMap->viewDesc.Format, .ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE,
+			.Format = envTexMap->viewDesc.Format, .ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE,
 			.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
 			.TextureCube = {
-				.MostDetailedMip = envMap->viewDesc.Texture2DArray.MostDetailedMip,
-				.MipLevels = envMap->viewDesc.Texture2DArray.MipLevels,
-				.ResourceMinLODClamp = envMap->viewDesc.Texture2DArray.ResourceMinLODClamp
+				.MostDetailedMip = envTexMap->viewDesc.Texture2DArray.MostDetailedMip,
+				.MipLevels = envTexMap->viewDesc.Texture2DArray.MipLevels,
+				.ResourceMinLODClamp = envTexMap->viewDesc.Texture2DArray.ResourceMinLODClamp
 			}
 		};
 		DeviceUtils::AllocCSUDescriptor(envMapCubeCpuHandle, envMapCubeGpuHandle);
-		renderer->d3dDevice->CreateShaderResourceView(envMap->texture, &srvDescRead, envMapCubeCpuHandle);
+		renderer->d3dDevice->CreateShaderResourceView(envTexMap->texture, &srvDescRead, envMapCubeCpuHandle);
 	}
 
 	DiffuseIrradianceMap::~DiffuseIrradianceMap()
 	{
-		RemoveTextureInstance(envMap);
+		DeleteTextureInstance(envMap);
 		DeviceUtils::FreeCSUDescriptor(envMapCubeCpuHandle, envMapCubeGpuHandle);
 		DeviceUtils::FreeCSUDescriptor(resultCpuHandle, resultGpuHandle);
 		resource = nullptr;

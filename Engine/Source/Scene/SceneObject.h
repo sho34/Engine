@@ -5,17 +5,8 @@
 #include <nlohmann/json.hpp>
 #if defined(_EDITOR)
 #include <IconsFontAwesome5.h>
-#include <ImGuizmo.h>
 #endif
-#include <DirectXMath.h>
-
-#if defined(_EDITOR)
-namespace Editor
-{
-	extern bool levelModified;
-};
-#endif
-
+#include <set>
 enum SceneObjectType {
 	SO_None,
 	SO_Renderables,
@@ -24,14 +15,14 @@ enum SceneObjectType {
 	SO_SoundEffects
 };
 
-inline const std::map<SceneObjectType, std::string> SceneObjectTypeToString = {
+inline const std::unordered_map<SceneObjectType, std::string> SceneObjectTypeToString = {
 	{ SO_Renderables, "Renderables" },
 	{ SO_Lights,	"Lights" },
 	{ SO_Cameras, "Cameras" },
 	{ SO_SoundEffects, "SoundEffects" }
 };
 
-inline const std::map<std::string, SceneObjectType> StringToSceneObjectType = {
+inline const std::unordered_map<std::string, SceneObjectType> StringToSceneObjectType = {
 	{ "Renderables", SO_Renderables },
 	{ "Lights", SO_Lights },
 	{ "Cameras", SO_Cameras },
@@ -39,7 +30,7 @@ inline const std::map<std::string, SceneObjectType> StringToSceneObjectType = {
 };
 
 #if defined(_EDITOR)
-inline const std::map<SceneObjectType, const char*> SceneObjectsTypePanelMenuItems = {
+inline const std::unordered_map<SceneObjectType, const char*> SceneObjectsTypePanelMenuItems = {
 	{ SO_Renderables, ICON_FA_SNOWMAN "Renderables" },
 	{ SO_Lights, ICON_FA_LIGHTBULB "Lights" },
 	{ SO_Cameras, ICON_FA_CAMERA "Cameras" },
@@ -47,7 +38,7 @@ inline const std::map<SceneObjectType, const char*> SceneObjectsTypePanelMenuIte
 };
 #endif
 
-inline const std::map<SceneObjectType, std::string> SceneObjectTypeJsonContainer =
+inline const std::unordered_map<SceneObjectType, std::string> SceneObjectTypeJsonContainer =
 {
 	{ SO_Renderables, "renderables" },
 	{ SO_Lights, "lights" },
@@ -55,7 +46,7 @@ inline const std::map<SceneObjectType, std::string> SceneObjectTypeJsonContainer
 	{ SO_SoundEffects, "sounds" }
 };
 
-inline const std::map<std::string, std::string> JsonContainerToString =
+inline const std::unordered_map<std::string, std::string> JsonContainerToString =
 {
 	{ "renderables", "Renderables" },
 	{ "lights", "Lights" },
@@ -63,7 +54,7 @@ inline const std::map<std::string, std::string> JsonContainerToString =
 	{ "sounds", "SoundEffects" }
 };
 
-inline const std::map<std::string, std::string> StringToJsonContainer =
+inline const std::unordered_map<std::string, std::string> StringToJsonContainer =
 {
 	{ "Renderables", "renderables" },
 	{ "Lights", "lights" },
@@ -71,30 +62,37 @@ inline const std::map<std::string, std::string> StringToJsonContainer =
 	{ "SoundEffects", "sounds" }
 };
 
+template <typename T>
+using SceneObjectsContainer = std::unordered_map<JUUID, T>;
+
 namespace Scene
 {
 	struct Renderable;
 
 	struct SceneObject : JObject
 	{
-		SceneObject(nlohmann::json json) :JObject(json) {}
+		SceneObject(nlohmann::json& json) :JObject(json) {}
 		virtual void Initialize();
 		virtual void BindToScene();
 		virtual void UnbindFromScene() {};
 		virtual XMVECTOR rotationQ() { return XMQuaternionIdentity(); }
 		virtual XMMATRIX world() { return XMMatrixIdentity(); }
 		virtual BoundingBox GetBoundingBox() { return BoundingBox(); };
-		virtual void Bind(std::shared_ptr<SceneObject> sceneObject) {}
-		virtual void Unbind(std::shared_ptr<SceneObject> sceneObject) {}
+		virtual void Bind(JUUID uuid) {}
+		virtual void Unbind(JUUID uuid) {}
+
 		virtual SceneObjectType JType() { return SO_None; }
+		JUUID Juuid() { return JUUID(at("uuid")); }
 		virtual void JUpdate(nlohmann::json p);
 		virtual void JPatch(nlohmann::json p);
+
+		std::set<JUUID> controllers;
 		virtual void BindControllers();
-		virtual std::shared_ptr<SceneObject> ThisPtr() { return nullptr; }
+		virtual void UnbindControllers();
 
 #if defined(_EDITOR)
-		virtual std::shared_ptr<Renderable> CreateBillboard() { return nullptr; }
-		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard) {}
+		virtual JUUID CreateBillboard() { return ""; }
+		virtual void UpdateBillboard(JUUID billboard) {}
 		virtual bool CanInteractWithGizmo(ImGuizmo::OPERATION operation) { return false; }
 #endif
 	};

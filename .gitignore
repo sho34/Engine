@@ -400,3 +400,4 @@ FodyWeavers.xsd
 /Engine/Target/*.dll
 *.map
 /SDKs/assimp/assimp-5.4.3/build
+/Engine/Lib

@@ -48,6 +48,12 @@ namespace Templates
 
 #endif
 
+	namespace Texture
+	{
+		inline static const std::string templateName = "textures.json";
+		inline static const TemplateType templateType = T_Textures;
+	};
+
 	struct TextureInstance;
 	struct TextureJson : public JTemplate
 	{
@@ -66,7 +72,7 @@ namespace Templates
 		virtual void DestroyEditorPreview();
 
 		//load&reload
-		std::shared_ptr<TextureInstance> preview;
+		TextureInstanceUUID preview;
 		int previewFrame = 0U;
 		bool reloadPreview = false;
 		void CreatePreviewTexture();
@@ -81,20 +87,15 @@ namespace Templates
 
 	TEMPDECL_FULL(Texture);
 
-	namespace Texture
-	{
-		inline static const std::string templateName = "textures.json";
-	}
-
 	void Create2DDDSFile(TextureJson& json);
 	void CreateArrayDDSFile(TextureJson& json);
 	void CreateCubeDDSFile(TextureJson& json);
 	void CreateCubeDDSFileFromSkyBox(TextureJson& json);
 #if defined(_EDITOR)
-	void CreateTextureFromJsonDefinition(nlohmann::json json);
+	void CreateTextureFromJsonDefinition(nlohmann::json& json);
 #endif
-	std::string CreateTextureTemplate(std::string name, DXGI_FORMAT format);
-	void CreateDDSFile(std::shared_ptr<TextureJson>& tex);
+	JUUID CreateTextureTemplate(std::string name, DXGI_FORMAT format);
+	void CreateDDSFile(std::unique_ptr<TextureJson>& tex);
 #if defined(_EDITOR)
 	void PreviewTexturesStep(float delta);
 	void ReloadPreviewTextures();
@@ -105,7 +106,7 @@ namespace Templates
 		TextureInstance(std::string uuid);
 		TextureInstance(std::string uuid, unsigned int startFrame);
 		~TextureInstance() {}
-		std::string materialTexture;
+		JUUID materialTexture;
 
 		//D3D12
 		D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
@@ -120,12 +121,12 @@ namespace Templates
 	TEMPDECL_REFTRACKER(Texture);
 };
 
-inline auto ToTextureJson(std::vector<std::shared_ptr<JObject>>& json)
+inline auto ToTextureJson(std::vector<JObject*>& json)
 {
-	std::vector<std::shared_ptr<Templates::TextureJson>> textures;
-	std::transform(json.begin(), json.end(), std::back_inserter(textures), [](auto& j)
+	std::vector<TextureJsonUUID> textures;
+	std::transform(json.begin(), json.end(), std::back_inserter(textures), [](auto j)
 		{
-			return std::dynamic_pointer_cast<Templates::TextureJson>(j);
+			return std::string(j->at("uuid"));
 		}
 	);
 	return textures;

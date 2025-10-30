@@ -1,14 +1,21 @@
 #pragma once
 
 #include <vector>
-#include <UUID.h>
+#include <set>
 #include <string>
 #include <functional>
+#include <UUID.h>
 #include <nlohmann/json.hpp>
 #include <StepTimer.h>
 #include <JTemplate.h>
+#include <JTypes.h>
 
 namespace Templates {
+
+	std::set<JUUID>& GetTemplates(TemplateType type);
+	std::unordered_map<JUUID, TemplateType>& GetTemplatesTypes();
+	TemplateType GetTemplateType(JUUID uuid);
+	bool TemplateExists(JUUID uuid);
 
 	nlohmann::json& GetSystemShaders();
 	nlohmann::json& GetSystemSounds();
@@ -20,8 +27,8 @@ namespace Templates {
 	void SaveTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json&)> writer);
 #endif
 
-	void LoadTemplates(nlohmann::json templates, std::function<void(nlohmann::json)> loader);
-	void LoadTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json)> loader);
+	void LoadTemplates(nlohmann::json templates, std::function<void(nlohmann::json&)> loader);
+	void LoadTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json&)> loader);
 
 	void DestroyTemplates();
 #if defined(_EDITOR)
@@ -29,92 +36,45 @@ namespace Templates {
 #endif
 	void FreeGPUIntermediateResources();
 
-	template<typename T, typename J>
-	inline void CreateJsonTemplate(nlohmann::json json, auto getTemplates)
+	template<TemplateType T, typename J>
+	inline void CreateJsonTemplate(nlohmann::json& json, auto getTypesTemplates)
 	{
-		std::string uuid = json.at("uuid");
+		JUUID uuid = json.at("uuid");
+		JNAME name = json.at("name");
 
-		auto& templates = getTemplates();
+		auto& uuidSet = GetTemplates(T);
+		auto& typesMap = GetTemplatesTypes();
+		auto& templates = getTypesTemplates();
 
-		if (templates.contains(uuid))
+		if (templates.contains(uuid) || uuidSet.contains(uuid) || typesMap.contains(uuid))
 		{
 			assert(!!!"creation collision");
 		}
 
-		std::shared_ptr<J> jT = std::make_shared<J>(json);
-
-		templates.insert_or_assign(uuid, std::make_tuple(json.at("name"), jT));
+		std::unique_ptr<J> jT = std::make_unique<J>(json);
+		templates.insert_or_assign(uuid, std::make_tuple(name, std::move(jT)));
+		uuidSet.insert(uuid);
+		typesMap.insert_or_assign(uuid, T);
 	}
 
-	inline std::string GetName(std::string uuid, auto getTemplates)
+	void WriteJsonTemplate(nlohmann::json& json, auto& Ts)
 	{
-		auto& templates = getTemplates();
-		return templates.contains(uuid) ? std::get<0>(templates.at(uuid)) : "";
-	}
-
-	std::string FindUUIDByName(std::string name, auto getTemplates)
-	{
-		auto& templates = getTemplates();
-		for (auto& [uuid, T] : templates)
+		for (auto& t : Ts)
 		{
-			if (std::get<0>(T) == name) return uuid;
+			auto& tup = std::get<1>(t);
+			auto& j = std::get<1>(tup);
+			if (j->contains("systemCreated") && j->at("systemCreated") == true) continue;
+			json.push_back(j->json());
 		}
-
-		return "";
-	}
-
-	inline std::vector<std::string> GetNames(auto& items)
-	{
-		std::vector<std::string> names;
-		std::transform(items.begin(), items.end(), std::back_inserter(names), [](auto pair)
-			{
-				return std::get<0>(pair.second);
-			}
-		);
-		return names;
-	}
-
-	inline std::vector<UUIDName> GetUUIDsNames(auto& items)
-	{
-		std::vector<std::tuple<std::string, std::string>> uuidsNames;
-		std::transform(items.begin(), items.end(), std::back_inserter(uuidsNames), [](auto pair)
-			{
-				return std::make_tuple(pair.first, std::get<0>(pair.second));
-			}
-		);
-		return uuidsNames;
-	}
-
-	template<typename T>
-	void WriteTemplateJson(nlohmann::json& json, std::map<std::string, T> Ts)
-	{
-		std::map<std::string, T> filtered;
-
-		std::copy_if(Ts.begin(), Ts.end(), std::inserter(filtered, filtered.end()), [](auto pair)
-			{
-				std::shared_ptr<nlohmann::json> j = std::get<1>(pair.second);
-				return !(j->contains("systemCreated") && j->at("systemCreated") == true);
-			}
-		);
-
-		std::transform(filtered.begin(), filtered.end(), std::inserter(json, json.end()), [](const auto& pair)
-			{
-				std::shared_ptr<nlohmann::json> j = std::get<1>(pair.second);
-				nlohmann::json jw(*j);
-				jw["uuid"] = pair.first;
-				jw["name"] = std::get<0>(pair.second);
-				return jw;
-			}
-		);
 	}
 
 	void TemplatesStep(DX::StepTimer& timer);
 
+	JTemplate* GetJTemplatePointer(JUUID uuid);
+
 #if defined(_EDITOR)
-	std::shared_ptr<JObject> GetTemplate(std::string uuid);
-	std::map<TemplateType, std::vector<UUIDName>> GetTemplates();
-	std::vector<UUIDName> GetTemplates(TemplateType t);
-	TemplateType GetTemplateType(std::string uuid);
+	std::vector<JUUIDName> GetTemplatesTypesList();
+
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetTemplateAttributes(TemplateType t);
 	std::map<std::string, JEdvEditorDrawerFunction> GetTemplateDrawers(TemplateType t);
 	std::map<std::string, JEdvEditorDrawerFunction> GetTemplatePreviewers(TemplateType t);
@@ -138,7 +98,6 @@ namespace Templates {
 	void FindTemplatesReferencesInLevels(std::string uuid, std::set<std::string> skipLevelFiles, std::function<void(nlohmann::json)> addReference);
 	void FindTemplatesReferencesInCurrentLevel(std::string uuid, std::function<void(nlohmann::json)> addReference);
 	void FindRecursiveJsonReference(nlohmann::json json, std::string uuid, std::string path, std::function<void(std::string path)> addReference);
-
 #endif
 
 }

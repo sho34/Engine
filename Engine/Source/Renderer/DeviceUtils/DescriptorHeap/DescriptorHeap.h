@@ -3,9 +3,9 @@
 #include <set>
 #include <map>
 #include <atlbase.h>
-#include "../../DeviceUtils/D3D12Device/Builder.h"
 #include <d3d12.h>
 #include <d3dx12.h>
+#include "../D3D12Device/Builder.h"
 
 using namespace Microsoft::WRL;
 

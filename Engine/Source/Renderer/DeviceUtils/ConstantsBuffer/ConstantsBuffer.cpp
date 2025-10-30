@@ -1,37 +1,20 @@
 #include "pch.h"
+#include <map>
 #include "ConstantsBuffer.h"
 #include <DeviceUtils/D3D12Device/Builder.h>
 #include <DeviceUtils/DescriptorHeap/DescriptorHeap.h>
 #include <Renderer.h>
 #include <DirectXHelper.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 namespace DeviceUtils
 {
-	std::shared_ptr<DescriptorHeap> csuDescriptorHeap;
-	std::vector<std::shared_ptr<ConstantsBuffer>> constantsBuffers;
-
-	void ConstantsBuffer::SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot, unsigned int backBufferIndex)
-	{
-		commandList->SetGraphicsRootDescriptorTable(cbvSlot, gpu_xhandle[backBufferIndex]);
-		cbvSlot++;
-	}
-
-	void ConstantsBuffer::Destroy()
-	{
-		constantBuffer = nullptr;
-		for (unsigned int i = 0; i < cpu_xhandle.size(); i++)
-		{
-			FreeCSUDescriptor(cpu_xhandle[i], gpu_xhandle[i]);
-		}
-		mappedConstantBuffer = nullptr;
-		cpu_xhandle.clear();
-		gpu_xhandle.clear();
-	}
+	std::unique_ptr<DescriptorHeap> csuDescriptorHeap;
+	static std::unordered_map<JUUID, std::unique_ptr<ConstantsBuffer>> constantsBuffers;
 
 	void CreateCSUDescriptorHeap(unsigned int numFrames) {
-		csuDescriptorHeap = std::make_shared<DescriptorHeap>();
+		csuDescriptorHeap = std::make_unique<DescriptorHeap>();
 		csuDescriptorHeap->CreateDescriptorHeap(renderer->d3dDevice, numFrames * csuNumDescriptorsInFrame, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE);
 	}
 
@@ -60,11 +43,10 @@ namespace DeviceUtils
 		csuDescriptorHeap->FreeDescriptor(cpuHandle, gpuHandle);
 	}
 
-	//static std::mutex constantsBufferMutex;
-	std::shared_ptr<ConstantsBuffer> CreateConstantsBuffer(size_t bufferSize, std::string cbName)
+	JUUID CreateConstantsBuffer(size_t bufferSize, std::string cbName)
 	{
-		//std::lock_guard<std::mutex> lock(constantsBufferMutex);
-		std::shared_ptr<ConstantsBuffer> cbvData = std::make_shared<ConstantsBuffer>(bufferSize, cbName);
+		JUUID constantsBufferUUID = getUUID();
+		std::unique_ptr<ConstantsBuffer> cbvData = std::make_unique<ConstantsBuffer>(bufferSize, cbName);
 
 		//create the d3d12 cbuffer
 		CD3DX12_RESOURCE_DESC constantBufferDesc = CD3DX12_RESOURCE_DESC::Buffer(renderer->numFrames * cbvData->alignedConstantBufferSize);
@@ -102,17 +84,13 @@ namespace DeviceUtils
 		DX::ThrowIfFailed(cbvData->constantBuffer->Map(0, &readRange, reinterpret_cast<void**>(&cbvData->mappedConstantBuffer)));
 		ZeroMemory(cbvData->mappedConstantBuffer, renderer->numFrames * cbvData->alignedConstantBufferSize);
 
-		constantsBuffers.push_back(cbvData);
-
-		return cbvData;
+		constantsBuffers.insert_or_assign(constantsBufferUUID, std::move(cbvData));
+		return constantsBufferUUID;
 	}
 
-	void DestroyConstantsBuffer(std::shared_ptr<ConstantsBuffer>& cbuffer)
+	void DestroyConstantsBuffer(JUUID constantsBufferUUID)
 	{
-		if (!cbuffer) return;
-		DEBUG_PTR_COUNT(cbuffer);
-		nostd::vector_erase(constantsBuffers, cbuffer);
-		cbuffer = nullptr;
+		constantsBuffers.erase(constantsBufferUUID);
 	}
 
 	void DestroyConstantsBuffer()
@@ -120,13 +98,36 @@ namespace DeviceUtils
 		constantsBuffers.clear();
 	}
 
-	CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(const std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int index)
+	::CD3DX12_CPU_DESCRIPTOR_HANDLE GetCpuDescriptorHandle(JUUID constantsBufferUUID, unsigned int index)
 	{
-		return cbvData->cpu_xhandle[index];
+		return constantsBuffers.at(constantsBufferUUID)->cpu_xhandle[index];
 	}
 
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(const std::shared_ptr<ConstantsBuffer>& cbvData, unsigned int index)
+	::CD3DX12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(JUUID constantsBufferUUID, unsigned int index)
 	{
-		return cbvData->gpu_xhandle[index];
+		return constantsBuffers.at(constantsBufferUUID)->gpu_xhandle[index];
+	}
+
+	std::unique_ptr<ConstantsBuffer>& GetConstantsBuffer(JUUID constantsBufferUUID)
+	{
+		return constantsBuffers.at(constantsBufferUUID);
+	}
+
+	void ConstantsBuffer::SetRootDescriptorTable(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot, unsigned int backBufferIndex)
+	{
+		commandList->SetGraphicsRootDescriptorTable(cbvSlot, gpu_xhandle[backBufferIndex]);
+		cbvSlot++;
+	}
+
+	void ConstantsBuffer::Destroy()
+	{
+		constantBuffer = nullptr;
+		for (unsigned int i = 0; i < cpu_xhandle.size(); i++)
+		{
+			FreeCSUDescriptor(cpu_xhandle[i], gpu_xhandle[i]);
+		}
+		mappedConstantBuffer = nullptr;
+		cpu_xhandle.clear();
+		gpu_xhandle.clear();
 	}
 }

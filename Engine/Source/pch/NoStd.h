@@ -131,11 +131,22 @@ namespace nostd {
 		return wstr;
 	}
 
-	template<typename T>
-	inline std::vector<std::string> GetKeysFromMap(std::map<std::string, T>& map) {
+	inline std::vector<std::string> GetKeysFromMap(auto map) {
 		std::vector<std::string> names;
-		std::transform(map.begin(), map.end(), std::back_inserter(names), [](std::pair<std::string, T> pair) { return pair.first; });
+		std::transform(map.begin(), map.end(), std::back_inserter(names), [](auto pair) { return pair.first; });
 		return names;
+	}
+
+	template<typename T = JUUID>
+	inline std::set<T> GetUUIDS(auto& iterable)
+	{
+		std::set<T> ret;
+		std::transform(iterable.begin(), iterable.end(), std::inserter(ret, ret.begin()), [](auto& it)
+			{
+				return it.first;
+			}
+		);
+		return ret;
 	}
 
 	template<typename T>
@@ -186,12 +197,12 @@ namespace nostd {
 	}
 
 	template<typename T>
-	void ReplaceFromJsonUsingMap(T& value, std::map<std::string, T> stringToT, nlohmann::json& object, const std::string& key) {
+	void ReplaceFromJsonUsingMap(T& value, auto stringToT, nlohmann::json& object, const std::string& key) {
 		if (object.contains(key) && stringToT.contains(object.at(key))) value = static_cast<T>(stringToT.at(object.at(key)));
 	}
 
 	template<typename T>
-	void InsertFromJsonUsingMap(std::vector<T>& vecValues, std::map<std::string, T> stringToT, nlohmann::json& object, const std::string& key) {
+	void InsertFromJsonUsingMap(std::vector<T>& vecValues, auto stringToT, nlohmann::json& object, const std::string& key) {
 		if (!object.contains(key)) return;
 		nlohmann::json& jvalues = object.at(key);
 		std::transform(jvalues.begin(), jvalues.end(), std::back_inserter(vecValues), [stringToT](const nlohmann::json& value)

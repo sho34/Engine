@@ -1,17 +1,39 @@
 #include "pch.h"
 #include "Engine.h"
-#include "Game.h"
+#include <StepTimer.h>
 #include <Light/Light.h>
-#include <RenderPass/RenderPass.h>
-#include <Mesh/Mesh.h>
-#include <Model3D/Model3D.h>
-#include <Sound/Sound.h>
-#include <Textures/Texture.h>
 #include <Level.h>
+#include <Renderer.h>
+#include <ShaderCompiler.h>
+#include <AudioSystem.h>
+#include <Templates.h>
+#include <Controller.h>
+#include <Mesh/Mesh.h>
+#include <RenderPass/RenderPass.h>
+#include <Shader/Shader.h>
+#include <Sound/Sound.h>
+#include <Material/Material.h>
+#include <Textures/Texture.h>
+#include <Model3D/Model3D.h>
+#include <Renderable/Renderable.h>
+#include <Sound/SoundFX.h>
+#include <Scene.h>
+#if defined(_EDITOR)
+#include <Editor.h>
+#endif
+
+#include "GameDecl.h"
 
 using namespace Templates::RenderPass;
 using namespace Scene;
+using namespace AudioSystem;
 using namespace ShaderCompiler;
+#if defined(_EDITOR)
+using namespace Editor;
+#endif
+
+//take me out from here
+extern std::string gameAppTitle;
 
 #define MAX_LOADSTRING 100
 
@@ -33,7 +55,7 @@ bool editorPlayMode = false;
 #endif
 extern std::string gameAppTitle;
 
-std::shared_ptr<Renderer> renderer;
+std::unique_ptr<Renderer> renderer;
 
 //FPS
 DX::StepTimer timer;
@@ -46,12 +68,6 @@ DirectX::Keyboard::KeyboardStateTracker keys;
 //GamePad
 std::unique_ptr<DirectX::GamePad> gamePad;
 DirectX::GamePad::ButtonStateTracker buttons;
-
-//camera properties
-int currentCamera = 0;
-float cameraSpeed = 0.05f;
-XMFLOAT2 mouseCameraRotationSensitivity = { 0.001f, 0.001f };
-XMFLOAT2 gamePadCameraRotationSensitivity = { 0.02f, -0.02f };
 
 //app destruction
 bool destroyed = false;
@@ -99,7 +115,14 @@ void ResetWindowStyle(bool fullscreen)
 }
 
 //CREATE
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
+#if !defined(_EDITOR) && defined(_DEVELOPMENT)
+int EngineConsoleMain()
+{
+	return EngineWinMain(GetModuleHandle(NULL), nullptr, nullptr, 0);
+}
+#endif
+
+int APIENTRY EngineWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
 	UNREFERENCED_PARAMETER(hPrevInstance);
 	UNREFERENCED_PARAMETER(lpCmdLine);
@@ -204,13 +227,13 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 	CreateTemplates();
 
 	//initialize the render and reset the commands
-	renderer = std::make_shared<Renderer>();
+	renderer = std::make_unique<Renderer>();
 	renderer->Initialize(hWnd);
 	renderer->ResetCommands();
 
 	//create the resources
 	CreateLightingResourcesMapping();
-	CreateMainHeap();
+	CreateRenderPassMainHeap();
 
 	//create the swap chain pass
 	renderer->CreateSwapChainPass();
@@ -249,7 +272,6 @@ void CreateSystemTemplates() {
 }
 
 void CreateTemplates() {
-
 	using namespace Templates;
 
 	Templates::LoadTemplates(defaultTemplatesFolder, Shader::templateName, Templates::CreateShader);
@@ -261,6 +283,7 @@ void CreateTemplates() {
 }
 
 void CreateLightingResourcesMapping() {
+	using namespace Scene;
 	CreateLightsResources();
 	CreateShadowMapResources();
 }
@@ -349,7 +372,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_EXITSIZEMOVE:
 	{
 		inSizeMove = false;
-		if (renderer) {
+		if (renderer)
+		{
 			GetWindowRect(hWnd, &hWndRect);
 			resizeWindow = true;
 		}
@@ -427,13 +451,16 @@ void AppStep() {
 	if (resizeWindow && !inSizeMove) {
 		return ResizeWindow();
 	}
-	timer.Tick([&]() {});
-	GameInputStep();
-	TemplatesStep(timer);
-	SceneObjectsStep(timer);
-	GameStep();
+	timer.Tick([&]()
+		{
+			GameInputStep();
+			TemplatesStep(timer);
+			SceneObjectsStep(timer);
+			GameStep();
+		}
+	);
 	Render();
-	FreeGPUIntermediateResources();
+	//FreeGPUIntermediateResources();
 }
 
 void GameInputStep()
@@ -442,7 +469,7 @@ void GameInputStep()
 
 void AnimableStep(double elapsedSeconds)
 {
-	for (auto& r : GetAnimables())
+	for (RenderableUUID r : GetAnimables())
 	{
 		r->StepAnimation(elapsedSeconds);
 	}
@@ -456,7 +483,7 @@ void AudioStep(float step)
 		}
 	);
 	UpdateAudio();
-	SoundEffectsStep(step);
+	SoundFXsStep(step);
 }
 
 //RENDER
@@ -530,8 +557,9 @@ void DestroyInstance()
 	gamePad.reset();
 	keyboard.reset();
 
-	DestroyMainHeap();
+	renderer->DestroySwapChainPass();
 
+	DestroyRenderPassMainHeap();
 	DestroyShaderCompiler();
 
 	renderer->Destroy();

@@ -8,10 +8,18 @@
 #include <Sound/Sound.h>
 #include <Textures/Texture.h>
 #if defined(_EDITOR)
-#include <Editor.h>
 namespace Editor
 {
 	extern std::string currentLevelName;
+	extern void PromptTemplateDeletion(std::vector<nlohmann::json> references, std::function<void(std::vector<nlohmann::json>)> OnDelete, std::function<void()> OnCancel);
+	extern void CloseDeletionPrompt();
+	extern void MarkTemplatesPanelAssetsAsDirty();
+}
+
+namespace Scene
+{
+	SceneObject* GetSceneObjectPointer(JUUID uuid);
+	std::function<std::vector<JUUIDName>()> GetSceneObjectsByType(SceneObjectType typeToGet);
 }
 #endif
 
@@ -731,6 +739,28 @@ namespace Templates
 		}
 	);
 
+	std::unordered_map<TemplateType, std::set<JUUID>> templates;
+	std::unordered_map<JUUID, TemplateType> templatesTypes;
+	std::set<JUUID>& GetTemplates(TemplateType type)
+	{
+		if (!templates.contains(type))
+			templates[type].clear();
+		return templates.at(type);
+	}
+	std::unordered_map<JUUID, TemplateType>& GetTemplatesTypes()
+	{
+		return templatesTypes;
+	}
+	TemplateType GetTemplateType(JUUID uuid)
+	{
+		return templatesTypes.at(uuid);
+	}
+	bool TemplateExists(JUUID uuid)
+	{
+		return templatesTypes.contains(uuid);
+	}
+
+
 	nlohmann::json& GetSystemShaders()
 	{
 		return systemShaders;
@@ -779,7 +809,7 @@ namespace Templates
 
 #endif
 
-	void LoadTemplates(nlohmann::json templates, std::function<void(nlohmann::json)> loader)
+	void LoadTemplates(nlohmann::json templates, std::function<void(nlohmann::json&)> loader)
 	{
 		for (unsigned int i = 0; i < templates.size(); i++)
 		{
@@ -787,7 +817,7 @@ namespace Templates
 		}
 	}
 
-	void LoadTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json)> loader)
+	void LoadTemplates(const std::string folder, const std::string fileName, std::function<void(nlohmann::json&)> loader)
 	{
 		//first create the directory if needed
 		std::filesystem::path directory(folder);
@@ -807,19 +837,19 @@ namespace Templates
 
 	void DestroyTemplates()
 	{
-		ReleaseRenderPassTemplates();
-		ReleaseTextureTemplates();
-		ReleaseSoundTemplates();
-		ReleaseModel3DTemplates();
-		ReleaseMeshTemplates();
-		ReleaseMaterialTemplates();
-		ReleaseShaderTemplates();
+		//ReleaseRenderPassTemplates();
+		//ReleaseTextureTemplates();
+		//ReleaseSoundTemplates();
+		//ReleaseModel3DTemplates();
+		//ReleaseMeshTemplates();
+		//ReleaseMaterialTemplates();
+		//ReleaseShaderTemplates();
 	}
 
 #if defined(_EDITOR)
 	void DestroyTemplatesReferences()
 	{
-		ReleaseSoundEffectsInstances();
+		//ReleaseSoundEffectsInstances();
 	}
 #endif
 
@@ -841,60 +871,114 @@ namespace Templates
 		SoundJsonStep();
 	}
 
+	JTemplate* GetJTemplatePointer(JUUID uuid)
+	{
+		std::unordered_map<TemplateType, std::function<JTemplate* (JUUID)>> getP =
+		{
+			{ T_Shaders, [](JUUID uuid)
+				{
+					auto& t = GetShaderTemplate(uuid);
+					return static_cast<JTemplate*>(t.get());
+				}
+			},
+			{ T_Materials, [](JUUID uuid)
+				{
+					auto& t = GetMaterialTemplate(uuid);
+					return static_cast<JTemplate*>(t.get());
+				}
+			},
+			{ T_Models3D, [](JUUID uuid)
+				{
+					auto& t = GetModel3DTemplate(uuid);
+					return static_cast<JTemplate*>(t.get());
+				}
+			},
+			{ T_Sounds, [](JUUID uuid)
+				{
+					auto& t = GetSoundTemplate(uuid);
+					return static_cast<JTemplate*>(t.get());
+				}
+			},
+			{ T_Textures, [](JUUID uuid)
+				{
+					auto& t = GetTextureTemplate(uuid);
+					return static_cast<JTemplate*>(t.get());
+				}
+			},
+			{ T_RenderPasses, [](JUUID uuid)
+				{
+					auto& t = GetRenderPassTemplate(uuid);
+					return static_cast<JTemplate*>(t.get());
+				}
+			}
+		};
+
+		TemplateType type = GetTemplateType(uuid);
+		return getP.at(type)(uuid);
+	}
+
 #if defined(_EDITOR)
-	const std::map<TemplateType, std::function<std::vector<UUIDName>()>> GetT =
+	std::vector<JUUIDName> GetTemplatesTypesList()
 	{
-		{ T_Materials, SortUUIDNameByName(GetMaterialsUUIDsNames) },
-		{ T_Models3D, SortUUIDNameByName(GetModel3DsUUIDsNames) },
-		{ T_Shaders, SortUUIDNameByName(GetShadersUUIDsNames) },
-		{ T_Sounds, SortUUIDNameByName(GetSoundsUUIDsNames) },
-		{ T_Textures, SortUUIDNameByName(GetTexturesUUIDsNames) },
-		{ T_RenderPasses, SortUUIDNameByName(GetRenderPasssUUIDsNames) }
-	};
-
-	const std::map<TemplateType, std::function<std::shared_ptr<JObject>(std::string)>> GetSharedPtrT =
-	{
-		{ T_Materials, [](std::string uuid) { std::shared_ptr<JObject> o = GetMaterialTemplate(uuid); return o; } },
-		{ T_Models3D, [](std::string uuid) { std::shared_ptr<JObject> o = GetModel3DTemplate(uuid); return o; } },
-		{ T_Shaders, [](std::string uuid) { std::shared_ptr<JObject> o = GetShaderTemplate(uuid); return o; } },
-		{ T_Sounds, [](std::string uuid) { std::shared_ptr<JObject> o = GetSoundTemplate(uuid); return o; } },
-		{ T_Textures, [](std::string uuid) { std::shared_ptr<JObject> o = GetTextureTemplate(uuid); return o; } },
-		{ T_RenderPasses, [](std::string uuid) { std::shared_ptr<JObject> o = GetRenderPassTemplate(uuid); return o; } }
-	};
-
-	std::shared_ptr<JObject> GetTemplate(std::string uuid)
-	{
-		return GetSharedPtrT.at(GetTemplateType(uuid))(uuid); //kill me please this is slow as hell
-	}
-
-	std::map<TemplateType, std::vector<UUIDName>> GetTemplates()
-	{
-		std::map<TemplateType, std::vector<UUIDName>> templates;
-		for (auto& [type, cb] : GetT)
-		{
-			auto append = cb();
-			nostd::AppendToVector(templates[type], append);
-		}
-		return templates;
-	}
-
-	std::vector<UUIDName> GetTemplates(TemplateType t)
-	{
-		return GetT.at(t)();
-	}
-
-	TemplateType GetTemplateType(std::string uuid)
-	{
-		for (auto& [type, cb] : GetT)
-		{
-			auto objects = cb();
-			for (auto& uuidname : objects)
+		auto str2JUUIDName = [](std::string type, std::string uuid, std::string name)
 			{
-				std::string uuidSO = std::get<0>(uuidname);
-				if (uuid == uuidSO) return type;
+				JUUIDName uuidname;
+				std::string& u = std::get<0>(uuidname);
+				std::string& n = std::get<1>(uuidname);
+				u = uuid;
+				n = type + "/" + name;
+				return uuidname;
+			};
+
+		std::unordered_map<TemplateType, std::function<JUUIDName(JUUID)>> getJUUIDName =
+		{
+			{ T_Shaders, [str2JUUIDName](JUUID uuid)
+				{
+					ShaderJsonUUID o = uuid;
+					return str2JUUIDName(TemplateTypeToString.at(T_Shaders), o->uuid(),o->name());
+				}
+			},
+			{ T_Materials, [str2JUUIDName](JUUID uuid)
+				{
+					MaterialJsonUUID o = uuid;
+					return str2JUUIDName(TemplateTypeToString.at(T_Materials), o->uuid(),o->name());
+				}
+			},
+			{ T_Models3D, [str2JUUIDName](JUUID uuid)
+				{
+					Model3DJsonUUID o = uuid;
+					return str2JUUIDName(TemplateTypeToString.at(T_Models3D), o->uuid(),o->name());
+				}
+			},
+			{ T_Sounds, [str2JUUIDName](JUUID uuid)
+				{
+					SoundJsonUUID o = uuid;
+					return str2JUUIDName(TemplateTypeToString.at(T_Sounds), o->uuid(),o->name());
+				}
+			},
+			{ T_Textures, [str2JUUIDName](JUUID uuid)
+				{
+					TextureJsonUUID o = uuid;
+					return str2JUUIDName(TemplateTypeToString.at(T_Textures), o->uuid(),o->name());
+				}
+			},
+			{ T_RenderPasses, [str2JUUIDName](JUUID uuid)
+				{
+					RenderPassJsonUUID o = uuid;
+					return str2JUUIDName(TemplateTypeToString.at(T_RenderPasses), o->uuid(),o->name());
+				}
+			}
+		};
+
+		std::vector<JUUIDName> templatesTypeList;
+		for (auto& [type, uuids] : templates)
+		{
+			for (auto& uuid : uuids)
+			{
+				templatesTypeList.push_back(getJUUIDName.at(type)(uuid));
 			}
 		}
-		return T_None;
+		return templatesTypeList;
 	}
 
 	std::vector<std::pair<std::string, JsonToEditorValueType>> GetTemplateAttributes(TemplateType t)
@@ -1059,7 +1143,7 @@ namespace Templates
 		return GetTName.at(t)(uuid);
 	}
 
-	void CreateTemplateFromJson(nlohmann::json& json, std::function<void(nlohmann::json json)> creator)
+	void CreateTemplateFromJson(nlohmann::json& json, std::function<void(nlohmann::json& json)> creator)
 	{
 		if (!json.contains("uuid") || json.at("uuid") == "")
 		{
@@ -1100,12 +1184,12 @@ namespace Templates
 	void DeleteTemplate(TemplateType t, std::string uuid)
 	{
 		const std::map<TemplateType, std::function<void(std::string)>> DeleteT = {
-			{ T_Materials, [](std::string uuid) { DeleteMaterial(uuid); }},
-			{ T_Models3D, [](std::string uuid) { DeleteModel3D(uuid); }},
-			{ T_Shaders, [](std::string uuid) { DeleteShader(uuid); }},
-			{ T_Sounds, [](std::string uuid) { DeleteSound(uuid); }},
-			{ T_Textures, [](std::string uuid) { DeleteTexture(uuid); }},
-			{ T_RenderPasses, [](std::string uuid) { DeleteRenderPass(uuid); }},
+			{ T_Materials, [](std::string uuid) { DeleteMaterialTemplate(uuid); }},
+			{ T_Models3D, [](std::string uuid) { DeleteModel3DTemplate(uuid); }},
+			{ T_Shaders, [](std::string uuid) { DeleteShaderTemplate(uuid); }},
+			{ T_Sounds, [](std::string uuid) { DeleteSoundTemplate(uuid); }},
+			{ T_Textures, [](std::string uuid) { DeleteTextureTemplate(uuid); }},
+			{ T_RenderPasses, [](std::string uuid) { DeleteRenderPassTemplate(uuid); }},
 		};
 		DeleteT.at(t)(uuid);
 	}
@@ -1189,7 +1273,7 @@ namespace Templates
 			std::string uuid = ref.at("uuid");
 			std::string path = ref.at("path");
 			TemplateType type = StringToTemplateType.at(ref.at("template"));
-			std::shared_ptr<JObject> j = GetSharedPtrT.at(type)(uuid);
+			JObject* j = GetJTemplatePointer(uuid);
 
 			nlohmann::json j_patch = {
 				{
@@ -1244,7 +1328,7 @@ namespace Templates
 		for (auto& ref : references)
 		{
 			std::string uuid = ref.at("uuid");
-			std::shared_ptr<SceneObject> so = GetSceneObject(uuid);
+			SceneObject* so = GetSceneObjectPointer(uuid);
 
 			std::string path = ref.at("path");
 			std::vector<std::string> parts = nostd::split(path, "/");
@@ -1354,13 +1438,14 @@ namespace Templates
 
 	void FindTemplatesReferencesInCurrentLevel(std::string uuid, std::function<void(nlohmann::json)> addReference)
 	{
+		using namespace Scene;
 		for (auto& [type, item] : SceneObjectTypeJsonContainer)
 		{
-			std::vector<UUIDName> uuidNames = GetSceneObjects(type);
+			std::vector<JUUIDName> uuidNames = GetSceneObjectsByType(type)();
 			for (auto& uuidName : uuidNames)
 			{
-				std::string& soUUID = std::get<0>(uuidName);
-				std::shared_ptr<SceneObject> so = GetSceneObject(soUUID);
+				std::string soUUID = std::get<0>(uuidName);
+				SceneObject* so = GetSceneObjectPointer(soUUID);
 
 				nlohmann::json json = {
 					{ "delete", true },

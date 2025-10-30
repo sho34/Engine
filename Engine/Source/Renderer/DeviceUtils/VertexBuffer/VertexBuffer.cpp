@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "VertexBuffer.h"
+#include <DirectXHelper.h>
 #include "../Resources/Resources.h"
-#include "../../../Common/DirectXHelper.h"
 
 namespace DeviceUtils
 {

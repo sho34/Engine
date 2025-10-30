@@ -7,41 +7,55 @@ enum GameStates {
 	GS_None,
 #if defined(_EDITOR)
 	GS_Editor,
+	GS_EditorPlaying,
 #endif
 	GS_Booting,
-	GS_MainMenu,
 	GS_Loading,
 	GS_Playing,
 	GS_Destroy
 };
 
 //Booting
-void BootScreenCreate();
+void BootScreenCreate(GameStates prevState);
+void BootScreenLeave(GameStates nextState);
 void BootScreenStep();
 void BootScreenRender();
-void BootScreenLeave();
 
 //Loading
-void LoadingScreenCreate();
-void LoadingScreenLeave();
+void LoadingScreenCreate(GameStates prevState);
+void LoadingScreenLeave(GameStates nextState);
 void LoadingScreenStep();
 void LoadingScreenRender();
 
 //Playing
-void PlayModeCreate();
-void PlayModeLeave();
+void PlayModeCreate(GameStates prevState);
+void PlayModeLeave(GameStates nextState);
 void PlayModeStep();
 void PlayModeRender();
 
 #if defined(_EDITOR)
+void DestroyEditorModeBindings();
+void CreateEditorIndependentCamera();
+void SwitchToEditorCamera();
+void SwitchToEditorPlayCamera();
+void DestroyEditorCameras();
+void ReloadSceneFromPrePlay();
+
 //Editor
-void EditorModeCreate();
+void EditorModeCreate(GameStates prevState);
 void EditorModeStep();
 void EditorModeRender();
 void EditorModePostRender();
-void EditorModeLeave();
+void EditorModeLeave(GameStates nextState);
+
+//EditorPlaying
+void EditorPlayingModeCreate(GameStates prevState);
+void EditorPlayingModeStep();
+void EditorPlayingModeRender();
+void EditorPlayingModePostRender();
+void EditorPlayingModeLeave(GameStates nextState);
 #endif
 
 //Controller
 std::vector<std::string> Game::GetGameControllers();
-std::shared_ptr<Game::Controller> Game::GetGameController(std::string name);
+//std::unique_ptr<Game::Controller> Game::GetGameController(std::string name);

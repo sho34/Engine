@@ -2,33 +2,18 @@
 #include "pch.h"
 #include "resource.h"
 
-#if defined(_DEVELOPMENT)
-#include <ShaderCompiler.h>
-#endif
-#include <ComputeInterface.h>
-#include <StepTimer.h>
-#include <Renderer.h>
-#include <DeviceUtils/Resources/Resources.h>
-
-#include <AudioSystem.h>
-#if defined(_EDITOR)
-#include <Editor.h>
-#include <DefaultLevel.h>
-#endif
-
-#include <Templates.h>
-#include <Scene.h>
-
-using namespace DeviceUtils;
-//using namespace Animation::Effects;
-using namespace AudioSystem;
-#if defined(_EDITOR)
-using namespace Editor;
-#endif
 
 RECT GetMaximizedAreaSize();
 
 //CREATE
+#if !defined(_EDITOR) && defined(_DEVELOPMENT)
+int EngineConsoleMain();
+#endif
+//#else
+int APIENTRY EngineWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow);
+//#endif
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow);
+
 ATOM MyRegisterClass(HINSTANCE hInstance);
 BOOL InitInstance(HINSTANCE, int);
 void CreateSystemTemplates();

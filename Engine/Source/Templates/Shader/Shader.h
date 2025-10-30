@@ -8,11 +8,9 @@
 #include <wrl/client.h>
 #include <dxcapi.h>
 #include <string>
-#include <nlohmann/json.hpp>
-#include <ShaderMaterials.h>
+#include <JTypes.h>
 #include <JTemplate.h>
 #include <TemplateDecl.h>
-#include <JTypes.h>
 #include "ShaderInstance.h"
 
 namespace Templates
@@ -56,6 +54,7 @@ namespace Templates
 	namespace Shader
 	{
 		inline static const std::string templateName = "shaders.json";
+		inline static const TemplateType templateType = T_Shaders;
 	};
 
 	struct ShaderJson : public JTemplate
@@ -74,5 +73,3 @@ namespace Templates
 	TEMPDECL_FULL(Shader);
 	TEMPDECL_REFTRACKER(Shader);
 }
-
-

@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "AudioSystem.h"
-#include <Sound/Sound.h>
-#include <Sound/SoundFX.h>
 #include <Audio.h>
 
 namespace AudioSystem {
@@ -37,8 +35,6 @@ namespace AudioSystem {
 
 	void UpdateListener(XMFLOAT3 position, XMVECTOR orientation)
 	{
-		using namespace Scene;
-
 		listener.SetPosition(position);
 		listener.SetOrientationFromQuaternion(orientation);
 	}

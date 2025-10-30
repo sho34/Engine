@@ -1,20 +1,23 @@
 #include "pch.h"
 #include "RenderToTexturePass.h"
-#include "../../Common/DirectXHelper.h"
-#include "../DeviceUtils/RenderTarget/RenderTarget.h"
-#include "../DeviceUtils/ConstantsBuffer/ConstantsBuffer.h"
+#include <DirectXHelper.h>
+#include <DeviceUtils/RenderTarget/RenderTarget.h>
+#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
 #include "../../Common/d3dx12.h"
 #include <map>
 #include <pix3.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 namespace DeviceUtils {
 
-	std::shared_ptr<RenderToTexturePass> CreateRenderPass(const std::string name, std::vector<DXGI_FORMAT> renderTargetsFormats, DXGI_FORMAT depthStencilFormat, unsigned int width, unsigned int height)
+	static std::unordered_map<JUUID, std::unique_ptr<RenderToTexturePass>> renderToTexturePasses;
+
+	JUUID CreateRenderToTexturePass(const std::string name, std::vector<DXGI_FORMAT> renderTargetsFormats, DXGI_FORMAT depthStencilFormat, unsigned int width, unsigned int height)
 	{
+		JUUID uuid = getUUID();
 		auto& d3dDevice = renderer->d3dDevice;
-		std::shared_ptr<RenderToTexturePass> renderPass = std::make_shared<RenderToTexturePass>();
+		std::unique_ptr<RenderToTexturePass> renderPass = std::make_unique<RenderToTexturePass>();
 
 		renderPass->name = name;
 		renderPass->screenViewport = {
@@ -30,7 +33,7 @@ namespace DeviceUtils {
 
 		for (auto format : renderTargetsFormats)
 		{
-			std::shared_ptr<RenderToTexture> rtt = std::make_shared<RenderToTexture>();
+			RenderToTextureUUID rtt = CreateRenderToTexture();
 			rtt->name = name + "[" + std::to_string(renderPass->renderToTexture.size()) + "]";
 			rtt->format = format;
 			rtt->width = width;
@@ -73,7 +76,20 @@ namespace DeviceUtils {
 
 			d3dDevice->CreateShaderResourceView(renderPass->depthStencilTexture, &depthStencilSRVDesc, renderPass->cpuDepthStencilTextureHandle);
 		}
-		return renderPass;
+
+		renderToTexturePasses.insert_or_assign(uuid, std::move(renderPass));
+		return uuid;
+	}
+
+	std::unique_ptr<RenderToTexturePass>& GetRenderToTexturePass(JUUID uuid)
+	{
+		return renderToTexturePasses.at(uuid);
+	}
+
+	void DeleteRenderToTexturePass(JUUID uuid)
+	{
+		renderToTexturePasses.at(uuid)->ReleaseResources();
+		renderToTexturePasses.erase(uuid);
 	}
 
 	void RenderToTexturePass::Pass(std::function<void()> renderCallback, XMVECTORF32 clearColor)
@@ -92,7 +108,7 @@ namespace DeviceUtils {
 
 		//transition the texture resources from pixel shader resource to render target
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
-		for (auto& rtt : renderToTexture)
+		for (auto rtt : renderToTexture)
 		{
 			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(rtt->renderToTexture, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_RENDER_TARGET));
 		}
@@ -105,7 +121,7 @@ namespace DeviceUtils {
 		commandList->RSSetScissorRects(1, &scissorRect);
 
 		std::vector<CD3DX12_CPU_DESCRIPTOR_HANDLE> rtvHandles;
-		for (auto& rtt : renderToTexture)
+		for (auto rtt : renderToTexture)
 		{
 			commandList->ClearRenderTargetView(rtt->cpuRenderTargetViewHandle, clearColor, 0, nullptr);
 			rtvHandles.push_back(rtt->cpuRenderTargetViewHandle);
@@ -129,7 +145,7 @@ namespace DeviceUtils {
 
 		//transition the texture resources from render target to pixel shader resource
 		std::vector<CD3DX12_RESOURCE_BARRIER> barriers;
-		for (auto& rtt : renderToTexture)
+		for (auto rtt : renderToTexture)
 		{
 			barriers.push_back(CD3DX12_RESOURCE_BARRIER::Transition(rtt->renderToTexture, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 		}
@@ -153,7 +169,7 @@ namespace DeviceUtils {
 
 	void RenderToTexturePass::ReleaseResources()
 	{
-		for (auto& rtt : renderToTexture)
+		for (auto rtt : renderToTexture)
 		{
 			rtt->ReleaseResources();
 		}
@@ -180,7 +196,7 @@ namespace DeviceUtils {
 			.bottom = static_cast<long>(height)
 		};
 
-		for (auto& rtt : renderToTexture)
+		for (auto rtt : renderToTexture)
 		{
 			rtt->Resize(width, height);
 			D3D12_SHADER_RESOURCE_VIEW_DESC rttSRVDesc = {

@@ -2,19 +2,9 @@
 
 #include "Projections/Perspective.h"
 #include "Projections/Orthographic.h"
-#include <DeviceUtils/ConstantsBuffer/ConstantsBuffer.h>
-#include <Keyboard.h>
-#include <DirectXMath.h>
-#include <Mouse.h>
-#include <GamePad.h>
-#include <map>
-#include <Json.h>
 #include <SceneObjectDecl.h>
-#include <NoMath.h>
 #include <SceneObject.h>
 #include <JTypes.h>
-#include <ImEditor.h>
-#include <set>
 
 enum ProjectionsTypes {
 	PROJ_Orthographic,
@@ -26,12 +16,12 @@ inline static std::vector<std::string> ProjectionsTypesStr = {
 	"Perspective"
 };
 
-inline static std::map<ProjectionsTypes, std::string> ProjectionsTypesToString = {
+inline static std::unordered_map<ProjectionsTypes, std::string> ProjectionsTypesToString = {
 	{ PROJ_Orthographic, "Orthographic" },
 	{ PROJ_Perspective, "Perspective" }
 };
 
-inline static std::map<std::string, ProjectionsTypes> StringToProjectionsTypes = {
+inline static std::unordered_map<std::string, ProjectionsTypes> StringToProjectionsTypes = {
 	{ "Orthographic", PROJ_Orthographic },
 	{ "Perspective", PROJ_Perspective }
 };
@@ -55,7 +45,7 @@ using namespace Scene::CameraProjections;
 
 enum TextureShaderUsage;
 
-typedef std::map<TextureShaderUsage, std::shared_ptr<Templates::TextureInstance>> TextureUsageInstanceMap;
+typedef std::unordered_map<TextureShaderUsage, JUUID> TextureUsageInstanceMap;
 
 namespace Scene {
 	struct Light;
@@ -66,10 +56,6 @@ namespace Scene {
 	using namespace Templates;
 
 	inline static const std::string CameraConstantBufferName = "camera";
-
-#include <TrackUUID/JDecl.h>
-#include <CameraAtt.h>
-#include <JEnd.h>
 
 #if defined(_EDITOR)
 #include <Attributes/JOrder.h>
@@ -112,7 +98,7 @@ namespace Scene {
 
 	struct Camera : SceneObject
 	{
-		SCENEOBJECT_DECL(Camera);
+		inline static const SceneObjectType sceneObjectType = SO_Cameras;
 
 #include <Attributes/JFlags.h>
 #include <CameraAtt.h>
@@ -126,6 +112,9 @@ namespace Scene {
 			CameraProjections::Perspective perspectiveProjection;
 			CameraProjections::Orthographic orthographicProjection;
 		};
+
+		Camera(nlohmann::json& json);
+		~Camera() { Destroy(); }
 
 		XMVECTOR positionV();
 		XMVECTOR rotationQ();
@@ -142,36 +131,31 @@ namespace Scene {
 		float projectionFarZ();
 		float projectionfovAngleY();
 
-		std::vector<std::shared_ptr<RenderPassInstance>> cameraRenderPasses;
+		std::vector<RenderPassInstanceUUID> renderPassesUUID;
 		void CreateRenderPasses();
 		void DestroyRenderPasses();
 		void ResizeReleasePasses();
 		void ResizePasses(unsigned int width, unsigned int height);
 		void UpdateProjection();
 
-		std::set<std::shared_ptr<Renderable>> renderables;
+		std::set<RenderableUUID> renderables;
 		virtual void Initialize();
-		virtual void Bind(std::shared_ptr<SceneObject> sceneObject);
-		virtual void Unbind(std::shared_ptr<SceneObject> sceneObject);
-		void BindRenderable(std::shared_ptr<Renderable> renderable);
-		void UnbindRenderable(std::shared_ptr<Renderable> renderable);
-
+		virtual void BindToScene();
+		virtual void UnbindFromScene();
+		virtual void Bind(JUUID uuid);
+		virtual void Unbind(JUUID uuid);
+		void BindRenderable(RenderableUUID renderable);
+		void UnbindRenderable(RenderableUUID renderable);
 		bool ResolvesToSwapChain();
-
 		void Render();
 
-		std::shared_ptr<Scene::Light> lightCam = nullptr;
-		std::shared_ptr<ConstantsBuffer> cameraCbv;
-
 		BoundingFrustum boundingFrustum;
-
 		bool markedForDelete = false;
 		void Destroy();
 
-		void CreateIBLTexturesInstances();
+		ConstantsBufferUUID cameraCb;
 		void CreateConstantsBuffer();
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
-
 		void ProcessKeyboardInput(DirectX::Keyboard::KeyboardStateTracker& tracker, DirectX::Keyboard::State& state);
 		void MoveAlongFwAxis(float dz);
 		void MovePerpendicularFwAxis(float dx, float dy);
@@ -190,16 +174,13 @@ namespace Scene {
 		void CreateIBLTextures();
 		void DestroyIBLTextures();
 		void SetIBLRootDescriptorTables(CComPtr<ID3D12GraphicsCommandList2>& commandList, unsigned int& cbvSlot);
-
 #if defined(_EDITOR)
 		unsigned int previewRenderPassIndex = 0U;
 		unsigned int previewRenderToTextureIndex = 0U;
 		virtual void EditorPreview(size_t flags);
 		virtual void DestroyEditorPreview();
-
-		virtual std::shared_ptr<Renderable> CreateBillboard();
-		virtual void UpdateBillboard(std::shared_ptr<Renderable> billboard);
-
+		virtual JUUID CreateBillboard();
+		virtual void UpdateBillboard(JUUID uuid);
 		BoundingBox GetBoundingBox();
 
 		//Gizmo
@@ -207,4 +188,9 @@ namespace Scene {
 #endif
 	};
 
+	SODECL_FULL(Camera);
+
+#include <TrackUUID/JDecl.h>
+#include <CameraAtt.h>
+#include <JEnd.h>
 };

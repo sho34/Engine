@@ -1,15 +1,15 @@
 #include "pch.h"
 #include "Shader.h"
-#include <ShaderCompiler.h>
-#include <NoStd.h>
-#include <nlohmann/json.hpp>
 #include <Templates.h>
-#include <Scene.h>
-#include <Application.h>
 #include <TemplateDef.h>
+#include <ShaderCompiler.h>
+//#include <NoStd.h>
+//#include <nlohmann/json.hpp>
+//#include <Scene.h>
+//#include <Application.h>
 #include <Camera/Camera.h>
 #include <Light/Light.h>
-#include <ShaderCompiler.h>
+#include <Animated.h>
 
 namespace Templates {
 
@@ -55,7 +55,7 @@ namespace Templates {
 		std::multimap<std::string, std::string> fileNameToShaderTemplate;
 	};
 
-	ShaderJson::ShaderJson(nlohmann::json json) : JTemplate(json)
+	ShaderJson::ShaderJson(nlohmann::json& json) : JTemplate(json)
 	{
 #include <Attributes/JInit.h>
 #include <ShaderAtt.h>
@@ -74,16 +74,15 @@ namespace Templates {
 #if defined(_DEVELOPMENT)
 	void ShaderJsonStep()
 	{
-		std::set<std::shared_ptr<ShaderJson>> shaders;
+		std::set<ShaderJsonUUID> shaders;
 		std::transform(Shadertemplates.begin(), Shadertemplates.end(), std::inserter(shaders, shaders.begin()), [](auto& temps)
 			{
-				auto& shaJ = std::get<1>(temps.second);
-				return shaJ;
+				return temps.first;
 			}
 		);
 
-		std::set<std::shared_ptr<ShaderJson>> rebuildShaders;
-		std::copy_if(shaders.begin(), shaders.end(), std::inserter(rebuildShaders, rebuildShaders.begin()), [](auto& shader)
+		std::set<ShaderJsonUUID> rebuildShaders;
+		std::copy_if(shaders.begin(), shaders.end(), std::inserter(rebuildShaders, rebuildShaders.begin()), [](auto shader)
 			{
 				return shader->dirty(ShaderJson::Update_path);
 			}
@@ -123,7 +122,7 @@ namespace Templates {
 		for (auto& it = range.first; it != range.second; it++)
 		{
 			if (!CheckChangesCompilation(it->second)) continue;
-			std::shared_ptr<ShaderJson> shader = GetShaderTemplate(it->second);
+			auto& shader = GetShaderTemplate(it->second);
 			shader->flag(ShaderJson::Update_path);
 		}
 	}
@@ -136,7 +135,7 @@ namespace Templates {
 		{
 			//if the file is not in the dependency skip
 			if (!deps.contains(dependency) || !CheckChangesCompilation(src.shaderUUID)) continue;
-			std::shared_ptr<ShaderJson> shader = GetShaderTemplate(src.shaderUUID);
+			auto& shader = GetShaderTemplate(src.shaderUUID);
 			shader->flag(ShaderJson::Update_path);
 		}
 	}
@@ -235,9 +234,9 @@ namespace Templates {
 #endif
 
 	ShaderInstance::ShaderInstance(
-		std::string instance_uuid,
-		std::string uuid, Source params,
-		std::string bindingUUID,
+		JUUID instance_uuid,
+		JUUID uuid, Source params,
+		JUUID bindingUUID,
 		JObjectChangeCallback shaderChangeCallback,
 		JObjectChangePostCallback shaderChangePostCallback)
 	{
@@ -247,7 +246,7 @@ namespace Templates {
 		instanceUUID = instance_uuid;
 		shaderUUID = uuid;
 
-		std::shared_ptr<ShaderJson> shader = GetShaderTemplate(uuid);
+		auto& shader = GetShaderTemplate(uuid);
 		shader->BindChangeCallback(bindingUUID, shaderChangeCallback, shaderChangePostCallback);
 
 		Compile(*this, params, dependencies);
@@ -269,7 +268,7 @@ namespace Templates {
 		using namespace Animation;
 		using namespace Scene;
 
-		const std::map<std::string, int& > registersMap =
+		const std::unordered_map<std::string, int& > registersMap =
 		{
 			{ CameraConstantBufferName, CBV.camera },
 			{ LightConstantBufferName, CBV.light },

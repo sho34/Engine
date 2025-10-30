@@ -4,16 +4,16 @@
 #include <Renderer.h>
 #include <DirectXHelper.h>
 
-extern std::shared_ptr<Renderer> renderer;
+extern std::unique_ptr<Renderer> renderer;
 
 namespace DeviceUtils {
 
-	std::shared_ptr<DeviceUtils::DescriptorHeap> renderToTextureDescriptorHeap;
+	static std::unique_ptr<DeviceUtils::DescriptorHeap> renderToTextureDescriptorHeap;
 
 	void CreateRenderToTextureDescriptorHeap()
 	{
 		auto& d3dDevice = renderer->d3dDevice;
-		renderToTextureDescriptorHeap = std::make_shared<DeviceUtils::DescriptorHeap>();
+		renderToTextureDescriptorHeap = std::make_unique<DeviceUtils::DescriptorHeap>();
 		renderToTextureDescriptorHeap->CreateDescriptorHeap(d3dDevice, maxRenderToTexturesRenderTargets);
 	}
 
@@ -21,6 +21,25 @@ namespace DeviceUtils {
 	{
 		renderToTextureDescriptorHeap->DestroyDescriptorHeap();
 		renderToTextureDescriptorHeap = nullptr;
+	}
+
+	static std::unordered_map<JUUID, std::unique_ptr<RenderToTexture>> renderToTextures;
+
+	JUUID CreateRenderToTexture()
+	{
+		JUUID uuid = getUUID();
+		renderToTextures.insert_or_assign(uuid, std::make_unique<RenderToTexture>());
+		return uuid;
+	}
+
+	std::unique_ptr<RenderToTexture>& GetRenderToTexture(JUUID rttUUID)
+	{
+		return renderToTextures.at(rttUUID);
+	}
+
+	void DeleteRenderToTexture(JUUID rttUUID)
+	{
+		renderToTextures.erase(rttUUID);
 	}
 
 	void RenderToTexture::Create()

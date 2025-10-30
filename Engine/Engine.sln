@@ -5,6 +5,11 @@ VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Engine", "Source\Engine.vcxproj", "{E270C8EB-E5D2-4DA6-B98F-EA3500A257E4}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestGame", "..\TestGame\Source\TestGame.vcxproj", "{813AD4CB-C718-400C-8E38-DAE951B36D49}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E270C8EB-E5D2-4DA6-B98F-EA3500A257E4} = {E270C8EB-E5D2-4DA6-B98F-EA3500A257E4}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -27,6 +32,18 @@ Global
 		{E270C8EB-E5D2-4DA6-B98F-EA3500A257E4}.Editor_Release|x64.Build.0 = Editor_Release|x64
 		{E270C8EB-E5D2-4DA6-B98F-EA3500A257E4}.Release|x64.ActiveCfg = Release|x64
 		{E270C8EB-E5D2-4DA6-B98F-EA3500A257E4}.Release|x64.Build.0 = Release|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Debug|x64.ActiveCfg = Debug|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Debug|x64.Build.0 = Debug|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Development|x64.ActiveCfg = Development|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Development|x64.Build.0 = Development|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Editor_Debug|x64.ActiveCfg = Editor_Debug|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Editor_Debug|x64.Build.0 = Editor_Debug|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Editor_Development|x64.ActiveCfg = Editor_Development|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Editor_Development|x64.Build.0 = Editor_Development|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Editor_Release|x64.ActiveCfg = Editor_Release|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Editor_Release|x64.Build.0 = Editor_Release|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Release|x64.ActiveCfg = Release|x64
+		{813AD4CB-C718-400C-8E38-DAE951B36D49}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

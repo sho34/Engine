@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "Resources.h"
-#include <Renderer.h>
 #include <DirectXHelper.h>
-
-extern std::shared_ptr<Renderer> renderer;
 
 namespace DeviceUtils {
 
