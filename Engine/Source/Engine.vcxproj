@@ -200,7 +200,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -223,9 +223,10 @@
       <ExportNamedFunctions>
       </ExportNamedFunctions>
       <SubSystem>Console</SubSystem>
+      <LinkTimeCodeGeneration />
     </Lib>
     <ProjectReference>
-      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Development|x64'">
@@ -237,7 +238,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -266,18 +267,21 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;HAS_DIRECTXTK12;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;GameControllers</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <DebugInformationFormat>None</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -287,16 +291,20 @@
       <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/DirectXTK12/Bin/Desktop_2022_Win10/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <Lib>
+      <SubSystem>Windows</SubSystem>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;GameControllers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;JExpose;JExpose/Scene;JExpose/Templates;Effects;Animation;Audio;Primitives;Common;Renderer;Scene;Templates;Controllers;Shaders/Compiler;Shaders/Compute;Utils;Editor;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
@@ -305,6 +313,8 @@
       <EnableModules>
       </EnableModules>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -314,6 +324,13 @@
       <AdditionalDependencies>d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;CmdLineHelpers.lib;DirectXTex.lib;texconv.lib;texassemble.lib;texdiag.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/DirectXTK12/Bin/Desktop_2022_Win10/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
+    <Lib>
+      <SubSystem>Windows</SubSystem>
+      <LinkTimeCodeGeneration />
+    </Lib>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Animation\Animated.h" />
@@ -497,9 +514,21 @@
     <ClInclude Include="Shaders\Compute\ComputeShader.h" />
     <ClInclude Include="Shaders\Compute\HDR\LuminanceHistogram.h" />
     <ClInclude Include="Shaders\Compute\HDR\LuminanceHistogramAverage.h" />
-    <ClInclude Include="Shaders\Compute\IBL\BRDFLUT.h" />
-    <ClInclude Include="Shaders\Compute\IBL\DiffuseIrradianceMap.h" />
-    <ClInclude Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.h" />
+    <ClInclude Include="Shaders\Compute\IBL\BRDFLUT.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compute\IBL\DiffuseIrradianceMap.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Shaders\Compute\Renderable\RenderableBoundingBox.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="Engine.h" />
@@ -624,9 +653,21 @@
     <ClCompile Include="Shaders\Compute\ComputeShader.cpp" />
     <ClCompile Include="Shaders\Compute\HDR\LuminanceHistogram.cpp" />
     <ClCompile Include="Shaders\Compute\HDR\LuminanceHistogramAverage.cpp" />
-    <ClCompile Include="Shaders\Compute\IBL\BRDFLUT.cpp" />
-    <ClCompile Include="Shaders\Compute\IBL\DiffuseIrradianceMap.cpp" />
-    <ClCompile Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.cpp" />
+    <ClCompile Include="Shaders\Compute\IBL\BRDFLUT.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders\Compute\IBL\DiffuseIrradianceMap.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="Shaders\Compute\IBL\PreFilteredEnvironmentMap.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Shaders\Compute\Renderable\RenderableBoundingBox.cpp" />
     <ClCompile Include="Templates\Material\Material.cpp" />
     <ClCompile Include="Templates\Material\Variables.cpp" />

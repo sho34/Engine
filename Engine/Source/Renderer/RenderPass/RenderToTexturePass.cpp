@@ -88,8 +88,11 @@ namespace DeviceUtils {
 
 	void DeleteRenderToTexturePass(JUUID uuid)
 	{
-		renderToTexturePasses.at(uuid)->ReleaseResources();
-		renderToTexturePasses.erase(uuid);
+		if (renderToTexturePasses.contains(uuid))
+		{
+			renderToTexturePasses.at(uuid)->ReleaseResources();
+			renderToTexturePasses.erase(uuid);
+		}
 	}
 
 	void RenderToTexturePass::Pass(std::function<void()> renderCallback, XMVECTORF32 clearColor)

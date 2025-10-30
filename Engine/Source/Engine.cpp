@@ -217,7 +217,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	//initialize the shader compiler and changes monitor
 	BuildShaderCompiler();
+#if defined(_DEVELOPMENT)
 	MonitorShaderChanges(defaultShadersFolder);
+#endif
 
 	//Initialize the audio system
 	InitAudio();

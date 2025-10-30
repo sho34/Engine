@@ -41,9 +41,9 @@
 #include <dxgidebug.h>
 #endif
 
-#if defined(_DEVELOPMENT)
 #include <d3dcompiler.h>
 #include <dxcapi.h>
+#if defined(_DEVELOPMENT)
 #include <pix3.h>
 #endif
 

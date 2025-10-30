@@ -199,7 +199,9 @@ namespace Templates
 		std::string filename = default3DModelsFolder + mdl->path();
 		std::filesystem::path path(filename);
 
+#if defined(_EDITOR)
 		bool dirtyTemplatesPanel = false;
+#endif
 
 		//go through all the meshes in the model
 		for (unsigned int meshIndex = 0; meshIndex < aiModel->mNumMeshes; meshIndex++)
@@ -213,6 +215,7 @@ namespace Templates
 
 			if (!MaterialTemplateExist(materialUUID))
 			{
+#if defined(_DEVELOPMENT)
 				MaterialJson materialJson = CreateModel3DMaterialJson(
 					materialUUID,
 					GetModel3DMaterialInstanceName(model3DUUID, meshIndex),
@@ -223,16 +226,19 @@ namespace Templates
 				materialJson.merge_patch(texturesMaterialJson);
 				nlohmann::json j = materialJson.json();
 				CreateMaterial(j);
+#if defined(_EDITOR)
 				dirtyTemplatesPanel = true;
+#endif
+#endif
 			}
 			mdl->materials_push_back(materialUUID);
 		}
+#if defined(_EDITOR) //economic
 		if (dirtyTemplatesPanel)
 		{
-#if defined(_EDITOR) //economic
 			Editor::MarkTemplatesPanelAssetsAsDirty();
-#endif
 		}
+#endif
 	}
 
 	void Model3DInstance::CreateBoundingBox(BoundingBox& boundingBox, aiMesh* aMesh)

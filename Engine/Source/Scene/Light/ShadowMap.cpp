@@ -623,7 +623,8 @@ namespace Scene
 	{
 		for (auto cam : shadowMapCameras)
 		{
-			//SafeDeleteSceneObject(cam);
+			cam->DestroyRenderPasses();
+			DestroyConstantsBuffer(cam->cameraCb());
 			DeleteCameraSceneObject(cam());
 		}
 		shadowMapCameras.clear();
