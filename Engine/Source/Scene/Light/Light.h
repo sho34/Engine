@@ -118,7 +118,10 @@ namespace Scene {
 	};
 
 	struct LightPool {
-		uint128_t numLights;
+		unsigned int numLights;
+		unsigned int _pad1;
+		unsigned int _pad2;
+		unsigned int _pad3;
 		LightAttributes lights[MaxLights];
 	};
 
@@ -191,6 +194,10 @@ namespace Scene {
 		virtual void Initialize();
 		virtual void BindToScene();
 		virtual void UnbindFromScene();
+		void BindCameras();
+		void BindCamera(JUUID cuuid);
+		void UnbindCameras();
+		void UnbindCamera(JUUID cuuid);
 		void CreateShadowMap();
 		void BindRenderablesToShadowMapCamera();
 		void UnbindRenderablesFromShadowMapCameras();
@@ -214,7 +221,7 @@ namespace Scene {
 
 		virtual std::function<bool(JObject*)> GetAssetsConditioner();
 
-		virtual JUUID CreateBillboard();
+		virtual JUUID CreateBillboard(CameraUUID camera);
 		virtual void UpdateBillboard(JUUID uuid);
 		BoundingBox GetBoundingBox();
 		//Gizmo
@@ -230,6 +237,9 @@ namespace Scene {
 		void UpdateDirectionalShadowMapCameraTransformation();
 		void UpdateSpotShadowMapCameraTransformation();
 		void UpdatePointShadowMapCameraTransformation();
+
+		void WriteConstantsBufferLightAttributes(LightAttributes& atts);
+		void WriteConstantsBufferShadowMapAttributes(ShadowMapAttributes& atts);
 
 		//DESTROY
 		void DestroyShadowMap();

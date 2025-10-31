@@ -18,7 +18,7 @@ JEXPOSE_ENUM(ProjectionsTypes, projectionType, PROJ_Perspective, jedv_t_enum, 1,
 JEXPOSE_TRANSFORM(Perspective, perspective, ToPerspective, FromPerspective, Perspective(), jedv_t_object, 1, false)
 JEXPOSE_TRANSFORM(Orthographic, orthographic, ToOrthographic, FromOrthographic, Orthographic(), jedv_t_object, 1, false)
 JEXPOSE_VECTOR(std::string, renderPasses, {}, jedv_t_te_renderpass_vector, 1, false)
-JEXPOSE(std::string, light, "", jedv_t_so_light, 1, false)
+JEXPOSE(std::string, shadowMapLight, "", jedv_t_so_light, 1, false)
 JEXPOSE(bool, mouseController, false, jedv_t_boolean, 1, false)
 JEXPOSE(bool, useSwapChain, false, jedv_t_boolean, 1, false)
 JPREVIEW(renderPassPreview, jedv_draw_renderpass_vector)

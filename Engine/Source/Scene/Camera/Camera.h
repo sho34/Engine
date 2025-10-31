@@ -146,6 +146,8 @@ namespace Scene {
 		virtual void Unbind(JUUID uuid);
 		void BindRenderable(RenderableUUID renderable);
 		void UnbindRenderable(RenderableUUID renderable);
+		void BindLight(LightUUID light);
+		void UnbindLight(LightUUID light);
 		bool ResolvesToSwapChain();
 		void Render();
 
@@ -169,6 +171,24 @@ namespace Scene {
 		void MoveLeft(float step);
 		void MoveRight(float step);
 
+		//Lighting
+		ConstantsBufferUUID lightsCB;
+		std::vector<LightUUID> lights;
+		void CreateLightsConstantsBuffer();
+		void DestroyLightsConstantsBuffer();
+		ConstantsBufferUUID GetLightsConstantsBuffer() { return lightsCB; }
+		void WriteLightsConstantsBuffer();
+
+		//ShadowMaps
+		ConstantsBufferUUID shadowMapsCB;
+		std::set<LightUUID> lightsWithShadowMaps;
+		void CreateShadowMapsConstantsBuffer();
+		void DestroyShadowMapsConstantsBuffer();
+		ConstantsBufferUUID GetShadowMapsConstantsBuffer() { return shadowMapsCB; }
+		void WriteShadowMapsConstantsBuffer();
+		bool SceneHasShadowMaps() { return !lightsWithShadowMaps.empty(); }
+
+		//IBL
 		TextureUsageInstanceMap iblTextures;
 		bool HasIBL();
 		void CreateIBLTextures();
@@ -179,7 +199,7 @@ namespace Scene {
 		unsigned int previewRenderToTextureIndex = 0U;
 		virtual void EditorPreview(size_t flags);
 		virtual void DestroyEditorPreview();
-		virtual JUUID CreateBillboard();
+		virtual JUUID CreateBillboard(CameraUUID camera);
 		virtual void UpdateBillboard(JUUID uuid);
 		BoundingBox GetBoundingBox();
 
@@ -188,14 +208,6 @@ namespace Scene {
 #endif
 	};
 
-	void CreateLightsResources();
-	ConstantsBufferUUID GetLightsConstantsBuffer();
-
-	void DestroyLightsResources();
-
-	void WriteConstantsBufferNumLights(unsigned int backbufferIndex, unsigned int numLights);
-	void WriteConstantsBufferLightAttributes(LightUUID light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex = 0U);
-	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex);
 
 	SODECL_FULL(Camera);
 

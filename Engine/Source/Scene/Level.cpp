@@ -147,8 +147,5 @@ namespace Scene::Level {
 
 		//Destroy the renderables(this will detach the renderables from the cameras and destroy the renderables, materials, cbv, meshes, etc)
 		DestroyRenderables();
-
-		//Destroy the shadowmaps(this will destroy the shadow map cameras and render to textures of the shadowmaps)
-		DestroyShadowMaps();
 	}
 }

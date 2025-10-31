@@ -115,8 +115,11 @@ void Binder::erase(JUUID soA)
 			if (it->second == soA)
 			{
 				it = binding.erase(it);
-				UnbindFnc.at(GetSceneObjectType(soA))(soA, soB);
-				UnbindFnc.at(GetSceneObjectType(soB))(soB, soA);
+				if (SceneObjectExists(soA) && SceneObjectExists(soB))
+				{
+					UnbindFnc.at(GetSceneObjectType(soA))(soA, soB);
+					UnbindFnc.at(GetSceneObjectType(soB))(soB, soA);
+				}
 			}
 			else
 				it++;

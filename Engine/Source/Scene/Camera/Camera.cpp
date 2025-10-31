@@ -16,7 +16,7 @@ extern std::unique_ptr<Renderer> renderer;
 namespace Editor
 {
 	extern void SelectCamera(JUUID camera);
-	extern JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	extern JUUID CreateBillboardFromMaterials(CameraUUID camera, std::string name, std::string material, std::string pickingMaterial);
 	extern void RegisterBillboard(JUUID sceneObject);
 	extern JUUID GetBillboard(JUUID sceneObject);
 	extern void DestroyBillboard(JUUID sceneObject);
@@ -55,99 +55,12 @@ namespace Scene
 
 #endif
 
-	static ConstantsBufferUUID lightsCbv; //CBV for lights pool
-
-	//CREATE
-	void CreateLightsResources() {
-		lightsCbv = CreateConstantsBuffer(sizeof(LightPool), "lightsCbv");
-	}
-
-	ConstantsBufferUUID GetLightsConstantsBuffer() {
-		return lightsCbv;
-	}
-
-	void DestroyLightsResources()
-	{
-		DestroyConstantsBuffer(lightsCbv());
-	}
-
-	void WriteConstantsBufferNumLights(unsigned int backbufferIndex, unsigned int numLights)
-	{
-		size_t offset = lightsCbv->alignedConstantBufferSize * backbufferIndex;
-		LightPool* lpool = (LightPool*)(lightsCbv->mappedConstantBuffer + offset);
-		lpool->numLights.D[0] = numLights;
-	}
-
-	void WriteConstantsBufferLightAttributes(LightUUID light, unsigned int backbufferIndex, unsigned int lightIndex, unsigned int shadowMapIndex)
-	{
-		LightAttributes atts{};
-		ZeroMemory(&atts, sizeof(atts));
-		atts.lightType = light->lightType();
-
-		switch (light->lightType())
-		{
-		case LT_Ambient:
-		{
-			atts.lightColor = light->color() * light->brightness();
-		}
-		break;
-		case LT_Directional:
-		{
-			atts.lightColor = light->color() * light->brightness();
-			XMVECTOR lightDir = light->fw();
-			atts.atts1 = *((XMFLOAT4*)&lightDir.m128_f32[0]);
-			atts.hasShadowMap = light->hasShadowMaps();
-			atts.shadowMapIndex = light->shadowMapIndex;
-		}
-		break;
-		case LT_Spot:
-		{
-			XMFLOAT3 pos = light->position();
-			XMFLOAT3 atte = light->attenuation();
-			atts.lightColor = light->color() * light->brightness();
-			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
-			XMVECTOR lightDir = light->fw();
-			atts.atts2 = *((XMFLOAT4*)&lightDir.m128_f32[0]);
-			atts.atts2.w = cosf(XMConvertToRadians(light->coneAngle()));
-			atts.atts3 = { atte.x, atte.y, atte.z };
-			atts.hasShadowMap = light->hasShadowMaps();
-			atts.shadowMapIndex = light->shadowMapIndex;
-		}
-		break;
-		case LT_Point:
-		{
-			XMFLOAT3 pos = light->position();
-			XMFLOAT3 atte = light->attenuation();
-			atts.lightColor = light->color() * light->brightness();
-			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
-			atts.atts2 = { atte.x, atte.y, atte.z, 0.0f };
-			atts.hasShadowMap = light->hasShadowMaps();
-			atts.shadowMapIndex = light->shadowMapIndex;
-		}
-		break;
-		}
-
-		size_t offset = lightsCbv->alignedConstantBufferSize * backbufferIndex;
-		offset += sizeof(LightPool::numLights);
-		offset += sizeof(atts) * lightIndex;
-		memcpy(lightsCbv->mappedConstantBuffer + offset, &atts, sizeof(atts));
-	}
-
-	void ResetConstantsBufferLightAttributes(unsigned int backbufferIndex)
-	{
-		size_t offset = lightsCbv->alignedConstantBufferSize * backbufferIndex;
-		LightPool* lpool = (LightPool*)(lightsCbv->mappedConstantBuffer + offset);
-		ZeroMemory(lpool, sizeof(LightPool));
-	}
-
-	//Lights
-
 	void DestroyCameras()
 	{
 		auto uuids = nostd::GetUUIDS<CameraUUID>(CamerasceneObjects);
 		for (auto cam : uuids)
 		{
-			if (cam->light().empty())
+			if (cam->shadowMapLight().empty())
 			{
 				DeleteCameraSceneObject(cam());
 			}
@@ -196,7 +109,7 @@ namespace Scene
 		{
 			//as a special case update the billboard
 #if defined(_EDITOR)
-			if (cam() != *GetMouseCameras().begin() && cam->light().empty())
+			if (cam() != *GetMouseCameras().begin() && cam->shadowMapLight().empty())
 			{
 				JUUID bbuuid = Editor::GetBillboard(cam());
 				if (!bbuuid.empty())
@@ -376,9 +289,14 @@ namespace Scene
 		CreateConstantsBuffer();
 		CreateRenderPasses();
 #if defined(_EDITOR)
-		if (GetCountFromMouseCameras() > 0 && uuid() != *GetMouseCameras().begin() && light().empty())
+		if (GetCountFromMouseCameras() > 0 && uuid() != *GetMouseCameras().begin() && shadowMapLight().empty())
 			Editor::RegisterBillboard(uuid());
 #endif
+		if (shadowMapLight().empty())
+		{
+			CreateLightsConstantsBuffer();
+			CreateShadowMapsConstantsBuffer();
+		}
 	}
 
 	XMVECTOR Camera::positionV()
@@ -398,10 +316,9 @@ namespace Scene
 
 	XMVECTOR Camera::forward()
 	{
-		/*
-		if (!light().empty())
+		if (!shadowMapLight().empty())
 		{
-			auto lcam = GetFromLights(light());
+			auto& lcam = GetLightSceneObject(shadowMapLight());
 			if (lcam->lightType() == LT_Point)
 			{
 				unsigned int i = 0U;
@@ -413,7 +330,6 @@ namespace Scene
 				}
 			}
 		}
-		*/
 
 		FXMVECTOR dir = { 0.0f, 0.0f, 1.0f,0.0f };
 		return XMVector3Normalize(XMVector3Rotate(dir, rotationQ()));
@@ -421,10 +337,9 @@ namespace Scene
 
 	XMVECTOR Camera::up()
 	{
-		/*
-		if (!light().empty())
+		if (!shadowMapLight().empty())
 		{
-			auto lcam = GetFromLights(light());
+			auto& lcam = GetLightSceneObject(shadowMapLight());
 			if (lcam->lightType() == LT_Point)
 			{
 				unsigned int i = 0U;
@@ -437,7 +352,6 @@ namespace Scene
 				}
 			}
 		}
-		*/
 
 		FXMVECTOR up = { 0.0f, 1.0f, 0.0f,0.0f };
 		return XMVector3Normalize(XMVector3Rotate(up, rotationQ()));
@@ -615,11 +529,18 @@ namespace Scene
 			BindRenderable(uuid);
 		}
 		break;
+		case SO_Lights:
+		{
+			BindLight(uuid);
+		}
+		break;
 		}
 	}
 
 	void Camera::Unbind(JUUID uuid)
 	{
+		if (!SceneObjectExists(uuid)) return;
+
 		switch (GetSceneObjectType(uuid))
 		{
 		case SO_Renderables:
@@ -627,7 +548,13 @@ namespace Scene
 			UnbindRenderable(uuid);
 		}
 		break;
+		case SO_Lights:
+		{
+			UnbindLight(uuid);
 		}
+		break;
+		}
+		//DEBUGEAR USANDO grid.hlsl como punto de partida para debugear el shadowmap del previewer
 	}
 
 	void Camera::BindToScene()
@@ -650,6 +577,10 @@ namespace Scene
 		DestroyIBLTextures();
 		DestroyRenderPasses();
 		DestroyConstantsBuffer(cameraCb());
+		if (shadowMapLight().empty())
+		{
+			DestroyLightsConstantsBuffer();
+		}
 	}
 
 	void Camera::BindRenderable(RenderableUUID renderable)
@@ -672,6 +603,24 @@ namespace Scene
 		renderable->DestroyConstantsBuffersInstances(uuid());
 		renderable->DestroyRootSignatures(uuid());
 		renderable->DestroyPipelineStates(uuid());
+	}
+
+	void Camera::BindLight(LightUUID light)
+	{
+		lights.push_back(light);
+		if (light->hasShadowMaps())
+		{
+			lightsWithShadowMaps.insert(light);
+		}
+	}
+
+	void Camera::UnbindLight(LightUUID light)
+	{
+		nostd::vector_erase(lights, light);
+		if (lightsWithShadowMaps.contains(light))
+		{
+			lightsWithShadowMaps.erase(light);
+		}
 	}
 
 	bool Camera::ResolvesToSwapChain()
@@ -783,10 +732,10 @@ namespace Scene
 
 	void Camera::ProcessKeyboardInput(DirectX::Keyboard::KeyboardStateTracker& tracker, DirectX::Keyboard::State& state)
 	{
-		if (!SceneObjectExists(light()))
+		if (!SceneObjectExists(shadowMapLight()))
 			return;
 
-		LightUUID lcam = light();
+		LightUUID lcam = shadowMapLight();
 
 		if (lcam->lightType() == LT_Spot || lcam->lightType() == LT_Point)
 		{
@@ -819,10 +768,10 @@ namespace Scene
 
 	void Camera::ProcessGamepadInput(DirectX::GamePad::State& gamePadState, DirectX::SimpleMath::Vector2 gamePadCameraRotationSensitivity)
 	{
-		if (!SceneObjectExists(light()))
+		if (!SceneObjectExists(shadowMapLight()))
 			return;
 
-		LightUUID lcam = light();
+		LightUUID lcam = shadowMapLight();
 
 		if (lcam->lightType() == LT_Spot || lcam->lightType() == LT_Point)
 		{
@@ -856,10 +805,10 @@ namespace Scene
 	float wheelDiffFactor = 0.0001f;
 	void Camera::ProcessCameraMouseRotation(DirectX::Mouse::State& mouseState, DirectX::SimpleMath::Vector2 rotationSensitivity, bool firstStep)
 	{
-		if (!SceneObjectExists(light()))
+		if (!SceneObjectExists(shadowMapLight()))
 			return;
 
-		LightUUID lcam = light();
+		LightUUID lcam = shadowMapLight();
 
 		if (lcam->lightType() != LT_Directional && lcam->lightType() != LT_Spot)
 			return;
@@ -879,10 +828,10 @@ namespace Scene
 	{
 		using namespace Scene;
 
-		if (!SceneObjectExists(light()))
+		if (!SceneObjectExists(shadowMapLight()))
 			return;
 
-		LightUUID lcam = light();
+		LightUUID lcam = shadowMapLight();
 
 		switch (lcam->lightType())
 		{
@@ -907,10 +856,10 @@ namespace Scene
 	{
 		using namespace Scene;
 
-		if (!SceneObjectExists(light()))
+		if (!SceneObjectExists(shadowMapLight()))
 			return;
 
-		LightUUID lcam = light();
+		LightUUID lcam = shadowMapLight();
 
 		XMFLOAT3 rot = rotation();
 
@@ -959,6 +908,65 @@ namespace Scene
 		UpdateLightPosition();
 	}
 
+	//Lights
+	void Camera::CreateLightsConstantsBuffer()
+	{
+		lightsCB = DeviceUtils::CreateConstantsBuffer(sizeof(LightPool), std::string(name() + "-lightsCbv"));
+	}
+
+	void Camera::DestroyLightsConstantsBuffer()
+	{
+		DestroyConstantsBuffer(lightsCB());
+		lightsCB.clear();
+	}
+
+	void Camera::WriteLightsConstantsBuffer()
+	{
+		size_t offset = lightsCB->alignedConstantBufferSize * renderer->backBufferIndex;
+		LightPool* lpool = (LightPool*)(lightsCB->mappedConstantBuffer + offset);
+		unsigned int numLights = static_cast<unsigned int>(lights.size());
+		lpool->numLights = numLights;
+		for (unsigned int i = 0; i < numLights; i++)
+		{
+			lights[i]->WriteConstantsBufferLightAttributes(lpool->lights[i]);
+		}
+	}
+
+	//ShadowMaps
+	void Camera::CreateShadowMapsConstantsBuffer()
+	{
+		shadowMapsCB = DeviceUtils::CreateConstantsBuffer(sizeof(ShadowMapAttributes) * MaxLights, std::string(name() + "-shadowMapsCbv"));
+	}
+
+	void Camera::DestroyShadowMapsConstantsBuffer()
+	{
+		DestroyConstantsBuffer(shadowMapsCB());
+		shadowMapsCB.clear();
+	}
+
+	void Camera::WriteShadowMapsConstantsBuffer()
+	{
+		for (LightUUID light : lights)
+		{
+			for (CameraUUID cam : light->shadowMapCameras)
+			{
+				cam->WriteConstantsBuffer(renderer->backBufferIndex);
+			}
+		}
+
+		size_t offset = shadowMapsCB->alignedConstantBufferSize * renderer->backBufferIndex;
+		ShadowMapAttributes* atts = (ShadowMapAttributes*)(shadowMapsCB->mappedConstantBuffer + offset);
+		for (LightUUID light : lights)
+		{
+			if (!lightsWithShadowMaps.contains(light))
+				continue;
+
+			light->WriteConstantsBufferShadowMapAttributes(*atts);
+			atts++;
+		}
+	}
+
+	//IBL
 	bool Camera::HasIBL()
 	{
 		return !IBLIrradiance().empty() && !IBLPreFilteredEnvironment().empty() && !IBLBRDFLUT().empty();
@@ -998,11 +1006,9 @@ namespace Scene
 	{
 	}
 
-	JUUID Camera::CreateBillboard()
+	JUUID Camera::CreateBillboard(CameraUUID camera)
 	{
-		if (GetCountFromMouseCameras() == 0ULL || uuid() == *GetMouseCameras().begin() || !light().empty()) return nullptr;
-
-		JUUID uuid = Editor::CreateBillboardFromMaterials(at("name"), "Camera", "CameraPicking");
+		JUUID uuid = Editor::CreateBillboardFromMaterials(camera, at("name"), "Camera", "CameraPicking");
 		RenderableUUID bb = uuid;
 		bb->OnPick = [this] {Editor::SelectCamera(this->uuid()); };
 		UpdateBillboard(uuid);

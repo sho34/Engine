@@ -15,9 +15,6 @@ extern std::unique_ptr<Renderer> renderer;
 
 namespace Scene
 {
-	using namespace DeviceUtils;
-	ConstantsBufferUUID shadowMapsCbv; //CBV for shadowmaps
-	std::vector<JUUID> lightsWithShadowMaps; //unique_ptr<Light>
 	CD3DX12_CPU_DESCRIPTOR_HANDLE shadowMapSrvCpuDescriptorHandle[MaxLights]; //SRV CPU Handles for shadowmaps
 	CD3DX12_GPU_DESCRIPTOR_HANDLE shadowMapSrvGpuDescriptorHandle[MaxLights]; //SRV GPU Handles for shadowmaps
 	std::set<unsigned int> usedShadowMapSlots;
@@ -25,12 +22,49 @@ namespace Scene
 	//CREATE
 	void CreateShadowMapResources()
 	{
-		shadowMapsCbv = CreateConstantsBuffer(sizeof(ShadowMapAttributes) * MaxLights, "shadowMapsCbv");
-
 		for (UINT i = 0; i < MaxLights; i++)
 		{
 			AllocCSUDescriptor(shadowMapSrvCpuDescriptorHandle[i], shadowMapSrvGpuDescriptorHandle[i]);
 		}
+	}
+
+	void DestroyShadowMapResources()
+	{
+		for (UINT i = 0; i < MaxLights; i++)
+		{
+			FreeCSUDescriptor(shadowMapSrvCpuDescriptorHandle[i], shadowMapSrvGpuDescriptorHandle[i]);
+		}
+	}
+
+	void AllocShadowMapSlot(unsigned int slot)
+	{
+		usedShadowMapSlots.insert(slot);
+	}
+
+	void FreeShadowMapSlot(unsigned int slot)
+	{
+		usedShadowMapSlots.erase(slot);
+	}
+
+	unsigned int GetNextAvailableShadowMapSlot()
+	{
+		for (unsigned int i = 0; i < MaxLights; i++)
+		{
+			if (usedShadowMapSlots.contains(i)) continue;
+			return i;
+		}
+		assert(MaxLights != MaxLights);
+		return 0xFFFFFFFF;
+	}
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetShadowMapGpuDescriptorHandleStart()
+	{
+		return shadowMapSrvGpuDescriptorHandle[0];
+	}
+
+	CD3DX12_GPU_DESCRIPTOR_HANDLE GetShadowMapGpuDescriptorHandle(unsigned int index)
+	{
+		return shadowMapSrvGpuDescriptorHandle[index];
 	}
 
 	void Light::CreateShadowMap()
@@ -60,8 +94,6 @@ namespace Scene
 		}
 
 		CreateShadowMapDepthStencilResource();
-
-		lightsWithShadowMaps.push_back(uuid());
 	}
 
 	nlohmann::json Light::CreateDirectionalShadowMapCameraJson()
@@ -80,7 +112,7 @@ namespace Scene
 				{ "height", viewHeight() },
 			}},
 			{ "rotation", { rot.x, rot.y, rot.z}},
-			{ "light", uuid()},
+			{ "shadowMapLight", uuid()},
 			{ "renderPasses", { GetRenderPassUUIDByName("ShadowMap") }}
 		};
 		return j;
@@ -124,7 +156,7 @@ namespace Scene
 			}},
 			{ "position", { pos.x, pos.y, pos.z}},
 			{ "rotation", { rot.x, rot.y, rot.z }},
-			{ "light", uuid()},
+			{ "shadowMapLight", uuid()},
 			{ "renderPasses", { GetRenderPassUUIDByName("ShadowMap") }}
 		};
 		return j;
@@ -165,7 +197,7 @@ namespace Scene
 			}
 			},
 			{ "position", { pos.x, pos.y, pos.z}},
-			{ "light", uuid()},
+			{ "shadowMapLight", uuid()},
 			{ "renderPasses", { GetRenderPassUUIDByName("ShadowMap") }}
 		};
 		return j;
@@ -449,11 +481,23 @@ namespace Scene
 
 	void Light::BindRenderablesToShadowMapCamera()
 	{
-		for (auto& r : GetShadowCasts())
+		for (RenderableUUID r : GetShadowCasts())
 		{
+			auto rvCams = r->cameras();
+			auto lvCams = cameras();
+			std::set<CameraUUID> rCams(rvCams.begin(), rvCams.end());
+			std::set<CameraUUID> lCams(lvCams.begin(), lvCams.end());
+			bool mkbind = std::any_of(rCams.begin(), rCams.end(), [&lCams](auto uuid)
+				{
+					return lCams.contains(uuid);
+				}
+			);
+			if (!mkbind)
+				continue;
+
 			for (auto& cuuid : shadowMapCameras)
 			{
-				Scene::BindToScene(cuuid(), r);
+				Scene::BindToScene(cuuid(), r());
 			}
 		}
 	}
@@ -469,115 +513,49 @@ namespace Scene
 		}
 	}
 
-	bool SceneHasShadowMaps()
-	{
-		return !lightsWithShadowMaps.empty();
-	}
 
-	//READ&GET
-	unsigned int GetNextAvailableShadowMapSlot()
+	void Light::WriteConstantsBufferShadowMapAttributes(ShadowMapAttributes& atts)
 	{
-		for (unsigned int i = 0; i < MaxLights; i++)
-		{
-			if (usedShadowMapSlots.contains(i)) continue;
-			return i;
-		}
-		assert(MaxLights != MaxLights);
-		return 0xFFFFFFFF;
-	}
-
-	ConstantsBufferUUID GetShadowMapConstantsBuffer()
-	{
-		return shadowMapsCbv;
-	}
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GetShadowMapGpuDescriptorHandleStart()
-	{
-		return shadowMapSrvGpuDescriptorHandle[0];
-	}
-
-	CD3DX12_GPU_DESCRIPTOR_HANDLE GetShadowMapGpuDescriptorHandle(unsigned int index)
-	{
-		return shadowMapSrvGpuDescriptorHandle[index];
-	}
-
-	//UPDATE
-	void AllocShadowMapSlot(unsigned int slot)
-	{
-		usedShadowMapSlots.insert(slot);
-	}
-
-	void FreeShadowMapSlot(unsigned int slot)
-	{
-		usedShadowMapSlots.erase(slot);
-	}
-
-	void WriteConstantsBufferShadowMapAttributes(LightUUID light, unsigned int backbufferIndex, unsigned int shadowMapIndex)
-	{
-		if (!light->hasShadowMaps()) return;
-
-		ShadowMapAttributes atts{};
 		ZeroMemory(&atts, sizeof(atts));
 
-		switch (light->lightType()) {
+		switch (lightType()) {
 		case LT_Directional:
 		{
-			auto& cam = light->shadowMapCameras[0];
+			auto& cam = shadowMapCameras[0];
 			XMMATRIX view = cam->view();
 			XMMATRIX projection = cam->orthographicProjection.projectionMatrix;
 			atts.atts0 = XMMatrixMultiply(view, projection);
-			atts.atts6 = { light->zBias(), light->shadowMapTexelInvSize.x, light->shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
+			atts.atts6 = { zBias(), shadowMapTexelInvSize.x, shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
 		}
 		break;
 		case LT_Spot:
 		{
-			auto& cam = light->shadowMapCameras[0];
+			auto& cam = shadowMapCameras[0];
 			XMMATRIX view = cam->view();
 			XMMATRIX projection = cam->perspectiveProjection.projectionMatrix;
 			atts.atts0 = XMMatrixMultiply(view, projection);
-			atts.atts6 = { light->zBias(), light->shadowMapTexelInvSize.x, light->shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
+			atts.atts6 = { zBias(), shadowMapTexelInvSize.x, shadowMapTexelInvSize.y, 0.0f }; //ZBias, TexelInvSize
 		}
 		break;
 		case LT_Point:
 		{
 			XMMATRIX* attsN = &atts.atts0;
 			for (UINT i = 0U; i < 6U; i++) {
-				auto& cam = light->shadowMapCameras[i];
+				auto& cam = shadowMapCameras[i];
 				XMMATRIX view = cam->view();
 				XMMATRIX projection = cam->perspectiveProjection.projectionMatrix;
 				*attsN = XMMatrixMultiply(view, projection);
 				attsN++;
 			}
-			atts.atts6 = { light->zBias(), 3.0f, 0.0f, 0.0f }; //ZBias, PartialDerivativeScale
+			atts.atts6 = { zBias(), 3.0f, 0.0f, 0.0f }; //ZBias, PartialDerivativeScale
 		}
 		break;
 		default:
 		{
-			assert(light->lightType() != LT_Directional || light->lightType() != LT_Spot || light->lightType() != LT_Point);
+			assert(lightType() != LT_Directional || lightType() != LT_Spot || lightType() != LT_Point);
 		}
 		break;
 		}
-
-		size_t offset = shadowMapsCbv->alignedConstantBufferSize * backbufferIndex;
-		offset += sizeof(ShadowMapAttributes) * shadowMapIndex;
-		memcpy(shadowMapsCbv->mappedConstantBuffer + offset, &atts, sizeof(atts));
-	}
-
-	void WriteShadowMapCamerasConstantsBuffers(LightUUID light, unsigned int backbufferIndex)
-	{
-		if (!light->hasShadowMaps()) return;
-
-		for (auto& cam : light->shadowMapCameras)
-		{
-			cam->WriteConstantsBuffer(backbufferIndex);
-		}
-	}
-
-	void ResetConstantsBufferShadowMapAttributes(unsigned int backbufferIndex)
-	{
-		size_t offset = shadowMapsCbv->alignedConstantBufferSize * backbufferIndex;
-		ShadowMapAttributes* atts = (ShadowMapAttributes*)(shadowMapsCbv->mappedConstantBuffer + offset);
-		ZeroMemory(atts, sizeof(ShadowMapAttributes) * MaxLights);
 	}
 
 	//DESTROY
@@ -585,8 +563,7 @@ namespace Scene
 	{
 		DestroyShadowMapCameras();
 
-		unsigned int numShadowMaps = static_cast<unsigned int>(lightsWithShadowMaps.size());
-		nostd::vector_erase(lightsWithShadowMaps, uuid());
+		unsigned int numShadowMaps = static_cast<unsigned int>(usedShadowMapSlots.size());
 		FreeShadowMapSlot(shadowMapIndex);
 
 		//this is tricky hence worth of explaining, if there are more than one shadowmap we need to shift left the CPU/GPU handles representing the textures adresses
@@ -599,11 +576,18 @@ namespace Scene
 
 			if (numHandlesToShift > 0)
 			{
-				//also reasign the index of each light which shadow map index is greather than the this light shadow map index to a one less index value
-				for (auto& lightUUID : lightsWithShadowMaps)
+				//reasign the index of each light which shadow map index is greather than the this light shadow map index to a one less index value
+				std::set<LightUUID> lightsToShift;
+				for (CameraUUID cam : cameras())
 				{
-					auto& light = GetLightSceneObject(lightUUID);
-					if (light->shadowMapIndex <= shadowMapIndex || light->shadowMapIndex == 0 || light->shadowMapIndex == 0xFFFFFFFF) continue;
+					for (LightUUID light : cam->lightsWithShadowMaps)
+					{
+						if (light->shadowMapIndex <= shadowMapIndex || light->shadowMapIndex == 0 || light->shadowMapIndex == 0xFFFFFFFF) continue;
+						lightsToShift.insert(light);
+					}
+				}
+				for (LightUUID light : lightsToShift)
+				{
 					light->shadowMapIndex--;
 					light->CreateShadowMapShaderResourceView();
 				}
@@ -656,19 +640,4 @@ namespace Scene
 		);
 	}
 
-	void DestroyShadowMaps()
-	{
-		lightsWithShadowMaps.clear();
-		usedShadowMapSlots.clear();
-	}
-
-	void DestroyShadowMapResources()
-	{
-		for (UINT i = 0; i < MaxLights; i++)
-		{
-			FreeCSUDescriptor(shadowMapSrvCpuDescriptorHandle[i], shadowMapSrvGpuDescriptorHandle[i]);
-		}
-
-		DestroyConstantsBuffer(shadowMapsCbv());
-	}
 }

@@ -91,7 +91,7 @@ namespace Scene
 		virtual void UnbindControllers();
 
 #if defined(_EDITOR)
-		virtual JUUID CreateBillboard() { return ""; }
+		virtual JUUID CreateBillboard(CameraUUID camera) { return ""; }
 		virtual void UpdateBillboard(JUUID billboard) {}
 		virtual bool CanInteractWithGizmo(ImGuizmo::OPERATION operation) { return false; }
 #endif

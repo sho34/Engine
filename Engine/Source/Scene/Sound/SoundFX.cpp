@@ -12,7 +12,7 @@ extern std::unique_ptr<Renderer> renderer;
 namespace Editor
 {
 	extern void SelectSoundEffect(JUUID suuid);
-	extern JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	extern JUUID CreateBillboardFromMaterials(CameraUUID camera, std::string name, std::string material, std::string pickingMaterial);
 	extern void RegisterBillboard(JUUID sceneObject);
 	extern JUUID GetBillboard(JUUID sceneObject);
 	extern void DestroyBillboard(JUUID sceneObject);
@@ -302,11 +302,11 @@ namespace Scene
 	}
 
 #if defined(_EDITOR)
-	JUUID SoundFX::CreateBillboard()
+	JUUID SoundFX::CreateBillboard(CameraUUID camera)
 	{
 		if (!(instanceFlags() & SoundEffectInstance_Use3D)) return nullptr;
 
-		JUUID uuid = Editor::CreateBillboardFromMaterials(at("name"), "SoundEffect", "SoundEffectPicking");
+		JUUID uuid = Editor::CreateBillboardFromMaterials(camera, at("name"), "SoundEffect", "SoundEffectPicking");
 		UpdateBillboard(uuid);
 		RenderableUUID bb = uuid;
 		bb->OnPick = [this] {Editor::SelectSoundEffect(this->uuid()); };

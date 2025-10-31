@@ -10,6 +10,7 @@ namespace Editor::DefaultLevel {
 			"renderables", {
 			{
 				{ "castShadows", false },
+				{ "shadowed", true },
 				{
 					"meshMaterials",
 					{
@@ -26,6 +27,8 @@ namespace Editor::DefaultLevel {
 				{ "cameras", { "06de4a6c-0393-42b1-91ab-1d2389cb2cbc" } }
 			},
 			{
+				{ "castShadows", true },
+				{ "shadowed", true },
 				{
 					"meshMaterials",
 					{
@@ -59,9 +62,9 @@ namespace Editor::DefaultLevel {
 					{ "name", "cam.0"},
 					{ "perspective",
 						{
-							{"farZ", 100.0 },
+							{"farZ", 1000.0 },
 							{"fovAngleY", 70.0 },
-							{"nearZ", 0.009999999776482582 }
+							{"nearZ", 0.01 }
 						}
 					},
 					{ "position", { 0.0, 0.0, 0.0 } },
@@ -83,6 +86,7 @@ namespace Editor::DefaultLevel {
 		{ "lights",
 			{
 			{
+				{ "cameras" , {"06de4a6c-0393-42b1-91ab-1d2389cb2cbc"} },
 				{ "color", { 0.05000000074505806, 0.05000000074505806, 0.05000000074505806 } },
 				{ "lightType", "Ambient" },
 				{ "name", "light.0.amb" },
@@ -92,12 +96,12 @@ namespace Editor::DefaultLevel {
 				{ "cameras" , {"06de4a6c-0393-42b1-91ab-1d2389cb2cbc"} },
 				{ "color", { 1.0, 1.0, 1.0} },
 				{ "farZ" , 1000.0},
-				{ "nearZ", 0.009999999776482582},
+				{ "nearZ", 0.01},
 				{ "shadowMapHeight", 4096},
 				{ "shadowMapWidth", 4096},
 				{ "viewHeight", 32.0},
 				{ "viewWidth", 32.0},
-				{ "hasShadowMaps", false},
+				{ "hasShadowMaps", true },
 				{ "rotation", {40.31087875366211, -0.30000039935112, 0.0} },
 				{ "lightType", "Directional"},
 				{ "name", "light.1.dir"},

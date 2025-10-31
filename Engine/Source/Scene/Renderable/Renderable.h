@@ -1,32 +1,11 @@
 #pragma once
-//#include <atlbase.h>
 #include <nlohmann/json.hpp>
 #include <set>
-//#include <DirectXCollision.h>
-//#include <Renderable/RenderableBoundingBox.h>
 #include <Model3D/Model3D.h>
-//#include <Mesh/Mesh.h>
-//#include <Material/Material.h>
 #include <Material/MeshMaterial.h>
-//#include <RenderPass/RenderPass.h>
 #include <RenderPass/PassMaterialOverride.h>
-//#include <Animated.h>
-//#include <DeviceUtils/PipelineState/PipelineState.h>
-//#include <Json.h>
-//#include <UUID.h>
 #include <SceneObjectDecl.h>
-//#include <NoMath.h>
 #include <SceneObject.h>
-//#include <JTypes.h>
-//#if defined(_EDITOR)
-//#include <ImGuizmo.h>
-//#endif
-
-//namespace Scene { struct Camera; struct Light; };
-//namespace ComputeShader { struct RenderableBoundingBox; };
-//using namespace Templates;
-//using namespace DeviceUtils;
-//using namespace ComputeShader;
 
 typedef std::vector<MeshInstanceUUID> RenderableMeshes;
 typedef std::unordered_map<RenderPassInstanceUUID, std::vector<MaterialInstanceUUID>> RenderableMaterials; //RenderPassInstanceUUID -> MaterialInstanceUUID
@@ -75,7 +54,6 @@ namespace Scene
 
 	//UPDATE
 	void RenderablesStep();
-	//	void DestroyRenderablesCameraBinding();
 	void RunBoundingBoxComputeShaders();
 	void RunBoundingBoxComputeShadersSolution();
 
@@ -152,7 +130,6 @@ namespace Scene
 		void DestroyRenderPassPipelineStates(RenderPassInstanceUUID rp);
 		void RebuildMeshMaterials();
 		//ANIMATION
-		//std::shared_ptr<Model3DInstance> animable = nullptr;
 		Model3DInstanceUUID animable;
 		Animation::BonesTransformations bonesTransformation;
 		Sequence* currentSequence = nullptr;

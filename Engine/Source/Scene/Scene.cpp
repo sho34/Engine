@@ -155,27 +155,18 @@ namespace Scene
 	{
 		unsigned int backBufferIndex = renderer->backBufferIndex;
 
-		for (auto& r : GetRenderables())
+		for (RenderableUUID r : GetRenderables())
 		{
-			RenderableUUID renderable = r;
-			renderable->WriteAnimationConstantsBuffer(backBufferIndex);
-			renderable->WriteConstantsBuffer(backBufferIndex);
+			r->WriteAnimationConstantsBuffer(backBufferIndex);
+			r->WriteConstantsBuffer(backBufferIndex);
 		}
 
-		unsigned int lightIndex = 0U;
-		ResetConstantsBufferLightAttributes(backBufferIndex);
-		ResetConstantsBufferShadowMapAttributes(backBufferIndex);
-		for (auto& l : GetLights())
+		for (CameraUUID c : GetCameras())
 		{
-			LightUUID light = l;
-			WriteConstantsBufferLightAttributes(light, backBufferIndex, lightIndex++, light->shadowMapIndex);
-			if (light->hasShadowMaps() && light->lightType() != LT_Ambient)
-			{
-				WriteConstantsBufferShadowMapAttributes(l, backBufferIndex, light->shadowMapIndex);
-				WriteShadowMapCamerasConstantsBuffers(l, backBufferIndex);
-			}
+			if (!c->shadowMapLight().empty()) continue;
+			c->WriteLightsConstantsBuffer();
+			c->WriteShadowMapsConstantsBuffer();
 		}
-		WriteConstantsBufferNumLights(backBufferIndex, lightIndex);
 	}
 
 	void RenderSceneShadowMaps()
@@ -191,7 +182,7 @@ namespace Scene
 				{
 					auto& camera = l->shadowMapCameras.at(cameraIndex);
 					auto& rp = camera->renderPassesUUID.at(0);
-					for (RenderableUUID r : GetRenderables())
+					for (RenderableUUID r : camera->renderables)
 					{
 						if (r->castShadows())
 						{
@@ -228,7 +219,7 @@ namespace Scene
 				continue;
 			}
 			auto& cam = GetCameraSceneObject(uuid);
-			if (!cam->light().empty())
+			if (!cam->shadowMapLight().empty())
 			{
 				it = cameras.erase(it);
 				continue;

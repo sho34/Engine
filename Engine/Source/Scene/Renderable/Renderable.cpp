@@ -876,6 +876,8 @@ namespace Scene
 
 	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop)
 	{
+		if (animable.empty()) return;
+
 		auto it = animationsSequences.sequences.find(anim);
 		if (it == animationsSequences.sequences.end()) return;
 		SetCurrentAnimation(&(it->second), startTime, timeFactor, play, loop);
@@ -883,6 +885,8 @@ namespace Scene
 
 	void Renderable::StepAnimation(double elapsedSeconds)
 	{
+		if (animable.empty()) return;
+
 		using namespace Animation;
 		auto& animations = animable->animations;
 		//no animation? no problem. just go T pose
@@ -1037,17 +1041,17 @@ namespace Scene
 					camera->cameraCb->SetRootDescriptorTable(commandList, slot, renderer->backBufferIndex);
 				}
 			};
-		auto setLightsConstantsBufferDescriptorTable = [&commandList](MaterialInstanceUUID material, unsigned int& slot)
+		auto setLightsConstantsBufferDescriptorTable = [&commandList, &camera](MaterialInstanceUUID material, unsigned int& slot)
 			{
 				if (material->ShaderInstanceHasRegister([](ShaderInstanceUUID binary) { return binary->CBV.light; })) {
-					GetLightsConstantsBuffer()->SetRootDescriptorTable(commandList, slot, renderer->backBufferIndex);
+					camera->GetLightsConstantsBuffer()->SetRootDescriptorTable(commandList, slot, renderer->backBufferIndex);
 				}
 			};
-		auto setShadowMapsConstantsBufferDescriptorTable = [&commandList](auto& material, unsigned int& slot)
+		auto setShadowMapsConstantsBufferDescriptorTable = [&commandList, &camera](auto& material, unsigned int& slot)
 			{
 				if (material->ShaderInstanceHasRegister([](ShaderInstanceUUID binary) { return binary->CBV.lightsShadowMap; })) {
-					if (SceneHasShadowMaps())
-						return GetShadowMapConstantsBuffer()->SetRootDescriptorTable(commandList, slot, renderer->backBufferIndex);
+					if (camera->SceneHasShadowMaps())
+						return camera->GetShadowMapsConstantsBuffer()->SetRootDescriptorTable(commandList, slot, renderer->backBufferIndex);
 					slot++;
 				}
 			};
@@ -1076,10 +1080,10 @@ namespace Scene
 			{
 				material->SetSRVRootDescriptorTable(commandList, slot);
 			};
-		auto setShadowMapsSRVDescriptorTable = [&commandList](auto& material, unsigned int& slot)
+		auto setShadowMapsSRVDescriptorTable = [&commandList, &camera](auto& material, unsigned int& slot)
 			{
 				if (material->ShaderInstanceHasRegister([](ShaderInstanceUUID binary) { return binary->SRV.lightsShadowMap; })) {
-					if (SceneHasShadowMaps())
+					if (camera->SceneHasShadowMaps())
 						return commandList->SetGraphicsRootDescriptorTable(slot, GetShadowMapGpuDescriptorHandleStart());
 					slot++;
 				}

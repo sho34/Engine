@@ -39,6 +39,7 @@ void AnimationSequencerModal::LoadSceneObjects()
 
 	nlohmann::json cameraJson = {
 		{ "fitWindow", false },
+		//{ "fitWindow", true },
 		{ "name", "cam-preview" },
 		{ "perspective",
 			{
@@ -63,7 +64,7 @@ void AnimationSequencerModal::LoadSceneObjects()
 
 	nlohmann::json ambientLightJson =
 	{
-		{ "color", { 0.05000000074505806, 0.05000000074505806, 0.05000000074505806 } },
+		{ "color", { 0.25000000074505806, 0.25000000074505806, 0.25000000074505806 } },
 		{ "lightType", "Ambient" },
 		{ "name", "light.0.amb-preview" },
 		{ "uuid", ambientLight()},
@@ -74,19 +75,24 @@ void AnimationSequencerModal::LoadSceneObjects()
 	{
 		{ "color", { 1.0, 1.0, 1.0} },
 		{ "farZ" , 1000.0},
-		{ "nearZ", 0.009999999776482582},
+		{ "nearZ", 0.01},
 		{ "hasShadowMaps", true },
-		{ "rotation", {40.31087875366211, -0.30000039935112, 0.0} },
+		{ "shadowMapHeight", 4096},
+		{ "shadowMapWidth", 4096},
+		{ "viewHeight", 1.0},
+		{ "viewWidth", 1.0},
+		{ "rotation", {40.31087875366211, -10.30000039935112, 0.0} },
 		{ "lightType", "Directional"},
 		{ "name", "light.1.dir-preview"},
 		{ "uuid", directionalLight() },
-		{ "zBias", 0.0002 },
+		{ "zBias", 0.000002 },
 		{ "cameras", { camera() } }
 	};
 
 	nlohmann::json animableJson =
 	{
 		{ "castShadows", true },
+		{ "shadowed", false },
 		{ "model", model3dUUID()},
 		{ "name", "preview-model" },
 		{ "position", { 0.0, 0.0, 0.0} },
@@ -99,6 +105,7 @@ void AnimationSequencerModal::LoadSceneObjects()
 	nlohmann::json floorJson =
 	{
 		{ "castShadows", false },
+		{ "shadowed", true },
 				{
 					"meshMaterials",
 					{
@@ -122,12 +129,13 @@ void AnimationSequencerModal::LoadSceneObjects()
 	CreateRenderable(floorJson);
 
 	camera->BindToScene();
-	ambientLight->BindToScene();
-	directionalLight->BindToScene();
 	renderable->BindToScene();
 	floor->BindToScene();
+	ambientLight->BindToScene();
+	directionalLight->BindToScene();
 
 	camera->UpdateProjection();
+	directionalLight->shadowMapCameras[0]->UpdateProjection();
 
 	expandedChannels.clear();
 	for (auto& [seqName, sequence] : animationsSequences.sequences)
@@ -135,8 +143,11 @@ void AnimationSequencerModal::LoadSceneObjects()
 		expandedChannels.insert_or_assign(seqName, std::vector<bool>(sequence.channels.size(), false));
 	}
 
-	animations = nostd::GetKeysFromMap(renderable->animable->animations->animationsLength);
-	animations.erase(animations.begin());
+	if (!renderable->animable.empty())
+	{
+		animations = nostd::GetKeysFromMap(renderable->animable->animations->animationsLength);
+		animations.erase(animations.begin());
+	}
 
 	selectedSequence = "";
 	initializing = false;
@@ -195,6 +206,16 @@ void AnimationSequencerModal::Step()
 	XMFLOAT3 camPos;
 	XMStoreFloat3(&camPos, camPosV);
 	camera->position(camPos);
+
+	XMFLOAT3 dlRot = directionalLight->rotation();
+	dlRot.y -= 0.5f;
+	directionalLight->rotation(dlRot);
+	/*
+	directionalLight->UpdateShadowMapCameraProperties();
+	directionalLight->UpdateShadowMapCameraTransformation();
+	camera->WriteShadowMapsConstantsBuffer();
+	camera->WriteLightsConstantsBuffer();
+	*/
 }
 
 static ImVec2 modelPosAdj(0.0f, 21.0f);

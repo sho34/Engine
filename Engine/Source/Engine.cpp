@@ -286,7 +286,6 @@ void CreateTemplates() {
 
 void CreateLightingResourcesMapping() {
 	using namespace Scene;
-	CreateLightsResources();
 	CreateShadowMapResources();
 }
 
@@ -548,7 +547,6 @@ void DestroyInstance()
 	DestroyControllers();
 	GameDestroy();
 	DestroySceneObjects();
-	DestroyLightsResources();
 	DestroyShadowMapResources();
 
 	DestroyTemplates();

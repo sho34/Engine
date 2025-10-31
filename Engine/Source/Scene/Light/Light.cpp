@@ -11,7 +11,7 @@ extern std::unique_ptr<Renderer> renderer;
 namespace Editor
 {
 	extern void SelectLight(JUUID luuid);
-	extern JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	extern JUUID CreateBillboardFromMaterials(CameraUUID camera, std::string name, std::string material, std::string pickingMaterial);
 	extern void RegisterBillboard(JUUID sceneObject);
 	extern JUUID GetBillboard(JUUID sceneObject);
 	extern void DestroyBillboard(JUUID sceneObject);
@@ -98,10 +98,37 @@ namespace Scene
 #include <LightAtt.h>
 #include <JEnd.h>
 
+		BindCameras();
 		BindRenderablesToShadowMapCamera();
 #if defined(_EDITOR)
 		SceneObject::BindToScene();
 #endif
+	}
+
+	void Light::BindCameras()
+	{
+		auto cams = cameras();
+		for (auto& uuid : cams) {
+			BindCamera(uuid);
+		}
+	}
+
+	void Light::BindCamera(JUUID cuuid)
+	{
+		Scene::BindToScene(uuid(), cuuid);
+	}
+
+	void Light::UnbindCameras()
+	{
+		auto cams = cameras();
+		for (auto& uuid : cams) {
+			UnbindCamera(uuid);
+		}
+	}
+
+	void Light::UnbindCamera(JUUID cuuid)
+	{
+		Scene::UnbindFromScene(uuid(), cuuid);
 	}
 
 	void Light::UnbindFromScene()
@@ -150,6 +177,57 @@ namespace Scene
 
 
 	//UPDATE
+	void Light::WriteConstantsBufferLightAttributes(LightAttributes& atts)
+	{
+		ZeroMemory(&atts, sizeof(atts));
+		atts.lightType = lightType();
+
+		switch (lightType())
+		{
+		case LT_Ambient:
+		{
+			atts.lightColor = color() * brightness();
+		}
+		break;
+		case LT_Directional:
+		{
+			atts.lightColor = color() * brightness();
+			XMVECTOR lightDir = fw();
+			atts.atts1 = *((XMFLOAT4*)&lightDir.m128_f32[0]);
+			atts.hasShadowMap = hasShadowMaps();
+			atts.shadowMapIndex = shadowMapIndex;
+		}
+		break;
+		case LT_Spot:
+		{
+			XMFLOAT3 pos = position();
+			XMFLOAT3 atte = attenuation();
+			atts.lightColor = color() * brightness();
+			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
+			XMVECTOR lightDir = fw();
+			atts.atts2 = *((XMFLOAT4*)&lightDir.m128_f32[0]);
+			atts.atts2.w = cosf(XMConvertToRadians(coneAngle()));
+			atts.atts3 = { atte.x, atte.y, atte.z };
+			atts.hasShadowMap = hasShadowMaps();
+			atts.shadowMapIndex = shadowMapIndex;
+		}
+		break;
+		case LT_Point:
+		{
+			XMFLOAT3 pos = position();
+			XMFLOAT3 atte = attenuation();
+			atts.lightColor = color() * brightness();
+			atts.atts1 = { pos.x, pos.y, pos.z, 0.0f };
+			atts.atts2 = { atte.x, atte.y, atte.z, 0.0f };
+			atts.hasShadowMap = hasShadowMaps();
+			atts.shadowMapIndex = shadowMapIndex;
+		}
+		break;
+		}
+	}
+
+
+
 	void LightsStep()
 	{
 #if defined(_EDITOR)
@@ -364,11 +442,11 @@ namespace Scene
 		}
 	}
 
-	JUUID Light::CreateBillboard()
+	JUUID Light::CreateBillboard(CameraUUID camera)
 	{
 		if (lightType() == LT_Ambient) return nullptr;
 
-		JUUID uuid = Editor::CreateBillboardFromMaterials(at("name"), "LightBulb", "LightBulbPicking");
+		JUUID uuid = Editor::CreateBillboardFromMaterials(camera, at("name"), "LightBulb", "LightBulbPicking");
 		RenderableUUID bb = uuid;
 		bb->OnPick = [this] { Editor::SelectLight(this->uuid()); };
 		UpdateBillboard(uuid);

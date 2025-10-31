@@ -130,11 +130,11 @@ namespace Editor {
 	void StartTemplateCreation(TemplateType type);
 
 	//Billboards
-	JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial);
+	JUUID CreateBillboardFromMaterials(CameraUUID camera, std::string name, std::string material, std::string pickingMaterial);
 	void RegisterBillboard(JUUID sceneObject);
 	JUUID GetBillboard(JUUID sceneObject);
 	void DestroyBillboard(JUUID sceneObject);
-	void CreateRegisteredBillboards();
+	void CreateRegisteredBillboards(CameraUUID camera);
 	bool PendingBillboards();
 	bool PendingBillboardsDestruction();
 	void UpdateBillboards();

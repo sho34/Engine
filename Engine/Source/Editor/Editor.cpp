@@ -1857,12 +1857,11 @@ namespace Editor
 		templateModal.onCreate = CreateTemplate;
 	}
 
-	JUUID CreateBillboardFromMaterials(std::string name, std::string material, std::string pickingMaterial)
+	JUUID CreateBillboardFromMaterials(CameraUUID camera, std::string name, std::string material, std::string pickingMaterial)
 	{
 		std::string jname = name;
 		jname += "-billboard";
 		JUUID uuid = getUUID();
-		CameraUUID camera = *GetMouseCameras().begin();
 		nlohmann::json jbillboard = nlohmann::json(
 			{
 				{ "meshMaterials",
@@ -1884,7 +1883,7 @@ namespace Editor
 				{ "skipMeshes" , {}},
 				{ "visible" , true},
 				{ "hidden" , true},
-				{ "cameras", { camera->uuid() }},
+				{ "cameras", { camera() }},
 				{ "passMaterialOverrides",
 					{
 						{
@@ -1923,17 +1922,15 @@ namespace Editor
 		billboardRegistry.erase(sceneObject);
 	}
 
-	void CreateRegisteredBillboards()
+	void CreateRegisteredBillboards(CameraUUID camera)
 	{
-		if (GetCountFromMouseCameras() == 0ULL) return;
-
 		for (auto it = billboardRegistry.begin(); it != billboardRegistry.end(); it++)
 		{
 			if (!it->second.empty()) continue;
 
 			auto so = GetSceneObjectPointer(it->first);
 
-			it->second = so->CreateBillboard();
+			it->second = so->CreateBillboard(camera);
 			if (!it->second.empty())
 			{
 				auto& bb = it->second;
