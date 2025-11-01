@@ -582,7 +582,7 @@ namespace Scene
 				{
 					for (LightUUID light : cam->lightsWithShadowMaps)
 					{
-						if (light->shadowMapIndex <= shadowMapIndex || light->shadowMapIndex == 0 || light->shadowMapIndex == 0xFFFFFFFF) continue;
+						if (!SceneObjectExists(light()) || light->shadowMapIndex <= shadowMapIndex || light->shadowMapIndex == 0 || light->shadowMapIndex == 0xFFFFFFFF) continue;
 						lightsToShift.insert(light);
 					}
 				}

@@ -181,6 +181,8 @@ namespace Scene
 		void WriteAnimationConstantsBuffer(unsigned int backbufferIndex);
 		void WriteConstantsBuffer();
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
+
+		//Animation
 		void SetCurrentAnimation(Sequence* sequence, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
 		void StepAnimation(double elapsedSeconds);

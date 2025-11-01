@@ -8,6 +8,36 @@
 
 using namespace Scene;
 
+#if defined(_DEBUG_UUID_NAMES)
+std::map<SceneObjectType, std::function<JNAME(JUUID)>> NameFnc =
+{
+	{ SO_Renderables, [](JUUID uuid)
+		{
+			auto& so = GetRenderableSceneObject(uuid);
+			return so->name();
+		}
+	},
+	{ SO_Cameras, [](JUUID uuid)
+		{
+			auto& so = GetCameraSceneObject(uuid);
+			return so->name();
+		}
+	},
+	{ SO_Lights, [](JUUID uuid)
+		{
+			auto& so = GetLightSceneObject(uuid);
+			return so->name();
+		}
+	},
+	{ SO_SoundEffects, [](JUUID uuid)
+		{
+			auto& so = GetSoundFXSceneObject(uuid);
+			return so->name();
+		}
+	}
+};
+#endif
+
 std::map<SceneObjectType, std::function<void(JUUID, JUUID)>> BindFnc =
 {
 	{ SO_Renderables, [](JUUID uuid, JUUID uuidB)
@@ -35,6 +65,7 @@ std::map<SceneObjectType, std::function<void(JUUID, JUUID)>> BindFnc =
 		}
 	}
 };
+
 std::map<SceneObjectType, std::function<void(JUUID, JUUID)>> UnbindFnc =
 {
 	{ SO_Renderables, [](JUUID uuid, JUUID uuidB)
@@ -63,6 +94,18 @@ std::map<SceneObjectType, std::function<void(JUUID, JUUID)>> UnbindFnc =
 	}
 };
 
+#if defined(_DEBUG_UUID_NAMES)
+std::string Binder::name(JUUID uuid)
+{
+	if (bindingName.contains(uuid))
+		return bindingName.at(uuid);
+
+	std::string name = NameFnc.at(GetSceneObjectType(uuid))(uuid);
+	bindingName.insert_or_assign(uuid, name);
+	return name;
+}
+#endif
+
 void Binder::insert(JUUID soA, JUUID soB)
 {
 	bool AtoB = false;
@@ -77,6 +120,9 @@ void Binder::insert(JUUID soA, JUUID soB)
 	}
 	if (!AtoB)
 	{
+#if defined(_DEBUG_UUID_NAMES)
+		OutputDebugStringA(std::string(std::string("insert:") + name(soA) + " -> " + name(soB) + "\n").c_str());
+#endif
 		binding.insert({ soA,soB });
 		BindFnc.at(GetSceneObjectType(soA))(soA, soB);
 	}
@@ -93,6 +139,9 @@ void Binder::insert(JUUID soA, JUUID soB)
 	}
 	if (!BtoA)
 	{
+#if defined(_DEBUG_UUID_NAMES)
+		OutputDebugStringA(std::string(std::string("insert:") + name(soB) + " -> " + name(soA) + "\n").c_str());
+#endif
 		binding.insert({ soB,soA });
 		BindFnc.at(GetSceneObjectType(soB))(soB, soA);
 	}
@@ -106,6 +155,10 @@ void Binder::erase(JUUID soA)
 	{
 		soBs.insert(it->second);
 	}
+#if defined(_DEBUG_UUID_NAMES)
+	OutputDebugStringA(std::string(std::string("erase:") + name(soA) + "\n").c_str());
+#endif
+
 	binding.erase(soA);
 	for (auto soB : soBs)
 	{
@@ -115,6 +168,9 @@ void Binder::erase(JUUID soA)
 			if (it->second == soA)
 			{
 				it = binding.erase(it);
+#if defined(_DEBUG_UUID_NAMES)
+				OutputDebugStringA(std::string(std::string("erase:") + name(soB) + " -> " + name(soA) + "\n").c_str());
+#endif
 				if (SceneObjectExists(soA) && SceneObjectExists(soB))
 				{
 					UnbindFnc.at(GetSceneObjectType(soA))(soA, soB);
@@ -136,7 +192,12 @@ void Binder::erase(JUUID soA, JUUID soB)
 	for (auto it = rangeA.first; it != rangeA.second; )
 	{
 		if (it->second == soB)
+		{
+#if defined(_DEBUG_UUID_NAMES)
+			OutputDebugStringA(std::string(std::string("erase:") + name(soA) + " -> " + name(soB) + "\n").c_str());
+#endif
 			it = binding.erase(it);
+		}
 		else
 			it++;
 	}
@@ -144,7 +205,12 @@ void Binder::erase(JUUID soA, JUUID soB)
 	for (auto it = rangeB.first; it != rangeB.second; )
 	{
 		if (it->second == soA)
+		{
+#if defined(_DEBUG_UUID_NAMES)
+			OutputDebugStringA(std::string(std::string("erase:") + name(soB) + " -> " + name(soA) + "\n").c_str());
+#endif
 			it = binding.erase(it);
+		}
 		else
 			it++;
 	}

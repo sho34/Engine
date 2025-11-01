@@ -39,10 +39,9 @@ auto objs = GETJOBJECTS();\
 std::for_each(objs.begin(), objs.end(), [&json](auto o)\
 	{\
 		CLASS##UUID uuid = o;\
-		if (!uuid->hidden())\
-		{\
-			json.push_back(nlohmann::json(uuid->get_ref<nlohmann::json::object_t&>()));\
-		}\
+		if (uuid->hidden() || (uuid->contains("systemCreated") && uuid->at("systemCreated")==true))\
+			return;\
+		json.push_back(nlohmann::json(uuid->get_ref<nlohmann::json::object_t&>()));\
 	}\
 );
 
