@@ -378,7 +378,7 @@ void DestroyEditorCameras()
 
 void ReloadSceneFromPrePlay()
 {
-	using namespace Edtor;
+	using namespace Editor;
 	using namespace Scene::Level;
 
 	DestroySceneObjects();
