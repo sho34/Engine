@@ -13,6 +13,7 @@
 #include <DeviceUtils/PipelineState/PipelineState.h>
 #include <Renderable/RenderableBoundingBox.h>
 #include <SceneObjectDef.h>
+#include <AnimationCallback.h>
 
 extern std::unique_ptr<Renderer> renderer;
 
@@ -863,7 +864,7 @@ namespace Scene
 		WriteConstantsBuffer("world", w, backbufferIndex);
 	}
 
-	void Renderable::SetCurrentAnimation(Sequence* sequence, float startTime, float timeFactor, bool play, bool loop)
+	void Renderable::SetCurrentAnimation(Sequence* sequence, float startTime, float timeFactor, bool play, bool loop, AnimationCallbacks callbacks)
 	{
 		currentSequence = sequence;
 		animationTime(startTime);
@@ -872,15 +873,17 @@ namespace Scene
 		animationLoop(loop);
 		animationFrame(0);
 		animation("");
+		animationCallbacks = callbacks;
+		animationHasStarted = false;
 	}
 
-	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop)
+	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop, AnimationCallbacks callbacks)
 	{
 		if (animable.empty()) return;
 
 		auto it = animationsSequences.sequences.find(anim);
 		if (it == animationsSequences.sequences.end()) return;
-		SetCurrentAnimation(&(it->second), startTime, timeFactor, play, loop);
+		SetCurrentAnimation(&(it->second), startTime, timeFactor, play, loop, callbacks);
 	}
 
 	void Renderable::StepAnimation(double elapsedSeconds)
@@ -898,10 +901,26 @@ namespace Scene
 			return;
 		}
 
-		float totalTime = 1000.0f * static_cast<float>(currentSequence->totalFrames) / static_cast<float>(currentSequence->framesPerSecond);
-		float currentAnimationTime = animationTime();
-		currentAnimationTime += animationPlay() ? animationTimeFactor() * static_cast<float>(elapsedSeconds) * 1000.0f : 0.0f;
-		int currentFrame = static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * currentAnimationTime / 1000.0f);
+		if (!animationHasStarted)
+		{
+			RunAnimationBeginCallbacks();
+			animationHasStarted = true;
+		}
+
+		//totalTime(ms)
+		float elapsedMs = static_cast<float>(elapsedSeconds) * 1000.0f;
+		float totalTimeMs = 1000.0f * static_cast<float>(currentSequence->totalFrames) / static_cast<float>(currentSequence->framesPerSecond);
+
+		auto MsToFrame = [this](float ms) { return static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * ms / 1000.0f); };
+
+		float prevAnimationTime = animationTime();
+		float currentAnimationTime = prevAnimationTime + (animationPlay() ? animationTimeFactor() * elapsedMs : 0.0f);
+		int prevFrame = MsToFrame(prevAnimationTime);
+		int currentFrame = MsToFrame(currentAnimationTime);
+
+		RunAnimationFrameCallbacks(prevFrame, currentFrame);
+		RunAnimationTimeCallbacks(prevAnimationTime, currentAnimationTime);
+		RunAnimationTimeFrameCallbacks(currentAnimationTime);
 
 		//handle end of animation
 		if (currentFrame >= currentSequence->totalFrames)
@@ -909,13 +928,14 @@ namespace Scene
 			//are we looping?
 			if (animationLoop())
 			{
-				currentAnimationTime = fmodf(currentAnimationTime, totalTime);
+				currentAnimationTime = fmodf(currentAnimationTime, totalTimeMs);
 				currentFrame = static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * currentAnimationTime / 1000.0f);
 			}
 			else
 			{
-				currentAnimationTime = totalTime;
-				currentFrame = currentSequence->totalFrames - 1;
+				currentAnimationTime = totalTimeMs;
+				currentFrame = currentSequence->totalFrames;
+				RunAnimationEndCallbacks();
 			}
 		}
 		animationTime(currentAnimationTime);
@@ -939,7 +959,7 @@ namespace Scene
 		//now here is the tricky part, pick the last animation in the hierarchy
 		SequenceChannel& last = channels.back();
 		float animationLength = animations->animationsLength[last.animation];
-		float time = animationLength * static_cast<float>(currentFrame - last.frameStart) / static_cast<float>(last.frameEnd - last.frameStart - 1);
+		float time = animationLength * static_cast<float>(currentFrame - last.frameStart) / static_cast<float>(last.frameEnd - last.frameStart);
 		animation(last.animation);
 		animationFrame(currentFrame);
 		TraverseMultiplycationQueue(time, last.animation, animations, bonesTransformation);
@@ -967,6 +987,76 @@ namespace Scene
 		if (animationLoop()) return false;
 		if (!currentSequence) return false;
 		return (GetCurrentAnimationNumFrames() - GetCurrentAnimationFrame()) <= 1;
+	}
+
+	void Renderable::RunAnimationBeginCallbacks()
+	{
+		AnimationCallbacks runnables;
+		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [](auto& pair)
+			{
+				return pair.first.type == TimeCallbackType_Begin;
+			}
+		);
+		for (auto& [_, cb] : runnables)
+		{
+			cb();
+		}
+	}
+
+	void Renderable::RunAnimationEndCallbacks()
+	{
+		AnimationCallbacks runnables;
+		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [](auto& pair)
+			{
+				return pair.first.type == TimeCallbackType_End;
+			}
+		);
+		for (auto& [_, cb] : runnables)
+		{
+			cb();
+		}
+	}
+
+	void Renderable::RunAnimationFrameCallbacks(unsigned int prevFrame, unsigned int currentFrame)
+	{
+		AnimationCallbacks runnables;
+		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [prevFrame, currentFrame](auto& pair)
+			{
+				return pair.first.type == TimeCallbackType_Frame && pair.first.frame > prevFrame && pair.first.frame <= currentFrame;
+			}
+		);
+		for (auto& [_, cb] : runnables)
+		{
+			cb();
+		}
+	}
+
+	void Renderable::RunAnimationTimeCallbacks(float prevTime, float currentTime)
+	{
+		AnimationCallbacks runnables;
+		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [prevTime, currentTime](auto& pair)
+			{
+				return pair.first.type == TimeCallbackType_Time && pair.first.time > prevTime && pair.first.frame <= currentTime;
+			}
+		);
+		for (auto& [_, cb] : runnables)
+		{
+			cb();
+		}
+	}
+
+	void Renderable::RunAnimationTimeFrameCallbacks(float currentTime)
+	{
+		AnimationCallbacks runnables;
+		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [currentTime](auto& pair)
+			{
+				return pair.first.type == TimeCallbackType_TimeFrame && currentTime > pair.first.time && currentTime < pair.first.time2;
+			}
+		);
+		for (auto& [_, cb] : runnables)
+		{
+			cb();
+		}
 	}
 
 	void Renderable::Destroy()

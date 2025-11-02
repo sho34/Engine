@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Resources.h"
 #include <DirectXHelper.h>
+#include <algorithm>
 
 namespace DeviceUtils {
 
@@ -480,11 +481,11 @@ namespace DeviceUtils {
 		unsigned int mipWidth = static_cast<unsigned int>(desc.Width);
 		unsigned int mipHeight = desc.Height;
 		unsigned int arraySize = desc.DepthOrArraySize;
-		for (unsigned int i = 0; i < max(desc.MipLevels, 1U); i++)
+		for (unsigned int i = 0; i < std::max((unsigned int)desc.MipLevels, 1U); i++)
 		{
 			bufferDescWidth += mipWidth * mipHeight * pixelSize * arraySize;
-			mipWidth >>= 1; mipWidth = max(mipWidth, 1U);
-			mipHeight >>= 1; mipHeight = max(mipHeight, 1U);
+			mipWidth >>= 1; mipWidth = std::max(mipWidth, 1U);
+			mipHeight >>= 1; mipHeight = std::max(mipHeight, 1U);
 		}
 
 		// Readback resources must be buffers
@@ -527,10 +528,10 @@ namespace DeviceUtils {
 
 		std::vector<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> footPrintLayouts;
 		size_t offset = 0ULL;
-		for (unsigned int mip = 0; mip < max(1U, desc.MipLevels); mip++)
+		for (unsigned int mip = 0; mip < std::max(1U, (unsigned int)desc.MipLevels); mip++)
 		{
-			unsigned int w = max(mipWidth >> mip, 1U);
-			unsigned int h = max(mipHeight >> mip, 1U);
+			unsigned int w = std::max((unsigned int)(mipWidth >> mip), 1U);
+			unsigned int h = std::max((unsigned int)(mipHeight >> mip), 1U);
 			D3D12_PLACED_SUBRESOURCE_FOOTPRINT footPrint = {
 				.Offset = offset,
 				.Footprint = {.Format = desc.Format, .Width = w, .Height = h, .Depth = arraySize, .RowPitch = w * pixelSize }

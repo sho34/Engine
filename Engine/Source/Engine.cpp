@@ -21,6 +21,7 @@
 #if defined(_EDITOR)
 #include <Editor.h>
 #endif
+#include <v8.h>
 
 #include "GameDecl.h"
 

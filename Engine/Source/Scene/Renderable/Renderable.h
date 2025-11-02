@@ -6,6 +6,7 @@
 #include <RenderPass/PassMaterialOverride.h>
 #include <SceneObjectDecl.h>
 #include <SceneObject.h>
+#include <AnimationCallback.h>
 
 typedef std::vector<MeshInstanceUUID> RenderableMeshes;
 typedef std::unordered_map<RenderPassInstanceUUID, std::vector<MaterialInstanceUUID>> RenderableMaterials; //RenderPassInstanceUUID -> MaterialInstanceUUID
@@ -183,13 +184,20 @@ namespace Scene
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
 
 		//Animation
-		void SetCurrentAnimation(Sequence* sequence, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
-		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
+		AnimationCallbacks animationCallbacks;
+		bool animationHasStarted = false;
+		void SetCurrentAnimation(Sequence* sequence, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false, AnimationCallbacks callbacks = {});
+		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false, AnimationCallbacks callbacks = {});
 		void StepAnimation(double elapsedSeconds);
 		int GetCurrentAnimationFrame();
 		int GetCurrentAnimationNumFrames() const;
 		void SetCurrentAnimationFrame(int frame);
 		bool AnimationEnded();
+		void RunAnimationBeginCallbacks();
+		void RunAnimationEndCallbacks();
+		void RunAnimationFrameCallbacks(unsigned int prevFrame, unsigned int currentFrame);
+		void RunAnimationTimeCallbacks(float prevTime, float currentTime);
+		void RunAnimationTimeFrameCallbacks(float currentTime);
 
 		//DESTROY
 		bool markedForDelete = false;

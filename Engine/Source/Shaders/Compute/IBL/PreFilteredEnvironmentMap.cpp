@@ -99,8 +99,8 @@ namespace ComputeShader
 			//Create a ReadBack
 			readBackSizes.push_back(static_cast<size_t>(faceW) * static_cast<size_t>(faceH) * pixelSize * static_cast<size_t>(numFaces));
 
-			faceW = max(faceW >> 1U, 1U);
-			faceH = max(faceH >> 1U, 1U);
+			faceW = std::max(faceW >> 1U, 1U);
+			faceH = std::max(faceH >> 1U, 1U);
 		}
 	}
 
@@ -138,8 +138,8 @@ namespace ComputeShader
 		for (unsigned int i = 0; i < mipsResultsGpuHandle.size(); i++)
 		{
 			auto& mipResCB = GetConstantsBuffer(mipsResultsCB.at(i));
-			unsigned int threadsX = max(faceW / 8, 1U);
-			unsigned int threadsY = max(faceH / 8, 1U);
+			unsigned int threadsX = std::max(faceW / 8, 1U);
+			unsigned int threadsY = std::max(faceH / 8, 1U);
 			float roughness = static_cast<float>(i) / static_cast<float>(numMipMaps);
 			XMFLOAT4 cb0Params = { roughness, static_cast<float>(i), static_cast<float>(faceWidth), static_cast<float>(faceW) };
 			mipResCB->push<XMFLOAT4>(cb0Params, 0);
@@ -147,8 +147,8 @@ namespace ComputeShader
 			commandList->SetComputeRootDescriptorTable(1, mipsResultsGpuHandle.at(i));
 			commandList->SetComputeRootDescriptorTable(2, envMapCubeGpuHandle);
 			commandList->Dispatch(threadsX, threadsY, numFaces);
-			faceW = max(faceW >> 1, 1U);
-			faceH = max(faceH >> 1, 1U);
+			faceW = std::max(faceW >> 1, 1U);
+			faceH = std::max(faceH >> 1, 1U);
 		}
 
 #if defined(_DEVELOPMENT)
@@ -203,8 +203,8 @@ namespace ComputeShader
 				};
 			}
 
-			faceW = max(faceW >> 1, 1U);
-			faceH = max(faceH >> 1, 1U);
+			faceW = std::max(faceW >> 1, 1U);
+			faceH = std::max(faceH >> 1, 1U);
 		}
 
 		WriteFile(imgs);

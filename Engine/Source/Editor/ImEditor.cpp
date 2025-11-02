@@ -189,7 +189,7 @@ namespace ImGui
 	bool DrawFromUInt(nlohmann::json& json, const std::string attribute, std::string label)
 	{
 		int value = json.at(attribute);
-		if (ImGui::InputInt(label.c_str(), &value)) { value = max(0, value); json[attribute] = value; return true; }
+		if (ImGui::InputInt(label.c_str(), &value)) { value = std::max(0, value); json[attribute] = value; return true; }
 		return false;
 	}
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "pch.h"
-
+#include <algorithm>
 #include "Engine.h"
 #include "pch/NoStd.h"
 #include "pch/NoMath.h"
@@ -9,6 +9,7 @@
 #include "Scene/Scene.h"
 #include "Templates/Templates.h"
 #include "Templates/RenderPass/RenderPass.h"
+#include "Templates/Sound/Sound.h"
 #include "Scene/Level.h"
 #include "Scene/Camera/Camera.h"
 #include "Scene/Light/Light.h"
@@ -16,6 +17,7 @@
 #if defined(_EDITOR)
 #include "Editor/Editor.h"
 #endif
+
 extern std::unique_ptr<Renderer> renderer;
 extern DX::StepTimer timer;
 extern std::unique_ptr<DirectX::Mouse> mouse;

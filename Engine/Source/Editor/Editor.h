@@ -140,6 +140,7 @@ namespace Editor {
 	void UpdateBillboards();
 	void DestroyPendingBillboards();
 	void DestroyBillboards();
+	void ClearBillboardsRegistry();
 
 	//Game Mode Activation
 	bool IsPlaying();

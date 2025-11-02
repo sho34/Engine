@@ -93,7 +93,7 @@ namespace DeviceUtils
 		{
 			const ShaderConstantsBufferParameter cbv = FindRegisterByName(cbufferVSParamsDef, cbufferPSParamsDef, name);
 			ranges[cbv.registerId].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, cbv.numConstantsBuffers, cbv.registerId);
-			maxRegister = max(static_cast<int>(cbv.registerId), maxRegister);
+			maxRegister = std::max(static_cast<int>(cbv.registerId), maxRegister);
 		}
 
 		//fill UAV

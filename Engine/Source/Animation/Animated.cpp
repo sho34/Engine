@@ -157,11 +157,15 @@ namespace Animation {
 	{
 		if (keyFrames.size() == 1) { return ToMatrix(keyFrames[0].key); }
 
+		float begin = keyFrames.at(0).time;
+		float end = keyFrames.back().time;
+		time = std::clamp(time, begin, end);
+
 		for (unsigned int index = 0U; index < keyFrames.size() - 1; index++)
 		{
 			auto& keyStart = keyFrames[index];
 			auto& keyEnd = keyFrames[index + 1];
-			if (time >= keyStart.time && time < keyEnd.time)
+			if (time >= keyStart.time && time <= keyEnd.time)
 			{
 				float delta = keyEnd.time - keyStart.time;
 				float t = (time - keyStart.time) / delta;

@@ -304,7 +304,7 @@ namespace Scene
 #if defined(_EDITOR)
 	JUUID SoundFX::CreateBillboard(CameraUUID camera)
 	{
-		if (!(instanceFlags() & SoundEffectInstance_Use3D)) return nullptr;
+		if (!(instanceFlags() & SoundEffectInstance_Use3D)) return "";
 
 		JUUID uuid = Editor::CreateBillboardFromMaterials(camera, at("name"), "SoundEffect", "SoundEffectPicking");
 		UpdateBillboard(uuid);

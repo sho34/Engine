@@ -884,7 +884,7 @@ namespace Editor
 		{
 			float halfY = panSize.y * 0.5f;
 
-			float soPanelH = max(halfY * (1.0f - separatorFactor) - 2.5f, panelMinHeight);
+			float soPanelH = std::max(halfY * (1.0f - separatorFactor) - 2.5f, panelMinHeight);
 			ImVec2 soPos = ImVec2(panPos.x, panPos.y);
 			ImVec2 soSize = ImVec2(panSize.x, soPanelH);
 
@@ -911,7 +911,7 @@ namespace Editor
 				separatorFactor = std::clamp(separatorFactor, low, hi);
 			}
 
-			float tePanelH = max(panSize.y - soPanelH - 5.0f, panelMinHeight);
+			float tePanelH = std::max(panSize.y - soPanelH - 5.0f, panelMinHeight);
 			ImVec2 tePos = ImVec2(panPos.x, soSize.y + 5.0f);
 			ImVec2 teSize = ImVec2(panSize.x, tePanelH);
 
@@ -1987,6 +1987,12 @@ namespace Editor
 			DeleteRenderableSceneObject(it->second());
 			it = billboardRegistry.erase(it);
 		}
+		billboardsToDestroy.clear();
+	}
+
+	void ClearBillboardsRegistry()
+	{
+		billboardRegistry.clear();
 		billboardsToDestroy.clear();
 	}
 

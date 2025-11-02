@@ -46,7 +46,7 @@ namespace DeviceUtils
 		if (depthStencilFormat == DXGI_FORMAT_UNKNOWN) { state.DepthStencilState.DepthEnable = false; }
 		state.SampleMask = UINT_MAX;
 		state.PrimitiveTopologyType = PrimitiveTopologyType;
-		state.NumRenderTargets = static_cast<UINT>(max(1, renderTargetsFormats.size()));
+		state.NumRenderTargets = static_cast<UINT>(std::max(1ULL, renderTargetsFormats.size()));
 		state.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 		for (unsigned int i = 0; i < renderTargetsFormats.size(); i++)
 		{

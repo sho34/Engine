@@ -388,7 +388,7 @@ void AnimationSequencerModal::DrawTimelineController(ImVec2 curPos, ImVec2 size)
 	ImGui::PushID("TimeControllerTotalFrames");
 	if (ImGui::InputInt("##", &animationsSequences.sequences.at(selectedSequence).totalFrames, 1, 100))
 	{
-		animationsSequences.sequences.at(selectedSequence).totalFrames = max(animationsSequences.sequences.at(selectedSequence).totalFrames, 1);
+		animationsSequences.sequences.at(selectedSequence).totalFrames = std::max(animationsSequences.sequences.at(selectedSequence).totalFrames, 1);
 	}
 	ImGui::PopID();
 
@@ -400,7 +400,7 @@ void AnimationSequencerModal::DrawTimelineController(ImVec2 curPos, ImVec2 size)
 	ImGui::PushID("TimeControllerFramesPerSecond");
 	if (ImGui::InputInt("##", &animationsSequences.sequences.at(selectedSequence).framesPerSecond, 1, 100))
 	{
-		animationsSequences.sequences.at(selectedSequence).framesPerSecond = max(animationsSequences.sequences.at(selectedSequence).framesPerSecond, 1);
+		animationsSequences.sequences.at(selectedSequence).framesPerSecond = std::max(animationsSequences.sequences.at(selectedSequence).framesPerSecond, 1);
 	}
 	ImGui::PopID();
 

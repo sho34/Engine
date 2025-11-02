@@ -525,6 +525,12 @@
     <ClInclude Include="Editor\RightPanelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Animation\AnimationSequence.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation\AnimationCallback.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">

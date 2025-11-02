@@ -232,7 +232,7 @@ namespace Templates
 
 		//do i really need this?
 		unsigned int numConstantsBuffers = static_cast<unsigned int>(
-			max(vertexShader->cbufferSize.size(), pixelShader->cbufferSize.size())
+			std::max(vertexShader->cbufferSize.size(), pixelShader->cbufferSize.size())
 			);
 
 		variablesBufferSize.clear();
@@ -243,7 +243,7 @@ namespace Templates
 			size_t vsConstantBufferSize = vertexShader->cbufferSize.size() > index ? vertexShader->cbufferSize[index] : 0;
 			size_t psConstantBufferSize = pixelShader->cbufferSize.size() > index ? pixelShader->cbufferSize[index] : 0;
 
-			unsigned int constantsBufferSize = static_cast<unsigned int>(max(vsConstantBufferSize, psConstantBufferSize));
+			unsigned int constantsBufferSize = static_cast<unsigned int>(std::max(vsConstantBufferSize, psConstantBufferSize));
 			variablesBufferSize.push_back(constantsBufferSize);
 
 			//allocate memory for the cbuffer on the CPU

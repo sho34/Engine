@@ -522,8 +522,13 @@ namespace Scene
 				json.merge_patch(patch);
 				CreateRenderable(json);
 				o->BindToScene();
-				Editor::MarkScenePanelAssetsAsDirty();
-				Editor::BindRenderableToPickingPass(o());
+#if defined(_EDITOR)
+				if (!Editor::IsPlaying())
+				{
+					Editor::MarkScenePanelAssetsAsDirty();
+					Editor::BindRenderableToPickingPass(o());
+				}
+#endif
 				o->BindShadowMapCameras();
 			}},
 			{ SO_Lights, [](nlohmann::json json) {
@@ -532,9 +537,12 @@ namespace Scene
 				json.merge_patch(patch);
 				CreateLight(json);
 				o->BindToScene();
-				Editor::MarkScenePanelAssetsAsDirty();
 #if defined(_EDITOR)
-				Editor::RegisterBillboard(o());
+				if (!Editor::IsPlaying())
+				{
+					Editor::MarkScenePanelAssetsAsDirty();
+					Editor::RegisterBillboard(o());
+				}
 #endif
 			}},
 			{ SO_Cameras, [](nlohmann::json json) {
@@ -543,9 +551,12 @@ namespace Scene
 				json.merge_patch(patch);
 				CreateCamera(json);
 				o->BindToScene();
-				Editor::MarkScenePanelAssetsAsDirty();
 #if defined(_EDITOR)
-				Editor::RegisterBillboard(o());
+				if (!Editor::IsPlaying())
+				{
+					Editor::MarkScenePanelAssetsAsDirty();
+					Editor::RegisterBillboard(o());
+				}
 #endif
 			} },
 			{ SO_SoundEffects, [](nlohmann::json json) {
@@ -553,8 +564,13 @@ namespace Scene
 				nlohmann::json patch = { {"uuid", o()}};
 				json.merge_patch(patch);
 				CreateSoundFX(json);
+				o->BindToScene();
 #if defined(_EDITOR)
-				Editor::RegisterBillboard(o());
+				if (!Editor::IsPlaying())
+				{
+					Editor::MarkScenePanelAssetsAsDirty();
+					Editor::RegisterBillboard(o());
+				}
 #endif
 			}}
 		};

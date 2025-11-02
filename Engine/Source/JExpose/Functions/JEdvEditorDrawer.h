@@ -699,7 +699,7 @@ inline JEdvEditorDrawerFunction DrawEnum<LightType, jedv_t_lighttype>(
 			auto drawDirectionalDistance = [](auto& light)
 				{
 					JObject* j = light;
-					EditorDrawFloat("dirDist", j, "%.3f", [](float v) {return max(1.0f, v); });
+					EditorDrawFloat("dirDist", j, "%.3f", [](float v) {return std::max(1.0f, v); });
 				};
 			auto drawConeAngle = [](auto& light)
 				{
@@ -970,7 +970,7 @@ inline JEdvEditorDrawerFunction DrawValue<unsigned int, jedv_t_unsigned>()
 					int value = static_cast<int>(json.at(0)->at(attribute));
 					if (ImGui::InputInt("", &value))
 					{
-						value = max(value, 0);
+						value = std::max(value, 0);
 						updateValues(value);
 					}
 				}
@@ -1061,7 +1061,7 @@ inline JEdvEditorDrawerFunction DrawVector<std::string, jedv_t_filepath_vector_i
 			auto drawTextureMipLevels = [](auto& texture)
 				{
 					std::vector<std::string> options;
-					unsigned int maxDimension = max(texture->width(), texture->height());
+					unsigned int maxDimension = std::max(texture->width(), texture->height());
 					unsigned int possibleMipMaps = 1U + std::popcount(maxDimension - 1);
 					for (unsigned int i = 0; i < possibleMipMaps; i++)
 					{
@@ -3862,7 +3862,7 @@ inline JEdvEditorDrawerFunction DrawValue<RasterizerDesc, jedv_t_object>()
 					int value = (valueEqual(key)) ? (static_cast<int>(json[0]->at(attribute).at(key))) : 0;
 					if (ImGui::InputInt("##", &value))
 					{
-						update(key, max(0, value));
+						update(key, std::max(0, value));
 					}
 				};
 			auto drawFromFloat = [valueEqual, update, attribute, &json](std::string key)

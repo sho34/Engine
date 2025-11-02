@@ -388,7 +388,7 @@ namespace Scene
 		do
 		{
 			shadowMapMinMaxChainRenderPass.push_back(
-				CreateRenderPassInstance("", GetRenderPassUUIDByName("ShadowMapMinMaxChainPass"), renderPassIndex, max(2U, width), max(2U, height))
+				CreateRenderPassInstance("", GetRenderPassUUIDByName("ShadowMapMinMaxChainPass"), renderPassIndex, std::max(2U, width), std::max(2U, height))
 			);
 			auto& rpInstance = shadowMapMinMaxChainRenderPass.back();
 			MinMaxChainPass* chainPass = static_cast<MinMaxChainPass*>(rpInstance->overridePass.get());
@@ -405,8 +405,8 @@ namespace Scene
 			shadowMapChainGpuHandle2 = rtt1->gpuTextureHandle;
 
 			//calculate the next width and height
-			width = max(1U, width >> 1);
-			height = max(1U, height >> 1);
+			width = std::max(1U, width >> 1);
+			height = std::max(1U, height >> 1);
 			chainIndex++;
 		} while (width != 1U || height != 1U);
 
