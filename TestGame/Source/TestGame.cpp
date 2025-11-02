@@ -17,7 +17,7 @@ CameraUUID levelCameraUUID;
 #if defined(_EDITOR)
 using namespace Editor;
 std::string editorPrePlayDump;
-CameraUUID editorCameraUUID;
+CameraUUID editorCameraUUID = JUUID("editor-cam-uuid");
 #endif
 
 #if !defined(_EDITOR) && defined(_DEVELOPMENT)
@@ -34,7 +34,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	return EngineWinMain(hInstance, hPrevInstance, lpCmdLine, nCmdShow);
 }
 #endif
-
 
 GameStatesMachine<GameStates> gsm =
 {
@@ -81,6 +80,7 @@ GameStatesMachine<GameStates> gsm =
 #endif
 	},
 	.onPostRender = {
+		{ GS_Loading, LoadingScreenPostRender },
 #if defined(_EDITOR)
 		{ GS_Editor, EditorModePostRender },
 		{ GS_EditorPlaying, EditorPlayingModePostRender },
@@ -150,114 +150,131 @@ void GetAudioListenerVectors(std::function<void(XMFLOAT3, XMVECTOR)> audioListen
 }
 
 //Booting
-//float bootScreenAlpha = 0.0f;
-//float loadingProgress = 0.0f;
-//std::shared_ptr<tween> bootAlphaTween;
-//std::shared_ptr<tween> loadingProgressTween;
-//std::shared_ptr<Renderable> bootScreen;
-//std::shared_ptr<Renderable> loadingBar;
+float bootScreenAlpha = 0.0f;
+float loadingProgress = 0.0f;
+std::unique_ptr<tween> bootAlphaTween;
+std::unique_ptr<tween> loadingProgressTween;
+RenderableUUID bootScreen;
+RenderableUUID loadingBar;
+bool reloadingFromDump = false;
 
 void BootScreenCreate(GameStates prevState)
 {
-	//renderer->RenderCriticalFrame([]
-	//	{
-	//		using namespace Scene::Level;
-	//
-	//		LoadLevel("bootscreen");
-	//		BindSceneObjects();
-	//	}
-	//);
-	//
-	//bootScreen = GetFromRenderablesByName("logo");
-	//loadingBar = GetFromRenderablesByName("loadingBar");
-	//bootAlphaTween = std::make_shared<tween>(tween(0.0f, 1.0f, 1000, tween::easing::linear));
+	using namespace Scene;
+	renderer->RenderCriticalFrame([]
+		{
+			using namespace Scene::Level;
+
+			LoadLevel("bootscreen");
+			BindSceneObjects();
+		}
+	);
+
+	bootScreen = GetRenderableUUIDByName("logo");
+	loadingBar = GetRenderableUUIDByName("loadingBar");
+	bootAlphaTween = std::make_unique<tween>(tween(0.0f, 1.0f, 1000, tween::easing::linear));
 }
 
 void BootScreenLeave(GameStates nextState)
 {
-	//bootScreen = nullptr;
-	//bootAlphaTween = nullptr;
+	using namespace Scene;
+
+	DeleteRenderable(bootScreen());
+	bootScreen.clear();
+	bootAlphaTween = nullptr;
 }
 
 void BootScreenStep()
 {
-	//bootScreenAlpha = bootAlphaTween->step();
-	//
-	//if (bootScreenAlpha == 1.0f) {
-	//	gsm.ChangeState(GS_Loading);
-	//}
+	bootScreenAlpha = bootAlphaTween->step();
+
+	if (bootScreenAlpha == 1.0f)
+	{
+		gsm.ChangeState(GS_Loading);
+	}
 }
 
 void BootScreenRender()
 {
-	//using namespace Scene;
-	//if (GetNumSwapChainCameras() > 0ULL)
-	//{
-	//	bootScreen->WriteConstantsBuffer("alpha", bootScreenAlpha, renderer->backBufferIndex);
-	//
-	//	//hide the loading bar
-	//	XMFLOAT2 scale(0.0f, 0.0f);
-	//	loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
-	//
-	//	WriteConstantsBuffers();
-	//	RenderSceneShadowMaps();
-	//	RenderSceneCameras();
-	//}
+	using namespace Scene;
+	if (GetCountFromSwapChainCameras() > 0ULL)
+	{
+		bootScreen->WriteConstantsBuffer("alpha", bootScreenAlpha, renderer->backBufferIndex);
+
+		//hide the loading bar
+		XMFLOAT2 scale(0.0f, 0.0f);
+		loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
+
+		WriteConstantsBuffers();
+		RenderSceneShadowMaps();
+		RenderSceneCameras();
+	}
 }
 
 //Loading
 void LoadingScreenCreate(GameStates prevState)
 {
-	//loadingProgressTween = std::make_shared<tween>(tween(0.0f, 1.0f, 4000, tween::easing::linear));
+	loadingProgressTween = std::make_unique<tween>(tween(0.0f, 1.0f, 4000, tween::easing::linear));
 }
 
 void LoadingScreenLeave(GameStates nextState)
 {
-	//loadingBar = nullptr;
-	//loadingProgressTween = nullptr;
+	using namespace Scene;
+
+	DeleteRenderable(loadingBar());
+	loadingBar.clear();
+
+	loadingProgressTween = nullptr;
 }
 
 void LoadingScreenStep()
 {
-	//loadingProgress = loadingProgressTween->step();
-	//if (loadingProgress == 1.0f)
-	//{
-	//	gsm.ChangeState(GS_Playing);
-	//}
+	loadingProgress = loadingProgressTween->step();
 }
 
 void LoadingScreenRender()
 {
-	//using namespace Scene;
-	//if (GetNumSwapChainCameras() > 0ULL)
-	//{
-	//	XMFLOAT2 pos(0.0f, -0.8f);
-	//	XMFLOAT2 scale(0.8f, 0.02f);
-	//	auto red = DirectX::Colors::Red;
-	//	auto blue = DirectX::Colors::Blue;
-	//
-	//	loadingBar->WriteConstantsBuffer<XMFLOAT2>("pos", pos, renderer->backBufferIndex);
-	//	loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
-	//	loadingBar->WriteConstantsBuffer<XMVECTORF32>("color1", red, renderer->backBufferIndex);
-	//	loadingBar->WriteConstantsBuffer<XMVECTORF32>("color2", blue, renderer->backBufferIndex);
-	//	loadingBar->WriteConstantsBuffer<float>("progress", loadingProgress, renderer->backBufferIndex);
-	//	WriteConstantsBuffers();
-	//	RenderSceneShadowMaps();
-	//	RenderSceneCameras();
-	//}
+	using namespace Scene;
+	if (GetCountFromSwapChainCameras() > 0ULL)
+	{
+		XMFLOAT2 pos(0.0f, -0.8f);
+		XMFLOAT2 scale(0.8f, 0.02f);
+		auto red = DirectX::Colors::Red;
+		auto blue = DirectX::Colors::Blue;
+
+		loadingBar->WriteConstantsBuffer<XMFLOAT2>("pos", pos, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<XMFLOAT2>("scale", scale, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<XMVECTORF32>("color1", red, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<XMVECTORF32>("color2", blue, renderer->backBufferIndex);
+		loadingBar->WriteConstantsBuffer<float>("progress", loadingProgress, renderer->backBufferIndex);
+		WriteConstantsBuffers();
+		RenderSceneShadowMaps();
+		RenderSceneCameras();
+	}
+}
+
+unsigned int nFrames = Renderer::numFrames;
+void LoadingScreenPostRender()
+{
+	if (loadingProgress == 1.0f)
+	{
+		nFrames--;
+		if (nFrames <= 0)
+			gsm.ChangeState(GS_Playing);
+	}
 }
 
 //Playing
 void PlayModeCreate(GameStates prevState)
 {
-	//renderer->RenderCriticalFrame([]
-	//	{
-	//		using namespace Scene::Level;
-	//
-	//		LoadLevel("venom");
-	//		BindSceneObjects();
-	//	}
-	//);
+	using namespace Scene;
+	using namespace Scene::Level;
+	renderer->RenderCriticalFrame([]
+		{
+			LoadLevel("venom");
+			BindSceneObjects();
+		}
+	);
 }
 
 void PlayModeLeave(GameStates nextState)
@@ -271,13 +288,13 @@ void PlayModeStep()
 
 void PlayModeRender()
 {
-	//using namespace Scene;
-	//if (GetNumSwapChainCameras() > 0ULL)
-	//{
-	//	WriteConstantsBuffers();
-	//	RenderSceneShadowMaps();
-	//	RenderSceneCameras();
-	//}
+	using namespace Scene;
+	if (GetCountFromSwapChainCameras() > 0ULL)
+	{
+		WriteConstantsBuffers();
+		RenderSceneShadowMaps();
+		RenderSceneCameras();
+	}
 }
 
 //Editor
@@ -308,10 +325,6 @@ void CreateEditorIndependentCamera()
 		//switching will be performed by switching functions later so we undo this in a few lines below
 		EraseCameraFromMouseCameras(levelCameraUUID());
 		EraseCameraFromSwapChainCameras(levelCameraUUID());
-
-		//the new camera uuid must be known previously so it can be assigned to the renderables first
-		//this is because the camera binding must know before hand how to bind both camera the renderables 
-		editorCameraUUID = getUUID();
 
 		//make a patch for the uuid and clone the camera
 		nlohmann::json parameters = {
@@ -365,9 +378,11 @@ void DestroyEditorCameras()
 
 void ReloadSceneFromPrePlay()
 {
+	using namespace Edtor;
 	using namespace Scene::Level;
 
 	DestroySceneObjects();
+	ClearBillboardsRegistry();
 
 	nlohmann::json data = nlohmann::json::parse(editorPrePlayDump);
 
@@ -397,7 +412,7 @@ void EditorModeCreate(GameStates prevState)
 	{
 		renderer->RenderCriticalFrame([]
 			{
-				DestroyEditorCameras();
+				//DestroyEditorCameras();
 				ReloadSceneFromPrePlay();
 				BindSceneObjects();
 			}
@@ -469,6 +484,12 @@ void EditorModeRender()
 	using namespace Templates;
 	if (GetCountFromSwapChainCameras() > 0ULL)
 	{
+		XMFLOAT3 position = levelCameraUUID->position();
+		XMFLOAT3 rotation = levelCameraUUID->rotation();
+		levelCameraUUID->position(editorCameraUUID->position());
+		levelCameraUUID->rotation(editorCameraUUID->rotation());
+
+		SwitchToEditorPlayCamera();
 
 		WriteConstantsBuffers();
 		RenderPickingPass(*GetSwapChainCameras().begin());
@@ -477,6 +498,12 @@ void EditorModeRender()
 		RenderShadowMapMinMaxChain();
 
 		RenderSceneCameras();
+		editorCameraUUID->position(levelCameraUUID->position());
+		editorCameraUUID->rotation(levelCameraUUID->rotation());
+
+		SwitchToEditorCamera();
+		levelCameraUUID->position(position);
+		levelCameraUUID->rotation(rotation);
 
 		DrawEditor(*GetSwapChainCameras().begin());
 	}
@@ -519,11 +546,11 @@ void EditorModePostRender()
 
 				if (GetCountFromMouseCameras() > 0ULL && !RenderableBoundingBoxExists())
 				{
-					CreateRenderableBoundingBox(*GetMouseCameras().begin());
+					CreateRenderableBoundingBox(levelCameraUUID);
 				}
 
 				if (PendingBillboards())
-					CreateRegisteredBillboards();
+					CreateRegisteredBillboards(levelCameraUUID);
 
 				if (PendingBillboardsDestruction())
 					DestroyPendingBillboards();

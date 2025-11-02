@@ -35,6 +35,7 @@ void LoadingScreenCreate(GameStates prevState);
 void LoadingScreenLeave(GameStates nextState);
 void LoadingScreenStep();
 void LoadingScreenRender();
+void LoadingScreenPostRender();
 
 //Playing
 void PlayModeCreate(GameStates prevState);

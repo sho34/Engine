@@ -333,7 +333,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/DirectXTK12/Bin/Desktop_2022_Win10/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Release;../../Engine/Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>Engine_$(ConfigurationName).lib;d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;CmdLineHelpers.lib;DirectXTex.lib;texconv.lib;texassemble.lib;texdiag.lib;version.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
-      <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <LinkTimeCodeGeneration>
+      </LinkTimeCodeGeneration>
       <EnableCOMDATFolding>
       </EnableCOMDATFolding>
       <OptimizeReferences />
@@ -343,7 +344,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <AdditionalIncludeDirectories>../../Engine/Source;../../Engine/Source/Scene;../../Engine/Source/JExpose;../../Engine/Source/Editor;../../Engine/Source/pch;../../Engine/Source/Controllers;../../Engine/Source/Templates;../../Engine/Source/Common;../../Engine/Source/JExpose/Scene;../../Engine/Source/JExpose/Templates;../../Engine/Source/Renderer;../../Engine/Source/Animation;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -389,10 +390,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;HAS_DIRECTXTK12;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../Engine/Source;../../Engine/Source/Scene;../../Engine/Source/JExpose;../../Engine/Source/Editor;../../Engine/Source/pch;../../Engine/Source/Controllers;../../Engine/Source/Templates;../../Engine/Source/Common;../../Engine/Source/JExpose/Scene;../../Engine/Source/JExpose/Templates;../../Engine/Source/Renderer;../../Engine/Source/Animation;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -400,6 +402,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -410,10 +414,11 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Editor_Release|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FunctionLevelLinking>
+      </FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_DEVELOPMENT;HAS_DIRECTXTK12;_EDITOR;DIRECTX_TEX_VERSION=207;TOOL_VERSION=DIRECTX_TEX_VERSION;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>../../Engine/Source;../../Engine/Source/Scene;../../Engine/Source/JExpose;../../Engine/Source/Editor;../../Engine/Source/pch;../../Engine/Source/Controllers;../../Engine/Source/Templates;../../Engine/Source/Common;../../Engine/Source/JExpose/Scene;../../Engine/Source/JExpose/Templates;../../Engine/Source/Renderer;../../Engine/Source/Animation;../../SDKs/dxc/dxc_2024_07_31/inc;../../SDKs/assimp/assimp-5.4.3/build/include;../../SDKs/assimp/assimp-5.4.3/include;../../SDKs/DirectXTK12/Inc;../../SDKs/imgui;../../SDKs/imgui/backends;../../SDKs/imguizmo;../../SDKs/tween;../../SDKs/DirectXTex/DirectXTex;../../SDKs/DirectXTex/Texconv;../../SDKs/DirectXTex/Texdiag;../../SDKs/DirectXTex/Texassemble;../../SDKs/DirectXTex/Common;../../SDKs/DirectXTex/CmdLineHelpers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -421,11 +426,15 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <PrecompiledHeaderOutputFile>$(IntDir)pch.pch</PrecompiledHeaderOutputFile>
+      <DebugInformationFormat>None</DebugInformationFormat>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>../../Engine/Lib;../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/DirectXTK12/Bin/Desktop_2022_Win10/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>
+      </GenerateDebugInformation>
+      <AdditionalLibraryDirectories>../../SDKs/dxc/dxc_2024_07_31/lib/x64;../../SDKs/assimp/assimp-5.4.3/build/lib/Release;../../SDKs/assimp/assimp-5.4.3/build/contrib/zlib/Release;../../SDKs/DirectXTK12/Bin/Desktop_2022_Win10/x64/Release;../../SDKs/imgui/x64/Release;../../SDKs/imguizmo/x64/Release;../../SDKs/DirectXTex/DirectXTex/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texconv/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texassemble/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/Texdiag/Bin/Desktop_2022/x64/ReleaseLib;../../SDKs/DirectXTex/CmdLineHelpers/Bin/Desktop_2022/x64/Release;../../Engine/Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Engine_$(ConfigurationName).lib;d3d12.lib;dxgi.lib;dxguid.lib;dxcompiler.lib;assimp-vc143-mt.lib;zlibstatic.lib;DirectXTK12.lib;imgui.lib;ImGuizmo.lib;rpcrt4.lib;CmdLineHelpers.lib;DirectXTex.lib;texconv.lib;texassemble.lib;texdiag.lib;version.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

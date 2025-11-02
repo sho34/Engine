@@ -25,6 +25,7 @@ extern DX::StepTimer timer;
 
 namespace Game
 {
+	static const float lookToThreshold = 0.03f;
 	static const float walkThreshold = 0.05f;
 	static const float runThreshold = 0.4f;
 	static const float minVectorLen = 0.02f;
@@ -55,37 +56,195 @@ namespace Game
 		camera.clear();
 	}
 
+	//103541_Shackle
+	//103531_Descent_Loop
+	//103531_Descent_End
+	//Intro: 103531_Descent_Loop -> 103531_Descent_End -> 103541_Shackle
+
+	//103501_LowCrawl_Idle_R
+	//103501_LowCrawl_Move
+	//Wall:
+
+	//A4_10_R
+	//A4_11_R
+	//A4_12_R
+	//A4_13_R
+	//Jump Kick
+
+
 	VenomController::VenomController()
 	{
 		vsm = {
 			.currentState = VS_None,
 			.onEnter = {
-				{ VS_Idle, [this](VenomStates prevState) { venom->SetCurrentAnimation("Idle_C",0.0f,1.0f,true,true); }},
-				{ VS_Walking, [this](VenomStates prevState) { venom->SetCurrentAnimation("Walk_Fwd_C",0.0f,1.0f,true,true); }},
-				{ VS_Running, [this](VenomStates prevState) { venom->SetCurrentAnimation("Run_Fwd_C",0.0f,1.0f,true,true); }},
-				{ VS_Jumping, [this](VenomStates prevState) { venom->SetCurrentAnimation("Jump",0.0f,1.0f,true,false); }},
-				{ VS_Attack_1,[this](VenomStates prevState) { EnterAttack1(); }}
-				//{ VS_Jumping, [this]() { venom->SetCurrentAnimation(std::vector<std::string>({"Jump_Start_F_C","Jump_Falling_F_C","Jump_Land_F_C"}),0.0f,0.05f,true,false); }}
+				{ VS_Intro, [this](VenomStates prevState) { EnterIntro(); }},
+				{ VS_Idle, [this](VenomStates prevState) { EnterIdle(); }},
+				{ VS_Walking, [this](VenomStates prevState) { EnterWalking(); } },
+				{ VS_Running, [this](VenomStates prevState) { EnterRunning(); } },
+				//{ VS_Jumping, [this](VenomStates prevState) { venom->SetCurrentAnimation("Jump",0.0f,1.0f,true,false); }},
+				//{ VS_Attack_1,[this](VenomStates prevState) { EnterAttack1(); }}
 			},
 			.onStep = {
-				{ VS_None, [this]() { vsm.ChangeState(VS_Idle); }},
+				{ VS_None, [this]() { venomScale = venom->scale(); vsm.ChangeState(VS_Intro); }},
 				{ VS_Idle, [this]() { Idle(); }},
 				{ VS_Walking, [this]() { Walking(); }},
 				{ VS_Running, [this]() { Running(); }},
-				{ VS_Jumping, [this]() { Jumping(); }},
-				{ VS_Attack_1, [this]() { Attacking1(); }}
+				//{ VS_Jumping, [this]() { Jumping(); }},
+				//{ VS_Attack_1, [this]() { Attacking1(); }}
 			}
 		};
 	}
 
-	XMVECTOR VenomController::GetLeftStickVector()
+	void VenomController::Step(float delta)
 	{
-		auto pad = gamePad->GetState(0);
-		if (!pad.IsConnected()) return XMVectorZero();
-		XMVECTOR dp = { pad.thumbSticks.leftX, 0.0f, pad.thumbSticks.leftY, 0.0f };
-		return dp;
+#if defined(_EDITOR)
+		if (!Editor::IsPlaying() || Editor::IsPaused())
+			return;
+#endif
+
+		float dt = static_cast<float>(timer.GetElapsedSeconds());
+
+		auto state = gamePad->GetState(0);
+		if (state.IsConnected())
+		{
+			buttons.Update(state);
+		}
+		else
+		{
+			buttons.Reset();
+		}
+		UpdateLeftStickVector();
+		UpdateLookTo();
+		vsm.Step();
+		/*
+		venom->StepAnimation(dt);
+		*/
+		XMFLOAT3 vpos = venom->position();
+		XMFLOAT3 cpos = camera->position();
+		cpos.x = vpos.x;
+		camera->position(cpos);
 	}
 
+	void VenomController::UpdateLeftStickVector()
+	{
+		auto pad = gamePad->GetState(0);
+		if (pad.IsConnected())
+			leftStick = { pad.thumbSticks.leftX, 0.0f, pad.thumbSticks.leftY, 0.0f };
+		else
+			leftStick = XMVectorZero();
+	}
+
+	void VenomController::UpdateLookTo()
+	{
+		if (vsm.currentState == VS_Intro) return;
+
+		float len = leftStick.m128_f32[0];
+
+		if (fabsf(len) < lookToThreshold) return;
+
+		if (len < 0.0f)
+		{
+			XMFLOAT3 scale = venom->scale();
+			if (scale.z > 0.0f)
+			{
+				scale.z = -venomScale.z;
+				venom->scale(scale);
+			}
+		}
+		else if (len > 0.0f)
+		{
+			XMFLOAT3 scale = venom->scale();
+			if (scale.z < 0.0f)
+			{
+				scale.z = venomScale.z;
+				venom->scale(scale);
+			}
+		}
+	}
+
+	void VenomController::MoveForward(float step)
+	{
+		float delta = static_cast<float>(timer.GetElapsedSeconds() * step);
+
+		XMVECTOR move = XMVector3Normalize(leftStick);
+		move = XMVectorScale(move, delta);
+		XMFLOAT3 p = venom->position();
+		XMVECTOR pos = XMLoadFloat3(&p);
+		pos = XMVectorAdd(pos, move);
+		XMStoreFloat3(&p, pos);
+		p.z = std::clamp(p.z, zBounds.x, zBounds.y);
+		venom->position(p);
+	}
+
+	void VenomController::Roar()
+	{
+		if (roar.empty())
+		{
+			roar = getUUID();
+			nlohmann::json json =
+			{
+				{ "uuid", roar() },
+				{ "name", "roar" },
+				{ "sound", GetSoundUUIDByName("venom/intro/roar") },
+				{ "volume", 0.3 },
+				{ "autoPlay", true }
+			};
+			CreateSceneObject(SO_SoundEffects, json);
+		}
+	}
+
+	bool VenomController::ShouldIdle()
+	{
+		XMVECTOR len = XMVector3Length(leftStick);
+		float l = len.m128_f32[0];
+		return l < walkThreshold;
+	}
+
+	bool VenomController::ShouldWalk()
+	{
+		XMVECTOR len = XMVector3Length(leftStick);
+		float l = len.m128_f32[0];
+		return l > walkThreshold && l < runThreshold;
+	}
+
+	bool VenomController::ShouldRun()
+	{
+		XMVECTOR len = XMVector3Length(leftStick);
+		float l = len.m128_f32[0];
+		return l > runThreshold;
+	}
+
+	bool VenomController::ShouldAttackX()
+	{
+		return (buttons.x == GamePad::ButtonStateTracker::PRESSED);
+	}
+
+	void VenomController::EnterIntro()
+	{
+		venom->SetCurrentAnimation("Intro", 0.0f, 1.0f, true, false,
+			{
+				{ {.type = TimeCallbackType_End }, [this] {  vsm.ChangeState(VS_Idle); }, },
+				{ {.type = TimeCallbackType_Frame, .frame = 127 }, [this] { Roar(); }, }
+			}
+		);
+	}
+
+	void VenomController::EnterIdle()
+	{
+		venom->SetCurrentAnimation("Idle_C", 0.0f, 1.0f, true, true);
+	}
+
+	void VenomController::EnterWalking()
+	{
+		venom->SetCurrentAnimation("Walk_Fwd_C", 0.0f, 1.5f, true, true);
+	}
+
+	void VenomController::EnterRunning()
+	{
+		venom->SetCurrentAnimation("Run_Fwd_C", 0.0f, 1.5f, true, true);
+	}
+
+	/*
 	void VenomController::SetRotation(XMVECTOR fw)
 	{
 		XMVECTOR len = XMVector3Length(fw);
@@ -104,21 +263,11 @@ namespace Game
 			venom->rotation(rot);
 		}
 	}
+	*/
 
-	void VenomController::MoveForward(float step)
-	{
-		float delta = static_cast<float>(timer.GetElapsedSeconds() * step);
 
-		XMFLOAT3 p = venom->position();
-		XMVECTOR pos = XMLoadFloat3(&p);
-		XMVECTOR fw = XMVector3Rotate(baseForward, venom->rotationQ());
-		XMVECTOR dp = XMVectorScale(fw, delta);
-		pos = XMVectorAdd(pos, dp);
-		XMStoreFloat3(&p, pos);
-		p.z = std::clamp(p.z, zBounds.x, zBounds.y);
-		venom->position(p);
-	}
 
+	/*
 	bool VenomController::Jump()
 	{
 		if (buttons.a == GamePad::ButtonStateTracker::PRESSED)
@@ -129,7 +278,9 @@ namespace Game
 		}
 		return false;
 	}
+	*/
 
+	/*
 	void VenomController::Attack1()
 	{
 		if (buttons.x == GamePad::ButtonStateTracker::PRESSED)
@@ -138,7 +289,9 @@ namespace Game
 			venom->StepAnimation(0.0f);
 		}
 	}
+	*/
 
+	/*
 	void VenomController::EnterAttack1()
 	{
 		auto& animControl = Attack1Animations.at(currentAttack1Animation);
@@ -146,35 +299,20 @@ namespace Game
 		currentAttack1Animation = (currentAttack1Animation + 1) % Attack1Animations.size();
 
 	}
-
-	void VenomController::Step(float delta)
-	{
-		float dt = static_cast<float>(timer.GetElapsedSeconds());
-
-		auto state = gamePad->GetState(0);
-		if (state.IsConnected())
-		{
-			buttons.Update(state);
-		}
-		else
-		{
-			buttons.Reset();
-		}
-#if defined(_EDITOR)
-		if (!Editor::IsPlaying() || Editor::IsPaused())
-			return;
-#endif
-		vsm.Step();
-		venom->StepAnimation(dt);
-		XMFLOAT3 vpos = venom->position();
-		XMFLOAT3 cpos = camera->position();
-		cpos.x = vpos.x;
-		camera->position(cpos);
-	}
+	*/
 
 	void VenomController::Idle()
 	{
-		XMVECTOR stick = GetLeftStickVector();
+		if (ShouldRun())
+		{
+			vsm.ChangeState(VS_Running);
+		}
+		else if (ShouldWalk())
+		{
+			vsm.ChangeState(VS_Walking);
+		}
+
+		/*
 		XMVECTOR len = XMVector3Length(stick);
 		float l = len.m128_f32[0];
 
@@ -188,11 +326,39 @@ namespace Game
 		}
 		else
 		{
-			Jump();
-			Attack1();
+			//Jump();
+			//Attack1();
+		}
+		*/
+	}
+
+	void VenomController::Walking()
+	{
+		MoveForward(walkSpeed);
+		if (ShouldIdle())
+		{
+			vsm.ChangeState(VS_Idle);
+		}
+		else if (ShouldRun())
+		{
+			vsm.ChangeState(VS_Running);
 		}
 	}
 
+	void VenomController::Running()
+	{
+		MoveForward(runSpeed);
+		if (ShouldIdle())
+		{
+			vsm.ChangeState(VS_Idle);
+		}
+		else if (ShouldWalk())
+		{
+			vsm.ChangeState(VS_Walking);
+		}
+	}
+
+	/*
 	void VenomController::Walking()
 	{
 		XMVECTOR stick = GetLeftStickVector();
@@ -216,7 +382,9 @@ namespace Game
 			Attack1();
 		}
 	}
+	*/
 
+	/*
 	void VenomController::Running()
 	{
 		XMVECTOR stick = GetLeftStickVector();
@@ -240,7 +408,9 @@ namespace Game
 			Attack1();
 		}
 	}
+	*/
 
+	/*
 	void VenomController::Jumping()
 	{
 		XMVECTOR stick = GetLeftStickVector();
@@ -278,7 +448,9 @@ namespace Game
 			}
 		}
 	}
+	*/
 
+	/*
 	void VenomController::Attacking1()
 	{
 		bool animEnded = venom->AnimationEnded();
@@ -317,4 +489,5 @@ namespace Game
 			}
 		}
 	}
+	*/
 }
