@@ -7,6 +7,7 @@
 #include <SceneObjectDecl.h>
 #include <SceneObject.h>
 #include <AnimationCallback.h>
+#include <AnimationSequences.h>
 
 typedef std::vector<MeshInstanceUUID> RenderableMeshes;
 typedef std::unordered_map<RenderPassInstanceUUID, std::vector<MaterialInstanceUUID>> RenderableMaterials; //RenderPassInstanceUUID -> MaterialInstanceUUID
@@ -133,11 +134,11 @@ namespace Scene
 		//ANIMATION
 		Model3DInstanceUUID animable;
 		Animation::BonesTransformations bonesTransformation;
-		Sequence* currentSequence = nullptr;
-		AnimationSequences animationsSequences;
-
+		//Sequence* currentSequence = nullptr;
+		//AnimationSequences animationsSequences;
 		void CreateAnimationSequences();
 		void RebuildAnimationSequences();
+
 		BoundingBox boundingBox;
 		RenderableBoundingBoxUUID boundingBoxCompute; //used for animables
 		void CreateBoundingBox();

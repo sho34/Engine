@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <string>
-#include <ExImSequencer.h>
+//#include <ExImSequencer.h>
 #include <ImCurveEdit.h>
 #include <Scene.h>
 #include <Templates.h>
@@ -95,11 +95,35 @@ private:
 	}
 };
 
-struct AnimationSequencerModal : public ExImSequencer::SequenceInterface
+enum SequencerModalPopup
 {
-	static inline ImGuiChildFlags defaultChildFlag = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+	SMP_None,
+	SMP_AddElement,
+	SMP_InteractWithElement
+};
+
+static inline std::unordered_map<SequencerModalPopup, std::string> SequencerModalPopupToString =
+{
+	{ SMP_AddElement, "Add Element" },
+	{ SMP_InteractWithElement, "Interact with Element" }
+};
+
+static inline std::unordered_map<std::string, SequencerModalPopup> StringToSequencerModalPopup =
+{
+	{ "Add Element", SMP_AddElement },
+	{ "Interact with Element", SMP_InteractWithElement }
+};
+
+struct AnimationSequencerModal// : public ExImSequencer::SequenceInterface
+{
+	static inline ImGuiWindowFlags defaultChildFlag = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+		ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
+		ImGuiWindowFlags_NoMove;
+	static inline ImGuiWindowFlags popupChildFlag = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
 		ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoResize |
 		ImGuiWindowFlags_NoMove;
+	static inline ImGuiWindowFlags timelineWindowFlag = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar;
 
 	bool showing = false;
 	bool initializing = false;
@@ -112,29 +136,77 @@ struct AnimationSequencerModal : public ExImSequencer::SequenceInterface
 	LightUUID directionalLight;
 	Model3DJsonUUID model3D;
 
-	AnimationSequences animationsSequences;
-	std::vector<std::string> animations;
+	std::vector<bool> expandedChannels;
 
+	bool headerLeftClickPressed = false;
+	ImVec2 headerLeftClickLastCoords;
+	float headerLeftClickXsum;
+
+	int selectedTimelineChannelId = -1;
+	int selectedTimelineFrameId = -1;
+
+	int selectedElementChannelId = -1;
+	int selectedElementElementId = -1;
+	ChannelElement* selectedElement = nullptr;
+	SequenceChannel* selectedChannel = nullptr;
+	bool timelineLeftClickPressed = false;
+	ImVec2 timelineLeftClickLastCoords;
+	float timelineLeftClickXsum;
+
+	SequencerModalPopup popup = SMP_None;
+	ImVec2 popupCoords;
+
+	//SMP_AddElement
+	SequenceChannelElementType addElementType = SCET_Animation;
+	std::string addElementAnimationSelected = "";
+	std::vector<std::string> addElementAnimationSelectables;
+
+	//bool elementInteractPopup = false;
+	//ImVec2 elementInteractPopupCoords;
+
+	AnimationSequences animationsSequences;
 	std::string selectedSequence;
-	std::map<std::string, std::vector<bool>> expandedChannels;
+
+	//std::vector<std::string> animations;
+	//std::map<std::string, std::vector<bool>> expandedChannels;
 
 	bool addNewSequence;
 	std::string newSequenceName;
 
 	int currentFrame = 0;
 
+	ImVec2 scrollbarRatio;
+	ImVec2 scrollbarLastMousePos;
+	bool scrollbarMouseClicked[2];
+
 	void Initialize(JUUID uuid);
 	void LoadSceneObjects();
 	void DestroySceneObjects();
 	void Step();
 	void DrawSequencer(const char* title, ImVec2 pos, ImVec2 size);
-	void DrawSequenceSelector(ImVec2 curPos);
+	void DrawTitleBar(const char* title, ImVec2 pos, ImVec2 size, bool& exit);
+	void DrawSequenceSelector(ImVec2 curPos, std::function<void(std::string)> onSelectSequence, std::function<void(std::string)> onEraseSequence, std::function<void()> onAddSequence);
 	void DrawModelPreview(ImVec2 curPos, ImVec2 size);
-	void DrawTimelineController(ImVec2 curPos, ImVec2 size);
-	void DrawSequencer(ImVec2 curPos, ImVec2 size, int& currentFrame, bool& expanded, int& selectedEntry, int& firstFrame);
-	void DrawSaveAndExitButtons(ImVec2 curPos, ImVec2 size);
-	void DrawAddNewSequencePopup(ImVec2 pos, ImVec2 size);
+	void DrawTimelineController(ImVec2 curPos, ImVec2 size, Sequence& sequence);
+	void DrawSequencer(ImVec2 curPos, ImVec2 size, Sequence& sequence);
+	void DrawSaveAndExitButtons(ImVec2 curPos, ImVec2 size, bool& exit, bool& saveexit);
+	void DrawAddNewSequencePopup(ImVec2 pos, ImVec2 size, std::string& newSeqName, std::function<void(std::string)> onAddNewSequenceClicked, std::function<void()> onCancelAddNewSequenceClick);
 
+	void BuildAnimationElementsTimelinePopup();
+	void DrawAddNewElementToTimelinePopup();
+	void OnAddAnimationToChannelClicked();
+	void OnCancelAddAnimationToChannelClicked();
+
+	void DrawElementInteractPopup();
+	void DeleteElement();
+	void SplitElement();
+
+	void Exit();
+	void SaveAndExit();
+
+	ChannelElement* GetElementInFrame(Sequence& sequence, unsigned int seqChannelId, unsigned int frame, int& elementId);
+
+	/*
 	//callbacks from ImSequencer
 	void OnCurrentFrameChanged(int frame);
 
@@ -160,47 +232,43 @@ struct AnimationSequencerModal : public ExImSequencer::SequenceInterface
 
 	virtual void CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect)
 	{
-		/*
-		static const char* labels[] = { "Translation", "Rotation" , "Scale" };
-
-		rampEdit.mMax = ImVec2(float(mFrameMax), 1.f);
-		rampEdit.mMin = ImVec2(float(mFrameMin), 0.f);
-		draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
-		for (int i = 0; i < 3; i++)
-		{
-			ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
-			ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-			draw_list->AddText(pta, rampEdit.mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, labels[i]);
-			if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
-				rampEdit.mbVisible[i] = !rampEdit.mbVisible[i];
-		}
-		draw_list->PopClipRect();
-
-		ImGui::SetCursorScreenPos(rc.Min);
-		ImVec2 diff = { rc.Max.x - rc.Min.x,rc.Max.y - rc.Min.y };
-		ImCurveEdit::Edit(rampEdit, diff, 137 + index, &clippingRect);
-		*/
+		//static const char* labels[] = { "Translation", "Rotation" , "Scale" };
+		//
+		//rampEdit.mMax = ImVec2(float(mFrameMax), 1.f);
+		//rampEdit.mMin = ImVec2(float(mFrameMin), 0.f);
+		//draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
+		//for (int i = 0; i < 3; i++)
+		//{
+		//	ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
+		//	ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
+		//	draw_list->AddText(pta, rampEdit.mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, labels[i]);
+		//	if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
+		//		rampEdit.mbVisible[i] = !rampEdit.mbVisible[i];
+		//}
+		//draw_list->PopClipRect();
+		//
+		//ImGui::SetCursorScreenPos(rc.Min);
+		//ImVec2 diff = { rc.Max.x - rc.Min.x,rc.Max.y - rc.Min.y };
+		//ImCurveEdit::Edit(rampEdit, diff, 137 + index, &clippingRect);
 	}
 
 	virtual void CustomDrawCompact(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& clippingRect)
 	{
-		/*
-		rampEdit.mMax = ImVec2(float(mFrameMax), 1.f);
-		rampEdit.mMin = ImVec2(float(mFrameMin), 0.f);
-		draw_list->PushClipRect(clippingRect.Min, clippingRect.Max, true);
-		for (int i = 0; i < 3; i++)
-		{
-			for (int j = 0; j < rampEdit.mPointCount[i]; j++)
-			{
-				float p = rampEdit.mPts[i][j].x;
-				if (p < myItems[index].mFrameStart || p > myItems[index].mFrameEnd)
-					continue;
-				float r = (p - mFrameMin) / float(mFrameMax - mFrameMin);
-				float x = ImLerp(rc.Min.x, rc.Max.x, r);
-				draw_list->AddLine(ImVec2(x, rc.Min.y + 6), ImVec2(x, rc.Max.y - 4), 0xAA000000, 4.f);
-			}
-		}
-		draw_list->PopClipRect();
-		*/
-	}
+		//rampEdit.mMax = ImVec2(float(mFrameMax), 1.f);
+		//rampEdit.mMin = ImVec2(float(mFrameMin), 0.f);
+		//draw_list->PushClipRect(clippingRect.Min, clippingRect.Max, true);
+		//for (int i = 0; i < 3; i++)
+		//{
+		//	for (int j = 0; j < rampEdit.mPointCount[i]; j++)
+		//	{
+		//		float p = rampEdit.mPts[i][j].x;
+		//		if (p < myItems[index].mFrameStart || p > myItems[index].mFrameEnd)
+		//			continue;
+		//		float r = (p - mFrameMin) / float(mFrameMax - mFrameMin);
+		//		float x = ImLerp(rc.Min.x, rc.Max.x, r);
+		//		draw_list->AddLine(ImVec2(x, rc.Min.y + 6), ImVec2(x, rc.Max.y - 4), 0xAA000000, 4.f);
+		//	}
+		//}
+		//draw_list->PopClipRect();
+	}*/
 };

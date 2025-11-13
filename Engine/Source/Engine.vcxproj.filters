@@ -525,10 +525,10 @@
     <ClInclude Include="Editor\RightPanelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Animation\AnimationSequence.h">
+    <ClInclude Include="Animation\AnimationCallback.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Animation\AnimationCallback.h">
+    <ClInclude Include="Animation\AnimationSequences.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -741,6 +741,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Editor\RightPanelComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\AnimationSequences.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

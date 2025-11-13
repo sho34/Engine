@@ -143,13 +143,13 @@ namespace ExImSequencer
 		else
 		{
 			bool hasScrollBar(true);
-			/*
-			int framesPixelWidth = int(frameCount * framePixelWidth);
-			if ((framesPixelWidth + legendWidth) >= canvas_size.x)
-			{
-					hasScrollBar = true;
-			}
-			*/
+
+			//int framesPixelWidth = int(frameCount * framePixelWidth);
+			//if ((framesPixelWidth + legendWidth) >= canvas_size.x)
+			//{
+			//		hasScrollBar = true;
+			//}
+
 			// test scroll area
 			ImVec2 headerSize(canvas_size.x, (float)ItemHeight);
 			ImVec2 scrollBarSize(canvas_size.x, 14.f);
@@ -245,17 +245,19 @@ namespace ExImSequencer
 
 				};
 
-			auto drawLineContent = [&](int i, int /*regionHeight*/) {
-				int px = (int)canvas_pos.x + int(i * framePixelWidth) + legendWidth - int(firstFrameUsed * framePixelWidth);
-				int tiretStart = int(contentMin.y);
-				int tiretEnd = int(contentMax.y);
-
-				if (px <= (canvas_size.x + canvas_pos.x) && px >= (canvas_pos.x + legendWidth))
+			auto drawLineContent = [&](int i, int //regionHeight
+				)
 				{
-					//draw_list->AddLine(ImVec2((float)px, canvas_pos.y + (float)tiretStart), ImVec2((float)px, canvas_pos.y + (float)tiretEnd - 1), 0xFF606060, 1);
+					int px = (int)canvas_pos.x + int(i * framePixelWidth) + legendWidth - int(firstFrameUsed * framePixelWidth);
+					int tiretStart = int(contentMin.y);
+					int tiretEnd = int(contentMax.y);
 
-					draw_list->AddLine(ImVec2(float(px), float(tiretStart)), ImVec2(float(px), float(tiretEnd)), 0x30606060, 1);
-				}
+					if (px <= (canvas_size.x + canvas_pos.x) && px >= (canvas_pos.x + legendWidth))
+					{
+						//draw_list->AddLine(ImVec2((float)px, canvas_pos.y + (float)tiretStart), ImVec2((float)px, canvas_pos.y + (float)tiretEnd - 1), 0xFF606060, 1);
+
+						draw_list->AddLine(ImVec2(float(px), float(tiretStart)), ImVec2(float(px), float(tiretEnd)), 0x30606060, 1);
+					}
 				};
 			for (int i = sequence->GetFrameMin(); i <= sequence->GetFrameMax(); i += frameStep)
 			{
@@ -263,11 +265,9 @@ namespace ExImSequencer
 			}
 			drawLine(sequence->GetFrameMin(), ItemHeight);
 			drawLine(sequence->GetFrameMax(), ItemHeight);
-			/*
-							 draw_list->AddLine(canvas_pos, ImVec2(canvas_pos.x, canvas_pos.y + controlHeight), 0xFF000000, 1);
-							 draw_list->AddLine(ImVec2(canvas_pos.x, canvas_pos.y + ItemHeight), ImVec2(canvas_size.x, canvas_pos.y + ItemHeight), 0xFF000000, 1);
-							 */
-							 // clip content
+			//draw_list->AddLine(canvas_pos, ImVec2(canvas_pos.x, canvas_pos.y + controlHeight), 0xFF000000, 1);
+			//draw_list->AddLine(ImVec2(canvas_pos.x, canvas_pos.y + ItemHeight), ImVec2(canvas_size.x, canvas_pos.y + ItemHeight), 0xFF000000, 1);
+			// clip content
 
 			draw_list->PushClipRect(childFramePos, childFramePos + childFrameSize);
 
@@ -336,6 +336,7 @@ namespace ExImSequencer
 
 			// slots
 			customHeight = 0;
+			//this will draw each sequence (from the frame start to the frame end)
 			for (int i = 0; i < sequenceCount; i++)
 			{
 				int* start, * end;
@@ -416,9 +417,9 @@ namespace ExImSequencer
 				customHeight += localCustomHeight;
 			}
 
-
 			// moving
-			if (/*backgroundRect.Contains(io.MousePos) && */movingEntry >= 0)
+			if (//backgroundRect.Contains(io.MousePos) && 
+				movingEntry >= 0)
 			{
 				ImGui::GetIO().WantCaptureMouse = true;
 				int diffFrame = int((cx - movingPos) / framePixelWidth);
@@ -474,12 +475,22 @@ namespace ExImSequencer
 			draw_list->PopClipRect();
 			draw_list->PopClipRect();
 
+			// custom draw - start
+			/*
 			for (auto& customDraw : customDraws)
 				sequence->CustomDraw(customDraw.index, draw_list, customDraw.customRect, customDraw.legendRect, customDraw.clippingRect, customDraw.legendClippingRect);
+			*/
+			// custom draw - end
+
+			// custom draw compact(minimized) - start
+			/*
 			for (auto& customDraw : compactCustomDraws)
 				sequence->CustomDrawCompact(customDraw.index, draw_list, customDraw.customRect, customDraw.clippingRect);
+			*/
+			// custom draw compact(minimized) - end
 
-			// copy paste
+			// copy paste - start
+			/*
 			if (sequenceOptions & SEQUENCER_COPYPASTE)
 			{
 				ImRect rectCopy(ImVec2(contentMin.x + 100, canvas_pos.y + 2)
@@ -503,10 +514,13 @@ namespace ExImSequencer
 					sequence->Paste();
 				}
 			}
-			//
+			*/
+			//copy paste - end
 
 			ImGui::EndChildFrame();
 			ImGui::PopStyleColor();
+
+			//scrollbar
 			if (hasScrollBar)
 			{
 				ImGui::InvisibleButton("scrollBar", scrollBarSize);

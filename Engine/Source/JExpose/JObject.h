@@ -31,11 +31,14 @@ struct JObject : nlohmann::json
 		UpdatePrevValues.clear();
 		for (auto& [key, value] : p.items())
 		{
-			UpdatePrevValues.insert_or_assign(key, at(key));
-			bool update = std::get<1>(UpdateFlagsMap.at(key));
-			if (!update) continue;
-			size_t flag = std::get<0>(UpdateFlagsMap.at(key));
-			updateFlag |= flag;
+			if (UpdateFlagsMap.contains(key))
+			{
+				UpdatePrevValues.insert_or_assign(key, at(key));
+				bool update = std::get<1>(UpdateFlagsMap.at(key));
+				if (!update) continue;
+				size_t flag = std::get<0>(UpdateFlagsMap.at(key));
+				updateFlag |= flag;
+			}
 		}
 		merge_patch(p);
 	}

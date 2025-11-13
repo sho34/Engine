@@ -337,7 +337,7 @@
   <ItemGroup>
     <ClInclude Include="Animation\Animated.h" />
     <ClInclude Include="Animation\AnimationCallback.h" />
-    <ClInclude Include="Animation\AnimationSequence.h" />
+    <ClInclude Include="Animation\AnimationSequences.h" />
     <ClInclude Include="Audio\AudioSystem.h" />
     <ClInclude Include="Controllers\Controller.h" />
     <ClInclude Include="Editor\AnimationSequencerModal.h">
@@ -564,6 +564,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Animation\Animated.cpp" />
+    <ClCompile Include="Animation\AnimationSequences.cpp" />
     <ClCompile Include="Audio\AudioSystem.cpp" />
     <ClCompile Include="Controllers\Controller.cpp" />
     <ClCompile Include="Editor\AnimationSequencerModal.cpp">

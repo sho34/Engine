@@ -52,6 +52,22 @@ namespace nostd {
 		if (it != vec.end()) { vec.erase(it); }
 	}
 
+	template<typename T>
+	inline void vector_erase_index(std::vector<T>& vec, unsigned int index)
+	{
+		unsigned int i = 0;
+		for (auto it = vec.begin(); it != vec.end();)
+		{
+			if (i == index)
+			{
+				vec.erase(it);
+				return;
+			}
+			i++;
+			it++;
+		}
+	}
+
 	inline std::vector<std::string> split(const std::string& str, const std::string& regex_str) {
 		std::regex regexz(regex_str);
 		std::vector<std::string> list(

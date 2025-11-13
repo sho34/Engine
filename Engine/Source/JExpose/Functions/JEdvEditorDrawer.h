@@ -1414,6 +1414,48 @@ inline JEdvEditorDrawerFunction DrawValue<XMFLOAT4, jedv_t_float4>()
 }
 
 template<>
+inline JEdvEditorDrawerFunction DrawValue<XMFLOAT3, jedv_t_color_float3>()
+{
+	return[](std::string attribute, std::vector<JObject*>& json)
+		{
+			auto updateValues = [&json, attribute](XMFLOAT3 value)
+				{
+					for (auto& j : json)
+					{
+						nlohmann::json patch = { { attribute, FromXMFLOAT3(value) } };
+						j->JUpdate(patch);
+					}
+				};
+
+			ImGui::PushID((std::string(json[0]->at("uuid")) + "-" + attribute).c_str());
+			std::string tableName = "tables-" + attribute + "-table";
+			if (ImGui::BeginTable(tableName.c_str(), 2, defaultTableFlags))
+			{
+				XMFLOAT3 color;
+				for (unsigned int i = 0; i < 3; i++)
+				{
+					(&color.x)[i] = json.at(0)->at(attribute).at(i);
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableSetColumnIndex(0);
+				ImGui::Text(attribute.c_str());
+
+				ImGui::TableSetColumnIndex(1);
+				ImGui::PushID((std::string(json.at(0)->at("uuid")) + "-" + attribute).c_str());
+				if (ImGui::ColorEdit3("##", &color.x))
+				{
+					updateValues(color);
+				}
+				ImGui::PopID();
+
+				ImGui::EndTable();
+			}
+			ImGui::PopID();
+		};
+}
+
+template<>
 inline JEdvEditorDrawerFunction DrawValue<float, jedv_t_float_angle>()
 {
 	return [](std::string attribute, std::vector<JObject*>& json)
@@ -1839,6 +1881,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 
 			auto gotoPrevAnim = [setAnim](auto animable)
 				{
+					/*
 					if (animable->currentSequence == nullptr)
 					{
 						auto it = animable->animationsSequences.sequences.end();
@@ -1863,9 +1906,11 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 					auto it = animable->animationsSequences.sequences.end();
 					it--;
 					setAnim(animable, it);
+					*/
 				};
 			auto gotoNextAnim = [setAnim](auto animable)
 				{
+					/*
 					if (animable->currentSequence == nullptr)
 					{
 						auto it = animable->animationsSequences.sequences.begin();
@@ -1891,6 +1936,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 						}
 					}
 					setAnim(animable, animable->animationsSequences.sequences.begin());
+					*/
 				};
 
 			ImGui::Text(attribute.c_str());
@@ -1913,6 +1959,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 
 					ImGui::TableSetColumnIndex(1);
 
+					/*
 					Sequence* currentSequence = animable->currentSequence;
 					Sequence& sequence = (currentSequence != nullptr) ? *currentSequence : animable->animationsSequences.sequences.at("");
 					ImGui::DrawComboSelection<Sequence>(
@@ -1931,6 +1978,7 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 							);
 						}
 					);
+					*/
 
 					ImGui::EndTable();
 				}
