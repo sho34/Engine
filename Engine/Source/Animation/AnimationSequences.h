@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <string>
 #include <nlohmann/json.hpp>
+#include <DirectXMath.h>
 
 enum SequenceChannelElementType
 {
@@ -27,78 +28,109 @@ static inline std::unordered_map<std::string, SequenceChannelElementType> StrToS
 	{ "script", SCET_Script },
 };
 
+
+enum Easing {
+	Easing_Linear,
+	Easing_Sine_Ease_In,
+	Easing_Sine_Ease_Out,
+	Easing_Sine_Ease_In_Out
+};
+
+static inline std::unordered_map<Easing, std::string> EasingToString =
+{
+	{ Easing_Linear,"Linear"},
+	{ Easing_Sine_Ease_In,"Sine_Ease_In"},
+	{ Easing_Sine_Ease_Out,"Sine_Ease_Out"},
+	{ Easing_Sine_Ease_In_Out,"Sine_Ease_In_Out"},
+};
+
+static inline std::unordered_map<std::string, Easing> StringToEasing =
+{
+	{ "Linear", Easing_Linear},
+	{ "Sine_Ease_In", Easing_Sine_Ease_In},
+	{ "Sine_Ease_Out", Easing_Sine_Ease_Out},
+	{ "Sine_Ease_In_Out", Easing_Sine_Ease_In_Out},
+};
+
+struct TransformationKeyFrame
+{
+	XMFLOAT3 position = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMFLOAT3 rotation = XMFLOAT3(0.0f, 0.0f, 0.0f);
+	XMFLOAT3 scale = XMFLOAT3(1.0f, 1.0f, 1.0f);
+	Easing easing = Easing_Linear;
+
+	XMMATRIX ToMatrix();
+
+	bool operator==(const TransformationKeyFrame& other) const;
+};
+
 struct SequenceChannelElement
 {
+	SequenceChannelElement();
+	SequenceChannelElement(const nlohmann::json& j);
+	void ExpandLeftBorder(int numFrames);
+	void ExpandRightBorder(int numFrames);
+
 	int frameStart;
 	int frameEnd;
-
-	SequenceChannelElement() {}
-	SequenceChannelElement(const nlohmann::json& j);
 };
 
 struct SequenceChannelElementAnimation : SequenceChannelElement
 {
-	std::string animation;
-	int framesToSkipFromLeft;
-	int framesToSkipFromRight;
-
-	SequenceChannelElementAnimation() {}
+	SequenceChannelElementAnimation();
 	SequenceChannelElementAnimation(const nlohmann::json& j);
-
 	bool operator==(const SequenceChannelElementAnimation& other) const;
-
 	nlohmann::json json();
+	int GetFrameStart();
+	int GetFrameEnd();
+	float GetTimeAtFrame(int frame);
+
+	std::string animation;
+	float startTime;
+	float endTime;
 };
 
 struct SequenceChannelElementTransformation : SequenceChannelElement
 {
-	typedef std::tuple<unsigned int, XMFLOAT3> keyFrame;
-	std::vector<keyFrame> position;
-	std::vector<keyFrame> rotation;
-	std::vector<keyFrame> scale;
-
-	SequenceChannelElementTransformation() {}
+	SequenceChannelElementTransformation() :SequenceChannelElement() {}
 	SequenceChannelElementTransformation(const nlohmann::json& j);
-
 	bool operator==(const SequenceChannelElementTransformation& other) const;
-
 	nlohmann::json json();
+	TransformationKeyFrame GetKeyFrameBeforeFrame(int frame);
+	XMMATRIX GetTransformationInFrame(int frame);
+	XMMATRIX GetTransformationBeforeFrame(int frame);
+	bool HasKeyframeBeforeFrame(int frame);
+	bool HasKeyframeAfterFrame(int frame);
+	std::tuple<int, TransformationKeyFrame, int, TransformationKeyFrame> GetKeyframesBetweenFrame(int frame);
+	XMMATRIX InterpolateKeyframes(TransformationKeyFrame keyA, TransformationKeyFrame keyB, int frameAfterA, int framesBetweenKeyframes);
+
+	std::unordered_map<int, TransformationKeyFrame> keyFrames;
 };
 
 struct SequenceChanelElementSoundFX : SequenceChannelElement
 {
-	SoundJsonUUID sound;
-	int framesToSkipFromLeft;
-	int framesToSkipFromRight;
-
-	SequenceChanelElementSoundFX() {}
+	SequenceChanelElementSoundFX();
 	SequenceChanelElementSoundFX(const nlohmann::json& j);
-
 	bool operator==(const SequenceChanelElementSoundFX& other) const;
-
 	nlohmann::json json();
+	int GetFrameStart();
+	int GetFrameEnd();
+
+	SoundJsonUUID sound;
 };
 
 struct SequenceChannelElementScript : SequenceChannelElement
 {
-	std::string script;
-
-	SequenceChannelElementScript() {}
+	SequenceChannelElementScript();
 	SequenceChannelElementScript(const nlohmann::json& j);
-
 	bool operator==(const SequenceChannelElementScript& other) const;
-
 	nlohmann::json json();
+
+	std::string script;
 };
 
 struct ChannelElement
 {
-	SequenceChannelElementType type;
-	SequenceChannelElementAnimation animation;
-	SequenceChannelElementTransformation transformation;
-	SequenceChanelElementSoundFX soundfx;
-	SequenceChannelElementScript script;
-
 	ChannelElement() {}
 	ChannelElement(const ChannelElement& other);
 	ChannelElement(const nlohmann::json& j);
@@ -107,44 +139,64 @@ struct ChannelElement
 	bool InFrame(int frame);
 	bool ElementInFrame(int frame, bool& elementBoundFromLeft, bool& elementBoundFromRight);
 	void Move(int frames, int totalFrames);
+	std::tuple<ChannelElement, ChannelElement> Split(int frame);
+	void ExpandLeftBorder(int numFrames);
+	void ExpandRightBorder(int numFrames);
+	SequenceChannelElement* GetElementPointer();
 
-	int getFrameStart();
-	int getFrameEnd();
+	int GetFrameStart();
+	int GetFrameEnd();
 
 	bool operator==(const ChannelElement& other) const;
 
 	nlohmann::json json();
+
+	SequenceChannelElementType type;
+	SequenceChannelElementAnimation animation;
+	SequenceChannelElementTransformation transformation;
+	SequenceChanelElementSoundFX soundfx;
+	SequenceChannelElementScript script;
 };
 
 struct SequenceChannel
 {
-	std::string name;
-	std::vector<ChannelElement> elements;
-
 	SequenceChannel();
 
 	SequenceChannel(std::string name);
 
 	SequenceChannel(const nlohmann::json& j);
 
+	bool ChannelHasElementAtFrame(int frame);
 	int GetAvailableFramesToLeft(int elementIndex);
 	int GetAvailableFramesToRight(int elementIndex, int totalFrames);
+	int GetFirstElementIndexBetweenFrames(int frameStart, int frameEnd);
+	int GetElementIndexBeforeFrame(int frame);
+	SequenceChannelElementAnimation* GetAnimationElementAtFrame(int frame);
+	SequenceChannelElementTransformation* GetTransformationElementAtFrame(int frame);
+	TransformationKeyFrame* GetTransformationKeyframe(int frame);
+
+	void InsertChannelElement(ChannelElement element, int& totalFrames);
 	void MoveElement(int elementIndex, int frames, int totalFrames);
+	void DragElementLeftBoundary(int elementIndex, int frames, int totalFrames);
+	void DragElementRightBoundary(int elementIndex, int frames, int totalFrames);
 	void EraseElement(int elementIndex);
 	void SplitElement(int elementIndex, int frame);
+	bool FrameHasElement(int frame, bool& leftBounded, bool& rightBounded);
+	bool FrameHasTransformationKeyframe(int frame);
+	void EraseElementInFrame(int frame);
+	void SplitElementInFrame(int frame);
 
 	nlohmann::json json();
 
 	bool operator==(const SequenceChannel& other) const;
+
+	std::string name;
+	//elements should be sorted ok?
+	std::vector<ChannelElement> elements;
 };
 
 struct Sequence
 {
-	int framesPerSecond;
-	int totalFrames;
-	bool loop;
-	std::vector<SequenceChannel> sequenceChannels;
-
 	Sequence();
 
 	/*
@@ -159,10 +211,17 @@ struct Sequence
 	*/
 
 	Sequence(nlohmann::json j);
-
 	nlohmann::json json();
-
 	bool operator==(const Sequence& other) const;
+
+	std::string GetAnimationNameAtFrame(int frame);
+	SequenceChannelElementAnimation* GetAnimationElementAtFrame(int frame);
+	XMMATRIX GetTransformationAtFrame(int frame);
+
+	int framesPerSecond;
+	int totalFrames;
+	bool loop;
+	std::vector<SequenceChannel> sequenceChannels;
 };
 
 inline static Sequence ToSequence(nlohmann::json j)
@@ -178,13 +237,11 @@ inline static nlohmann::json FromSequence(Sequence s)
 
 struct AnimationSequences
 {
-	std::map<std::string, Sequence> sequences;
-
 	AnimationSequences() {}
-
 	AnimationSequences(nlohmann::json j);
-
 	nlohmann::json json();
+
+	std::map<std::string, Sequence> sequences;
 };
 
 inline static AnimationSequences ToAnimationSequences(nlohmann::json j)

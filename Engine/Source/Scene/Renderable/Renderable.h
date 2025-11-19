@@ -134,7 +134,8 @@ namespace Scene
 		//ANIMATION
 		Model3DInstanceUUID animable;
 		Animation::BonesTransformations bonesTransformation;
-		//Sequence* currentSequence = nullptr;
+		Sequence* currentSequence = nullptr;
+		XMMATRIX currentSequenceTransformation;
 		//AnimationSequences animationsSequences;
 		void CreateAnimationSequences();
 		void RebuildAnimationSequences();

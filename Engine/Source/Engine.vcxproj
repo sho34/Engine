@@ -395,6 +395,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="Editor\Timeline\TimelineChannel.h" />
+    <ClInclude Include="Editor\Timeline\TimelineEditor.h" />
+    <ClInclude Include="Editor\Timeline\TimelinePopups.h" />
     <ClInclude Include="EngineInc.h" />
     <ClInclude Include="JExpose\Attributes\JExpose.h" />
     <ClInclude Include="JExpose\Creator\JDrawersDecl.h" />
@@ -612,6 +615,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Development|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="Editor\Timeline\TimelineChannel.cpp" />
+    <ClCompile Include="Editor\Timeline\TimelineEditor.cpp" />
+    <ClCompile Include="Editor\Timeline\TimelinePopups.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Editor_Debug|x64'">Create</PrecompiledHeader>

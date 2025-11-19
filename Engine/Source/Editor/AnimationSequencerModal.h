@@ -1,99 +1,9 @@
 #pragma once
 #include <memory>
 #include <string>
-//#include <ExImSequencer.h>
-#include <ImCurveEdit.h>
 #include <Scene.h>
 #include <Templates.h>
-
-struct RampEdit : public ImCurveEdit::Delegate
-{
-	RampEdit()
-	{
-		mPts[0][0] = ImVec2(-10.f, 0);
-		mPts[0][1] = ImVec2(20.f, 0.6f);
-		mPts[0][2] = ImVec2(25.f, 0.2f);
-		mPts[0][3] = ImVec2(70.f, 0.4f);
-		mPts[0][4] = ImVec2(120.f, 1.f);
-		mPointCount[0] = 5;
-
-		mPts[1][0] = ImVec2(-50.f, 0.2f);
-		mPts[1][1] = ImVec2(33.f, 0.7f);
-		mPts[1][2] = ImVec2(80.f, 0.2f);
-		mPts[1][3] = ImVec2(82.f, 0.8f);
-		mPointCount[1] = 4;
-
-
-		mPts[2][0] = ImVec2(40.f, 0);
-		mPts[2][1] = ImVec2(60.f, 0.1f);
-		mPts[2][2] = ImVec2(90.f, 0.82f);
-		mPts[2][3] = ImVec2(150.f, 0.24f);
-		mPts[2][4] = ImVec2(200.f, 0.34f);
-		mPts[2][5] = ImVec2(250.f, 0.12f);
-		mPointCount[2] = 6;
-		mbVisible[0] = mbVisible[1] = mbVisible[2] = true;
-		mMax = ImVec2(1.f, 1.f);
-		mMin = ImVec2(0.f, 0.f);
-	}
-	size_t GetCurveCount()
-	{
-		return 3;
-	}
-
-	bool IsVisible(size_t curveIndex)
-	{
-		return mbVisible[curveIndex];
-	}
-	size_t GetPointCount(size_t curveIndex)
-	{
-		return mPointCount[curveIndex];
-	}
-
-	uint32_t GetCurveColor(size_t curveIndex)
-	{
-		uint32_t cols[] = { 0xFF0000FF, 0xFF00FF00, 0xFFFF0000 };
-		return cols[curveIndex];
-	}
-	ImVec2* GetPoints(size_t curveIndex)
-	{
-		return mPts[curveIndex];
-	}
-	virtual ImCurveEdit::CurveType GetCurveType(size_t curveIndex) const { return ImCurveEdit::CurveSmooth; }
-	virtual int EditPoint(size_t curveIndex, int pointIndex, ImVec2 value)
-	{
-		mPts[curveIndex][pointIndex] = ImVec2(value.x, value.y);
-		SortValues(curveIndex);
-		for (size_t i = 0; i < GetPointCount(curveIndex); i++)
-		{
-			if (mPts[curveIndex][i].x == value.x)
-				return (int)i;
-		}
-		return pointIndex;
-	}
-	virtual void AddPoint(size_t curveIndex, ImVec2 value)
-	{
-		if (mPointCount[curveIndex] >= 8)
-			return;
-		mPts[curveIndex][mPointCount[curveIndex]++] = value;
-		SortValues(curveIndex);
-	}
-	virtual ImVec2& GetMax() { return mMax; }
-	virtual ImVec2& GetMin() { return mMin; }
-	virtual unsigned int GetBackgroundColor() { return 0; }
-	ImVec2 mPts[3][8];
-	size_t mPointCount[3];
-	bool mbVisible[3];
-	ImVec2 mMin;
-	ImVec2 mMax;
-private:
-	void SortValues(size_t curveIndex)
-	{
-		auto b = std::begin(mPts[curveIndex]);
-		auto e = std::begin(mPts[curveIndex]) + GetPointCount(curveIndex);
-		std::sort(b, e, [](ImVec2 a, ImVec2 b) { return a.x < b.x; });
-
-	}
-};
+#include "Timeline/TimelineEditor.h"
 
 enum SequencerModalPopup
 {
@@ -116,6 +26,22 @@ static inline std::unordered_map<std::string, SequencerModalPopup> StringToSeque
 
 struct AnimationSequencerModal// : public ExImSequencer::SequenceInterface
 {
+	void Initialize(JUUID uuid);
+	void LoadSceneObjects();
+	void DestroySceneObjects();
+	void Step();
+	void DrawSequencer(const char* title, ImVec2 pos, ImVec2 size);
+	void DrawTitleBar(const char* title, ImVec2 pos, ImVec2 size, bool& exit);
+	void DrawSequenceSelector(ImVec2 curPos, std::function<void(std::string)> onSelectSequence, std::function<void(std::string)> onEraseSequence, std::function<void()> onAddSequence);
+	void DrawModelPreview(ImVec2 curPos, ImVec2 size);
+	void DrawTransformationKeyFrameAttributes(TransformationKeyFrame& keyframe, ImVec2 pos, ImVec2 size);
+	void DrawTimelineController(ImVec2 curPos, ImVec2 size, Sequence& sequence);
+	void DrawSaveAndExitButtons(ImVec2 curPos, ImVec2 size, bool& exit, bool& saveexit);
+	void DrawAddNewSequencePopup(ImVec2 pos, ImVec2 size, std::string& newSeqName, std::function<void(std::string)> onAddNewSequenceClicked, std::function<void()> onCancelAddNewSequenceClick);
+
+	void Exit();
+	void SaveAndExit();
+
 	static inline ImGuiWindowFlags defaultChildFlag = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
 		ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
 		ImGuiWindowFlags_NoMove;
@@ -136,139 +62,18 @@ struct AnimationSequencerModal// : public ExImSequencer::SequenceInterface
 	LightUUID directionalLight;
 	Model3DJsonUUID model3D;
 
-	std::vector<bool> expandedChannels;
-
-	bool headerLeftClickPressed = false;
-	ImVec2 headerLeftClickLastCoords;
-	float headerLeftClickXsum;
-
-	int selectedTimelineChannelId = -1;
-	int selectedTimelineFrameId = -1;
-
-	int selectedElementChannelId = -1;
-	int selectedElementElementId = -1;
-	ChannelElement* selectedElement = nullptr;
-	SequenceChannel* selectedChannel = nullptr;
-	bool timelineLeftClickPressed = false;
-	ImVec2 timelineLeftClickLastCoords;
-	float timelineLeftClickXsum;
-
-	SequencerModalPopup popup = SMP_None;
-	ImVec2 popupCoords;
-
-	//SMP_AddElement
-	SequenceChannelElementType addElementType = SCET_Animation;
-	std::string addElementAnimationSelected = "";
-	std::vector<std::string> addElementAnimationSelectables;
-
-	//bool elementInteractPopup = false;
-	//ImVec2 elementInteractPopupCoords;
-
+	//Sequence selection
+	bool addNewSequence;
+	std::string newSequenceName;
 	AnimationSequences animationsSequences;
 	std::string selectedSequence;
 
-	//std::vector<std::string> animations;
-	//std::map<std::string, std::vector<bool>> expandedChannels;
+	//player
+	bool playingSequence = false;
+	float playingSequenceTime = 0.0f;
+	bool playingSequenceLoop = false;
 
-	bool addNewSequence;
-	std::string newSequenceName;
-
-	int currentFrame = 0;
-
-	ImVec2 scrollbarRatio;
-	ImVec2 scrollbarLastMousePos;
-	bool scrollbarMouseClicked[2];
-
-	void Initialize(JUUID uuid);
-	void LoadSceneObjects();
-	void DestroySceneObjects();
-	void Step();
-	void DrawSequencer(const char* title, ImVec2 pos, ImVec2 size);
-	void DrawTitleBar(const char* title, ImVec2 pos, ImVec2 size, bool& exit);
-	void DrawSequenceSelector(ImVec2 curPos, std::function<void(std::string)> onSelectSequence, std::function<void(std::string)> onEraseSequence, std::function<void()> onAddSequence);
-	void DrawModelPreview(ImVec2 curPos, ImVec2 size);
-	void DrawTimelineController(ImVec2 curPos, ImVec2 size, Sequence& sequence);
-	void DrawSequencer(ImVec2 curPos, ImVec2 size, Sequence& sequence);
-	void DrawSaveAndExitButtons(ImVec2 curPos, ImVec2 size, bool& exit, bool& saveexit);
-	void DrawAddNewSequencePopup(ImVec2 pos, ImVec2 size, std::string& newSeqName, std::function<void(std::string)> onAddNewSequenceClicked, std::function<void()> onCancelAddNewSequenceClick);
-
-	void BuildAnimationElementsTimelinePopup();
-	void DrawAddNewElementToTimelinePopup();
-	void OnAddAnimationToChannelClicked();
-	void OnCancelAddAnimationToChannelClicked();
-
-	void DrawElementInteractPopup();
-	void DeleteElement();
-	void SplitElement();
-
-	void Exit();
-	void SaveAndExit();
-
-	ChannelElement* GetElementInFrame(Sequence& sequence, unsigned int seqChannelId, unsigned int frame, int& elementId);
-
-	/*
-	//callbacks from ImSequencer
-	void OnCurrentFrameChanged(int frame);
-
-	// interface with sequencer
-	virtual int GetFrameMin() const;
-	virtual int GetFrameMax() const;
-	virtual int GetItemCount() const;
-
-	virtual int GetItemTypeCount() const;
-	virtual const char* GetItemTypeName(int typeIndex) const;
-	virtual const char* GetItemLabel(int index) const;
-
-	virtual void Get(int index, int** start, int** end, int* type, unsigned int* color);
-	virtual void Add(int type);
-	virtual void Del(int index);
-	virtual void Duplicate(int index);
-
-	virtual size_t GetCustomHeight(int index);
-
-	RampEdit rampEdit;
-
-	virtual void DoubleClick(int index);
-
-	virtual void CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect)
-	{
-		//static const char* labels[] = { "Translation", "Rotation" , "Scale" };
-		//
-		//rampEdit.mMax = ImVec2(float(mFrameMax), 1.f);
-		//rampEdit.mMin = ImVec2(float(mFrameMin), 0.f);
-		//draw_list->PushClipRect(legendClippingRect.Min, legendClippingRect.Max, true);
-		//for (int i = 0; i < 3; i++)
-		//{
-		//	ImVec2 pta(legendRect.Min.x + 30, legendRect.Min.y + i * 14.f);
-		//	ImVec2 ptb(legendRect.Max.x, legendRect.Min.y + (i + 1) * 14.f);
-		//	draw_list->AddText(pta, rampEdit.mbVisible[i] ? 0xFFFFFFFF : 0x80FFFFFF, labels[i]);
-		//	if (ImRect(pta, ptb).Contains(ImGui::GetMousePos()) && ImGui::IsMouseClicked(0))
-		//		rampEdit.mbVisible[i] = !rampEdit.mbVisible[i];
-		//}
-		//draw_list->PopClipRect();
-		//
-		//ImGui::SetCursorScreenPos(rc.Min);
-		//ImVec2 diff = { rc.Max.x - rc.Min.x,rc.Max.y - rc.Min.y };
-		//ImCurveEdit::Edit(rampEdit, diff, 137 + index, &clippingRect);
-	}
-
-	virtual void CustomDrawCompact(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& clippingRect)
-	{
-		//rampEdit.mMax = ImVec2(float(mFrameMax), 1.f);
-		//rampEdit.mMin = ImVec2(float(mFrameMin), 0.f);
-		//draw_list->PushClipRect(clippingRect.Min, clippingRect.Max, true);
-		//for (int i = 0; i < 3; i++)
-		//{
-		//	for (int j = 0; j < rampEdit.mPointCount[i]; j++)
-		//	{
-		//		float p = rampEdit.mPts[i][j].x;
-		//		if (p < myItems[index].mFrameStart || p > myItems[index].mFrameEnd)
-		//			continue;
-		//		float r = (p - mFrameMin) / float(mFrameMax - mFrameMin);
-		//		float x = ImLerp(rc.Min.x, rc.Max.x, r);
-		//		draw_list->AddLine(ImVec2(x, rc.Min.y + 6), ImVec2(x, rc.Max.y - 4), 0xAA000000, 4.f);
-		//	}
-		//}
-		//draw_list->PopClipRect();
-	}*/
+	//timeline editor
+	TimelineEditor timelineEditor;
+	TransformationKeyFrame* selectedTransformationKeyframe;
 };

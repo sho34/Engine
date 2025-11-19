@@ -1,0 +1,174 @@
+#include "pch.h"
+#include "TimelinePopups.h"
+#include <imgui.h>
+#include <ImEditor.h>
+#include <Sound/Sound.h>
+
+static inline ImGuiWindowFlags popupChildFlag = ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollbar |
+ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoResize |
+ImGuiWindowFlags_NoMove;
+
+void AddElementPopup::Init(JUUID uuid, int frame)
+{
+	renderable = uuid;
+	type = SCET_Animation;
+
+	//animations
+	auto& anim = renderable->animable->animations;
+	animations = nostd::GetKeysFromMap(renderable->animable->animations->animationsLength);
+	animations.erase(animations.begin());
+	animation.animation = *animations.begin();
+	animation.frameStart = frame;
+	animation.startTime = 0.0f;
+	animation.endTime = anim->animationsLength[animation.animation];
+
+	//transformation
+	transformation.frameStart = frame;
+
+	//sound effects
+	soundEffects = Templates::GetSoundsUUIDsNames();
+	selectedSoundEffect = soundEffects.at(0);
+	soundfx.sound = std::get<0>(selectedSoundEffect);
+	soundfx.frameStart = frame;
+
+	//script
+	script.frameStart = frame;
+}
+
+void AddElementPopup::Draw(ImVec2 pos, std::unordered_map<SequenceChannelElementType, std::function<void(SequenceChannelElement*)>> elementBuilders, std::function<void()> closePopup)
+{
+	ImGui::OpenPopup("AddElementPopup");
+
+	ImVec2 size(200, 75);
+
+	if (type == SCET_Animation || type == SCET_SoundFX)
+	{
+		size.y += 20;
+	}
+
+	ImGui::SetNextWindowPos(pos);
+	ImGui::SetNextWindowSize(size);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+	if (ImGui::BeginPopupModal("AddElementPopup", nullptr, popupChildFlag))
+	{
+		ImGui::SetNextItemWidth(size.x);
+
+		std::vector<std::string> selectables = nostd::GetKeysFromMap(StrToSequenceChannelElementType);
+		std::string selected = SequenceChannelElementTypeToStr.at(type);
+		bool changedToAnim = false;
+		bool changedToSfx = false;
+		ImGui::PushID("NewElementType");
+		ImGui::DrawComboSelection(selected, selectables, [this, &changedToAnim, &changedToSfx](std::string newElementType)
+			{
+				type = StrToSequenceChannelElementType.at(newElementType);
+				changedToAnim = type == SCET_Animation;
+				changedToSfx = type == SCET_SoundFX;
+			}
+		);
+		ImGui::PopID();
+
+		if (type == SCET_Animation && !changedToAnim)
+		{
+			ImGui::SetNextItemWidth(size.x);
+			ImGui::PushID("ElementTypeAnimationName");
+			ImGui::DrawComboSelection(animation.animation, animations, [this](std::string selectedAnim)
+				{
+					auto& animations = renderable->animable->animations;
+					animation.animation = selectedAnim;
+					animation.startTime = 0.0f;
+					animation.endTime = animations->animationsLength[selectedAnim];
+				}
+			);
+			ImGui::PopID();
+		}
+		else if (type == SCET_SoundFX)
+		{
+			ImGui::SetNextItemWidth(size.x);
+			ImGui::PushID("ElementTypeAnimationName");
+			ImGui::DrawComboSelection(selectedSoundEffect, soundEffects, [this](JUUIDName selected)
+				{
+					selectedSoundEffect = selected;
+					soundfx.sound = std::get<0>(selected);
+				}
+			);
+			ImGui::PopID();
+		}
+
+		float button1_width = ImGui::CalcTextSize("Add").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+		float button2_width = ImGui::CalcTextSize("Cancel").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+		float total_width = button1_width + button2_width + ImGui::GetStyle().ItemSpacing.x;
+
+		float window_width = ImGui::GetContentRegionAvail().x;
+		float start_x = (window_width - total_width) * 0.5f;
+
+		ImGui::SetCursorPosX(start_x);
+
+		if (ImGui::Button("Add"))
+		{
+			std::unordered_map<SequenceChannelElementType, SequenceChannelElement*> typeTemplate =
+			{
+				{ SCET_Animation, &animation },
+				{ SCET_Transformation, &transformation },
+				{ SCET_SoundFX, &soundfx },
+				{ SCET_Script, &script },
+			};
+			elementBuilders.at(type)(typeTemplate.at(type));
+		}
+
+		ImGui::SameLine();
+		if (ImGui::Button("Cancel"))
+		{
+			closePopup();
+		}
+
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar(2);
+}
+
+void InteractElementPopup::Draw(ImVec2 pos, ChannelElement& element, int frame, std::unordered_map<InteractPopups, std::function<void()>> elementInteract, std::function<void()> closePopup)
+{
+	ImGui::OpenPopup("InteractElementPopup");
+
+	ImVec2 size(200, 75);
+
+	std::vector<std::tuple<std::string, InteractPopups>> options =
+	{
+		std::make_tuple("Delete",IP_Delete),
+		std::make_tuple("Split",IP_Split)
+	};
+
+	if (element.type == SCET_Transformation)
+	{
+		if (element.transformation.keyFrames.contains(frame))
+		{
+			options.push_back(std::make_tuple("Remove Keyframe", IP_Transformation_RemoveKeyframe));
+		}
+		else
+		{
+			options.push_back(std::make_tuple("Add Keyframe", IP_Transformation_AddKeyframe));
+		}
+		size.y += 30;
+	}
+
+	ImGui::SetNextWindowPos(pos);
+	ImGui::SetNextWindowSize(size);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2.0f, 2.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+	if (ImGui::BeginPopupModal("InteractElementPopup", nullptr, popupChildFlag))
+	{
+		for (auto& [title, key] : options)
+		{
+			if (ImGui::MenuItem(title.c_str())) {
+				elementInteract.at(key)();
+			}
+		}
+		ImGui::Separator();
+		if (ImGui::MenuItem("Cancel")) {
+			closePopup();
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::PopStyleVar(2);
+}

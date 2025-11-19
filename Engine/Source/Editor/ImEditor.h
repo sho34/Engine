@@ -14,6 +14,16 @@
 
 static const std::string defaultLevelName = "";
 
+inline ImU32 rgba(auto r, auto g, auto b, auto a)
+{
+	return IM_COL32(
+		static_cast<unsigned int>(r),
+		static_cast<unsigned int>(g),
+		static_cast<unsigned int>(b),
+		static_cast<unsigned int>(a * 255)
+	);
+}
+
 namespace Editor
 {
 	extern bool NonGameMode;

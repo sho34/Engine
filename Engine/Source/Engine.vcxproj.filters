@@ -531,6 +531,15 @@
     <ClInclude Include="Animation\AnimationSequences.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\Timeline\TimelineEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Timeline\TimelineChannel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Timeline\TimelinePopups.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine.cpp">
@@ -744,6 +753,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Animation\AnimationSequences.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Timeline\TimelineEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Timeline\TimelineChannel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Timeline\TimelinePopups.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
