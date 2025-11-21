@@ -28,7 +28,7 @@ struct AddElementPopup
 	SequenceChannelElementType type = SCET_Animation;
 	SequenceChannelElementAnimation animation;
 	SequenceChannelElementTransformation transformation;
-	SequenceChanelElementSoundFX soundfx;
+	SequenceChannelElementSoundFX soundfx;
 	SequenceChannelElementScript script;
 
 	RenderableUUID renderable;
@@ -45,7 +45,8 @@ enum InteractPopups
 	IP_Delete,
 	IP_Split,
 	IP_Transformation_AddKeyframe,
-	IP_Transformation_RemoveKeyframe
+	IP_Transformation_RemoveKeyframe,
+	IP_Script_Edit
 };
 
 struct InteractElementPopup

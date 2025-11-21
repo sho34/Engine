@@ -18,10 +18,10 @@
 #include <Renderable/Renderable.h>
 #include <Sound/SoundFX.h>
 #include <Scene.h>
+#include <Scripting.h>
 #if defined(_EDITOR)
 #include <Editor.h>
 #endif
-#include <v8.h>
 
 #include "GameDecl.h"
 
@@ -29,6 +29,7 @@ using namespace Templates::RenderPass;
 using namespace Scene;
 using namespace AudioSystem;
 using namespace ShaderCompiler;
+using namespace Scripting;
 #if defined(_EDITOR)
 using namespace Editor;
 #endif
@@ -224,6 +225,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 	//Initialize the audio system
 	InitAudio();
+
+	//Initialize the v8 scripting
+	InitScripting(std::filesystem::current_path().string().c_str());
 
 	//create the templates
 	CreateSystemTemplates();
@@ -553,6 +557,8 @@ void DestroyInstance()
 	DestroyTemplates();
 
 	DestroyConstantsBuffer();
+
+	ShutdownScripting();
 
 	ShutdownAudio();
 	gamePad.reset();

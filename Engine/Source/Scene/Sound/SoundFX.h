@@ -37,6 +37,10 @@ namespace Scene {
 #endif
 
 	void DestroySoundEffects();
+	void PlaySounds();
+	void PauseSounds();
+	void ResumeSounds();
+	void StopSounds();
 
 	struct SoundFX : SceneObject
 	{
@@ -75,8 +79,10 @@ namespace Scene {
 		bool IsPaused() { return GetInstance() == nullptr || GetInstance()->GetState() == DirectX::SoundState::PAUSED; }
 		float Duration() { return (GetEffect()->GetSampleDurationMS() / 1000.0f); }
 		float time = 0.0f;
+		bool hasStarted = false;
 		void Step(float step);
 		float Time() const { return time; }
+		bool HasStarted() { return hasStarted; }
 
 		//3D
 		AudioEmitter audioEmitter;

@@ -25,9 +25,9 @@ void AnimationSequencerModal::Initialize(JUUID uuid)
 	model3dUUID = uuid;
 	model3D = uuid;
 	animationsSequences = model3D->animationSequences();
-	animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 1")));
-	animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 2")));
-	animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 3")));
+	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 1")));
+	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 2")));
+	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 3")));
 	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 4")));
 	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 5")));
 	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 6")));
@@ -198,7 +198,7 @@ void AnimationSequencerModal::Step()
 
 	//https://stackoverflow.com/a/32836605
 	//renderable->StepAnimation(static_cast<FLOAT>(timer.GetElapsedSeconds()));
-	renderable->StepAnimation(0.0f);
+	//renderable->StepAnimation(0.0f);
 	BoundingBox modelBB = renderable->GetBoundingBox();
 	BoundingSphere modelBBS;
 	BoundingSphere::CreateFromBoundingBox(modelBBS, modelBB);
@@ -233,13 +233,18 @@ void AnimationSequencerModal::Step()
 				{
 					playingSequence = false;
 					playingSequenceTime = 0.0f;
+					sequencePlayer.ResetFrames();
 				}
 			}
 			int frame = static_cast<int>(static_cast<float>(seq.totalFrames) * (playingSequenceTime / totalTime));
 			frame = std::clamp(frame, 0, seq.totalFrames);
 			timelineEditor.selectedFrameInTimeline = frame;
+			sequencePlayer.SetFrame(timelineEditor.GetFrame(seq));
 		}
-		renderable->SetCurrentAnimationFrame(timelineEditor.GetFrame(seq));
+		else
+		{
+			sequencePlayer.SetFrame(timelineEditor.GetFrame(seq), false);
+		}
 	}
 }
 
@@ -266,7 +271,9 @@ void AnimationSequencerModal::DrawSequencer(const char* title, ImVec2 pos, ImVec
 			{
 				Sequence& seq = animationsSequences.sequences.at(sequence);
 				timelineEditor.Init(renderable, seq);
-				renderable->SetCurrentAnimation(&seq, 0.0f, 1.0f, false);
+				sequencePlayer.SetSequence(&seq, renderable());
+				renderable->SetCurrentAnimation(&sequencePlayer);
+				//renderable->SetCurrentAnimation(&seq, 0.0f, 1.0f, false);
 			}
 			playingSequence = false;
 			playingSequenceTime = 0.0f;
@@ -284,6 +291,9 @@ void AnimationSequencerModal::DrawSequencer(const char* title, ImVec2 pos, ImVec
 			onSelectSequence("");
 			playingSequence = false;
 			playingSequenceTime = 0.0f;
+			timelineEditor.Reset();
+			sequencePlayer.SetSequence(nullptr, "");
+			renderable->SetCurrentAnimation(nullptr);
 		};
 	auto onAddNewSequenceClicked = [this](std::string seqName)
 		{
@@ -292,6 +302,10 @@ void AnimationSequencerModal::DrawSequencer(const char* title, ImVec2 pos, ImVec
 			selectedSequence = seqName;
 			playingSequence = false;
 			playingSequenceTime = 0.0f;
+			Sequence& seq = animationsSequences.sequences.at(seqName);
+			timelineEditor.Init(renderable, seq);
+			sequencePlayer.SetSequence(&seq, renderable());
+			renderable->SetCurrentAnimation(&sequencePlayer);
 		};
 	auto onCancelAddNewSequenceClick = [this]()
 		{
@@ -347,6 +361,12 @@ void AnimationSequencerModal::DrawSequencer(const char* title, ImVec2 pos, ImVec
 			ImVec2 ksize(300.0f, 200.0f);
 			return std::make_tuple(kpos, ksize);
 		};
+	auto getScriptEditValues = [pos, size]
+		{
+			ImVec2 scriptPos(pos.x, pos.y + titleBarH);
+			ImVec2 scriptSize(size.x, size.y - titleBarH * 2);
+			return std::make_tuple(scriptPos, scriptSize);
+		};
 
 	auto [titlePos, titleSize] = getTitleValues();
 	auto seqSelPos = getSequenceSelectorPos();
@@ -356,38 +376,68 @@ void AnimationSequencerModal::DrawSequencer(const char* title, ImVec2 pos, ImVec
 	auto [saveExitBtnPos, saveExitBtnSize] = getSaveExitButtonValues();
 	auto [newSeqPos, newSeqSize] = getNewSequencePopupValues();
 	auto [keyframePos, keyframeSize] = getKeyframeValues();
+	auto [scriptEditPos, scriptEditSize] = getScriptEditValues();
 
 	if (ImGui::BeginPopupModal(title, nullptr, defaultChildFlag))
 	{
 		DrawTitleBar(title, titlePos, titleSize, exit);
-		DrawSequenceSelector(seqSelPos, onSelectSequence, onEraseSequence, onAddNewSequence);
-		DrawModelPreview(modelPos, modelSize);
-		if (!selectedSequence.empty())
+		if (selectedScriptToEdit == nullptr)
 		{
-			DrawTimelineController(timeControllerPos, timeControllerSize, animationsSequences.sequences.at(selectedSequence));
+			DrawSequenceSelector(seqSelPos, onSelectSequence, onEraseSequence, onAddNewSequence);
+			DrawModelPreview(modelPos, modelSize);
+			if (!selectedSequence.empty())
+			{
+				DrawTimelineController(timeControllerPos, timeControllerSize, animationsSequences.sequences.at(selectedSequence));
+			}
+			if (!selectedSequence.empty())
+			{
+				timelineEditor.Draw(animationsSequences.sequences.at(selectedSequence), sequencerPos, sequencerSize,
+					[&](TransformationKeyFrame* tkeyframe)
+					{
+						selectedTransformationKeyframe = tkeyframe;
+					},
+					[&](int channel, int frame, SequenceChannelElementScript* scriptToEdit)
+					{
+						selectedScriptChannelFrame = std::make_tuple(channel, frame);
+						selectedScriptToEdit = scriptToEdit;
+						selectedScriptToEditContent = scriptToEdit->script;
+					}
+				);
+			}
+			if (selectedTransformationKeyframe != nullptr)
+			{
+				DrawTransformationKeyFrameAttributes(*selectedTransformationKeyframe, keyframePos, keyframeSize);
+			}
+			DrawSaveAndExitButtons(saveExitBtnPos, saveExitBtnSize, exit, saveexit);
+			if (addNewSequence)
+			{
+				DrawAddNewSequencePopup(newSeqPos, newSeqSize, newSequenceName, onAddNewSequenceClicked, onCancelAddNewSequenceClick);
+			}
 		}
-		if (!selectedSequence.empty())
+		else
 		{
-			timelineEditor.Draw(animationsSequences.sequences.at(selectedSequence), sequencerPos, sequencerSize, [&](TransformationKeyFrame* tkeyframe)
+			DrawScriptEdition(
+				selectedScriptToEditContent,
+				animationsSequences.sequences.at(selectedSequence),
+				selectedSequence,
+				selectedScriptChannelFrame,
+				scriptEditPos,
+				scriptEditSize,
+				[&]()
 				{
-					selectedTransformationKeyframe = tkeyframe;
+					selectedScriptToEdit->script = selectedScriptToEditContent;
+					selectedScriptToEdit = nullptr;
+				},
+				[&]()
+				{
+					selectedScriptToEdit = nullptr;
 				}
 			);
-		}
-		if (selectedTransformationKeyframe != nullptr)
-		{
-			DrawTransformationKeyFrameAttributes(*selectedTransformationKeyframe, keyframePos, keyframeSize);
-		}
-		DrawSaveAndExitButtons(saveExitBtnPos, saveExitBtnSize, exit, saveexit);
-		if (addNewSequence)
-		{
-			DrawAddNewSequencePopup(newSeqPos, newSeqSize, newSequenceName, onAddNewSequenceClicked, onCancelAddNewSequenceClick);
 		}
 
 		ImGui::EndPopup();
 	}
-	ImGui::PopStyleVar();
-	ImGui::PopStyleVar();
+	ImGui::PopStyleVar(2);
 
 	if (exit)
 	{
@@ -671,6 +721,8 @@ void AnimationSequencerModal::DrawTimelineController(ImVec2 curPos, ImVec2 size,
 			renderable->animationPlay(true);
 			playingSequence = true;
 			playingSequenceTime = timelineEditor.GetTime(sequence) / 1000.0f;
+			sequencePlayer.currentFrame = timelineEditor.GetFrame(sequence);
+			sequencePlayer.runningFrame = timelineEditor.GetFrame(sequence);
 		}
 	}
 	else
@@ -690,6 +742,8 @@ void AnimationSequencerModal::DrawTimelineController(ImVec2 curPos, ImVec2 size,
 		renderable->animationTime(0.0f);
 		playingSequence = false;
 		playingSequenceTime = 0.0f;
+		sequencePlayer.ResetFrames();
+		timelineEditor.selectedFrameInTimeline = 0;
 	}
 
 	ImGui::SameLine();
@@ -794,19 +848,55 @@ void AnimationSequencerModal::DrawAddNewSequencePopup(ImVec2 curPos, ImVec2 size
 	ImGui::PopStyleVar();
 }
 
+void AnimationSequencerModal::DrawScriptEdition(std::string& content, Sequence& sequence, std::string sequenceName, std::tuple<int, int> channelFrame, ImVec2 pos, ImVec2 size, std::function<void()> onSave, std::function<void()> onCancel)
+{
+	auto& [channel, frame] = channelFrame;
+	ImVec2 titlePos(pos);
+	std::string title = "sequence:" + sequenceName + " -> channel:" + sequence.sequenceChannels.at(channel).name + " -> frame:" + std::to_string(frame);
+	ImGui::SetCursorScreenPos(pos);
+	ImGui::Text(title.c_str());
+
+	ImVec2 editorPos(pos.x, pos.y + 20);
+	ImVec2 editorSize(size.x, size.y - 30);
+	ImGui::SetNextWindowSize(editorSize, 0);
+	ImGui::SetNextWindowPos(editorPos, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+	ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+	ImGui::BeginChild("script-editor", editorSize, 0);
+	{
+		ImGui::InputTextMultiline("Script Content", &content, ImVec2(-1, editorSize.y));
+	}
+	ImGui::EndChild();
+	ImGui::PopStyleVar(2);
+
+	ImVec2 buttonsPos(pos.x + 10, editorPos.y + editorSize.y + 5);
+	ImGui::SetCursorScreenPos(buttonsPos);
+	if (ImGui::Button("Save&Exit"))
+	{
+		onSave();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Cancel"))
+	{
+		onCancel();
+	}
+}
+
 void AnimationSequencerModal::Exit()
 {
+	renderable->SetCurrentAnimation(nullptr);
 	destroying = true;
 	showing = false;
 }
 
 void AnimationSequencerModal::SaveAndExit()
 {
+	renderable->SetCurrentAnimation(nullptr);
 	destroying = true;
 	showing = false;
-	//model3D->animationSequences(animationsSequences);
-	//model3D->flag(Model3DJson::Update_animationSequences);
-	//Editor::templatesModified = true;
+	model3D->animationSequences(animationsSequences);
+	model3D->flag(Model3DJson::Update_animationSequences);
+	Editor::templatesModified = true;
 }
 
 

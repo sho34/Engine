@@ -1010,6 +1010,16 @@ namespace Editor
 		sceneObjectEdition.drawers.clear();
 	}
 
+	void DeleteFromScenePanelSelection(JUUID sceneObject)
+	{
+		if (sceneObjectEdition.selected.contains(sceneObject))
+		{
+			sceneObjectEdition.selected.erase(sceneObject);
+			sceneObjectEdition.dirtyAssetsTree = true;
+			sceneObjectEdition.selectedTab = sceneObjectEdition.detailAbleTabs.at(0);
+		}
+	}
+
 	//Templates Panel
 	void OnChangeTemplateTab(std::string newTab)
 	{
@@ -2009,22 +2019,26 @@ namespace Editor
 	void SwitchToPlayMode()
 	{
 		isPlaying = true;
+		Scene::PlaySounds();
 	}
 
 	void SwitchToPauseMode()
 	{
 		isPaused = true;
+		Scene::PauseSounds();
 	}
 
 	void SwitchToUnPausedMode()
 	{
 		isPaused = false;
+		Scene::ResumeSounds();
 	}
 
 	void SwitchToNonPlayMode()
 	{
 		isPlaying = false;
 		isPaused = false;
+		Scene::StopSounds();
 	}
 };
 

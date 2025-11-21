@@ -5,6 +5,7 @@
 #include <any>
 #include <map>
 #include <UUID.h>
+#include <v8-context.h>
 
 struct JObject;
 
@@ -78,6 +79,8 @@ struct JObject : nlohmann::json
 	{
 		updateFlag = 0ULL;
 	}
+
+	virtual void BindToV8Context(v8::Local<v8::Context>& context) {};
 
 	virtual std::function<bool(JObject*)> GetAssetsConditioner() { return [](JObject*) { return true; }; }
 

@@ -30,9 +30,11 @@ void AddElementPopup::Init(JUUID uuid, int frame)
 	selectedSoundEffect = soundEffects.at(0);
 	soundfx.sound = std::get<0>(selectedSoundEffect);
 	soundfx.frameStart = frame;
+	soundfx.frameEnd = frame;
 
 	//script
 	script.frameStart = frame;
+	script.frameEnd = frame;
 }
 
 void AddElementPopup::Draw(ImVec2 pos, std::unordered_map<SequenceChannelElementType, std::function<void(SequenceChannelElement*)>> elementBuilders, std::function<void()> closePopup)
@@ -131,25 +133,30 @@ void InteractElementPopup::Draw(ImVec2 pos, ChannelElement& element, int frame, 
 {
 	ImGui::OpenPopup("InteractElementPopup");
 
-	ImVec2 size(200, 75);
+	ImVec2 size(200, 80);
 
-	std::vector<std::tuple<std::string, InteractPopups>> options =
+	std::vector<std::tuple<std::string, InteractPopups, bool>> options =
 	{
-		std::make_tuple("Delete",IP_Delete),
-		std::make_tuple("Split",IP_Split)
+		std::make_tuple("Delete",IP_Delete, true),
+		std::make_tuple("Split",IP_Split,element.GetFrameStart() != element.GetFrameEnd())
 	};
 
 	if (element.type == SCET_Transformation)
 	{
 		if (element.transformation.keyFrames.contains(frame))
 		{
-			options.push_back(std::make_tuple("Remove Keyframe", IP_Transformation_RemoveKeyframe));
+			options.push_back(std::make_tuple("Remove Keyframe", IP_Transformation_RemoveKeyframe, true));
 		}
 		else
 		{
-			options.push_back(std::make_tuple("Add Keyframe", IP_Transformation_AddKeyframe));
+			options.push_back(std::make_tuple("Add Keyframe", IP_Transformation_AddKeyframe, true));
 		}
-		size.y += 30;
+		size.y += 20;
+	}
+	else if (element.type == SCET_Script)
+	{
+		options.push_back(std::make_tuple("Edit Script", IP_Script_Edit, true));
+		size.y += 20;
 	}
 
 	ImGui::SetNextWindowPos(pos);
@@ -158,10 +165,17 @@ void InteractElementPopup::Draw(ImVec2 pos, ChannelElement& element, int frame, 
 	ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
 	if (ImGui::BeginPopupModal("InteractElementPopup", nullptr, popupChildFlag))
 	{
-		for (auto& [title, key] : options)
+		for (auto& [title, key, enabled] : options)
 		{
-			if (ImGui::MenuItem(title.c_str())) {
-				elementInteract.at(key)();
+			if (enabled)
+			{
+				if (ImGui::MenuItem(title.c_str())) {
+					elementInteract.at(key)();
+				}
+			}
+			else
+			{
+				ImGui::MenuItem(title.c_str(), NULL, false, false);
 			}
 		}
 		ImGui::Separator();

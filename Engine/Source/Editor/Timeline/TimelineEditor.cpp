@@ -11,6 +11,40 @@ void TimelineEditor::Init(RenderableUUID renderable, Sequence& sequence)
 	}
 }
 
+void TimelineEditor::Reset()
+{
+	renderable = "";
+
+	scroll = ImVec2(0.0f, 0.0f);
+	scrollbarLastMousePos = ImVec2(0.0f, 0.0f);
+	scrollbarMouseClicked[0] = false;
+	scrollbarMouseClicked[1] = false;
+	selectedFrameInTimeline = -1;
+	channels.clear();
+	popup = TP_None;
+	popupCoords = ImVec2(0.0f, 0.0f);
+	popupChannelFrame = std::make_tuple(-1, -1);
+	markerMouseDrag = false;
+	markerLastMousePos = ImVec2(0.0f, 0.0f);
+
+	selectedChannelElement = std::make_tuple(-1, -1);
+	elementLastMousePos = ImVec2(0.0f, 0.0f);
+	elementDrag = false;
+	elementDragXSum = 0.0f;
+
+	//left boundary drag
+	elementDragLeftBoundary = false;
+	elementDragLeftBoundaryMousePos = ImVec2(0.0f, 0.0f);
+	selectedDragLeftBoundaryChannelElement = std::make_tuple(-1, -1);
+	elementDragLeftBoundaryXSum = 0.0f;
+
+	//right boundary drag
+	elementDragRightBoundary = false;
+	elementDragRightBoundaryMousePos = ImVec2(0.0f, 0.0f);
+	selectedDragRightBoundaryChannelElement = std::make_tuple(-1, -1);
+	elementDragRightBoundaryXSum = 0.0f;
+}
+
 void TimelineEditor::DrawRect(ImVec2 pos, ImVec2 size, ImU32 color)
 {
 	ImVec2 p1(pos);
@@ -88,12 +122,17 @@ void TimelineEditor::DrawAddChannelButton(Sequence& sequence, ImVec2 pos, bool c
 		sequence.sequenceChannels.push_back(SequenceChannel(name));
 		int last = static_cast<int>(channels.size()) - 1;
 		channels.push_back(TimelineChannel());
-		channels.back().SetPosAfter(channels.at(last));
+		if (last >= 0)
+		{
+			channels.back().SetPosAfter(channels.at(last));
+		}
 	}
 	ImGui::PopID();
 }
 
-void TimelineEditor::DrawTimeline(Sequence& sequence, ImVec2 timelinePos, ImVec2 timelineSize, bool canInteract, std::function<void(TransformationKeyFrame*)> setTransformationKeyFrame)
+void TimelineEditor::DrawTimeline(Sequence& sequence, ImVec2 timelinePos, ImVec2 timelineSize, bool canInteract,
+	std::function<void(TransformationKeyFrame*)> setTransformationKeyFrame
+)
 {
 	ImGuiIO& io = ImGui::GetIO();
 
@@ -176,6 +215,13 @@ void TimelineEditor::DrawTimeline(Sequence& sequence, ImVec2 timelinePos, ImVec2
 	if (std::get<0>(actionChannelFrame) != -1 && std::get<1>(actionChannelFrame) != -1)
 	{
 		auto& [channel, frame] = actionChannelFrame;
+
+		int elementId = sequence.sequenceChannels.at(channel).GetFirstElementIndexBetweenFrames(frame, frame);
+		selectedChannelElement = std::make_tuple(elementId != -1 ? channel : -1, elementId);
+		if (elementId == -1)
+		{
+			SelectElementInChannel(0, -1); //give 0 to reset channel selection something, this will reset and do nothing after actually because of the -1 frame
+		}
 		CreatePopupForItemAt(sequence, channel, frame, io.MousePos);
 	}
 	if (std::get<0>(selectedChannelElement) != -1 && std::get<1>(selectedChannelElement) != -1)
@@ -433,7 +479,10 @@ void TimelineEditor::DrawSelectedFrameVerticalLine(ImVec2 timelinePos, ImVec2 ti
 	ImGui::PopClipRect();
 }
 
-void TimelineEditor::DrawActionPopup(Sequence& sequence, std::function<void(TransformationKeyFrame*)> setTransformationKeyFrame)
+void TimelineEditor::DrawActionPopup(Sequence& sequence,
+	std::function<void(TransformationKeyFrame*)> setTransformationKeyFrame,
+	std::function<void(int channel, int frame, SequenceChannelElementScript*)> setScriptToEdit
+)
 {
 	if (popup == TP_None) return;
 
@@ -456,7 +505,7 @@ void TimelineEditor::DrawActionPopup(Sequence& sequence, std::function<void(Tran
 			},
 			{ SCET_SoundFX, [this, &sequence, channel](SequenceChannelElement* elem)
 			{
-				AddSoundFXElementToChannel(sequence, channel, static_cast<SequenceChanelElementSoundFX*>(elem));
+				AddSoundFXElementToChannel(sequence, channel, static_cast<SequenceChannelElementSoundFX*>(elem));
 				popup = TP_None;
 			}
 			},
@@ -504,13 +553,22 @@ void TimelineEditor::DrawActionPopup(Sequence& sequence, std::function<void(Tran
 				popup = TP_None;
 			}
 			},
+			{ IP_Script_Edit, [this,&sequence,channel,frame, setScriptToEdit]()
+			{
+				OpenScriptEditionForElementInFrameAtChannel(sequence,channel,frame, setScriptToEdit);
+				popup = TP_None;
+			}
+			}
 		};
 
 		interactElementPopup.Draw(popupCoords, element, frame, interactions, [this]() { popup = TP_None; });
 	}
 }
 
-void TimelineEditor::Draw(Sequence& sequence, ImVec2 pos, ImVec2 size, std::function<void(TransformationKeyFrame*)> setTransformationKeyFrame)
+void TimelineEditor::Draw(Sequence& sequence, ImVec2 pos, ImVec2 size,
+	std::function<void(TransformationKeyFrame*)> setTransformationKeyFrame,
+	std::function<void(int channel, int frame, SequenceChannelElementScript*)> setScriptToEdit
+)
 {
 	auto getTimelineValues = [pos, size]()
 		{
@@ -529,7 +587,7 @@ void TimelineEditor::Draw(Sequence& sequence, ImVec2 pos, ImVec2 size, std::func
 	DrawSelectedFrameVerticalLine(timelinePos, timelineSize);
 	DrawVerticalScrollbar(sequence, timelinePos, timelineSize, canInteract && !markerMouseDrag && !draging);
 	DrawHorizontalScrollbar(sequence, timelinePos, timelineSize, canInteract && !markerMouseDrag && !draging);
-	DrawActionPopup(sequence, setTransformationKeyFrame);
+	DrawActionPopup(sequence, setTransformationKeyFrame, setScriptToEdit);
 	HandleElementDrag(sequence);
 	HandleElementDragLeftBoundary(sequence);
 	HandleElementDragRightBoundary(sequence);
@@ -648,7 +706,10 @@ void TimelineEditor::DeleteChannel(Sequence& sequence, int channelId, ImVec2 tim
 	//if is the first bump it at the beginning
 	if (channelId == 0)
 	{
-		channels.begin()->pos.y = 0.0f;
+		if (channels.size() > 0ULL)
+		{
+			channels.begin()->pos.y = 0.0f;
+		}
 	}
 
 	//recalculate positions
@@ -717,7 +778,10 @@ void TimelineEditor::CreatePopupForItemAt(Sequence& sequence, int channelId, int
 	popupCoords = popupPosition;
 	popup = (!sequence.sequenceChannels.at(channelId).ChannelHasElementAtFrame(frame)) ? TP_AddElement : TP_InteractWithElement;
 	popupChannelFrame = std::make_tuple(channelId, frame);
-	addElementPopup.Init(renderable(), frame);
+	if (popup == TP_AddElement)
+	{
+		addElementPopup.Init(renderable(), frame);
+	}
 }
 
 void TimelineEditor::ScrollHorizontal(Sequence& sequence, ImVec2 timelineSize, float quantity)
@@ -769,12 +833,13 @@ void TimelineEditor::AddTransformationElementToChannel(Sequence& sequence, int c
 	seqChannel.InsertChannelElement(chanElem, sequence.totalFrames);
 }
 
-void TimelineEditor::AddSoundFXElementToChannel(Sequence& sequence, int channelId, SequenceChanelElementSoundFX* elem)
+void TimelineEditor::AddSoundFXElementToChannel(Sequence& sequence, int channelId, SequenceChannelElementSoundFX* elem)
 {
 	SequenceChannel& seqChannel = sequence.sequenceChannels.at(channelId);
 	ChannelElement chanElem;
 	chanElem.type = SCET_SoundFX;
-	SequenceChanelElementSoundFX& soundfx = chanElem.soundfx;
+	SequenceChannelElementSoundFX& soundfx = chanElem.soundfx;
+	soundfx.sound = elem->sound;
 	soundfx.frameStart = elem->frameStart;
 	soundfx.frameEnd = elem->frameEnd;
 	seqChannel.InsertChannelElement(chanElem, sequence.totalFrames);
@@ -795,6 +860,7 @@ void TimelineEditor::DeleteElementInFrameAtChannel(Sequence& sequence, int chann
 {
 	SequenceChannel& seqChannel = sequence.sequenceChannels.at(channelId);
 	seqChannel.EraseElementInFrame(frame);
+	channels.at(channelId).ResetSelection();
 }
 
 void TimelineEditor::SplitElementInFrameAtChannel(Sequence& sequence, int channelId, int frame)
@@ -807,6 +873,7 @@ void TimelineEditor::AddKeyframeToTransformationElementInFrameAtChannel(Sequence
 {
 	SequenceChannel& seqChannel = sequence.sequenceChannels.at(channelId);
 	int elementIndex = seqChannel.GetFirstElementIndexBetweenFrames(frame, frame);
+	if (elementIndex == -1) return;
 	ChannelElement& element = seqChannel.elements.at(elementIndex);
 	TransformationKeyFrame prevKeyframe = element.transformation.GetKeyFrameBeforeFrame(frame);
 	element.transformation.keyFrames.insert_or_assign(frame, prevKeyframe);
@@ -816,9 +883,21 @@ void TimelineEditor::RemoveKeyframeFromTransformationElementInFrameAtChannel(Seq
 {
 	SequenceChannel& seqChannel = sequence.sequenceChannels.at(channelId);
 	int elementIndex = seqChannel.GetFirstElementIndexBetweenFrames(frame, frame);
+	if (elementIndex == -1) return;
 	ChannelElement& element = seqChannel.elements.at(elementIndex);
 	TransformationKeyFrame prevKeyframe = element.transformation.GetKeyFrameBeforeFrame(frame);
 	element.transformation.keyFrames.erase(frame);
+}
+
+void TimelineEditor::OpenScriptEditionForElementInFrameAtChannel(Sequence& sequence, int channelId, int frame,
+	std::function<void(int channel, int frame, SequenceChannelElementScript*)> setScriptToEdit
+)
+{
+	SequenceChannel& seqChannel = sequence.sequenceChannels.at(channelId);
+	int elementIndex = seqChannel.GetFirstElementIndexBetweenFrames(frame, frame);
+	if (elementIndex == -1) return;
+	ChannelElement& element = seqChannel.elements.at(elementIndex);
+	setScriptToEdit(channelId, frame, &element.script);
 }
 
 void TimelineEditor::SetFrameAtMouseXCoord(Sequence& sequence, ImVec2 markerPos, ImVec2 mousePos)

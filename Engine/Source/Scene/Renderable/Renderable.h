@@ -134,11 +134,8 @@ namespace Scene
 		//ANIMATION
 		Model3DInstanceUUID animable;
 		Animation::BonesTransformations bonesTransformation;
-		Sequence* currentSequence = nullptr;
+		//Sequence* currentSequence = nullptr;
 		XMMATRIX currentSequenceTransformation;
-		//AnimationSequences animationsSequences;
-		void CreateAnimationSequences();
-		void RebuildAnimationSequences();
 
 		BoundingBox boundingBox;
 		RenderableBoundingBoxUUID boundingBoxCompute; //used for animables
@@ -186,20 +183,26 @@ namespace Scene
 		void WriteConstantsBuffer(unsigned int backbufferIndex);
 
 		//Animation
-		AnimationCallbacks animationCallbacks;
-		bool animationHasStarted = false;
-		void SetCurrentAnimation(Sequence* sequence, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false, AnimationCallbacks callbacks = {});
-		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false, AnimationCallbacks callbacks = {});
+		//AnimationCallbacks animationCallbacks;
+		//bool animationHasStarted = false;
+		AnimationSequences animationsSequences;
+		SequencePlayer sequencePlayer;
+		void CreateAnimationSequences();
+		void RebuildAnimationSequences();
+		void SetCurrentAnimation(SequencePlayer* sequencePlayer);
+		void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false);
+		//void SetCurrentAnimation(Sequence* sequence, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false, AnimationCallbacks callbacks = {});
+		//void SetCurrentAnimation(std::string anim, float startTime = 0.0f, float timeFactor = 1.0f, bool play = true, bool loop = false, AnimationCallbacks callbacks = {});
 		void StepAnimation(double elapsedSeconds);
-		int GetCurrentAnimationFrame();
-		int GetCurrentAnimationNumFrames() const;
-		void SetCurrentAnimationFrame(int frame);
-		bool AnimationEnded();
-		void RunAnimationBeginCallbacks();
-		void RunAnimationEndCallbacks();
-		void RunAnimationFrameCallbacks(unsigned int prevFrame, unsigned int currentFrame);
-		void RunAnimationTimeCallbacks(float prevTime, float currentTime);
-		void RunAnimationTimeFrameCallbacks(float currentTime);
+		//int GetCurrentAnimationFrame();
+		//int GetCurrentAnimationNumFrames() const;
+		//void SetCurrentAnimationFrame(int frame);
+		//bool AnimationEnded();
+		//void RunAnimationBeginCallbacks();
+		//void RunAnimationEndCallbacks();
+		//void RunAnimationFrameCallbacks(unsigned int prevFrame, unsigned int currentFrame);
+		//void RunAnimationTimeCallbacks(float prevTime, float currentTime);
+		//void RunAnimationTimeFrameCallbacks(float currentTime);
 
 		//DESTROY
 		bool markedForDelete = false;

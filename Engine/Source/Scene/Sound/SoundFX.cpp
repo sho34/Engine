@@ -16,6 +16,10 @@ namespace Editor
 	extern void RegisterBillboard(JUUID sceneObject);
 	extern JUUID GetBillboard(JUUID sceneObject);
 	extern void DestroyBillboard(JUUID sceneObject);
+	extern void MarkScenePanelAssetsAsDirty();
+	extern void DeleteFromScenePanelSelection(JUUID sceneObject);
+	extern bool IsPlaying();
+	extern bool IsPaused();
 }
 #endif
 
@@ -88,7 +92,7 @@ namespace Scene
 		std::set<SoundFXUUID> sfxsCreateI;
 		std::copy_if(sfxs.begin(), sfxs.end(), std::inserter(sfxsDestroyI, sfxsDestroyI.end()), [](auto sfx)
 			{
-				return sfx->dirty(SoundFX::Update_sound) || sfx->dirty(SoundFX::Update_loop) || sfx->dirty(SoundFX::Update_instanceFlags);
+				return sfx->dirty(SoundFX::Update_sound) || sfx->dirty(SoundFX::Update_loop) || sfx->dirty(SoundFX::Update_instanceFlags) || (!sfx->IsPlaying() && sfx->HasStarted() && sfx->destroyOnCompletion());
 			}
 		);
 
@@ -131,6 +135,10 @@ namespace Scene
 			EraseSoundFXFromSoundEffects(sfx());
 			EraseSoundFXFromSound3DEffects(sfx());
 			DeleteSoundFXSceneObject(sfx());
+#if defined(_EDITOR)
+			Editor::MarkScenePanelAssetsAsDirty();
+			Editor::DeleteFromScenePanelSelection(sfx());
+#endif
 			//std::shared_ptr<SoundFX> soundfx = sfx;
 			//SafeDeleteSceneObject(soundfx);
 		}
@@ -185,7 +193,10 @@ namespace Scene
 		}
 		if (std::get<0>(soundEffectInstance) != nullptr && autoPlay())
 		{
-			Play();
+#if defined(_EDITOR)
+			if (Editor::IsPlaying() && !Editor::IsPaused())
+#endif
+				Play();
 		}
 #if defined(_EDITOR)
 		SceneObject::BindToScene();
@@ -212,6 +223,7 @@ namespace Scene
 				DestroySoundEffectInstance(sound(), soundEffectInstance);
 			}
 		}
+		markedForDelete = true;
 	}
 
 	bool SoundFX::Play()
@@ -221,6 +233,7 @@ namespace Scene
 		sfxI->SetVolume(volume());
 		sfxI->Play(loop());
 		time = 0.0f;
+		hasStarted = true;
 		return true;
 	}
 
@@ -346,6 +359,46 @@ namespace Scene
 #include <TrackUUID/JClear.h>
 #include <SoundFXAtt.h>
 #include <JEnd.h>
+	}
+
+	void PlaySounds()
+	{
+		auto& sfxs = GetSoundEffects();
+		std::for_each(sfxs.begin(), sfxs.end(), [](SoundFXUUID sfx)
+			{
+				sfx->Play();
+			}
+		);
+	}
+
+	void PauseSounds()
+	{
+		auto& sfxs = GetSoundEffects();
+		std::for_each(sfxs.begin(), sfxs.end(), [](SoundFXUUID sfx)
+			{
+				sfx->Pause();
+			}
+		);
+	}
+
+	void ResumeSounds()
+	{
+		auto& sfxs = GetSoundEffects();
+		std::for_each(sfxs.begin(), sfxs.end(), [](SoundFXUUID sfx)
+			{
+				sfx->Resume();
+			}
+		);
+	}
+
+	void StopSounds()
+	{
+		auto& sfxs = GetSoundEffects();
+		std::for_each(sfxs.begin(), sfxs.end(), [](SoundFXUUID sfx)
+			{
+				sfx->Stop();
+			}
+		);
 	}
 
 	void DeleteSoundFX(std::string uuid)

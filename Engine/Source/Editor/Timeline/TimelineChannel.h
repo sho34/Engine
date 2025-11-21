@@ -14,6 +14,7 @@ struct TimelineChannel
 	std::tuple<bool, bool, bool, bool> DrawChannelFrame(SequenceChannel& seqChannel, int frame, ImVec2 pMin, ImVec2 pMax, ImRect channelsRect, ImRect framesRect, ImVec2 timelineSize, int numDashedLines, bool canInteract);
 	void ToggleExpansion();
 	void SetPosAfter(const TimelineChannel& prev);
+	void ResetSelection();
 
 	static inline ImVec2 frameSize = ImVec2(10.0f, 18.0f);
 	static inline ImVec2 frameSizeExpanded = ImVec2(10.0f, 100.0f);

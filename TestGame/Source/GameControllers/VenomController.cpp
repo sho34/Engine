@@ -221,27 +221,30 @@ namespace Game
 
 	void VenomController::EnterIntro()
 	{
+		venom->SetCurrentAnimation("Intro", 0.0f, 1.0f, true, false);
+		/*
 		venom->SetCurrentAnimation("Intro", 0.0f, 1.0f, true, false,
 			{
 				{ {.type = TimeCallbackType_End }, [this] {  vsm.ChangeState(VS_Idle); }, },
 				{ {.type = TimeCallbackType_Frame, .frame = 127 }, [this] { Roar(); }, }
 			}
 		);
+		*/
 	}
 
 	void VenomController::EnterIdle()
 	{
-		venom->SetCurrentAnimation("Idle_C", 0.0f, 1.0f, true, true);
+		//venom->SetCurrentAnimation("Idle_C", 0.0f, 1.0f, true, true);
 	}
 
 	void VenomController::EnterWalking()
 	{
-		venom->SetCurrentAnimation("Walk_Fwd_C", 0.0f, 1.5f, true, true);
+		//venom->SetCurrentAnimation("Walk_Fwd_C", 0.0f, 1.5f, true, true);
 	}
 
 	void VenomController::EnterRunning()
 	{
-		venom->SetCurrentAnimation("Run_Fwd_C", 0.0f, 1.5f, true, true);
+		//venom->SetCurrentAnimation("Run_Fwd_C", 0.0f, 1.5f, true, true);
 	}
 
 	/*

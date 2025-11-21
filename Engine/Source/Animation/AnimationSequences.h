@@ -107,16 +107,18 @@ struct SequenceChannelElementTransformation : SequenceChannelElement
 	std::unordered_map<int, TransformationKeyFrame> keyFrames;
 };
 
-struct SequenceChanelElementSoundFX : SequenceChannelElement
+struct SequenceChannelElementSoundFX : SequenceChannelElement
 {
-	SequenceChanelElementSoundFX();
-	SequenceChanelElementSoundFX(const nlohmann::json& j);
-	bool operator==(const SequenceChanelElementSoundFX& other) const;
+	SequenceChannelElementSoundFX();
+	SequenceChannelElementSoundFX(const nlohmann::json& j);
+	bool operator==(const SequenceChannelElementSoundFX& other) const;
 	nlohmann::json json();
 	int GetFrameStart();
 	int GetFrameEnd();
 
 	SoundJsonUUID sound;
+	float volume;
+	bool loop;
 };
 
 struct SequenceChannelElementScript : SequenceChannelElement
@@ -154,7 +156,7 @@ struct ChannelElement
 	SequenceChannelElementType type;
 	SequenceChannelElementAnimation animation;
 	SequenceChannelElementTransformation transformation;
-	SequenceChanelElementSoundFX soundfx;
+	SequenceChannelElementSoundFX soundfx;
 	SequenceChannelElementScript script;
 };
 
@@ -174,6 +176,8 @@ struct SequenceChannel
 	SequenceChannelElementAnimation* GetAnimationElementAtFrame(int frame);
 	SequenceChannelElementTransformation* GetTransformationElementAtFrame(int frame);
 	TransformationKeyFrame* GetTransformationKeyframe(int frame);
+	SequenceChannelElementSoundFX* GetSoundFXToCreateAtFrame(int frame);
+	SequenceChannelElementScript* GetScriptToRunAtFrame(int frame);
 
 	void InsertChannelElement(ChannelElement element, int& totalFrames);
 	void MoveElement(int elementIndex, int frames, int totalFrames);
@@ -217,10 +221,12 @@ struct Sequence
 	std::string GetAnimationNameAtFrame(int frame);
 	SequenceChannelElementAnimation* GetAnimationElementAtFrame(int frame);
 	XMMATRIX GetTransformationAtFrame(int frame);
+	void CreateSoundFXsAtFrame(int frame);
+	void RunScriptAtFrame(int frame, RenderableUUID renderable);
 
 	int framesPerSecond;
 	int totalFrames;
-	bool loop;
+	//bool loop;
 	std::vector<SequenceChannel> sequenceChannels;
 };
 
@@ -254,3 +260,26 @@ inline static nlohmann::json FromAnimationSequences(AnimationSequences s)
 {
 	return s.json();
 }
+
+struct SequencePlayer
+{
+	Sequence* sequence;
+	float time;
+	int runningFrame;
+	int currentFrame;
+	bool loop;
+	std::set<int> runnedFrames;
+	RenderableUUID renderable;
+
+	SequencePlayer();
+	SequencePlayer(Sequence* seq, JUUID uuid);
+	void SetSequence(Sequence* seq, JUUID uuid);
+	void Step(float dt);
+	void SetTime(float t);
+	void StepFrame(int df);
+	void SetFrame(int frame, bool runningPlayer = true);
+	void ApplyFrameValues(RenderableUUID renderable);
+	void CreateFrameSoundFXs(int frame);
+	void ExecuteFrameScripts(int frame);
+	void ResetFrames();
+};

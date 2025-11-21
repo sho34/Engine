@@ -23,6 +23,7 @@ void WindowResize(unsigned int width, unsigned int height);
 void RunPreRenderComputeShaders();
 void RunPostRenderComputeShaders();
 void GetAudioListenerVectors(std::function<void(XMFLOAT3, XMVECTOR)>);
+void BindGameObjectsToV8Context(v8::Local<v8::Context>& context);
 
 //Booting
 void BootScreenCreate(GameStates prevState);

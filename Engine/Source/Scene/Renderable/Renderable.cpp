@@ -16,6 +16,7 @@
 #include <AnimationCallback.h>
 
 extern std::unique_ptr<Renderer> renderer;
+extern DX::StepTimer timer;
 
 #if defined(_EDITOR)
 namespace Editor
@@ -23,6 +24,8 @@ namespace Editor
 	extern void SelectRenderable(JUUID ruuid);
 	extern void BindRenderableToPickingPass(RenderableUUID r);
 	extern void UnbindRenderableFromPickingPass(RenderableUUID r);
+	extern bool IsPlaying();
+	extern bool IsPaused();
 };
 #endif
 
@@ -57,6 +60,8 @@ namespace Scene
 #include <JEnd.h>
 
 #endif
+
+	std::unordered_map<RenderableUUID, SequencePlayer*> animationPlayers;
 
 	void RenderablesStep()
 	{
@@ -205,6 +210,17 @@ namespace Scene
 			);
 		}
 #endif
+
+
+		float dt = static_cast<float>(timer.GetElapsedSeconds());
+		for (auto& [renderable, player] : animationPlayers)
+		{
+			if (Editor::IsPlaying() && !Editor::IsPaused())
+			{
+				player->Step(dt * 1000.0f);
+			}
+			player->ApplyFrameValues(renderable);
+		}
 	}
 
 	void RunBoundingBoxComputeShaders()
@@ -284,10 +300,10 @@ namespace Scene
 		if (!animable.empty())
 		{
 			AttachAnimation(uuid(), model3D->animations);
-			if (!animation().empty() && animationPlay())
-			{
-				SetCurrentAnimation(animation(), 0.0f, animationTimeFactor(), animationPlay(), animationLoop());
-			}
+			//if (!animation().empty() && animationPlay())
+			//{
+			//	SetCurrentAnimation(animation(), 0.0f, animationTimeFactor(), animationPlay(), animationLoop());
+			//}
 			StepAnimation(0.0f); //take an empty T-Pose step so the skinning can be performed
 			boundingBoxCompute = CreateRenderableBoundingBox(uuid());
 			WriteAnimationConstantsBuffer(renderer->backBufferIndex);
@@ -353,6 +369,10 @@ namespace Scene
 		{
 			DeleteRenderableBoundingBox(boundingBoxCompute());
 			boundingBoxCompute.clear();
+		}
+		if (animationPlayers.contains(uuid()))
+		{
+			animationPlayers.erase(uuid());
 		}
 	}
 
@@ -767,55 +787,6 @@ namespace Scene
 		}
 	}
 
-	void Renderable::CreateAnimationSequences()
-	{
-		/*
-		std::unique_ptr<Model3DJson>& mdl = GetModel3DTemplate(model());
-		animationsSequences = mdl->animationSequences();
-
-		for (auto& [name, _] : animable->animations->animationsLength)
-		{
-			int totalFrames = static_cast<int>(animable->animations->animationsLength.at(name) * 60);
-			totalFrames /= 1000;
-			animationsSequences.sequences.insert_or_assign(
-				name,
-				Sequence(
-					name,
-					totalFrames
-				)
-			);
-		}
-		*/
-	}
-
-	void Renderable::RebuildAnimationSequences()
-	{
-		/*
-		if (currentSequence == nullptr)
-			return CreateAnimationSequences();
-
-		std::string currentSequenceStr;
-		for (auto it = animationsSequences.sequences.begin(); it != animationsSequences.sequences.end(); it++)
-		{
-			if (currentSequence == &(it->second))
-			{
-				currentSequenceStr = it->first;
-				break;
-			}
-		}
-
-		CreateAnimationSequences();
-		if (currentSequenceStr.empty()) return;
-
-		for (auto it = animationsSequences.sequences.begin(); it != animationsSequences.sequences.end(); it++)
-		{
-			if (currentSequenceStr != it->first) continue;
-			currentSequence = &(it->second);
-			return;
-		}
-		*/
-	}
-
 	void Renderable::CreateBoundingBox()
 	{
 		using namespace Templates;
@@ -870,27 +841,111 @@ namespace Scene
 		WriteConstantsBuffer("world", w, backbufferIndex);
 	}
 
+	void Renderable::CreateAnimationSequences()
+	{
+		std::unique_ptr<Model3DJson>& mdl = GetModel3DTemplate(model());
+		animationsSequences = mdl->animationSequences();
+		for (auto& [name, time] : animable->animations->animationsLength)
+		{
+			int totalFrames = static_cast<int>(time * 60);
+			totalFrames /= 1000;
+			SequenceChannel seqChannel;
+			seqChannel.name = "animation";
+			ChannelElement channelElement;
+			channelElement.type = SCET_Animation;
+			SequenceChannelElementAnimation& animation = channelElement.animation;
+			animation.animation = name;
+			animation.startTime = 0.0f;
+			animation.endTime = time;
+			animation.frameStart = 0;
+			animation.frameEnd = totalFrames;
+			seqChannel.elements.push_back(channelElement);
+			Sequence sequence;
+			sequence.framesPerSecond = 60;
+			sequence.totalFrames = totalFrames;
+			sequence.sequenceChannels.push_back(seqChannel);
+			animationsSequences.sequences.insert_or_assign(name, sequence);
+		}
+	}
+
+	void Renderable::RebuildAnimationSequences()
+	{
+		CreateAnimationSequences();
+		/*
+		if (currentSequence == nullptr)
+			return CreateAnimationSequences();
+
+		std::string currentSequenceStr;
+		for (auto it = animationsSequences.sequences.begin(); it != animationsSequences.sequences.end(); it++)
+		{
+			if (currentSequence == &(it->second))
+			{
+				currentSequenceStr = it->first;
+				break;
+			}
+		}
+
+		CreateAnimationSequences();
+		if (currentSequenceStr.empty()) return;
+
+		for (auto it = animationsSequences.sequences.begin(); it != animationsSequences.sequences.end(); it++)
+		{
+			if (currentSequenceStr != it->first) continue;
+			currentSequence = &(it->second);
+			return;
+		}
+		*/
+	}
+
+	void Renderable::SetCurrentAnimation(SequencePlayer* seqPlayer)
+	{
+		if (seqPlayer == nullptr)
+		{
+			if (animationPlayers.contains(uuid()))
+			{
+				animationPlayers.erase(uuid());
+			}
+		}
+		else
+		{
+			animationPlayers.insert_or_assign(uuid(), seqPlayer);
+		}
+	}
+
+	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop)
+	{
+		if (!animationPlayers.contains(uuid()) || animationPlayers.at(uuid()) != &sequencePlayer)
+			SetCurrentAnimation(&sequencePlayer);
+
+		sequencePlayer.sequence = &animationsSequences.sequences.at(anim);
+		sequencePlayer.loop = loop;
+		sequencePlayer.time = startTime;
+	}
+
+	/*
 	void Renderable::SetCurrentAnimation(Sequence* sequence, float startTime, float timeFactor, bool play, bool loop, AnimationCallbacks callbacks)
 	{
-		currentSequence = sequence;
-		animationTime(startTime);
-		animationTimeFactor(timeFactor);
-		animationPlay(play);
-		animationLoop(loop);
-		animationFrame(0);
-		animation("");
-		animationCallbacks = callbacks;
-		animationHasStarted = false;
+		//currentSequence = sequence;
+		//animationTime(startTime);
+		//animationTimeFactor(timeFactor);
+		//animationPlay(play);
+		//animationLoop(loop);
+		//animationFrame(0);
+		//animation("");
+		//animationCallbacks = callbacks;
+		//animationHasStarted = false;
 	}
 
 	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop, AnimationCallbacks callbacks)
 	{
+		//KILL ME
 		//if (animable.empty()) return;
 		//
 		//auto it = animationsSequences.sequences.find(anim);
 		//if (it == animationsSequences.sequences.end()) return;
 		//SetCurrentAnimation(&(it->second), startTime, timeFactor, play, loop, callbacks);
 	}
+	*/
 
 	void Renderable::StepAnimation(double elapsedSeconds)
 	{
@@ -899,96 +954,112 @@ namespace Scene
 		using namespace Animation;
 		auto& animations = animable->animations;
 
-		//no animation? no problem. just go T pose
-		if (!currentSequence)
-		{
-			TraverseMultiplycationQueue(0.0f, "", animations, bonesTransformation);
-			animation("");
-			animationFrame(0);
-			return;
-		}
+		TraverseMultiplycationQueue(animationTime(), animation(), animations, bonesTransformation);
 
-		if (!animationHasStarted)
-		{
-			RunAnimationBeginCallbacks();
-			animationHasStarted = true;
-		}
-
-		//totalTime(ms)
-		float elapsedMs = static_cast<float>(elapsedSeconds) * 1000.0f;
-		float totalTimeMs = 1000.0f * static_cast<float>(currentSequence->totalFrames) / static_cast<float>(currentSequence->framesPerSecond);
-
-		auto MsToFrame = [this](float ms) { return static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * ms / 1000.0f); };
-
-		float prevAnimationTime = animationTime();
-		float currentAnimationTime = prevAnimationTime + (animationPlay() ? animationTimeFactor() * elapsedMs : 0.0f);
-		int prevFrame = MsToFrame(prevAnimationTime);
-		int currentFrame = MsToFrame(currentAnimationTime);
-
-		RunAnimationFrameCallbacks(prevFrame, currentFrame);
-		RunAnimationTimeCallbacks(prevAnimationTime, currentAnimationTime);
-		RunAnimationTimeFrameCallbacks(currentAnimationTime);
-
-		//handle end of animation
-		if (currentFrame >= currentSequence->totalFrames)
-		{
-			//are we looping?
-			if (animationLoop())
-			{
-				currentAnimationTime = fmodf(currentAnimationTime, totalTimeMs);
-				currentFrame = static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * currentAnimationTime / 1000.0f);
-			}
-			else
-			{
-				currentAnimationTime = totalTimeMs;
-				currentFrame = currentSequence->totalFrames;
-				RunAnimationEndCallbacks();
-			}
-		}
-		animationTime(currentAnimationTime);
-
-		SequenceChannelElementAnimation* animationElement = currentSequence->GetAnimationElementAtFrame(currentFrame);
-		currentSequenceTransformation = currentSequence->GetTransformationAtFrame(currentFrame);
-
-		if (animationElement == nullptr)
-		{
-			TraverseMultiplycationQueue(0.0f, "", animations, bonesTransformation);
-			animation("");
-			animationFrame(0);
-			return;
-		}
-
-		std::string animName = animationElement->animation;
-		float time = animationElement->GetTimeAtFrame(currentFrame);
-		animation(animationElement->animation);
-		animationFrame(currentFrame);
-		TraverseMultiplycationQueue(time, animName, animations, bonesTransformation);
+		//
+		////no animation? no problem. just go T pose
+		//if (!currentSequence)
+		//{
+		//TraverseMultiplycationQueue(0.0f, "", animations, bonesTransformation);
+		//animation("");
+		//animationFrame(0);
+		//return;
+		//}
+		//
+		//if (!animationHasStarted)
+		//{
+		//	RunAnimationBeginCallbacks();
+		//	animationHasStarted = true;
+		//}
+		//
+		////totalTime(ms)
+		//float elapsedMs = static_cast<float>(elapsedSeconds) * 1000.0f;
+		//float totalTimeMs = 1000.0f * static_cast<float>(currentSequence->totalFrames) / static_cast<float>(currentSequence->framesPerSecond);
+		//
+		//auto MsToFrame = [this](float ms) { return static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * ms / 1000.0f); };
+		//
+		//float prevAnimationTime = animationTime();
+		//float currentAnimationTime = prevAnimationTime + (animationPlay() ? animationTimeFactor() * elapsedMs : 0.0f);
+		//int prevFrame = MsToFrame(prevAnimationTime);
+		//int currentFrame = MsToFrame(currentAnimationTime);
+		//
+		//RunAnimationFrameCallbacks(prevFrame, currentFrame);
+		//RunAnimationTimeCallbacks(prevAnimationTime, currentAnimationTime);
+		//RunAnimationTimeFrameCallbacks(currentAnimationTime);
+		//
+		////handle end of animation
+		//if (currentFrame >= currentSequence->totalFrames)
+		//{
+		//	//are we looping?
+		//	if (animationLoop())
+		//	{
+		//		currentAnimationTime = fmodf(currentAnimationTime, totalTimeMs);
+		//		currentFrame = static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * currentAnimationTime / 1000.0f);
+		//	}
+		//	else
+		//	{
+		//		currentAnimationTime = totalTimeMs;
+		//		currentFrame = currentSequence->totalFrames;
+		//		RunAnimationEndCallbacks();
+		//	}
+		//}
+		//animationTime(currentAnimationTime);
+		//
+		//SequenceChannelElementAnimation* animationElement = currentSequence->GetAnimationElementAtFrame(currentFrame);
+		//currentSequenceTransformation = currentSequence->GetTransformationAtFrame(currentFrame);
+		//currentSequence->CreateSoundFXsAtFrame(currentFrame);
+		//
+		//if (animationElement == nullptr)
+		//{
+		//	TraverseMultiplycationQueue(0.0f, "", animations, bonesTransformation);
+		//	animation("");
+		//	animationFrame(0);
+		//	return;
+		//}
+		//
+		//std::string animName = animationElement->animation;
+		//float time = animationElement->GetTimeAtFrame(currentFrame);
+		//animation(animationElement->animation);
+		//animationFrame(currentFrame);
+		//TraverseMultiplycationQueue(time, animName, animations, bonesTransformation);
 	}
 
+	/*
 	int Renderable::GetCurrentAnimationFrame()
 	{
-		return static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * animationTime() / 1000.0f);
+		//return static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * animationTime() / 1000.0f);
+		return 0;
 	}
+	*/
 
+	/*
 	int Renderable::GetCurrentAnimationNumFrames() const
 	{
-		return currentSequence->totalFrames;
+		//return currentSequence->totalFrames;
+		return 0;
 	}
+	*/
 
+	/*
 	void Renderable::SetCurrentAnimationFrame(int frame)
 	{
-		float time = 1000.0f * static_cast<float>(frame) / static_cast<float>(currentSequence->framesPerSecond);
-		animationTime(time);
+		//float time = 1000.0f * static_cast<float>(frame) / static_cast<float>(currentSequence->framesPerSecond);
+		//animationTime(time);
 	}
+	*/
 
+	/*
 	bool Renderable::AnimationEnded()
 	{
-		if (!animationPlay()) return false;
-		if (animationLoop()) return false;
-		if (!currentSequence) return false;
-		return (GetCurrentAnimationNumFrames() - GetCurrentAnimationFrame()) <= 1;
+		//if (!animationPlay()) return false;
+		//if (animationLoop()) return false;
+		//if (!currentSequence) return false;
+		//return (GetCurrentAnimationNumFrames() - GetCurrentAnimationFrame()) <= 1;
+		return true;
 	}
+	*/
 
+	/*
 	void Renderable::RunAnimationBeginCallbacks()
 	{
 		AnimationCallbacks runnables;
@@ -1002,7 +1073,9 @@ namespace Scene
 			cb();
 		}
 	}
+	*/
 
+	/*
 	void Renderable::RunAnimationEndCallbacks()
 	{
 		AnimationCallbacks runnables;
@@ -1016,7 +1089,9 @@ namespace Scene
 			cb();
 		}
 	}
+	*/
 
+	/*
 	void Renderable::RunAnimationFrameCallbacks(unsigned int prevFrame, unsigned int currentFrame)
 	{
 		AnimationCallbacks runnables;
@@ -1030,7 +1105,9 @@ namespace Scene
 			cb();
 		}
 	}
+	*/
 
+	/*
 	void Renderable::RunAnimationTimeCallbacks(float prevTime, float currentTime)
 	{
 		AnimationCallbacks runnables;
@@ -1044,7 +1121,9 @@ namespace Scene
 			cb();
 		}
 	}
+	*/
 
+	/*
 	void Renderable::RunAnimationTimeFrameCallbacks(float currentTime)
 	{
 		AnimationCallbacks runnables;
@@ -1058,6 +1137,7 @@ namespace Scene
 			cb();
 		}
 	}
+	*/
 
 	void Renderable::Destroy()
 	{

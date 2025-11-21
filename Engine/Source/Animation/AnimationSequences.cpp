@@ -4,6 +4,8 @@
 #include <NoMath.h>
 #include <NoStd.h>
 #include <SimpleMath.h>
+#include <Sound/Sound.h>
+#include <Scripting.h>
 
 XMMATRIX TransformationKeyFrame::ToMatrix()
 {
@@ -246,38 +248,44 @@ XMMATRIX SequenceChannelElementTransformation::InterpolateKeyframes(Transformati
 	return XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
 }
 
-SequenceChanelElementSoundFX::SequenceChanelElementSoundFX() :SequenceChannelElement()
+SequenceChannelElementSoundFX::SequenceChannelElementSoundFX() :SequenceChannelElement()
 {
 	sound = "";
+	volume = 1.0f;
+	loop = false;
 }
 
-SequenceChanelElementSoundFX::SequenceChanelElementSoundFX(const nlohmann::json& j) :SequenceChannelElement(j)
+SequenceChannelElementSoundFX::SequenceChannelElementSoundFX(const nlohmann::json& j) :SequenceChannelElement(j)
 {
 	sound = j.at("sound");
+	volume = j.at("volume");
+	loop = j.at("loop");
 }
 
-bool SequenceChanelElementSoundFX::operator==(const SequenceChanelElementSoundFX& other) const {
+bool SequenceChannelElementSoundFX::operator==(const SequenceChannelElementSoundFX& other) const {
 	return frameStart == other.frameStart && frameEnd == other.frameEnd &&
-		sound == other.sound;
+		sound == other.sound && volume == other.volume && loop == other.loop;
 }
 
-nlohmann::json SequenceChanelElementSoundFX::json()
+nlohmann::json SequenceChannelElementSoundFX::json()
 {
 	nlohmann::json j =
 	{
 		{ "frameStart", frameStart },
 		{ "frameEnd", frameEnd },
 		{ "sound", sound()},
+		{ "volume", volume },
+		{ "loop", loop }
 	};
 
 	return j;
 }
 
-int SequenceChanelElementSoundFX::GetFrameStart()
+int SequenceChannelElementSoundFX::GetFrameStart()
 {
 	return frameStart;
 }
-int SequenceChanelElementSoundFX::GetFrameEnd()
+int SequenceChannelElementSoundFX::GetFrameEnd()
 {
 	return frameEnd;
 }
@@ -351,7 +359,7 @@ ChannelElement::ChannelElement(const nlohmann::json& j)
 	break;
 	case SCET_SoundFX:
 	{
-		soundfx = SequenceChanelElementSoundFX(j.at("soundfx"));
+		soundfx = SequenceChannelElementSoundFX(j.at("soundfx"));
 	}
 	break;
 	case SCET_Script:
@@ -465,6 +473,10 @@ std::tuple<ChannelElement, ChannelElement> ChannelElement::Split(int frame)
 	{
 		left.soundfx.sound = soundfx.sound;
 		right.soundfx.sound = soundfx.sound;
+		left.soundfx.volume = soundfx.volume;
+		right.soundfx.volume = soundfx.volume;
+		left.soundfx.loop = soundfx.loop;
+		right.soundfx.loop = soundfx.loop;
 	}
 	break;
 	case SCET_Script:
@@ -774,6 +786,26 @@ TransformationKeyFrame* SequenceChannel::GetTransformationKeyframe(int frame)
 	return (t != nullptr && t->keyFrames.contains(frame)) ? &t->keyFrames.at(frame) : nullptr;
 }
 
+SequenceChannelElementSoundFX* SequenceChannel::GetSoundFXToCreateAtFrame(int frame)
+{
+	for (auto& element : elements)
+	{
+		if (element.type != SCET_SoundFX) continue;
+		if (element.GetFrameStart() == frame) return &element.soundfx;
+	}
+	return nullptr;
+}
+
+SequenceChannelElementScript* SequenceChannel::GetScriptToRunAtFrame(int frame)
+{
+	for (auto& element : elements)
+	{
+		if (element.type == SCET_Script && element.GetFrameStart() == frame)
+			return &element.script;
+	}
+	return nullptr;
+}
+
 void SequenceChannel::InsertChannelElement(ChannelElement element, int& totalFrames)
 {
 	int elemStart = element.GetFrameStart();
@@ -923,14 +955,12 @@ Sequence::Sequence()
 {
 	framesPerSecond = 60;
 	totalFrames = 160;
-	loop = false;
 }
 
 Sequence::Sequence(nlohmann::json j)
 {
 	framesPerSecond = j.at("framesPerSecond");
 	totalFrames = j.at("totalFrames");
-	loop = j.at("loop");
 	for (size_t i = 0ULL; i < j.at("sequenceChannels").size(); i++)
 	{
 		sequenceChannels.push_back(j.at("sequenceChannels").at(i));
@@ -947,9 +977,8 @@ nlohmann::json Sequence::json()
 	nlohmann::json j(
 		{
 			{ "framesPerSecond", framesPerSecond },
-		{ "totalFrames", totalFrames },
-		{ "loop", loop },
-		{ "sequenceChannels", seqChannels }
+			{ "totalFrames", totalFrames },
+			{ "sequenceChannels", seqChannels }
 		}
 	);
 	return j;
@@ -959,7 +988,6 @@ bool Sequence::operator==(const Sequence& other) const {
 
 	if (framesPerSecond != other.framesPerSecond) return false;
 	if (totalFrames != other.totalFrames) return false;
-	if (loop != other.loop) return false;
 
 	return std::equal(sequenceChannels.begin(), sequenceChannels.end(), other.sequenceChannels.begin());
 }
@@ -993,7 +1021,7 @@ SequenceChannelElementAnimation* Sequence::GetAnimationElementAtFrame(int frame)
 		{
 			int endA = animA->frameEnd;
 			int endB = animB->frameEnd;
-			return endB - endA;
+			return endA > endB;
 		}
 	);
 
@@ -1016,13 +1044,54 @@ XMMATRIX Sequence::GetTransformationAtFrame(int frame)
 		{
 			int endA = tA->frameEnd;
 			int endB = tB->frameEnd;
-			return endB - endA;
+			return endA > endB;
 		}
 	);
 
 	SequenceChannelElementTransformation* transformation = *transformations.begin();
 
 	return transformation->GetTransformationInFrame(frame);
+}
+
+void Sequence::CreateSoundFXsAtFrame(int frame)
+{
+	std::set<SequenceChannelElementSoundFX*> soundfxs;
+	for (SequenceChannel& channel : sequenceChannels)
+	{
+		SequenceChannelElementSoundFX* sfx = channel.GetSoundFXToCreateAtFrame(frame);
+		if (sfx == nullptr) continue;
+		soundfxs.insert(sfx);
+	}
+
+	if (soundfxs.size() == 0ULL) return;
+
+	for (auto& sfx : soundfxs)
+	{
+		SoundJsonUUID sjson = sfx->sound();
+		SoundFXUUID soundFXUUID = getUUID();
+		nlohmann::json jsound =
+		{
+			{ "uuid", soundFXUUID() },
+			{ "name", sjson->name() },
+			{ "sound", sfx->sound() },
+			{ "autoPlay", true }
+		};
+
+		CreateSoundFX(jsound);
+		soundFXUUID->BindToScene();
+		soundFXUUID->Play();
+	}
+}
+
+void Sequence::RunScriptAtFrame(int frame, RenderableUUID renderable)
+{
+	using namespace Scripting;
+	for (SequenceChannel& channel : sequenceChannels)
+	{
+		SequenceChannelElementScript* script = channel.GetScriptToRunAtFrame(frame);
+		if (script == nullptr) continue;
+		RunScript(script->script, renderable);
+	}
 }
 
 AnimationSequences::AnimationSequences(nlohmann::json j)
@@ -1041,4 +1110,232 @@ nlohmann::json AnimationSequences::json()
 		j[name] = sequence.json();
 	}
 	return j;
+}
+
+SequencePlayer::SequencePlayer()
+{
+	sequence = nullptr;
+	time = 0.0f;
+	runningFrame = 0;
+	currentFrame = 0;
+	loop = false;
+}
+
+SequencePlayer::SequencePlayer(Sequence* seq, JUUID uuid)
+{
+	sequence = seq;
+	time = 0.0f;
+	runningFrame = 0;
+	currentFrame = 0;
+	loop = false;
+	renderable = uuid;
+}
+
+void SequencePlayer::SetSequence(Sequence* seq, JUUID uuid)
+{
+	sequence = seq;
+	time = 0.0f;
+	runningFrame = 0;
+	currentFrame = 0;
+	loop = false;
+	runnedFrames.clear();
+	renderable = uuid;
+}
+
+void SequencePlayer::Step(float dt)
+{
+	if (sequence == nullptr) return;
+	float totalTimeMs = 1000.0f * static_cast<float>(sequence->totalFrames) / static_cast<float>(sequence->framesPerSecond);
+	time += dt;
+	if (time >= totalTimeMs)
+	{
+		time = (loop) ? fmodf(time, totalTimeMs) : totalTimeMs;
+		currentFrame = (loop) ? static_cast<int>(static_cast<float>(sequence->framesPerSecond) * time / 1000.0f) : sequence->totalFrames;
+		if (loop)
+		{
+			runnedFrames.clear();
+		}
+	}
+	else
+	{
+		currentFrame = static_cast<int>(static_cast<float>(sequence->framesPerSecond) * time / 1000.0f);
+	}
+
+	while (runningFrame != currentFrame)
+	{
+		if (!runnedFrames.contains(runningFrame))
+		{
+			CreateFrameSoundFXs(runningFrame);
+			ExecuteFrameScripts(runningFrame);
+		}
+		runnedFrames.insert(runningFrame);
+		runningFrame++;
+		if (runningFrame > sequence->totalFrames)
+		{
+			if (loop)
+			{
+				runningFrame = 0;
+			}
+			else
+			{
+				runningFrame = sequence->totalFrames;
+				break;
+			}
+		}
+	}
+}
+
+void SequencePlayer::SetTime(float t)
+{
+	if (sequence == nullptr) return;
+	float totalTimeMs = 1000.0f * static_cast<float>(sequence->totalFrames) / static_cast<float>(sequence->framesPerSecond);
+	time = t;
+	if (time >= totalTimeMs)
+	{
+		time = (loop) ? fmodf(time, totalTimeMs) : totalTimeMs;
+		currentFrame = (loop) ? static_cast<int>(static_cast<float>(sequence->framesPerSecond) * time / 1000.0f) : sequence->totalFrames;
+		if (loop)
+		{
+			runnedFrames.clear();
+		}
+	}
+	else
+	{
+		currentFrame = static_cast<int>(static_cast<float>(sequence->framesPerSecond) * time / 1000.0f);
+	}
+
+	while (runningFrame != currentFrame)
+	{
+		if (!runnedFrames.contains(runningFrame))
+		{
+			CreateFrameSoundFXs(runningFrame);
+			ExecuteFrameScripts(runningFrame);
+		}
+		runnedFrames.insert(runningFrame);
+		runningFrame++;
+		if (runningFrame > sequence->totalFrames)
+		{
+			if (loop)
+			{
+				runningFrame = 0;
+			}
+			else
+			{
+				runningFrame = sequence->totalFrames;
+				break;
+			}
+		}
+	}
+}
+
+void SequencePlayer::StepFrame(int df)
+{
+	if (sequence == nullptr) return;
+	currentFrame += df;
+	if (currentFrame > sequence->totalFrames)
+	{
+		currentFrame = (loop) ? (currentFrame % sequence->totalFrames) : sequence->totalFrames;
+		if (loop)
+		{
+			runnedFrames.clear();
+		}
+	}
+	time = 1000.0f * static_cast<float>(currentFrame) / static_cast<float>(sequence->framesPerSecond);
+
+	while (runningFrame != currentFrame)
+	{
+		if (!runnedFrames.contains(runningFrame))
+		{
+			CreateFrameSoundFXs(runningFrame);
+			ExecuteFrameScripts(runningFrame);
+		}
+		runnedFrames.insert(runningFrame);
+		runningFrame++;
+		if (runningFrame > sequence->totalFrames)
+		{
+			if (loop)
+			{
+				runningFrame = 0;
+			}
+			else
+			{
+				runningFrame = sequence->totalFrames;
+				break;
+			}
+		}
+	}
+}
+
+void SequencePlayer::SetFrame(int frame, bool runningPlayer)
+{
+	if (sequence == nullptr) return;
+	currentFrame = frame;
+	if (currentFrame > sequence->totalFrames)
+	{
+		currentFrame = (loop) ? (currentFrame % sequence->totalFrames) : sequence->totalFrames;
+		if (loop)
+		{
+			runnedFrames.clear();
+		}
+	}
+	time = 1000.0f * static_cast<float>(currentFrame) / static_cast<float>(sequence->framesPerSecond);
+
+	while (runningFrame != currentFrame && runningPlayer)
+	{
+		if (!runnedFrames.contains(runningFrame))
+		{
+			CreateFrameSoundFXs(runningFrame);
+			ExecuteFrameScripts(runningFrame);
+		}
+		runnedFrames.insert(runningFrame);
+		runningFrame++;
+		if (runningFrame > sequence->totalFrames)
+		{
+			if (loop)
+			{
+				runningFrame = 0;
+			}
+			else
+			{
+				runningFrame = sequence->totalFrames;
+				break;
+			}
+		}
+	}
+}
+
+void SequencePlayer::ApplyFrameValues(RenderableUUID renderable)
+{
+	SequenceChannelElementAnimation* animation = sequence->GetAnimationElementAtFrame(currentFrame);
+	if (animation == nullptr)
+	{
+		renderable->animation("");
+		renderable->animationFrame(0);
+		renderable->animationTime(0.0f);
+	}
+	else
+	{
+		renderable->animation(animation->animation);
+		renderable->animationFrame(currentFrame);
+		renderable->animationTime(animation->GetTimeAtFrame(currentFrame));
+	}
+
+	renderable->currentSequenceTransformation = sequence->GetTransformationAtFrame(currentFrame);
+}
+
+void SequencePlayer::CreateFrameSoundFXs(int frame)
+{
+	sequence->CreateSoundFXsAtFrame(frame);
+}
+
+void SequencePlayer::ExecuteFrameScripts(int frame)
+{
+	sequence->RunScriptAtFrame(frame, renderable);
+}
+
+void SequencePlayer::ResetFrames()
+{
+	runnedFrames.clear();
+	runningFrame = 0;
+	currentFrame = 0;
 }

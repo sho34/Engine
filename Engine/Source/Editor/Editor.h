@@ -64,6 +64,7 @@ namespace Editor {
 	void OpenSceneObjectOnNextFrame(std::string uuid);
 	void MarkScenePanelAssetsAsDirty();
 	void DestroyEditorSceneObjectsReferences();
+	void DeleteFromScenePanelSelection(JUUID sceneObject);
 
 	//Templates Panel
 	void OnChangeTemplateTab(std::string newTab);

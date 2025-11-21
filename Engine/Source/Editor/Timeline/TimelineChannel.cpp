@@ -272,6 +272,12 @@ std::tuple<bool, bool, bool, bool> TimelineChannel::DrawChannelFrame(SequenceCha
 	if (!mouseInFrame)
 		return std::make_tuple(false, false, false, false);
 
+	if (ImGui::IsMouseDown(1))
+	{
+		int i = 0;
+		i++;
+	}
+
 	return std::make_tuple(
 		ImGui::IsMouseDown(0) && !(leftBoundaryDrag || rightBoundaryDrag),
 		ImGui::IsMouseDown(1),
@@ -293,4 +299,10 @@ void TimelineChannel::SetPosAfter(const TimelineChannel& prev)
 		pos.y += frameSize.y;
 	else
 		pos.y += frameSizeExpanded.y;
+}
+
+void TimelineChannel::ResetSelection()
+{
+	selectedFrame = -1;
+	selectedElement = -1;
 }

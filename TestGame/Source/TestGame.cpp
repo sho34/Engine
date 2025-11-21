@@ -149,6 +149,10 @@ void GetAudioListenerVectors(std::function<void(XMFLOAT3, XMVECTOR)> audioListen
 {
 }
 
+void BindGameObjectsToV8Context(v8::Local<v8::Context>& context)
+{
+}
+
 //Booting
 float bootScreenAlpha = 0.0f;
 float loadingProgress = 0.0f;
@@ -401,9 +405,9 @@ void EditorModeCreate(GameStates prevState)
 				using namespace Scene;
 				using namespace Scene::Level;
 
-				//LoadDefaultLevel();
+				LoadDefaultLevel();
 				//LoadLevel("bootscreen");
-				LoadLevel("venom");
+				//LoadLevel("venom");
 				BindSceneObjects();
 			}
 		);

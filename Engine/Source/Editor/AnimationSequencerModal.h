@@ -38,6 +38,7 @@ struct AnimationSequencerModal// : public ExImSequencer::SequenceInterface
 	void DrawTimelineController(ImVec2 curPos, ImVec2 size, Sequence& sequence);
 	void DrawSaveAndExitButtons(ImVec2 curPos, ImVec2 size, bool& exit, bool& saveexit);
 	void DrawAddNewSequencePopup(ImVec2 pos, ImVec2 size, std::string& newSeqName, std::function<void(std::string)> onAddNewSequenceClicked, std::function<void()> onCancelAddNewSequenceClick);
+	void DrawScriptEdition(std::string& content, Sequence& sequence, std::string sequenceName, std::tuple<int, int> channelFrame, ImVec2 pos, ImVec2 size, std::function<void()> onSave, std::function<void()> onCancel);
 
 	void Exit();
 	void SaveAndExit();
@@ -76,4 +77,10 @@ struct AnimationSequencerModal// : public ExImSequencer::SequenceInterface
 	//timeline editor
 	TimelineEditor timelineEditor;
 	TransformationKeyFrame* selectedTransformationKeyframe;
+	SequencePlayer sequencePlayer;
+
+	//script editor
+	std::tuple<int, int> selectedScriptChannelFrame = std::make_tuple(-1, -1);
+	SequenceChannelElementScript* selectedScriptToEdit;
+	std::string selectedScriptToEditContent;
 };

@@ -510,9 +510,6 @@
     <ClInclude Include="Editor\EditorMouseCamera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\ExImSequencer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\IconsFontAwesome5.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -538,6 +535,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Timeline\TimelinePopups.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scripting\Scripting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -740,9 +740,6 @@
     <ClCompile Include="Editor\EditorMouseCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\ExImSequencer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\ImEditor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -762,6 +759,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Timeline\TimelinePopups.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scripting\Scripting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
