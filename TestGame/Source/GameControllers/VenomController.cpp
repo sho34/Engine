@@ -95,6 +95,11 @@ namespace Game
 		};
 	}
 
+	void VenomController::CreateV8MethodsBindings(Scripting::V8MethodsBindings& v8methods)
+	{
+		v8methods.insert_or_assign("PlayerReady", Game::VenomReady);
+	}
+
 	void VenomController::Step(float delta)
 	{
 #if defined(_EDITOR)
@@ -123,6 +128,22 @@ namespace Game
 		XMFLOAT3 cpos = camera->position();
 		cpos.x = vpos.x;
 		camera->position(cpos);
+	}
+
+	void VenomReady(const v8::FunctionCallbackInfo<v8::Value>& args)
+	{
+		v8::Isolate* isolate = args.GetIsolate();
+		v8::HandleScope handle_scope(isolate);
+
+		// Retrieve the C++ MyClass instance from the FunctionTemplate's data
+		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(args.Data());
+		VenomController* venom = static_cast<VenomController*>(wrap->Value());
+		venom->PlayerReady();
+	}
+
+	void VenomController::PlayerReady()
+	{
+		vsm.ChangeState(VS_Idle);
 	}
 
 	void VenomController::UpdateLeftStickVector()
@@ -234,7 +255,7 @@ namespace Game
 
 	void VenomController::EnterIdle()
 	{
-		//venom->SetCurrentAnimation("Idle_C", 0.0f, 1.0f, true, true);
+		venom->SetCurrentAnimation("Idle_C", 0.0f, 1.0f, true, true);
 	}
 
 	void VenomController::EnterWalking()

@@ -222,6 +222,8 @@ void AnimationSequencerModal::Step()
 		{
 			float totalTime = static_cast<float>(seq.totalFrames) / static_cast<float>(seq.framesPerSecond);
 			playingSequenceTime += static_cast<float>(timer.GetElapsedSeconds());
+			bool stopPlayer = false;
+
 			if (playingSequenceLoop)
 			{
 				playingSequenceTime = std::fmodf(playingSequenceTime, totalTime);
@@ -229,17 +231,16 @@ void AnimationSequencerModal::Step()
 			else
 			{
 				playingSequenceTime = std::min(playingSequenceTime, totalTime);
-				if (playingSequenceTime == totalTime)
-				{
-					playingSequence = false;
-					playingSequenceTime = 0.0f;
-					sequencePlayer.ResetFrames();
-				}
+				stopPlayer = playingSequenceTime == totalTime;
 			}
 			int frame = static_cast<int>(static_cast<float>(seq.totalFrames) * (playingSequenceTime / totalTime));
 			frame = std::clamp(frame, 0, seq.totalFrames);
 			timelineEditor.selectedFrameInTimeline = frame;
 			sequencePlayer.SetFrame(timelineEditor.GetFrame(seq));
+			if (stopPlayer)
+			{
+				playingSequence = false;
+			}
 		}
 		else
 		{
@@ -273,7 +274,6 @@ void AnimationSequencerModal::DrawSequencer(const char* title, ImVec2 pos, ImVec
 				timelineEditor.Init(renderable, seq);
 				sequencePlayer.SetSequence(&seq, renderable());
 				renderable->SetCurrentAnimation(&sequencePlayer);
-				//renderable->SetCurrentAnimation(&seq, 0.0f, 1.0f, false);
 			}
 			playingSequence = false;
 			playingSequenceTime = 0.0f;

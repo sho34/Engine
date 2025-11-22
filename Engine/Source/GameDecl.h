@@ -9,4 +9,3 @@ extern void WindowResizeReleaseResources();
 extern void WindowResize(unsigned int width, unsigned int height);
 extern void RunPreRenderComputeShaders();
 extern void RunPostRenderComputeShaders();
-extern void BindGameObjectsToV8Context(v8::Local<v8::Context>& context);

@@ -13,7 +13,6 @@
 #include <DeviceUtils/PipelineState/PipelineState.h>
 #include <Renderable/RenderableBoundingBox.h>
 #include <SceneObjectDef.h>
-#include <AnimationCallback.h>
 
 extern std::unique_ptr<Renderer> renderer;
 extern DX::StepTimer timer;
@@ -210,8 +209,6 @@ namespace Scene
 			);
 		}
 #endif
-
-
 		float dt = static_cast<float>(timer.GetElapsedSeconds());
 		for (auto& [renderable, player] : animationPlayers)
 		{
@@ -307,6 +304,7 @@ namespace Scene
 			StepAnimation(0.0f); //take an empty T-Pose step so the skinning can be performed
 			boundingBoxCompute = CreateRenderableBoundingBox(uuid());
 			WriteAnimationConstantsBuffer(renderer->backBufferIndex);
+			sequencePlayer.renderable = Juuid();
 		}
 #if defined(_EDITOR)
 		OnPick = [this] { Editor::SelectRenderable(uuid()); };
@@ -919,33 +917,8 @@ namespace Scene
 
 		sequencePlayer.sequence = &animationsSequences.sequences.at(anim);
 		sequencePlayer.loop = loop;
-		sequencePlayer.time = startTime;
+		sequencePlayer.ResetFrames();
 	}
-
-	/*
-	void Renderable::SetCurrentAnimation(Sequence* sequence, float startTime, float timeFactor, bool play, bool loop, AnimationCallbacks callbacks)
-	{
-		//currentSequence = sequence;
-		//animationTime(startTime);
-		//animationTimeFactor(timeFactor);
-		//animationPlay(play);
-		//animationLoop(loop);
-		//animationFrame(0);
-		//animation("");
-		//animationCallbacks = callbacks;
-		//animationHasStarted = false;
-	}
-
-	void Renderable::SetCurrentAnimation(std::string anim, float startTime, float timeFactor, bool play, bool loop, AnimationCallbacks callbacks)
-	{
-		//KILL ME
-		//if (animable.empty()) return;
-		//
-		//auto it = animationsSequences.sequences.find(anim);
-		//if (it == animationsSequences.sequences.end()) return;
-		//SetCurrentAnimation(&(it->second), startTime, timeFactor, play, loop, callbacks);
-	}
-	*/
 
 	void Renderable::StepAnimation(double elapsedSeconds)
 	{
@@ -954,190 +927,9 @@ namespace Scene
 		using namespace Animation;
 		auto& animations = animable->animations;
 
+		//OutputDebugStringA(std::string(std::string("anim:") + animation() + "\n").c_str());
 		TraverseMultiplycationQueue(animationTime(), animation(), animations, bonesTransformation);
-
-		//
-		////no animation? no problem. just go T pose
-		//if (!currentSequence)
-		//{
-		//TraverseMultiplycationQueue(0.0f, "", animations, bonesTransformation);
-		//animation("");
-		//animationFrame(0);
-		//return;
-		//}
-		//
-		//if (!animationHasStarted)
-		//{
-		//	RunAnimationBeginCallbacks();
-		//	animationHasStarted = true;
-		//}
-		//
-		////totalTime(ms)
-		//float elapsedMs = static_cast<float>(elapsedSeconds) * 1000.0f;
-		//float totalTimeMs = 1000.0f * static_cast<float>(currentSequence->totalFrames) / static_cast<float>(currentSequence->framesPerSecond);
-		//
-		//auto MsToFrame = [this](float ms) { return static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * ms / 1000.0f); };
-		//
-		//float prevAnimationTime = animationTime();
-		//float currentAnimationTime = prevAnimationTime + (animationPlay() ? animationTimeFactor() * elapsedMs : 0.0f);
-		//int prevFrame = MsToFrame(prevAnimationTime);
-		//int currentFrame = MsToFrame(currentAnimationTime);
-		//
-		//RunAnimationFrameCallbacks(prevFrame, currentFrame);
-		//RunAnimationTimeCallbacks(prevAnimationTime, currentAnimationTime);
-		//RunAnimationTimeFrameCallbacks(currentAnimationTime);
-		//
-		////handle end of animation
-		//if (currentFrame >= currentSequence->totalFrames)
-		//{
-		//	//are we looping?
-		//	if (animationLoop())
-		//	{
-		//		currentAnimationTime = fmodf(currentAnimationTime, totalTimeMs);
-		//		currentFrame = static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * currentAnimationTime / 1000.0f);
-		//	}
-		//	else
-		//	{
-		//		currentAnimationTime = totalTimeMs;
-		//		currentFrame = currentSequence->totalFrames;
-		//		RunAnimationEndCallbacks();
-		//	}
-		//}
-		//animationTime(currentAnimationTime);
-		//
-		//SequenceChannelElementAnimation* animationElement = currentSequence->GetAnimationElementAtFrame(currentFrame);
-		//currentSequenceTransformation = currentSequence->GetTransformationAtFrame(currentFrame);
-		//currentSequence->CreateSoundFXsAtFrame(currentFrame);
-		//
-		//if (animationElement == nullptr)
-		//{
-		//	TraverseMultiplycationQueue(0.0f, "", animations, bonesTransformation);
-		//	animation("");
-		//	animationFrame(0);
-		//	return;
-		//}
-		//
-		//std::string animName = animationElement->animation;
-		//float time = animationElement->GetTimeAtFrame(currentFrame);
-		//animation(animationElement->animation);
-		//animationFrame(currentFrame);
-		//TraverseMultiplycationQueue(time, animName, animations, bonesTransformation);
 	}
-
-	/*
-	int Renderable::GetCurrentAnimationFrame()
-	{
-		//return static_cast<int>(static_cast<float>(currentSequence->framesPerSecond) * animationTime() / 1000.0f);
-		return 0;
-	}
-	*/
-
-	/*
-	int Renderable::GetCurrentAnimationNumFrames() const
-	{
-		//return currentSequence->totalFrames;
-		return 0;
-	}
-	*/
-
-	/*
-	void Renderable::SetCurrentAnimationFrame(int frame)
-	{
-		//float time = 1000.0f * static_cast<float>(frame) / static_cast<float>(currentSequence->framesPerSecond);
-		//animationTime(time);
-	}
-	*/
-
-	/*
-	bool Renderable::AnimationEnded()
-	{
-		//if (!animationPlay()) return false;
-		//if (animationLoop()) return false;
-		//if (!currentSequence) return false;
-		//return (GetCurrentAnimationNumFrames() - GetCurrentAnimationFrame()) <= 1;
-		return true;
-	}
-	*/
-
-	/*
-	void Renderable::RunAnimationBeginCallbacks()
-	{
-		AnimationCallbacks runnables;
-		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [](auto& pair)
-			{
-				return pair.first.type == TimeCallbackType_Begin;
-			}
-		);
-		for (auto& [_, cb] : runnables)
-		{
-			cb();
-		}
-	}
-	*/
-
-	/*
-	void Renderable::RunAnimationEndCallbacks()
-	{
-		AnimationCallbacks runnables;
-		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [](auto& pair)
-			{
-				return pair.first.type == TimeCallbackType_End;
-			}
-		);
-		for (auto& [_, cb] : runnables)
-		{
-			cb();
-		}
-	}
-	*/
-
-	/*
-	void Renderable::RunAnimationFrameCallbacks(unsigned int prevFrame, unsigned int currentFrame)
-	{
-		AnimationCallbacks runnables;
-		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [prevFrame, currentFrame](auto& pair)
-			{
-				return pair.first.type == TimeCallbackType_Frame && pair.first.frame > prevFrame && pair.first.frame <= currentFrame;
-			}
-		);
-		for (auto& [_, cb] : runnables)
-		{
-			cb();
-		}
-	}
-	*/
-
-	/*
-	void Renderable::RunAnimationTimeCallbacks(float prevTime, float currentTime)
-	{
-		AnimationCallbacks runnables;
-		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [prevTime, currentTime](auto& pair)
-			{
-				return pair.first.type == TimeCallbackType_Time && pair.first.time > prevTime && pair.first.frame <= currentTime;
-			}
-		);
-		for (auto& [_, cb] : runnables)
-		{
-			cb();
-		}
-	}
-	*/
-
-	/*
-	void Renderable::RunAnimationTimeFrameCallbacks(float currentTime)
-	{
-		AnimationCallbacks runnables;
-		std::copy_if(animationCallbacks.begin(), animationCallbacks.end(), std::inserter(runnables, runnables.begin()), [currentTime](auto& pair)
-			{
-				return pair.first.type == TimeCallbackType_TimeFrame && currentTime > pair.first.time && currentTime < pair.first.time2;
-			}
-		);
-		for (auto& [_, cb] : runnables)
-		{
-			cb();
-		}
-	}
-	*/
 
 	void Renderable::Destroy()
 	{

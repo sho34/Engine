@@ -66,6 +66,11 @@ namespace Templates {
 			if (j->contains("systemCreated") && j->at("systemCreated") == true) continue;
 			json.push_back(j->json());
 		}
+		std::sort(json.begin(), json.end(), [](auto j1, auto j2)
+			{
+				return j1.at("uuid") < j2.at("uuid");
+			}
+		);
 	}
 
 	void TemplatesStep(DX::StepTimer& timer);

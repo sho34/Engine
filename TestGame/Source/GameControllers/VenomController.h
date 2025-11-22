@@ -70,7 +70,10 @@ namespace Game
 		virtual void Map(JUUID so);
 		virtual void Unmap();
 		VenomController();
+		virtual void CreateV8MethodsBindings(Scripting::V8MethodsBindings& v8methods);
 		virtual void Step(float delta);
+
+		void PlayerReady();
 
 		XMVECTOR leftStick;
 		void UpdateLeftStickVector();
@@ -104,4 +107,6 @@ namespace Game
 		//void Jumping();
 		//void Attacking1();
 	};
+
+	void VenomReady(const v8::FunctionCallbackInfo<v8::Value>& info);
 }

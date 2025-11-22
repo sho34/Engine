@@ -47,7 +47,7 @@ namespace Scene
 			std::unique_ptr<Controller> controller = GetGameController(*it);
 			if (!controller) continue;
 
-			controllers.insert(Game::RegisterController(controller, Juuid()));
+			controllers.insert(Game::RegisterController(controller, *it, Juuid()));
 		}
 	}
 
@@ -58,5 +58,10 @@ namespace Scene
 			Game::UnregisterController(c);
 		}
 		controllers.clear();
+	}
+
+	void SceneObject::CreateV8Bindings(Scripting::V8ObjectsBindings& bindings)
+	{
+		Game::CreateV8Bindings(bindings, Juuid());
 	}
 }

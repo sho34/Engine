@@ -1161,7 +1161,11 @@ void SequencePlayer::Step(float dt)
 		currentFrame = static_cast<int>(static_cast<float>(sequence->framesPerSecond) * time / 1000.0f);
 	}
 
-	while (runningFrame != currentFrame)
+	int targetFrame = currentFrame;
+	if (runningFrame < sequence->totalFrames && currentFrame == 0)
+		targetFrame = sequence->totalFrames;
+
+	while (runningFrame <= targetFrame)
 	{
 		if (!runnedFrames.contains(runningFrame))
 		{
@@ -1175,12 +1179,13 @@ void SequencePlayer::Step(float dt)
 			if (loop)
 			{
 				runningFrame = 0;
+				runnedFrames.clear();
 			}
 			else
 			{
 				runningFrame = sequence->totalFrames;
-				break;
 			}
+			break;
 		}
 	}
 }
@@ -1204,7 +1209,11 @@ void SequencePlayer::SetTime(float t)
 		currentFrame = static_cast<int>(static_cast<float>(sequence->framesPerSecond) * time / 1000.0f);
 	}
 
-	while (runningFrame != currentFrame)
+	int targetFrame = currentFrame;
+	if (runningFrame < sequence->totalFrames && currentFrame == 0)
+		targetFrame = sequence->totalFrames;
+
+	while (runningFrame <= targetFrame)
 	{
 		if (!runnedFrames.contains(runningFrame))
 		{
@@ -1218,12 +1227,13 @@ void SequencePlayer::SetTime(float t)
 			if (loop)
 			{
 				runningFrame = 0;
+				runnedFrames.clear();
 			}
 			else
 			{
 				runningFrame = sequence->totalFrames;
-				break;
 			}
+			break;
 		}
 	}
 }
@@ -1242,7 +1252,11 @@ void SequencePlayer::StepFrame(int df)
 	}
 	time = 1000.0f * static_cast<float>(currentFrame) / static_cast<float>(sequence->framesPerSecond);
 
-	while (runningFrame != currentFrame)
+	int targetFrame = currentFrame;
+	if (runningFrame < sequence->totalFrames && currentFrame == 0)
+		targetFrame = sequence->totalFrames;
+
+	while (runningFrame <= targetFrame)
 	{
 		if (!runnedFrames.contains(runningFrame))
 		{
@@ -1256,12 +1270,13 @@ void SequencePlayer::StepFrame(int df)
 			if (loop)
 			{
 				runningFrame = 0;
+				runnedFrames.clear();
 			}
 			else
 			{
 				runningFrame = sequence->totalFrames;
-				break;
 			}
+			break;
 		}
 	}
 }
@@ -1280,7 +1295,13 @@ void SequencePlayer::SetFrame(int frame, bool runningPlayer)
 	}
 	time = 1000.0f * static_cast<float>(currentFrame) / static_cast<float>(sequence->framesPerSecond);
 
-	while (runningFrame != currentFrame && runningPlayer)
+	if (runningPlayer == false) return;
+
+	int targetFrame = currentFrame;
+	if (runningFrame < sequence->totalFrames && currentFrame == 0)
+		targetFrame = sequence->totalFrames;
+
+	while (runningFrame <= targetFrame)
 	{
 		if (!runnedFrames.contains(runningFrame))
 		{
@@ -1294,12 +1315,13 @@ void SequencePlayer::SetFrame(int frame, bool runningPlayer)
 			if (loop)
 			{
 				runningFrame = 0;
+				runnedFrames.clear();
 			}
 			else
 			{
 				runningFrame = sequence->totalFrames;
-				break;
 			}
+			break;
 		}
 	}
 }
@@ -1318,6 +1340,8 @@ void SequencePlayer::ApplyFrameValues(RenderableUUID renderable)
 		renderable->animation(animation->animation);
 		renderable->animationFrame(currentFrame);
 		renderable->animationTime(animation->GetTimeAtFrame(currentFrame));
+		//float timeAtFrame = animation->GetTimeAtFrame(currentFrame);
+		//OutputDebugStringA(std::string("anim:" + animation->animation + std::string(" frame:") + std::to_string(currentFrame) + " " + std::string("time:") + std::to_string(timeAtFrame) + "\n").c_str());;
 	}
 
 	renderable->currentSequenceTransformation = sequence->GetTransformationAtFrame(currentFrame);
@@ -1338,4 +1362,5 @@ void SequencePlayer::ResetFrames()
 	runnedFrames.clear();
 	runningFrame = 0;
 	currentFrame = 0;
+	time = 0.0f;
 }

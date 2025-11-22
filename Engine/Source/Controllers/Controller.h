@@ -12,12 +12,16 @@ namespace Game
 		virtual void Step(float delta) {};
 		virtual void Map(JUUID so) { sceneObject = so; }
 		virtual void Unmap() { sceneObject.clear(); }
+		virtual void CreateV8MethodsBindings(Scripting::V8MethodsBindings& v8methods) {}
 	};
 
-	JUUID RegisterController(std::unique_ptr<Controller>& controller, JUUID sceneObject);
+	JUUID RegisterController(std::unique_ptr<Controller>& controller, std::string controllerName, JUUID sceneObject);
 	void UnregisterController(JUUID controllerUUID);
 	void DestroyControllers();
 	void StepControllers(float delta);
+	std::unique_ptr<Game::Controller>& GetControllerByName(std::string name);
+	std::string GetControllerNameByUUID(JUUID uuid);
+	void CreateV8Bindings(Scripting::V8ObjectsBindings& bindings, JUUID uuid);
 
 	extern std::vector<std::string> GetGameControllers();
 	extern std::unique_ptr<Game::Controller> GetGameController(std::string name);

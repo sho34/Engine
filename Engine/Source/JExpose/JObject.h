@@ -80,8 +80,6 @@ struct JObject : nlohmann::json
 		updateFlag = 0ULL;
 	}
 
-	virtual void BindToV8Context(v8::Local<v8::Context>& context) {};
-
 	virtual std::function<bool(JObject*)> GetAssetsConditioner() { return [](JObject*) { return true; }; }
 
 	virtual void EditorPreview(size_t flags) {}

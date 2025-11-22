@@ -6,12 +6,16 @@
 namespace Game
 {
 	std::unordered_map<JUUID, std::unique_ptr<Controller>> controllersUUIDs;
+	std::unordered_map<std::string, JUUID> controllerUUIDsByName;
+	std::unordered_map<JUUID, JUUID> sceneObjectUUIDToControllerUUID;
 
-	JUUID RegisterController(std::unique_ptr<Controller>& controller, JUUID sceneObject)
+	JUUID RegisterController(std::unique_ptr<Controller>& controller, std::string controllerName, JUUID sceneObject)
 	{
 		JUUID controllerUUID = getUUID();
 		controller->Map(sceneObject);
 		controllersUUIDs.insert_or_assign(controllerUUID, std::move(controller));
+		controllerUUIDsByName.insert_or_assign(controllerName, controllerUUID);
+		sceneObjectUUIDToControllerUUID.insert_or_assign(sceneObject, controllerUUID);
 		return controllerUUID;
 	}
 
@@ -22,6 +26,29 @@ namespace Game
 			auto& controller = controllersUUIDs.at(controllerUUID);
 			controller->Unmap();
 			controllersUUIDs.erase(controllerUUID);
+			for (auto it = controllerUUIDsByName.begin(); it != controllerUUIDsByName.end();)
+			{
+				if (it->second == controllerUUID)
+				{
+					it = controllerUUIDsByName.erase(it);
+					break;
+				}
+				else
+				{
+					it++;
+				}
+			}
+			for (auto it = sceneObjectUUIDToControllerUUID.begin(); it != sceneObjectUUIDToControllerUUID.end();)
+			{
+				if (it->second == controllerUUID)
+				{
+					it = sceneObjectUUIDToControllerUUID.erase(it);
+				}
+				else
+				{
+					it++;
+				}
+			}
 		}
 	}
 
@@ -32,6 +59,7 @@ namespace Game
 			it->second->Unmap();
 			it = controllersUUIDs.erase(it);
 		}
+		controllerUUIDsByName.clear();
 	}
 
 	void StepControllers(float delta)
@@ -40,5 +68,34 @@ namespace Game
 		{
 			c->Step(delta);
 		}
+	}
+
+	std::unique_ptr<Game::Controller>& GetControllerByName(std::string name)
+	{
+		return controllersUUIDs.at(controllerUUIDsByName.at(name));
+	}
+
+	std::string GetControllerNameByUUID(JUUID uuid)
+	{
+		return std::find_if(controllerUUIDsByName.begin(), controllerUUIDsByName.end(), [&](const auto& pair)
+			{
+				return pair.second == uuid;
+			}
+		)->first;
+	}
+
+	void CreateV8Bindings(Scripting::V8ObjectsBindings& bindings, JUUID uuid)
+	{
+		using namespace Scripting;
+		JUUID controllerUUID = sceneObjectUUIDToControllerUUID.at(uuid);
+		std::string name = GetControllerNameByUUID(controllerUUID);
+		std::unique_ptr<Controller>& controller = controllersUUIDs.at(controllerUUID);
+
+		V8ObjectPointer v8ptr = std::make_tuple(name, controller.get());
+		V8MethodsBindings v8methods;
+
+		controller->CreateV8MethodsBindings(v8methods);
+
+		bindings.insert_or_assign(std::move(v8ptr), v8methods);
 	}
 }

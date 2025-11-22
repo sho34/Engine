@@ -11,6 +11,8 @@
 #include "GameControllers/SpinYawController.h"
 #include <Renderable/Renderable.h>
 
+//#define _EDITOR
+
 std::string gameAppTitle = "Culpeo Test Game";
 extern std::unique_ptr<Renderer> renderer;
 CameraUUID levelCameraUUID;
@@ -19,6 +21,11 @@ using namespace Editor;
 std::string editorPrePlayDump;
 CameraUUID editorCameraUUID = JUUID("editor-cam-uuid");
 #endif
+
+namespace Scene
+{
+	void SceneObjectsStep(DX::StepTimer& timer);
+}
 
 #if !defined(_EDITOR) && defined(_DEVELOPMENT)
 int main()
@@ -146,10 +153,6 @@ void RunPostRenderComputeShaders()
 }
 
 void GetAudioListenerVectors(std::function<void(XMFLOAT3, XMVECTOR)> audioListenerCallback)
-{
-}
-
-void BindGameObjectsToV8Context(v8::Local<v8::Context>& context)
 {
 }
 
@@ -405,9 +408,9 @@ void EditorModeCreate(GameStates prevState)
 				using namespace Scene;
 				using namespace Scene::Level;
 
-				LoadDefaultLevel();
+				//LoadDefaultLevel();
 				//LoadLevel("bootscreen");
-				//LoadLevel("venom");
+				LoadLevel("venom");
 				BindSceneObjects();
 			}
 		);
@@ -577,6 +580,9 @@ void EditorPlayingModeCreate(GameStates prevState)
 	using namespace Editor;
 	SwitchToEditorPlayCamera();
 	editorPrePlayDump = GetLevelString();
+	//kick a step for first frame rendering consistency
+	EditorPlayingModeStep();
+	Scene::SceneObjectsStep(timer);
 }
 
 void EditorPlayingModeLeave(GameStates nextState)
@@ -683,7 +689,6 @@ namespace Game
 
 	std::unique_ptr<Game::Controller> GetGameController(std::string name)
 	{
-
 		return (controllers.contains(name)) ? controllers.at(name)() : nullptr;
 	}
 };

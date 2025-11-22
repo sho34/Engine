@@ -336,7 +336,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Animation\Animated.h" />
-    <ClInclude Include="Animation\AnimationCallback.h" />
     <ClInclude Include="Animation\AnimationSequences.h" />
     <ClInclude Include="Audio\AudioSystem.h" />
     <ClInclude Include="Controllers\Controller.h" />

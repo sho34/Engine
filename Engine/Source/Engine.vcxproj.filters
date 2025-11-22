@@ -522,9 +522,6 @@
     <ClInclude Include="Editor\RightPanelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Animation\AnimationCallback.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Animation\AnimationSequences.h">
       <Filter>Header Files</Filter>
     </ClInclude>

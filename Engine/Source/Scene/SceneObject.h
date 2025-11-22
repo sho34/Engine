@@ -7,6 +7,8 @@
 #include <IconsFontAwesome5.h>
 #endif
 #include <set>
+#include <Scripting.h>
+
 enum SceneObjectType {
 	SO_None,
 	SO_Renderables,
@@ -89,6 +91,8 @@ namespace Scene
 		std::set<JUUID> controllers;
 		virtual void BindControllers();
 		virtual void UnbindControllers();
+
+		virtual void CreateV8Bindings(Scripting::V8ObjectsBindings& bindings);
 
 #if defined(_EDITOR)
 		virtual JUUID CreateBillboard(CameraUUID camera) { return ""; }
