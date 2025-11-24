@@ -40,8 +40,12 @@ namespace Game
 
 		RenderableUUID venom;
 		CameraUUID camera;
-		unsigned int currentAttack1Animation = 0;
+
 		XMFLOAT3 venomScale;
+
+		XMVECTOR lastAnimPos;
+		XMVECTOR lastAnimPosDelta;
+		XMVECTOR lastAnimPosDelta2;
 
 		static inline std::vector<AnimationController> Attack1Animations =
 		{
@@ -66,6 +70,9 @@ namespace Game
 				.speed = 1.0f
 			}
 		};
+		bool attack1Window = false;
+		bool newAttack1 = false;
+		int currentAttack1Animation = 0;
 
 		virtual void Map(JUUID so);
 		virtual void Unmap();
@@ -73,15 +80,15 @@ namespace Game
 		virtual void CreateV8MethodsBindings(Scripting::V8MethodsBindings& v8methods);
 		virtual void Step(float delta);
 
-		void PlayerReady();
+		void VenomReady();
+		void StartVenomNextPunchWindow();
+		void EvaluateVenomNextPunch();
 
 		XMVECTOR leftStick;
 		void UpdateLeftStickVector();
 		void UpdateLookTo();
 
 		void MoveForward(float step);
-		SoundFXUUID roar;
-		void Roar();
 
 		bool ShouldIdle();
 		bool ShouldWalk();
@@ -92,7 +99,7 @@ namespace Game
 		//
 		//bool Jump();
 		//void Attack1();
-		//void EnterAttack1();
+		void EnterAttack1();
 
 		//void None();
 		void EnterIntro();
@@ -105,8 +112,12 @@ namespace Game
 		//void Walking();
 		//void Running();
 		//void Jumping();
-		//void Attacking1();
+		void Attacking1();
+
+		void LeaveAttack1();
 	};
 
 	void VenomReady(const v8::FunctionCallbackInfo<v8::Value>& info);
+	void StartVenomNextPunchWindow(const v8::FunctionCallbackInfo<v8::Value>& info);
+	void EvaluateVenomNextPunch(const v8::FunctionCallbackInfo<v8::Value>& info);
 }

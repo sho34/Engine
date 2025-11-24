@@ -268,6 +268,7 @@ struct SequencePlayer
 	int runningFrame;
 	int currentFrame;
 	bool loop;
+	bool newSequence;
 	std::set<int> runnedFrames;
 	RenderableUUID renderable;
 

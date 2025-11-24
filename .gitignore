@@ -401,3 +401,9 @@ FodyWeavers.xsd
 *.map
 /SDKs/assimp/assimp-5.4.3/build
 /Engine/Lib
+/TestGame/Debug
+/TestGame/Development
+/TestGame/Release
+/TestGame/Editor_Debug
+/TestGame/Editor_Development
+/TestGame/Editor_Release

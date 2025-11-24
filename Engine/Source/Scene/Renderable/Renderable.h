@@ -133,8 +133,7 @@ namespace Scene
 		//ANIMATION
 		Model3DInstanceUUID animable;
 		Animation::BonesTransformations bonesTransformation;
-		//Sequence* currentSequence = nullptr;
-		XMMATRIX currentSequenceTransformation;
+		XMMATRIX animationTransformation;
 
 		BoundingBox boundingBox;
 		RenderableBoundingBoxUUID boundingBoxCompute; //used for animables

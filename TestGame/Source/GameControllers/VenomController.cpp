@@ -82,7 +82,10 @@ namespace Game
 				{ VS_Walking, [this](VenomStates prevState) { EnterWalking(); } },
 				{ VS_Running, [this](VenomStates prevState) { EnterRunning(); } },
 				//{ VS_Jumping, [this](VenomStates prevState) { venom->SetCurrentAnimation("Jump",0.0f,1.0f,true,false); }},
-				//{ VS_Attack_1,[this](VenomStates prevState) { EnterAttack1(); }}
+				{ VS_Attack_1,[this](VenomStates prevState) { EnterAttack1(); }}
+			},
+			.onLeave = {
+				{ VS_Attack_1,[this](VenomStates prevState) { LeaveAttack1(); }}
 			},
 			.onStep = {
 				{ VS_None, [this]() { venomScale = venom->scale(); vsm.ChangeState(VS_Intro); }},
@@ -90,14 +93,21 @@ namespace Game
 				{ VS_Walking, [this]() { Walking(); }},
 				{ VS_Running, [this]() { Running(); }},
 				//{ VS_Jumping, [this]() { Jumping(); }},
-				//{ VS_Attack_1, [this]() { Attacking1(); }}
+				{ VS_Attack_1, [this]() { Attacking1(); }}
 			}
 		};
+		lastAnimPos = XMVectorZero();
+		lastAnimPosDelta = XMVectorZero();
+		lastAnimPosDelta2 = XMVectorZero();
+		attack1Window = false;
+		newAttack1 = false;
 	}
 
 	void VenomController::CreateV8MethodsBindings(Scripting::V8MethodsBindings& v8methods)
 	{
 		v8methods.insert_or_assign("PlayerReady", Game::VenomReady);
+		v8methods.insert_or_assign("StartNextPunchWindow", Game::StartVenomNextPunchWindow);
+		v8methods.insert_or_assign("EvaluateNextPunch", Game::EvaluateVenomNextPunch);
 	}
 
 	void VenomController::Step(float delta)
@@ -118,12 +128,17 @@ namespace Game
 		{
 			buttons.Reset();
 		}
+
+		XMVECTOR XMpos, XMrot, XMscl;
+		XMMatrixDecompose(&XMscl, &XMrot, &XMpos, venom->animationTransformation);
+
+		lastAnimPosDelta2 = lastAnimPosDelta;
+		lastAnimPosDelta = XMVectorSubtract(XMpos, lastAnimPos);
+		lastAnimPos = XMpos;
+
 		UpdateLeftStickVector();
 		UpdateLookTo();
 		vsm.Step();
-		/*
-		venom->StepAnimation(dt);
-		*/
 		XMFLOAT3 vpos = venom->position();
 		XMFLOAT3 cpos = camera->position();
 		cpos.x = vpos.x;
@@ -138,12 +153,75 @@ namespace Game
 		// Retrieve the C++ MyClass instance from the FunctionTemplate's data
 		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(args.Data());
 		VenomController* venom = static_cast<VenomController*>(wrap->Value());
-		venom->PlayerReady();
+		venom->VenomReady();
 	}
 
-	void VenomController::PlayerReady()
+	void StartVenomNextPunchWindow(const v8::FunctionCallbackInfo<v8::Value>& args)
+	{
+		v8::Isolate* isolate = args.GetIsolate();
+		v8::HandleScope handle_scope(isolate);
+
+		// Retrieve the C++ MyClass instance from the FunctionTemplate's data
+		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(args.Data());
+		VenomController* venom = static_cast<VenomController*>(wrap->Value());
+		venom->StartVenomNextPunchWindow();
+	}
+
+	void EvaluateVenomNextPunch(const v8::FunctionCallbackInfo<v8::Value>& args)
+	{
+		v8::Isolate* isolate = args.GetIsolate();
+		v8::HandleScope handle_scope(isolate);
+
+		// Retrieve the C++ MyClass instance from the FunctionTemplate's data
+		v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(args.Data());
+		VenomController* venom = static_cast<VenomController*>(wrap->Value());
+		venom->EvaluateVenomNextPunch();
+	}
+
+	void VenomController::VenomReady()
 	{
 		vsm.ChangeState(VS_Idle);
+	}
+
+	void VenomController::StartVenomNextPunchWindow()
+	{
+		attack1Window = true;
+	}
+
+	void VenomController::EvaluateVenomNextPunch()
+	{
+		std::vector<std::pair<std::function<bool()>, std::function<void()>>> postAttackActions = {
+			{
+				[&]() { return ShouldRun(); },
+				[&]() { vsm.ChangeState(VS_Running); }
+			},
+			{
+				[&]() { return ShouldWalk(); },
+				[&]() { vsm.ChangeState(VS_Walking); }
+			},
+			{
+				[&]() { return ShouldIdle(); },
+				[&]() { vsm.ChangeState(VS_Idle); }
+			}
+		};
+
+		if (newAttack1)
+		{
+			EnterAttack1();
+		}
+		else
+		{
+			for (auto& [cond, action] : postAttackActions)
+			{
+				if (cond())
+				{
+					action();
+					break;
+				}
+			}
+		}
+		newAttack1 = false;
+		attack1Window = false;
 	}
 
 	void VenomController::UpdateLeftStickVector()
@@ -187,31 +265,24 @@ namespace Game
 	{
 		float delta = static_cast<float>(timer.GetElapsedSeconds() * step);
 
+		XMFLOAT3 scale = venom->scale();
 		XMVECTOR move = XMVector3Normalize(leftStick);
 		move = XMVectorScale(move, delta);
+		float dz = -lastAnimPosDelta.m128_f32[2];
+		if (dz > 0.0f)
+		{
+			move.m128_f32[0] = scale.z * std::max(-lastAnimPosDelta.m128_f32[2], 0.0f);
+		}
+		else
+		{
+			move.m128_f32[0] = scale.z * std::max(-lastAnimPosDelta2.m128_f32[2], 0.0f);
+		}
 		XMFLOAT3 p = venom->position();
 		XMVECTOR pos = XMLoadFloat3(&p);
 		pos = XMVectorAdd(pos, move);
 		XMStoreFloat3(&p, pos);
 		p.z = std::clamp(p.z, zBounds.x, zBounds.y);
 		venom->position(p);
-	}
-
-	void VenomController::Roar()
-	{
-		if (roar.empty())
-		{
-			roar = getUUID();
-			nlohmann::json json =
-			{
-				{ "uuid", roar() },
-				{ "name", "roar" },
-				{ "sound", GetSoundUUIDByName("venom/intro/roar") },
-				{ "volume", 0.3 },
-				{ "autoPlay", true }
-			};
-			CreateSceneObject(SO_SoundEffects, json);
-		}
 	}
 
 	bool VenomController::ShouldIdle()
@@ -242,30 +313,24 @@ namespace Game
 
 	void VenomController::EnterIntro()
 	{
+		venom->animationUseTransformation(true);
 		venom->SetCurrentAnimation("Intro", 0.0f, 1.0f, true, false);
-		/*
-		venom->SetCurrentAnimation("Intro", 0.0f, 1.0f, true, false,
-			{
-				{ {.type = TimeCallbackType_End }, [this] {  vsm.ChangeState(VS_Idle); }, },
-				{ {.type = TimeCallbackType_Frame, .frame = 127 }, [this] { Roar(); }, }
-			}
-		);
-		*/
 	}
 
 	void VenomController::EnterIdle()
 	{
+		venom->animationUseTransformation(false);
 		venom->SetCurrentAnimation("Idle_C", 0.0f, 1.0f, true, true);
 	}
 
 	void VenomController::EnterWalking()
 	{
-		//venom->SetCurrentAnimation("Walk_Fwd_C", 0.0f, 1.5f, true, true);
+		venom->SetCurrentAnimation("Walk", 0.0f, 1.0f, true, true);
 	}
 
 	void VenomController::EnterRunning()
 	{
-		//venom->SetCurrentAnimation("Run_Fwd_C", 0.0f, 1.5f, true, true);
+		venom->SetCurrentAnimation("Run", 0.0f, 1.0f, true, true);
 	}
 
 	/*
@@ -315,19 +380,20 @@ namespace Game
 	}
 	*/
 
-	/*
 	void VenomController::EnterAttack1()
 	{
 		auto& animControl = Attack1Animations.at(currentAttack1Animation);
-		venom->SetCurrentAnimation(animControl.animation, 0.0f, animControl.speed, true, false);
+		venom->SetCurrentAnimation(animControl.animation);
 		currentAttack1Animation = (currentAttack1Animation + 1) % Attack1Animations.size();
-
 	}
-	*/
 
 	void VenomController::Idle()
 	{
-		if (ShouldRun())
+		if (ShouldAttackX())
+		{
+			vsm.ChangeState(VS_Attack_1);
+		}
+		else if (ShouldRun())
 		{
 			vsm.ChangeState(VS_Running);
 		}
@@ -335,29 +401,16 @@ namespace Game
 		{
 			vsm.ChangeState(VS_Walking);
 		}
-
-		/*
-		XMVECTOR len = XMVector3Length(stick);
-		float l = len.m128_f32[0];
-
-		if (l > runThreshold)
-		{
-			vsm.ChangeState(VS_Running);
-		}
-		else if (l > walkThreshold)
-		{
-			vsm.ChangeState(VS_Walking);
-		}
-		else
-		{
-			//Jump();
-			//Attack1();
-		}
-		*/
 	}
 
 	void VenomController::Walking()
 	{
+		if (ShouldAttackX())
+		{
+			vsm.ChangeState(VS_Attack_1);
+			return;
+		}
+
 		MoveForward(walkSpeed);
 		if (ShouldIdle())
 		{
@@ -371,6 +424,12 @@ namespace Game
 
 	void VenomController::Running()
 	{
+		if (ShouldAttackX())
+		{
+			vsm.ChangeState(VS_Attack_1);
+			return;
+		}
+
 		MoveForward(runSpeed);
 		if (ShouldIdle())
 		{
@@ -381,58 +440,6 @@ namespace Game
 			vsm.ChangeState(VS_Walking);
 		}
 	}
-
-	/*
-	void VenomController::Walking()
-	{
-		XMVECTOR stick = GetLeftStickVector();
-		XMVECTOR len = XMVector3Length(stick);
-		float l = len.m128_f32[0];
-
-		SetRotation(stick);
-		MoveForward(walkSpeed);
-
-		if (l > runThreshold)
-		{
-			vsm.ChangeState(VS_Running);
-		}
-		else if (l < walkThreshold)
-		{
-			vsm.ChangeState(VS_Idle);
-		}
-		else
-		{
-			Jump();
-			Attack1();
-		}
-	}
-	*/
-
-	/*
-	void VenomController::Running()
-	{
-		XMVECTOR stick = GetLeftStickVector();
-		XMVECTOR len = XMVector3Length(stick);
-		float l = len.m128_f32[0];
-
-		SetRotation(stick);
-		MoveForward(runSpeed);
-
-		if (l < walkThreshold)
-		{
-			vsm.ChangeState(VS_Idle);
-		}
-		else if (l < runThreshold)
-		{
-			vsm.ChangeState(VS_Walking);
-		}
-		else
-		{
-			Jump();
-			Attack1();
-		}
-	}
-	*/
 
 	/*
 	void VenomController::Jumping()
@@ -474,44 +481,17 @@ namespace Game
 	}
 	*/
 
-	/*
 	void VenomController::Attacking1()
 	{
-		bool animEnded = venom->AnimationEnded();
-		if (!animEnded) return;
-
-		XMVECTOR stick = GetLeftStickVector();
-		XMVECTOR len = XMVector3Length(stick);
-		float l = len.m128_f32[0];
-
-		SetRotation(stick);
-
-		if (l > runThreshold)
+		if (!newAttack1 && attack1Window && ShouldAttackX())
 		{
-			MoveForward(runSpeed);
-			if (animEnded)
-			{
-				vsm.ChangeState(VS_Running);
-				venom->StepAnimation(0.0f);
-			}
-		}
-		else if (l > walkThreshold)
-		{
-			MoveForward(walkSpeed);
-			if (animEnded)
-			{
-				vsm.ChangeState(VS_Walking);
-				venom->StepAnimation(0.0f);
-			}
-		}
-		else if (animEnded)
-		{
-			if (!Jump())
-			{
-				vsm.ChangeState(VS_Idle);
-				venom->StepAnimation(0.0f);
-			}
+			newAttack1 = true;
 		}
 	}
-	*/
+	void VenomController::LeaveAttack1()
+	{
+		attack1Window = false;
+		newAttack1 = false;
+		currentAttack1Animation = 0;
+	}
 }

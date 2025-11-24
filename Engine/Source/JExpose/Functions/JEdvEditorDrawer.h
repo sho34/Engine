@@ -1959,6 +1959,24 @@ inline JEdvEditorDrawerFunction DrawValue<std::string, jdev_t_animation>()
 
 					ImGui::TableSetColumnIndex(1);
 
+					std::string curSeq = animable->animation();
+					std::vector<std::string> sequences;
+					std::transform(
+						animable->animationsSequences.sequences.begin(),
+						animable->animationsSequences.sequences.end(),
+						std::back_inserter(sequences), [](auto& pair)
+						{
+							return pair.first;
+						}
+					);
+					ImGui::DrawComboSelection(curSeq, sequences, [animable](std::string newSequence)
+						{
+							animable->SetCurrentAnimation(newSequence);
+							animable->animationTime(0.0f);
+							animable->StepAnimation(0.0f);
+						}
+					);
+
 					/*
 					Sequence* currentSequence = animable->currentSequence;
 					Sequence& sequence = (currentSequence != nullptr) ? *currentSequence : animable->animationsSequences.sequences.at("");

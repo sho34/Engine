@@ -25,28 +25,6 @@ void AnimationSequencerModal::Initialize(JUUID uuid)
 	model3dUUID = uuid;
 	model3D = uuid;
 	animationsSequences = model3D->animationSequences();
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 1")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 2")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 3")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 4")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 5")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 6")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 7")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 8")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 9")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 10")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 11")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 12")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 13")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 14")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 15")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 16")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 17")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 18")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 19")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 20")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 21")));
-	//animationsSequences.sequences["sa"].sequenceChannels.push_back(SequenceChannel(std::string("Channel 22")));
 }
 
 void AnimationSequencerModal::LoadSceneObjects()
@@ -59,9 +37,12 @@ void AnimationSequencerModal::LoadSceneObjects()
 	renderable = getUUID();
 	floor = getUUID();
 
-	nlohmann::json cameraJson = {
+	cameraInitialPos = XMFLOAT3({ 0.0, 5.21317195892334, -17.224170684814453 });
+	cameraInitialRot = XMFLOAT3({ 12.898999214172363, 0.0, 0.0 });
+
+	nlohmann::json cameraJson =
+	{
 		{ "fitWindow", false },
-		//{ "fitWindow", true },
 		{ "name", "cam-preview" },
 		{ "perspective",
 			{
@@ -72,9 +53,9 @@ void AnimationSequencerModal::LoadSceneObjects()
 				{ "height", 1000 }
 			}
 		},
-		{ "position", { 0.0, 5.21317195892334, -17.224170684814453 } },
+		{ "position", FromXMFLOAT3(cameraInitialPos) },
 		{ "projectionType", "Perspective" },
-		{ "rotation", { 12.898999214172363, 0.0, 0.0 } },
+		{ "rotation", FromXMFLOAT3(cameraInitialRot) },
 		{ "speed", 0.05000000074505806 },
 		{ "uuid", camera() },
 		{
@@ -122,7 +103,8 @@ void AnimationSequencerModal::LoadSceneObjects()
 		{ "rotation", { 0.0, -90.0, 0.0 }},
 		{ "scale", { 0.1, 0.1, 0.1} },
 		{ "uuid", renderable() },
-		{ "cameras", { camera() } }
+		{ "cameras", { camera() } },
+		{ "animationUseTransformation", true }
 	};
 
 	nlohmann::json floorJson =
@@ -197,23 +179,34 @@ void AnimationSequencerModal::Step()
 	floor->WriteConstantsBuffer<XMFLOAT3>("baseColor", baseColor, renderer->backBufferIndex);
 
 	//https://stackoverflow.com/a/32836605
-	//renderable->StepAnimation(static_cast<FLOAT>(timer.GetElapsedSeconds()));
-	//renderable->StepAnimation(0.0f);
 	BoundingBox modelBB = renderable->GetBoundingBox();
 	BoundingSphere modelBBS;
 	BoundingSphere::CreateFromBoundingBox(modelBBS, modelBB);
 
 	float modelDistanceScale = camera->at("modelDistanceScale");
 	float fov = XMConvertToRadians(camera->perspective().fovAngleY);
-	float distance = modelDistanceScale * (modelBBS.Radius * 2.0f) / (XMScalarSin(fov) / XMScalarCos(fov));
+	float distance = modelDistanceScale * (adjustToBoundingBox ? (modelBBS.Radius * 2.0f) / (XMScalarSin(fov) / XMScalarCos(fov)) : 1.0f);
 
-	XMVECTOR camFwV = camera->forward();
-	XMFLOAT3 BBPos = modelBB.Center;
-	XMVECTOR BBPosV = XMLoadFloat3(&BBPos);
-	XMVECTOR camPosV = XMVectorSubtract(BBPosV, XMVectorScale(camFwV, distance));
-	XMFLOAT3 camPos;
-	XMStoreFloat3(&camPos, camPosV);
-	camera->position(camPos);
+	if (adjustToBoundingBox)
+	{
+		XMVECTOR camFwV = camera->forward();
+		XMFLOAT3 BBPos = modelBB.Center;
+		XMVECTOR BBPosV = XMLoadFloat3(&BBPos);
+		XMVECTOR camPosV = XMVectorSubtract(BBPosV, XMVectorScale(camFwV, distance));
+		XMFLOAT3 camPos;
+		XMStoreFloat3(&camPos, camPosV);
+		camera->position(camPos);
+	}
+	else
+	{
+		camera->rotation(cameraInitialRot);
+		XMVECTOR camFwV = camera->forward();
+		XMVECTOR camInitialPosV = XMLoadFloat3(&cameraInitialPos);
+		XMVECTOR camPosV = XMVectorSubtract(camInitialPosV, XMVectorScale(camFwV, distance));
+		XMFLOAT3 camPos;
+		XMStoreFloat3(&camPos, camPosV);
+		camera->position(camPos);
+	}
 
 	if (selectedSequence != "")
 	{
@@ -564,6 +557,8 @@ void AnimationSequencerModal::DrawModelPreview(ImVec2 curPos, ImVec2 size)
 		ImGui::Text("floor");
 		std::vector<JObject*> floorV({ GetSceneObjectPointer(floor()) });
 		DrawValue<XMFLOAT3, jedv_t_color_float3>()("floorColor", floorV);
+
+		ImGui::Checkbox("Adjust camera", &adjustToBoundingBox);
 	}
 	ImGui::EndChild();
 

@@ -212,7 +212,9 @@ namespace Scene
 		float dt = static_cast<float>(timer.GetElapsedSeconds());
 		for (auto& [renderable, player] : animationPlayers)
 		{
+#if defined(_EDITOR)
 			if (Editor::IsPlaying() && !Editor::IsPaused())
+#endif
 			{
 				player->Step(dt * 1000.0f);
 			}
@@ -292,15 +294,11 @@ namespace Scene
 #include <RenderableAtt.h>
 #include <JEnd.h>
 
-		currentSequenceTransformation = XMMatrixIdentity();
+		animationTransformation = XMMatrixIdentity();
 
 		if (!animable.empty())
 		{
 			AttachAnimation(uuid(), model3D->animations);
-			//if (!animation().empty() && animationPlay())
-			//{
-			//	SetCurrentAnimation(animation(), 0.0f, animationTimeFactor(), animationPlay(), animationLoop());
-			//}
 			StepAnimation(0.0f); //take an empty T-Pose step so the skinning can be performed
 			boundingBoxCompute = CreateRenderableBoundingBox(uuid());
 			WriteAnimationConstantsBuffer(renderer->backBufferIndex);
@@ -438,7 +436,8 @@ namespace Scene
 		XMMATRIX rotationM = XMMatrixRotationQuaternion(rotationQ());
 		XMMATRIX scaleM = XMMatrixScalingFromVector({ scaleV.x, scaleV.y, scaleV.z });
 		XMMATRIX positionM = XMMatrixTranslationFromVector({ posV.x, posV.y, posV.z });
-		return XMMatrixMultiply(currentSequenceTransformation, XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM));
+		XMMATRIX worldM = XMMatrixMultiply(XMMatrixMultiply(scaleM, rotationM), positionM);
+		return (!animationUseTransformation()) ? worldM : XMMatrixMultiply(animationTransformation, worldM);
 	}
 
 	void Renderable::CreateMeshInstances()
@@ -917,6 +916,7 @@ namespace Scene
 
 		sequencePlayer.sequence = &animationsSequences.sequences.at(anim);
 		sequencePlayer.loop = loop;
+		sequencePlayer.newSequence = true;
 		sequencePlayer.ResetFrames();
 	}
 

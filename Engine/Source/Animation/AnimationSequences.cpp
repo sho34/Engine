@@ -1119,6 +1119,7 @@ SequencePlayer::SequencePlayer()
 	runningFrame = 0;
 	currentFrame = 0;
 	loop = false;
+	newSequence = false;
 }
 
 SequencePlayer::SequencePlayer(Sequence* seq, JUUID uuid)
@@ -1128,6 +1129,7 @@ SequencePlayer::SequencePlayer(Sequence* seq, JUUID uuid)
 	runningFrame = 0;
 	currentFrame = 0;
 	loop = false;
+	newSequence = false;
 	renderable = uuid;
 }
 
@@ -1138,6 +1140,7 @@ void SequencePlayer::SetSequence(Sequence* seq, JUUID uuid)
 	runningFrame = 0;
 	currentFrame = 0;
 	loop = false;
+	newSequence = true;
 	runnedFrames.clear();
 	renderable = uuid;
 }
@@ -1145,6 +1148,8 @@ void SequencePlayer::SetSequence(Sequence* seq, JUUID uuid)
 void SequencePlayer::Step(float dt)
 {
 	if (sequence == nullptr) return;
+	newSequence = false;
+
 	float totalTimeMs = 1000.0f * static_cast<float>(sequence->totalFrames) / static_cast<float>(sequence->framesPerSecond);
 	time += dt;
 	if (time >= totalTimeMs)
@@ -1165,7 +1170,7 @@ void SequencePlayer::Step(float dt)
 	if (runningFrame < sequence->totalFrames && currentFrame == 0)
 		targetFrame = sequence->totalFrames;
 
-	while (runningFrame <= targetFrame)
+	while (runningFrame <= targetFrame && !newSequence)
 	{
 		if (!runnedFrames.contains(runningFrame))
 		{
@@ -1193,6 +1198,8 @@ void SequencePlayer::Step(float dt)
 void SequencePlayer::SetTime(float t)
 {
 	if (sequence == nullptr) return;
+	newSequence = false;
+
 	float totalTimeMs = 1000.0f * static_cast<float>(sequence->totalFrames) / static_cast<float>(sequence->framesPerSecond);
 	time = t;
 	if (time >= totalTimeMs)
@@ -1213,7 +1220,7 @@ void SequencePlayer::SetTime(float t)
 	if (runningFrame < sequence->totalFrames && currentFrame == 0)
 		targetFrame = sequence->totalFrames;
 
-	while (runningFrame <= targetFrame)
+	while (runningFrame <= targetFrame && !newSequence)
 	{
 		if (!runnedFrames.contains(runningFrame))
 		{
@@ -1241,6 +1248,8 @@ void SequencePlayer::SetTime(float t)
 void SequencePlayer::StepFrame(int df)
 {
 	if (sequence == nullptr) return;
+	newSequence = false;
+
 	currentFrame += df;
 	if (currentFrame > sequence->totalFrames)
 	{
@@ -1256,7 +1265,7 @@ void SequencePlayer::StepFrame(int df)
 	if (runningFrame < sequence->totalFrames && currentFrame == 0)
 		targetFrame = sequence->totalFrames;
 
-	while (runningFrame <= targetFrame)
+	while (runningFrame <= targetFrame && !newSequence)
 	{
 		if (!runnedFrames.contains(runningFrame))
 		{
@@ -1284,6 +1293,8 @@ void SequencePlayer::StepFrame(int df)
 void SequencePlayer::SetFrame(int frame, bool runningPlayer)
 {
 	if (sequence == nullptr) return;
+	newSequence = false;
+
 	currentFrame = frame;
 	if (currentFrame > sequence->totalFrames)
 	{
@@ -1301,7 +1312,7 @@ void SequencePlayer::SetFrame(int frame, bool runningPlayer)
 	if (runningFrame < sequence->totalFrames && currentFrame == 0)
 		targetFrame = sequence->totalFrames;
 
-	while (runningFrame <= targetFrame)
+	while (runningFrame <= targetFrame && !newSequence)
 	{
 		if (!runnedFrames.contains(runningFrame))
 		{
@@ -1344,7 +1355,7 @@ void SequencePlayer::ApplyFrameValues(RenderableUUID renderable)
 		//OutputDebugStringA(std::string("anim:" + animation->animation + std::string(" frame:") + std::to_string(currentFrame) + " " + std::string("time:") + std::to_string(timeAtFrame) + "\n").c_str());;
 	}
 
-	renderable->currentSequenceTransformation = sequence->GetTransformationAtFrame(currentFrame);
+	renderable->animationTransformation = sequence->GetTransformationAtFrame(currentFrame);
 }
 
 void SequencePlayer::CreateFrameSoundFXs(int frame)

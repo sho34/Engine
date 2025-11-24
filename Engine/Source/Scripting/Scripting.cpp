@@ -2,12 +2,19 @@
 #include "Scripting.h"
 #include <JObject.h>
 
+#if defined(_EDITOR)
+namespace Editor
+{
+	extern bool IsPlaying();
+	extern bool IsPaused();
+}
+#endif
+
 namespace Scripting
 {
 	static std::unique_ptr<v8::Platform> platform;
 	static v8::Isolate* isolate = nullptr;
 	static v8::Isolate::CreateParams create_params;
-
 
 	void InitScripting(const char* path)
 	{
@@ -33,6 +40,14 @@ namespace Scripting
 
 	void RunScript(std::string script, RenderableUUID renderable)
 	{
+#if defined(_EDITOR)
+		if (!Editor::IsPlaying() || Editor::IsPaused())
+		{
+			return;
+		}
+#endif
+		if (script.empty()) return;
+
 		v8::Isolate::Scope isolate_scope(isolate);
 
 		v8::Locker locker(isolate);

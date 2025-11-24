@@ -62,6 +62,8 @@ struct AnimationSequencerModal// : public ExImSequencer::SequenceInterface
 	LightUUID ambientLight;
 	LightUUID directionalLight;
 	Model3DJsonUUID model3D;
+	XMFLOAT3 cameraInitialPos;
+	XMFLOAT3 cameraInitialRot;
 
 	//Sequence selection
 	bool addNewSequence;
@@ -73,6 +75,7 @@ struct AnimationSequencerModal// : public ExImSequencer::SequenceInterface
 	bool playingSequence = false;
 	float playingSequenceTime = 0.0f;
 	bool playingSequenceLoop = false;
+	bool adjustToBoundingBox = true;
 
 	//timeline editor
 	TimelineEditor timelineEditor;
