@@ -641,6 +641,7 @@ namespace Scene
 	void Camera::Render()
 	{
 		WriteConstantsBuffer(renderer->backBufferIndex);
+		CalculateBoundingFrustum();
 
 		//first make a set of objects which are not meant to be rendered first
 		std::set<RenderableUUID> nonRoot;
@@ -678,7 +679,10 @@ namespace Scene
 			{
 				for (auto it = renVecSet.begin(); it != renVecSet.end(); it++)
 				{
-					(*it)->Render(rpi, uuid());
+					RenderableUUID renderable = *it;
+					if (boundingFrustum.Contains(renderable->GetBoundingBox()) == ContainmentType::DISJOINT)
+						continue;
+					renderable->Render(rpi, uuid());
 				}
 			};
 
@@ -692,6 +696,11 @@ namespace Scene
 		{
 			rp->Pass([&rp, draw]() {draw(rp); });
 		}
+	}
+
+	void Camera::CalculateBoundingFrustum()
+	{
+		BoundingFrustum(projection()).Transform(boundingFrustum, world());
 	}
 
 	void Camera::Destroy()

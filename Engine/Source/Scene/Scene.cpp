@@ -161,6 +161,7 @@ namespace Scene
 			r->WriteConstantsBuffer(backBufferIndex);
 		}
 
+		//write the constants buffers of the cameras which renders shadow maps
 		for (CameraUUID c : GetCameras())
 		{
 			if (!c->shadowMapLight().empty()) continue;
@@ -210,14 +211,18 @@ namespace Scene
 	void RenderSceneCameras()
 	{
 		auto cameras(GetCameras());
+		//get all the available cameras and start filtering thing we don't want to render
 		for (auto it = cameras.begin(); it != cameras.end();)
 		{
 			JUUID uuid = *it;
+			//filter out cameras which doesn't exists
 			if (!SceneObjectExists(uuid))
 			{
 				it = cameras.erase(it);
 				continue;
 			}
+
+			//filter out cameras used to render shadow maps
 			auto& cam = GetCameraSceneObject(uuid);
 			if (!cam->shadowMapLight().empty())
 			{
@@ -227,16 +232,20 @@ namespace Scene
 			it++;
 		}
 
+		//create a vector of cameras rendering to rtt's
 		std::vector<JUUID> nonSwapChainCams;
 		std::copy_if(cameras.begin(), cameras.end(), std::back_inserter(nonSwapChainCams), [](JUUID uuid)
 			{
 				auto& cam = GetCameraSceneObject(uuid);
+				//we skip swap chain cams
 				if (cam->useSwapChain()) return false;
+				//we skip cameras which resolves to the swapchain
 				if (cam->renderPassesUUID.size() > 0ULL && cam->renderPassesUUID.back()->type == RenderPassType_SwapChainPass) return false;
 				return true;
 			}
 		);
 
+		//render non swapchain buffer cameras(rtt stuff)
 		for (auto& uuid : nonSwapChainCams)
 		{
 			auto& cam = GetCameraSceneObject(uuid);
@@ -249,6 +258,7 @@ namespace Scene
 #endif
 		}
 
+		//check if there is any camera with any render pass resolving to the swapchain
 		bool resolvedToSwapchain = std::any_of(nonSwapChainCams.begin(), nonSwapChainCams.end(), [](JUUID camUUID)
 			{
 				auto& cam = GetCameraSceneObject(camUUID);
@@ -260,6 +270,7 @@ namespace Scene
 			}
 		);
 
+		//if there are cameras resolving to swapchain but there was nothing already resolving to one. we render with the swapchain cameras
 		if (GetCountFromSwapChainCameras() > 0ULL && !resolvedToSwapchain)
 		{
 			JUUID camUUID = *GetSwapChainCameras().begin();

@@ -139,6 +139,8 @@ namespace Scene
 
 		if (!hasShadowMaps()) return;
 
+		UnbindCameras();
+
 #if defined(_EDITOR)
 		DestroyShadowMapMinMaxChain();
 #endif

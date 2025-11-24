@@ -151,7 +151,10 @@ namespace Scene {
 		bool ResolvesToSwapChain();
 		void Render();
 
+		//Bounding Frustum
 		BoundingFrustum boundingFrustum;
+		void CalculateBoundingFrustum();
+
 		bool markedForDelete = false;
 		void Destroy();
 
